@@ -1,0 +1,404 @@
+[
+  {
+    "id": 0,
+    "code": "000",
+    "key": "void",
+    "name": "虚空",
+    "mapColor": "#111111",
+    "generate": false,
+    "description": "占位，暂不生成"
+  },
+  {
+    "id": 1,
+    "code": "001",
+    "key": "land",
+    "name": "陆",
+    "mapColor": "#62a03c",
+    "generate": true,
+    "description": "普通陆地"
+  },
+  {
+    "id": 2,
+    "code": "002",
+    "key": "water",
+    "name": "静水",
+    "mapColor": "#2f66c9",
+    "generate": true,
+    "description": "海洋或内流湖泊；可穿插于所有气候带"
+  },
+  {
+    "id": 3,
+    "code": "003",
+    "key": "hills",
+    "name": "山丘",
+    "mapColor": "#8a8a8a",
+    "generate": true,
+    "description": "起伏山地",
+    "maxHeight": 256
+  },
+  {
+    "id": 4,
+    "code": "004",
+    "key": "dryland",
+    "name": "旱地",
+    "mapColor": "#c9a066",
+    "generate": true,
+    "description": "干燥平原"
+  },
+  {
+    "id": 5,
+    "code": "005",
+    "key": "river",
+    "name": "河",
+    "mapColor": "#3b82f6",
+    "generate": true,
+    "description": "八方向下降汇水；汇流后河道加宽"
+  },
+  {
+    "id": 6,
+    "code": "006",
+    "key": "forest",
+    "name": "林地",
+    "mapColor": "#228b22",
+    "generate": true,
+    "description": "森林"
+  },
+  {
+    "id": 7,
+    "code": "007",
+    "key": "valley",
+    "name": "谷地",
+    "mapColor": "#556b2f",
+    "generate": true,
+    "description": "低谷"
+  },
+  {
+    "id": 8,
+    "code": "008",
+    "key": "plateau",
+    "name": "高原",
+    "mapColor": "#cd853f",
+    "generate": true,
+    "description": "高原；基准高度随区域地势变化"
+  },
+  {
+    "id": 9,
+    "code": "009",
+    "key": "rift_valley",
+    "name": "裂谷",
+    "mapColor": "#8b4513",
+    "generate": true,
+    "description": "深裂谷"
+  },
+  {
+    "id": 101,
+    "code": "101",
+    "key": "tropical_savanna",
+    "name": "热带草原",
+    "mapColor": "#d2b48c",
+    "generate": true,
+    "description": "热带草原"
+  },
+  {
+    "id": 102,
+    "code": "102",
+    "key": "tropical_sea",
+    "name": "热带海",
+    "mapColor": "#00ced1",
+    "generate": true,
+    "description": "热带海"
+  },
+  {
+    "id": 103,
+    "code": "103",
+    "key": "tropical_hills",
+    "name": "热带山丘",
+    "mapColor": "#6b8e23",
+    "generate": true,
+    "description": "热带山丘",
+    "maxHeight": 256
+  },
+  {
+    "id": 104,
+    "code": "104",
+    "key": "desert",
+    "name": "沙漠",
+    "mapColor": "#edc9af",
+    "generate": true,
+    "description": "沙漠"
+  },
+  {
+    "id": 105,
+    "code": "105",
+    "key": "swamp",
+    "name": "沼泽",
+    "mapColor": "#2f4f4f",
+    "generate": true,
+    "description": "沼泽"
+  },
+  {
+    "id": 106,
+    "code": "106",
+    "key": "tropical_rainforest",
+    "name": "热带雨林",
+    "mapColor": "#006400",
+    "generate": true,
+    "description": "热带雨林"
+  },
+  {
+    "id": 107,
+    "code": "107",
+    "key": "tropical_valley",
+    "name": "热带山谷",
+    "mapColor": "#3cb371",
+    "generate": true,
+    "description": "热带山谷"
+  },
+  {
+    "id": 108,
+    "code": "108",
+    "key": "tropical_highlands",
+    "name": "热带高地",
+    "mapColor": "#8fbc8f",
+    "generate": true,
+    "description": "热带高地；基准高度随区域地势变化"
+  },
+  {
+    "id": 109,
+    "code": "109",
+    "key": "tropical_monsoon_forest",
+    "name": "热带季风林",
+    "mapColor": "#2e8b57",
+    "generate": true,
+    "description": "热带季风林"
+  },
+  {
+    "id": 201,
+    "code": "201",
+    "key": "subtropical_plains",
+    "name": "亚热带平原",
+    "mapColor": "#9acd32",
+    "generate": true,
+    "description": "亚热带平原"
+  },
+  {
+    "id": 202,
+    "code": "202",
+    "key": "subtropical_sea",
+    "name": "亚热带海",
+    "mapColor": "#4682b4",
+    "generate": true,
+    "description": "亚热带海"
+  },
+  {
+    "id": 203,
+    "code": "203",
+    "key": "subtropical_hills",
+    "name": "亚热带山丘",
+    "mapColor": "#556b2f",
+    "generate": true,
+    "description": "亚热带山丘",
+    "maxHeight": 256
+  },
+  {
+    "id": 204,
+    "code": "204",
+    "key": "subtropical_shrubland",
+    "name": "亚热带灌木林",
+    "mapColor": "#bdb76b",
+    "generate": true,
+    "description": "亚热带灌木林"
+  },
+  {
+    "id": 205,
+    "code": "205",
+    "key": "subtropical_monsoon_forest",
+    "name": "亚热带季风林",
+    "mapColor": "#32cd32",
+    "generate": true,
+    "description": "亚热带季风林"
+  },
+  {
+    "id": 206,
+    "code": "206",
+    "key": "subtropical_jungle",
+    "name": "亚热带丛林",
+    "mapColor": "#228b22",
+    "generate": true,
+    "description": "亚热带丛林"
+  },
+  {
+    "id": 207,
+    "code": "207",
+    "key": "subtropical_valley",
+    "name": "亚热带山谷",
+    "mapColor": "#66cdaa",
+    "generate": true,
+    "description": "亚热带山谷"
+  },
+  {
+    "id": 208,
+    "code": "208",
+    "key": "subtropical_highlands",
+    "name": "亚热带高地",
+    "mapColor": "#8b008b",
+    "generate": true,
+    "description": "亚热带高地；基准高度随区域地势变化"
+  },
+  {
+    "id": 301,
+    "code": "301",
+    "key": "temperate_plains",
+    "name": "温带平原",
+    "mapColor": "#7cfc00",
+    "generate": true,
+    "description": "温带平原"
+  },
+  {
+    "id": 302,
+    "code": "302",
+    "key": "temperate_sea",
+    "name": "温带海",
+    "mapColor": "#4169e1",
+    "generate": true,
+    "description": "温带海"
+  },
+  {
+    "id": 303,
+    "code": "303",
+    "key": "temperate_hills",
+    "name": "温带山丘",
+    "mapColor": "#808000",
+    "generate": true,
+    "description": "温带山丘",
+    "maxHeight": 256
+  },
+  {
+    "id": 304,
+    "code": "304",
+    "key": "temperate_shrubland",
+    "name": "温带灌木林",
+    "mapColor": "#b8860b",
+    "generate": true,
+    "description": "温带灌木林"
+  },
+  {
+    "id": 305,
+    "code": "305",
+    "key": "temperate_monsoon_forest",
+    "name": "温带季风林",
+    "mapColor": "#00fa9a",
+    "generate": true,
+    "description": "温带季风林"
+  },
+  {
+    "id": 306,
+    "code": "306",
+    "key": "temperate_jungle",
+    "name": "温带丛林",
+    "mapColor": "#00ff7f",
+    "generate": true,
+    "description": "温带丛林"
+  },
+  {
+    "id": 307,
+    "code": "307",
+    "key": "temperate_valley",
+    "name": "温带山谷",
+    "mapColor": "#20b2aa",
+    "generate": true,
+    "description": "温带山谷"
+  },
+  {
+    "id": 308,
+    "code": "308",
+    "key": "temperate_highlands",
+    "name": "温带高地",
+    "mapColor": "#cd5c5c",
+    "generate": true,
+    "description": "温带高地；基准高度随区域地势变化"
+  },
+  {
+    "id": 401,
+    "code": "401",
+    "key": "cold_plains",
+    "name": "寒带平原",
+    "mapColor": "#e0ffff",
+    "generate": true,
+    "description": "寒带平原"
+  },
+  {
+    "id": 402,
+    "code": "402",
+    "key": "cold_sea",
+    "name": "寒带海",
+    "mapColor": "#5f9ea0",
+    "generate": true,
+    "description": "寒带海"
+  },
+  {
+    "id": 403,
+    "code": "403",
+    "key": "cold_hills",
+    "name": "寒带山丘",
+    "mapColor": "#a9a9a9",
+    "generate": true,
+    "description": "寒带山丘",
+    "maxHeight": 256
+  },
+  {
+    "id": 404,
+    "code": "404",
+    "key": "cold_shrubland",
+    "name": "寒带灌木林",
+    "mapColor": "#d3d3d3",
+    "generate": true,
+    "description": "寒带灌木林"
+  },
+  {
+    "id": 405,
+    "code": "405",
+    "key": "cold_monsoon_forest",
+    "name": "寒带季风林",
+    "mapColor": "#b0c4de",
+    "generate": true,
+    "description": "寒带季风林"
+  },
+  {
+    "id": 406,
+    "code": "406",
+    "key": "cold_snowy_mountains",
+    "name": "寒带雪山",
+    "mapColor": "#ffffff",
+    "generate": true,
+    "description": "寒带雪山",
+    "maxHeight": 256
+  },
+  {
+    "id": 407,
+    "code": "407",
+    "key": "cold_valley",
+    "name": "寒带山谷",
+    "mapColor": "#afeeee",
+    "generate": true,
+    "description": "寒带山谷"
+  },
+  {
+    "id": 408,
+    "code": "408",
+    "key": "cold_highlands",
+    "name": "寒带高地",
+    "mapColor": "#778899",
+    "generate": true,
+    "description": "寒带高地；基准高度随区域地势变化"
+  },
+  {
+    "id": 409,
+    "code": "409",
+    "key": "ice_snowfield",
+    "name": "冰封雪原",
+    "mapColor": "#f0ffff",
+    "generate": true,
+    "description": "冰封雪原"
+  }
+]

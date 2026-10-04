@@ -1,0 +1,180 @@
+@font-face {
+  font-family: 'ResourceHanRounded';
+  src: url('/content/assets/ui/fonts/ResourceHanRoundedCN-Medium.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --ui-font: 'ResourceHanRounded', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: var(--ui-font);
+  color: #fff;
+  user-select: none;
+}
+
+#app canvas {
+  display: block;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#crosshair {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+}
+
+#water-tint {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 60, 150, 0.35);
+  pointer-events: auto;
+}
+
+#loading {
+  position: fixed;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 15px;
+  pointer-events: auto;
+}
+
+/* ---- 开始 / 暂停界面 ---- */
+#start-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 22, 0.45);
+  cursor: pointer;
+}
+
+.start-panel {
+  padding: 24px 32px;
+  border-radius: 14px;
+  background: rgba(16, 20, 28, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.start-panel h1 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  letter-spacing: 1px;
+}
+
+.start-hint {
+  margin: 0 0 14px;
+  color: #9fc4ff;
+  font-size: 14px;
+}
+
+.controls {
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.controls td {
+  padding: 3px 10px 3px 0;
+}
+
+.controls td:first-child {
+  color: #ffd27a;
+  white-space: nowrap;
+}
+
+/* ---- F12 调试面板 ---- */
+.debug-overlay {
+  z-index: 10000;
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: 268px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(12, 14, 20, 0.72);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  font-size: 13px;
+  pointer-events: auto;
+}
+
+.debug-title {
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #c9d3e6;
+}
+
+.debug-key {
+  float: right;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+}
+
+.debug-minimap {
+  display: block;
+  width: 248px;
+  height: 248px;
+  border-radius: 6px;
+  image-rendering: pixelated;
+}
+
+.debug-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 6px 0 4px;
+  max-height: 96px;
+  overflow-y: auto;
+  font-size: 11px;
+  color: #c9d3e6;
+}
+
+.debug-legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 3px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+.debug-type {
+  margin-top: 4px;
+  font-size: 15px;
+}
+
+.debug-info {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #aab4c8;
+  line-height: 1.5;
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "id": 0,
+    "key": "air",
+    "name": "空气",
+    "color": null,
+    "filler": "air"
+  },
+  {
+    "id": 1,
+    "key": "stone",
+    "name": "石头",
+    "color": "#7f7f7f",
+    "filler": "stone"
+  },
+  {
+    "id": 2,
+    "key": "dirt",
+    "name": "泥土",
+    "color": "#86603f",
+    "filler": "dirt"
+  },
+  {
+    "id": 3,
+    "key": "grass",
+    "name": "草方块",
+    "color": "#62a03c",
+    "filler": "dirt"
+  },
+  {
+    "id": 4,
+    "key": "sand",
+    "name": "沙子",
+    "color": "#dccf92",
+    "filler": "sand"
+  },
+  {
+    "id": 5,
+    "key": "gravel",
+    "name": "沙砾",
+    "color": "#8b8682",
+    "filler": "gravel"
+  },
+  {
+    "id": 6,
+    "key": "dry_dirt",
+    "name": "旱地土",
+    "color": "#b98f58",
+    "filler": "dry_dirt"
+  },
+  {
+    "id": 7,
+    "key": "snow",
+    "name": "雪",
+    "color": "#f3f7fa",
+    "filler": "stone"
+  },
+  {
+    "id": 8,
+    "key": "water",
+    "name": "水",
+    "color": "#2f66c9",
+    "filler": "water"
+  },
+  {
+    "id": 9,
+    "key": "bedrock",
+    "name": "基岩",
+    "color": "#353535",
+    "filler": "bedrock"
+  },
+  {
+    "id": 10,
+    "key": "mud",
+    "name": "湿泥",
+    "color": "#756d51",
+    "filler": "dirt"
+  },
+  {
+    "id": 11,
+    "key": "forest_soil",
+    "name": "林地腐殖土",
+    "color": "#716747",
+    "filler": "dirt"
+  }
+]

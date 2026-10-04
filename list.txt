@@ -1,0 +1,13 @@
+content\assets\ui\fonts\NanoOldSongA-Regular.ttf - https://github.com/Hansha2011/NanoOldSong
+content\assets\ui\fonts\ResourceHanRoundedCN-Medium.ttf - https://github.com/CyanoHao/Resource-Han-Rounded
+node_modules\three - https://github.com/mrdoob/three.js
+node_modules\simplex-noise - https://github.com/jwagner/simplex-noise.js
+node_modules\vite - https://github.com/vitejs/vite
+node_modules\typescript - https://github.com/microsoft/TypeScript
+node_modules\@types\three - https://github.com/three-types/three-ts-types
+src\core\math\Random.ts (mulberry32) - https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
+902temp\calendar-ref\ (astronomia 的 sun / moon / deltat 级数参考文件，MIT，仅用于校对系数) - https://github.com/commenthol/astronomia
+src\systems\calendar\ChineseCalendar.ts (置闰规则与"朔近午夜"特例参考其说明文档，未使用其代码与数据表) - https://github.com/ytliu0/ChineseCalendar
+src\systems\calendar\JulianDay.ts (ΔT 分段多项式，Espenak & Meeus / NASA 日食目录) - https://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html
+902temp\calendar-ref\oracle-lunar.js (lunar-javascript，仅供农历自测对照，不参与打包) - https://github.com/6tail/lunar-javascript
+C:\Users\Jiaoe\AppData\Local\Programs\Python\Python311\Lib\site-packages\PIL - https://github.com/python-pillow/Pillow

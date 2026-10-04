@@ -1,0 +1,777 @@
+import { WorldGenerator, FLOW_DIRECTIONS, type ChunkInfo } from '../systems/world/WorldGenerator';
+import { getChunkTypeDef, formatChunkId } from '../systems/world/ChunkTypes';
+import { CLIMATES } from '../systems/world/WorldSettings';
+
+export interface ViewportStats {
+  centerCx: number;
+  centerCz: number;
+  scale: number;
+  visibleChunks: number;
+  climateCounts: [number, number, number, number, number];
+  climatePercents: [number, number, number, number, number];
+  matchedCount: number;
+  matchedPercent: number;
+  activeFilterName: string;
+}
+
+export interface AtlasViewOptions {
+  canvas: HTMLCanvasElement;
+  generator: WorldGenerator;
+  onChunkSelect?: (info: ChunkInfo) => void;
+  onStatsUpdate?: (stats: ViewportStats) => void;
+}
+
+export class AtlasView {
+  private readonly canvas: HTMLCanvasElement;
+  private readonly ctx: CanvasRenderingContext2D;
+  private generator: WorldGenerator;
+
+  // 视图控制：以中心区块坐标与像素偏移
+  private centerCx = 0;
+  private centerCz = 0;
+  private panX = 0;
+  private panY = 0;
+  private scale = 1.0;
+  private readonly baseCellSize = 36;
+
+  // 状态控制（进入2D地图界面后，默认只显示色块）
+  private showChunkInfo = false;     // 显示/隐藏区块信息（编号、类型）
+  private showProjection = false;    // 显示/隐藏具体投影（地势阴影浮雕与水系流向）
+  private showClimate = false;       // 显示气候分类
+  private activeClimateFilter: number | null = null; // 单个气候高亮（0..4）
+
+  // 区块筛选控制（红色轮廓线）
+  private filterTypeId: number | null = null;
+  private filterCategory: string | null = null;
+
+  // 交互状态
+  private selectedChunk: { cx: number; cz: number } | null = null;
+  private hoveredChunk: { cx: number; cz: number } | null = null;
+  private isDragging = false;
+  private dragStartX = 0;
+  private dragStartY = 0;
+  private lastDragX = 0;
+  private lastDragY = 0;
+  private hasMoved = false;
+
+  private onChunkSelect?: (info: ChunkInfo) => void;
+  private onStatsUpdate?: (stats: ViewportStats) => void;
+  private resizeObserver: ResizeObserver | null = null;
+  private renderScheduled = false;
+
+  constructor(options: AtlasViewOptions) {
+    this.canvas = options.canvas;
+    this.ctx = this.canvas.getContext('2d')!;
+    this.generator = options.generator;
+    this.onChunkSelect = options.onChunkSelect;
+    this.onStatsUpdate = options.onStatsUpdate;
+
+    this.initEvents();
+    this.setupResize();
+    this.centerSpawn();
+  }
+
+  setGenerator(generator: WorldGenerator): void {
+    this.generator = generator;
+    this.centerSpawn();
+    this.requestRender();
+  }
+
+  centerSpawn(): void {
+    const spawn = this.generator.findSpawnChunk();
+    this.centerCx = spawn.cx;
+    this.centerCz = spawn.cz;
+    this.panX = 0;
+    this.panY = 0;
+    this.selectedChunk = { cx: spawn.cx, cz: spawn.cz };
+    if (this.onChunkSelect) {
+      this.onChunkSelect(this.generator.getChunkInfo(spawn.cx, spawn.cz));
+    }
+    this.requestRender();
+  }
+
+  resetView(): void {
+    this.scale = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.requestRender();
+  }
+
+  zoomBy(factor: number, clientX?: number, clientY?: number): void {
+    const rect = this.canvas.getBoundingClientRect();
+    const cx = clientX !== undefined ? clientX - rect.left : this.canvas.clientWidth / 2;
+    const cy = clientY !== undefined ? clientY - rect.top : this.canvas.clientHeight / 2;
+
+    const oldScale = this.scale;
+    const newScale = Math.max(0.35, Math.min(3.5, oldScale * factor));
+    if (newScale === oldScale) return;
+
+    // 以缩放中心点保持不变进行视角平移调整
+    const midX = this.canvas.clientWidth / 2;
+    const midY = this.canvas.clientHeight / 2;
+    const curRelX = cx - midX - this.panX;
+    const curRelY = cy - midY - this.panY;
+    const ratio = newScale / oldScale;
+
+    this.panX -= curRelX * (ratio - 1);
+    this.panY -= curRelY * (ratio - 1);
+    this.scale = newScale;
+    this.requestRender();
+  }
+
+  // ---- 控制开关接口 ----
+
+  setShowChunkInfo(show: boolean): void {
+    this.showChunkInfo = show;
+    this.requestRender();
+  }
+
+  getShowChunkInfo(): boolean {
+    return this.showChunkInfo;
+  }
+
+  setShowProjection(show: boolean): void {
+    this.showProjection = show;
+    this.requestRender();
+  }
+
+  getShowProjection(): boolean {
+    return this.showProjection;
+  }
+
+  setShowClimate(show: boolean): void {
+    this.showClimate = show;
+    this.requestRender();
+  }
+
+  getShowClimate(): boolean {
+    return this.showClimate;
+  }
+
+  setActiveClimateFilter(climateIndex: number | null): void {
+    this.activeClimateFilter = climateIndex;
+    this.requestRender();
+  }
+
+  getActiveClimateFilter(): number | null {
+    return this.activeClimateFilter;
+  }
+
+  setFilterTypeId(typeId: number | null): void {
+    this.filterTypeId = typeId;
+    this.filterCategory = null;
+    this.requestRender();
+  }
+
+  setFilterCategory(category: string | null): void {
+    this.filterCategory = category;
+    this.filterTypeId = null;
+    this.requestRender();
+  }
+
+  clearFilter(): void {
+    this.filterTypeId = null;
+    this.filterCategory = null;
+    this.activeClimateFilter = null;
+    this.requestRender();
+  }
+
+  getSelectedChunk(): ChunkInfo | null {
+    if (!this.selectedChunk) return null;
+    return this.generator.getChunkInfo(this.selectedChunk.cx, this.selectedChunk.cz);
+  }
+
+  getScalePercent(): number {
+    return Math.round(this.scale * 100);
+  }
+
+  getCenterCoordinates(): { cx: number; cz: number } {
+    const cellSize = this.baseCellSize * this.scale;
+    const cx = this.centerCx - Math.round(this.panX / cellSize);
+    const cz = this.centerCz - Math.round(this.panY / cellSize);
+    return { cx, cz };
+  }
+
+  // ---- 渲染调度 ----
+
+  requestRender(): void {
+    if (this.renderScheduled) return;
+    this.renderScheduled = true;
+    requestAnimationFrame(() => {
+      this.renderScheduled = false;
+      this.draw();
+    });
+  }
+
+  private setupResize(): void {
+    this.resizeObserver = new ResizeObserver(() => {
+      this.resizeCanvas();
+      this.requestRender();
+    });
+    this.resizeObserver.observe(this.canvas);
+    this.resizeCanvas();
+  }
+
+  private resizeCanvas(): void {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = this.canvas.getBoundingClientRect();
+    const width = Math.max(100, Math.floor(rect.width));
+    const height = Math.max(100, Math.floor(rect.height));
+
+    if (this.canvas.width !== width * dpr || this.canvas.height !== height * dpr) {
+      this.canvas.width = width * dpr;
+      this.canvas.height = height * dpr;
+    }
+  }
+
+  private isChunkMatched(info: ChunkInfo): boolean {
+    if (this.filterTypeId !== null) {
+      return info.type === this.filterTypeId;
+    }
+    if (this.filterCategory) {
+      switch (this.filterCategory) {
+        case 'river':
+          return info.type === 5;
+        case 'water':
+          return info.type === 2 || info.type === 5 || info.type % 100 === 2 || info.type === 105;
+        case 'mountain':
+          return (
+            info.type === 3 ||
+            info.type === 8 ||
+            info.type % 100 === 3 ||
+            info.type % 100 === 8 ||
+            info.type === 406
+          );
+        case 'snow':
+          return info.type === 406 || info.type === 409;
+        case 'forest':
+          return (
+            info.type === 6 ||
+            info.type % 100 === 4 ||
+            info.type % 100 === 5 ||
+            info.type % 100 === 6 ||
+            info.type === 109
+          );
+      }
+    }
+    return false;
+  }
+
+  private getActiveFilterLabel(): string {
+    if (this.filterTypeId !== null) {
+      const def = getChunkTypeDef(this.filterTypeId);
+      return `${formatChunkId(def.id)} ${def.name}`;
+    }
+    if (this.filterCategory) {
+      const names: Record<string, string> = {
+        river: '河流水网 (005)',
+        water: '水体 (海/湖/河)',
+        mountain: '山地高原 (山丘/高原/雪山)',
+        snow: '雪山/雪原',
+        forest: '林地/丛林/季风林',
+      };
+      return names[this.filterCategory] || this.filterCategory;
+    }
+    return '';
+  }
+
+  // ---- 核心绘制逻辑 ----
+
+  private draw(): void {
+    const ctx = this.ctx;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = this.canvas.width / dpr;
+    const height = this.canvas.height / dpr;
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    // 背景深色质感底
+    ctx.fillStyle = '#1c221f';
+    ctx.fillRect(0, 0, width, height);
+
+    const cellSize = this.baseCellSize * this.scale;
+    const halfW = width / 2;
+    const halfH = height / 2;
+
+    // 可视区块计算
+    const minCx = this.centerCx + Math.floor((-halfW - this.panX) / cellSize) - 1;
+    const maxCx = this.centerCx + Math.ceil((halfW - this.panX) / cellSize) + 1;
+    const minCz = this.centerCz + Math.floor((-halfH - this.panY) / cellSize) - 1;
+    const maxCz = this.centerCz + Math.ceil((halfH - this.panY) / cellSize) + 1;
+
+    // 统计数据
+    const climateCounts: [number, number, number, number, number] = [0, 0, 0, 0, 0];
+    const terrainCounts = new Map<number, number>();
+    let visibleCount = 0;
+    let matchedCount = 0;
+    const isFiltering = this.filterTypeId !== null || this.filterCategory !== null;
+
+    // 收集可视区块
+    const visibleChunks: { info: ChunkInfo; sx: number; sy: number }[] = [];
+
+    for (let cz = minCz; cz <= maxCz; cz++) {
+      for (let cx = minCx; cx <= maxCx; cx++) {
+        const sx = halfW + this.panX + (cx - this.centerCx) * cellSize;
+        const sy = halfH + this.panY + (cz - this.centerCz) * cellSize;
+
+        if (sx + cellSize < 0 || sx > width || sy + cellSize < 0 || sy > height) {
+          continue;
+        }
+
+        const info = this.generator.getChunkInfo(cx, cz);
+        visibleChunks.push({ info, sx, sy });
+
+        visibleCount++;
+        climateCounts[info.climate]++;
+        terrainCounts.set(info.type, (terrainCounts.get(info.type) ?? 0) + 1);
+
+        if (isFiltering && this.isChunkMatched(info)) {
+          matchedCount++;
+        }
+      }
+    }
+
+    // 1. 绘制基础底色（默认模式下只显示色块）
+    for (const item of visibleChunks) {
+      const { info, sx, sy } = item;
+      const def = getChunkTypeDef(info.type);
+
+      let color = def.mapColor;
+      if (this.showClimate) {
+        color = CLIMATES[info.climate].color;
+        // 如果激活了单项气候高亮，则弱化其他气候色块
+        if (this.activeClimateFilter !== null && info.climate !== this.activeClimateFilter) {
+          color = this.dimHexColor(color, 0.28);
+        }
+      }
+
+      ctx.fillStyle = color;
+      ctx.fillRect(sx, sy, cellSize, cellSize);
+
+      // 区块网格线（微弱分割）
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(sx, sy, cellSize, cellSize);
+    }
+
+    // 2. 显示具体投影（地势起伏浮雕阴影与河流走向投影）
+    if (this.showProjection) {
+      for (const item of visibleChunks) {
+        const { info, sx, sy } = item;
+        const cx = info.cx;
+        const cz = info.cz;
+
+        // 计算相邻区块的高程差，模拟西北入射光（Sun from NW）
+        const eastH = this.generator.getChunkInfo(cx + 1, cz).elevation;
+        const westH = this.generator.getChunkInfo(cx - 1, cz).elevation;
+        const southH = this.generator.getChunkInfo(cx, cz + 1).elevation;
+        const northH = this.generator.getChunkInfo(cx, cz - 1).elevation;
+
+        const dx = (eastH - westH) * 0.5;
+        const dz = (southH - northH) * 0.5;
+        // 西北光矢量：(-0.707, -0.707)
+        const slopeLighting = (-dx * 0.707 - dz * 0.707) * 0.038;
+
+        if (slopeLighting > 0) {
+          // 向阳坡光照投影
+          const alpha = Math.min(0.38, slopeLighting * 0.45);
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
+          ctx.fillRect(sx, sy, cellSize, cellSize);
+        } else if (slopeLighting < 0) {
+          // 背阴坡阴影投影
+          const alpha = Math.min(0.42, -slopeLighting * 0.48);
+          ctx.fillStyle = `rgba(0, 0, 0, ${alpha.toFixed(3)})`;
+          ctx.fillRect(sx, sy, cellSize, cellSize);
+        }
+
+        // 深水体加暗投影
+        if (info.elevation <= 0) {
+          const depthAlpha = Math.min(0.28, Math.abs(info.elevation) / 90);
+          ctx.fillStyle = `rgba(3, 20, 50, ${depthAlpha.toFixed(3)})`;
+          ctx.fillRect(sx, sy, cellSize, cellSize);
+        }
+
+        // 高海拔冷光山脊投影
+        if (info.elevation > 75) {
+          const peakAlpha = Math.min(0.32, (info.elevation - 75) / 120);
+          ctx.fillStyle = `rgba(240, 248, 255, ${peakAlpha.toFixed(3)})`;
+          ctx.fillRect(sx, sy, cellSize, cellSize);
+        }
+
+        // 河流具体流向与水体投影
+        if (info.type === 5 && info.flow >= 0) {
+          const d = FLOW_DIRECTIONS[info.flow];
+          const midX = sx + cellSize * 0.5;
+          const midY = sy + cellSize * 0.5;
+          const arrowLen = cellSize * 0.38;
+
+          // 河流宽度指示线条
+          const streamWidth = Math.max(2, Math.min(7, (info.riverWidth || 4) * (cellSize / 45)));
+          ctx.save();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = streamWidth;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(midX - d.dx * arrowLen * 0.6, midY - d.dz * arrowLen * 0.6);
+          ctx.lineTo(midX + d.dx * arrowLen * 0.8, midY + d.dz * arrowLen * 0.8);
+          ctx.stroke();
+
+          // 箭头高亮
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // 绘制流向符号
+          if (cellSize >= 18) {
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 3;
+            ctx.font = `bold ${Math.max(10, Math.round(cellSize * 0.36))}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(d.arrow, midX, midY);
+            ctx.shadowBlur = 0;
+          }
+          ctx.restore();
+        }
+      }
+    }
+
+    // 3. 显示区块信息（编号、类型）
+    if (this.showChunkInfo) {
+      for (const item of visibleChunks) {
+        const { info, sx, sy } = item;
+        const def = getChunkTypeDef(info.type);
+        const code = formatChunkId(info.type);
+        const name = def.name;
+
+        const midX = sx + cellSize * 0.5;
+        const midY = sy + cellSize * 0.5;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        if (cellSize >= 38) {
+          // 放大状态：同时显示编号与类型名称
+          const codeSize = Math.max(9, Math.round(cellSize * 0.23));
+          const nameSize = Math.max(8, Math.round(cellSize * 0.21));
+
+          // 编号（上方）
+          ctx.font = `bold ${codeSize}px var(--ui-font), system-ui, sans-serif`;
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText(code, midX, midY - cellSize * 0.16);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(code, midX, midY - cellSize * 0.16);
+
+          // 类型（下方）
+          ctx.font = `500 ${nameSize}px var(--ui-font), system-ui, sans-serif`;
+          ctx.strokeText(name, midX, midY + cellSize * 0.18);
+          ctx.fillStyle = '#f0fdf4';
+          ctx.fillText(name, midX, midY + cellSize * 0.18);
+        } else if (cellSize >= 20) {
+          // 中等尺寸：显示编号
+          const codeSize = Math.max(8, Math.round(cellSize * 0.32));
+          ctx.font = `bold ${codeSize}px sans-serif`;
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.lineWidth = 2;
+          ctx.strokeText(code, midX, midY);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(code, midX, midY);
+        }
+        ctx.restore();
+      }
+    }
+
+    // 4. 筛选特定区块：用红色表示轮廓线（核心需求）
+    if (isFiltering) {
+      ctx.save();
+      for (const item of visibleChunks) {
+        const { info, sx, sy } = item;
+        if (this.isChunkMatched(info)) {
+          // 红色轮廓线高亮
+          const strokeW = Math.max(2.5, Math.min(4.5, cellSize * 0.1));
+          ctx.strokeStyle = '#ff2b2b';
+          ctx.lineWidth = strokeW;
+          ctx.shadowColor = '#ff2222';
+          ctx.shadowBlur = 6;
+          ctx.strokeRect(sx + strokeW * 0.5, sy + strokeW * 0.5, cellSize - strokeW, cellSize - strokeW);
+
+          // 内部轻微红色半透明叠色，增强辨识度
+          ctx.fillStyle = 'rgba(255, 30, 30, 0.18)';
+          ctx.fillRect(sx, sy, cellSize, cellSize);
+        }
+      }
+      ctx.restore();
+    }
+
+    // 5. 悬停提示
+    if (this.hoveredChunk) {
+      const hx = halfW + this.panX + (this.hoveredChunk.cx - this.centerCx) * cellSize;
+      const hy = halfH + this.panY + (this.hoveredChunk.cz - this.centerCz) * cellSize;
+      if (hx + cellSize >= 0 && hx <= width && hy + cellSize >= 0 && hy <= height) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(hx + 1, hy + 1, cellSize - 2, cellSize - 2);
+      }
+    }
+
+    // 6. 选中区块白金轮廓线高亮
+    if (this.selectedChunk) {
+      const selX = halfW + this.panX + (this.selectedChunk.cx - this.centerCx) * cellSize;
+      const selY = halfH + this.panY + (this.selectedChunk.cz - this.centerCz) * cellSize;
+      if (selX + cellSize >= 0 && selX <= width && selY + cellSize >= 0 && selY <= height) {
+        ctx.save();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 8;
+        ctx.strokeRect(selX + 1.5, selY + 1.5, cellSize - 3, cellSize - 3);
+
+        // 四角金色标记
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+        const cornerLen = Math.min(8, cellSize * 0.28);
+        // 左上
+        ctx.beginPath(); ctx.moveTo(selX, selY + cornerLen); ctx.lineTo(selX, selY); ctx.lineTo(selX + cornerLen, selY); ctx.stroke();
+        // 右上
+        ctx.beginPath(); ctx.moveTo(selX + cellSize - cornerLen, selY); ctx.lineTo(selX + cellSize, selY); ctx.lineTo(selX + cellSize, selY + cornerLen); ctx.stroke();
+        // 左下
+        ctx.beginPath(); ctx.moveTo(selX, selY + cellSize - cornerLen); ctx.lineTo(selX, selY + cellSize); ctx.lineTo(selX + cornerLen, selY + cellSize); ctx.stroke();
+        // 右下
+        ctx.beginPath(); ctx.moveTo(selX + cellSize - cornerLen, selY + cellSize); ctx.lineTo(selX + cellSize, selY + cellSize); ctx.lineTo(selX + cellSize, selY + cellSize - cornerLen); ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 7. 出生点标记（金色罗盘星）
+    const spawn = this.generator.findSpawnChunk();
+    const spX = halfW + this.panX + (spawn.cx - this.centerCx) * cellSize + cellSize * 0.5;
+    const spY = halfH + this.panY + (spawn.cz - this.centerCz) * cellSize + cellSize * 0.5;
+    if (spX >= 0 && spX <= width && spY >= 0 && spY <= height) {
+      ctx.save();
+      ctx.fillStyle = '#ffcc00';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(spX, spY, Math.max(3, cellSize * 0.14), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+
+    // 回调通知外部状态与统计
+    if (this.onStatsUpdate) {
+      const climatePercents = climateCounts.map(c =>
+        visibleCount > 0 ? (c / visibleCount) * 100 : 0
+      ) as [number, number, number, number, number];
+      const matchedPercent = visibleCount > 0 ? (matchedCount / visibleCount) * 100 : 0;
+
+      this.onStatsUpdate({
+        centerCx: this.centerCx - Math.round(this.panX / cellSize),
+        centerCz: this.centerCz - Math.round(this.panY / cellSize),
+        scale: this.scale,
+        visibleChunks: visibleCount,
+        climateCounts,
+        climatePercents,
+        matchedCount,
+        matchedPercent,
+        activeFilterName: this.getActiveFilterLabel(),
+      });
+    }
+  }
+
+  // 颜色淡化辅助
+  private dimHexColor(hex: string, factor: number): string {
+    const c = hex.replace('#', '');
+    const num = parseInt(c, 16);
+    const r = Math.round(((num >> 16) & 255) * factor + 35 * (1 - factor));
+    const g = Math.round(((num >> 8) & 255) * factor + 35 * (1 - factor));
+    const b = Math.round((num & 255) * factor + 35 * (1 - factor));
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  // ---- 鼠标与触控事件监听 ----
+
+  private initEvents(): void {
+    const canvas = this.canvas;
+
+    // 鼠标按下：启动拖拽
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      this.isDragging = true;
+      this.hasMoved = false;
+      this.dragStartX = e.clientX;
+      this.dragStartY = e.clientY;
+      this.lastDragX = e.clientX;
+      this.lastDragY = e.clientY;
+      canvas.style.cursor = 'grabbing';
+    });
+
+    // 鼠标移动：平移视口或更新悬停
+    window.addEventListener('mousemove', (e) => {
+      if (this.isDragging) {
+        const dx = e.clientX - this.lastDragX;
+        const dy = e.clientY - this.lastDragY;
+        if (Math.hypot(e.clientX - this.dragStartX, e.clientY - this.dragStartY) > 3) {
+          this.hasMoved = true;
+        }
+        this.panX += dx;
+        this.panY += dy;
+        this.lastDragX = e.clientX;
+        this.lastDragY = e.clientY;
+        this.requestRender();
+      } else {
+        const rect = canvas.getBoundingClientRect();
+        if (
+          e.clientX >= rect.left &&
+          e.clientX <= rect.right &&
+          e.clientY >= rect.top &&
+          e.clientY <= rect.bottom
+        ) {
+          const chunk = this.getChunkAtPoint(e.clientX - rect.left, e.clientY - rect.top);
+          if (
+            !this.hoveredChunk ||
+            this.hoveredChunk.cx !== chunk.cx ||
+            this.hoveredChunk.cz !== chunk.cz
+          ) {
+            this.hoveredChunk = chunk;
+            this.requestRender();
+          }
+        } else if (this.hoveredChunk) {
+          this.hoveredChunk = null;
+          this.requestRender();
+        }
+      }
+    });
+
+    // 鼠标松开：若无明显拖动则视为点击选中
+    window.addEventListener('mouseup', (e) => {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+      canvas.style.cursor = 'grab';
+
+      if (!this.hasMoved) {
+        const rect = canvas.getBoundingClientRect();
+        if (
+          e.clientX >= rect.left &&
+          e.clientX <= rect.right &&
+          e.clientY >= rect.top &&
+          e.clientY <= rect.bottom
+        ) {
+          const chunk = this.getChunkAtPoint(e.clientX - rect.left, e.clientY - rect.top);
+          this.selectedChunk = chunk;
+          const info = this.generator.getChunkInfo(chunk.cx, chunk.cz);
+          if (this.onChunkSelect) {
+            this.onChunkSelect(info);
+          }
+          this.requestRender();
+        }
+      }
+    });
+
+    // 滚轮缩放：以鼠标指针为中心平滑缩放
+    canvas.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.15 : 0.87;
+        this.zoomBy(factor, e.clientX, e.clientY);
+      },
+      { passive: false }
+    );
+
+    // 触控支持（移动端/触摸板）
+    let touchStartDist = 0;
+    canvas.addEventListener(
+      'touchstart',
+      (e) => {
+        if (e.touches.length === 1) {
+          this.isDragging = true;
+          this.hasMoved = false;
+          this.dragStartX = e.touches[0].clientX;
+          this.dragStartY = e.touches[0].clientY;
+          this.lastDragX = e.touches[0].clientX;
+          this.lastDragY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+          this.isDragging = false;
+          touchStartDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+        }
+      },
+      { passive: true }
+    );
+
+    canvas.addEventListener(
+      'touchmove',
+      (e) => {
+        if (e.touches.length === 1 && this.isDragging) {
+          const dx = e.touches[0].clientX - this.lastDragX;
+          const dy = e.touches[0].clientY - this.lastDragY;
+          this.panX += dx;
+          this.panY += dy;
+          this.lastDragX = e.touches[0].clientX;
+          this.lastDragY = e.touches[0].clientY;
+          this.hasMoved = true;
+          this.requestRender();
+        } else if (e.touches.length === 2 && touchStartDist > 0) {
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          const factor = dist / touchStartDist;
+          touchStartDist = dist;
+          const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+          const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+          this.zoomBy(factor, midX, midY);
+        }
+      },
+      { passive: true }
+    );
+
+    canvas.addEventListener(
+      'touchend',
+      (e) => {
+        if (this.isDragging && !this.hasMoved && e.changedTouches.length === 1) {
+          const rect = canvas.getBoundingClientRect();
+          const t = e.changedTouches[0];
+          const chunk = this.getChunkAtPoint(t.clientX - rect.left, t.clientY - rect.top);
+          this.selectedChunk = chunk;
+          const info = this.generator.getChunkInfo(chunk.cx, chunk.cz);
+          if (this.onChunkSelect) this.onChunkSelect(info);
+          this.requestRender();
+        }
+        this.isDragging = false;
+        touchStartDist = 0;
+      },
+      { passive: true }
+    );
+  }
+
+  // 像素坐标转换为区块坐标 (cx, cz)
+  private getChunkAtPoint(px: number, py: number): { cx: number; cz: number } {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = this.canvas.width / dpr;
+    const height = this.canvas.height / dpr;
+    const cellSize = this.baseCellSize * this.scale;
+    const halfW = width / 2;
+    const halfH = height / 2;
+
+    const cx = this.centerCx + Math.floor((px - halfW - this.panX) / cellSize);
+    const cz = this.centerCz + Math.floor((py - halfH - this.panY) / cellSize);
+    return { cx, cz };
+  }
+
+  destroy(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+  }
+}

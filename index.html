@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>茜林茶馆 · 沙盒原型</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <main id="world-menu"></main>
+    <div id="water-tint" class="hidden"></div>
+    <div id="crosshair" class="hidden"></div>
+
+    <div id="loading" class="hidden">生成地形中…</div>
+
+    <div id="start-screen" class="hidden">
+      <div class="start-panel">
+        <h1>茜林茶馆 · 沙盒原型</h1>
+        <p class="start-hint">点击画面开始（锁定鼠标）</p>
+        <table class="controls">
+          <tr><td>方向键 / WASD</td><td>移动</td></tr>
+          <tr><td>鼠标</td><td>转动视角</td></tr>
+          <tr><td>空格（单击）</td><td>跳跃</td></tr>
+          <tr><td>空格（双击）</td><td>切换浮空</td></tr>
+          <tr><td>Shift</td><td>疾跑 / 加速飞行</td></tr>
+          <tr><td>浮空时：空格 / Ctrl</td><td>上升 / 下降</td></tr>
+          <tr><td>F12</td><td>调试信息（小地图 · 区块类型）</td></tr>
+          <tr><td>Esc</td><td>释放鼠标</td></tr>
+        </table>
+        <div style="margin-top:15px; display:flex; gap:10px;">
+          <button id="btn-main-menu">返回开始界面</button>
+          <button id="btn-save-map" style="padding:5px 15px; cursor:pointer; border-radius:4px; border:none; background:#2f66c9; color:#fff;">导出地图</button>
+          <button id="btn-load-map" style="padding:5px 15px; cursor:pointer; border-radius:4px; border:none; background:#62a03c; color:#fff;">导入地图</button>
+          <input type="file" id="input-load-map" accept=".json" style="display:none;" />
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
