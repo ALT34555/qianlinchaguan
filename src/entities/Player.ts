@@ -1,5 +1,5 @@
 /**
- * 玩家（观景模式）：行走 / 跳跃 / 飞行 / 游泳，与高度图地形做 AABB 碰撞。
+ * 玩家（观景模式）：行走 / 跳跃 / 飞行 / 游泳，与连续三角地表做脚底碰撞。
  *
  * 操作：
  *  - 方向键（或 WASD）移动，鼠标转视角（点击画面锁定鼠标）
@@ -28,12 +28,6 @@ const STEP_HEIGHT = 1;
 const DOUBLE_TAP_MS = 300;
 const MOUSE_SENSITIVITY = 0.0022;
 
-const KEYS_FORWARD = ['ArrowUp', 'KeyW'];
-const KEYS_BACK = ['ArrowDown', 'KeyS'];
-const KEYS_LEFT = ['ArrowLeft', 'KeyA'];
-const KEYS_RIGHT = ['ArrowRight', 'KeyD'];
-const KEYS_DESCEND = ['ControlLeft', 'ControlRight'];
-const KEYS_SPRINT = ['ShiftLeft', 'ShiftRight'];
 
 export class Player {
   /** 脚底中心位置 */
@@ -53,19 +47,21 @@ export class Player {
   private lastSpaceTap = -Infinity;
 
   constructor(private readonly world: World, private readonly input: Input) {
-    input.onPress('Space', (e) => this.onSpaceTap(e.timeStamp));
+    input.onAction('jump', (e) => this.onSpaceTap(e.timeStamp));
   }
 
   spawnAt(x: number, z: number): void {
     this.x = x;
     this.z = z;
-    this.y = this.world.getHeight(x, z) + 0.01;
+    this.y = this.maxGroundUnder(x, z) + 0.01;
     this.vx = this.vy = this.vz = 0;
   }
 
   get eyeY(): number {
     return this.y + EYE_HEIGHT + this.stepOffset;
   }
+
+  resetInputGestures(): void { this.lastSpaceTap = -Infinity; }
 
   private onSpaceTap(t: number): void {
     if (t - this.lastSpaceTap <= DOUBLE_TAP_MS) {
@@ -88,8 +84,8 @@ export class Player {
     this.pitch = Math.max(-lim, Math.min(lim, this.pitch));
 
     // ---- 水平移动意图
-    const f = (input.isDown(...KEYS_FORWARD) ? 1 : 0) - (input.isDown(...KEYS_BACK) ? 1 : 0);
-    const s = (input.isDown(...KEYS_RIGHT) ? 1 : 0) - (input.isDown(...KEYS_LEFT) ? 1 : 0);
+    const f = (input.isActionDown('forward') ? 1 : 0) - (input.isActionDown('back') ? 1 : 0);
+    const s = (input.isActionDown('right') ? 1 : 0) - (input.isActionDown('left') ? 1 : 0);
     const sin = Math.sin(this.yaw);
     const cos = Math.cos(this.yaw);
     let wx = -sin * f + cos * s;
@@ -99,7 +95,7 @@ export class Player {
       wx /= len;
       wz /= len;
     }
-    const sprint = input.isDown(...KEYS_SPRINT);
+    const sprint = input.isActionDown('sprint');
     this.inWater = this.checkInWater();
 
     const speed = this.flying
@@ -111,9 +107,9 @@ export class Player {
     this.vz += (wz * speed - this.vz) * k;
 
     // ---- 竖直
-    const space = input.isDown('Space');
+    const space = input.isActionDown('jump');
     if (this.flying) {
-      const target = ((space ? 1 : 0) - (input.isDown(...KEYS_DESCEND) ? 1 : 0)) * FLY_VERTICAL_SPEED * (sprint ? 2 : 1);
+      const target = ((space ? 1 : 0) - (input.isActionDown('descend') ? 1 : 0)) * FLY_VERTICAL_SPEED * (sprint ? 2 : 1);
       this.vy += (target - this.vy) * Math.min(1, 12 * dt);
     } else if (this.inWater) {
       this.vy -= GRAVITY * 0.25 * dt;
@@ -134,27 +130,16 @@ export class Player {
 
   private checkInWater(): boolean {
     const probeY = this.y + 0.4;
-    return probeY < this.world.getWaterLevel(this.x, this.z) - 0.12 && this.world.getHeight(this.x, this.z) <= probeY;
+    return probeY < this.world.getWaterLevel(this.x, this.z) && this.world.getHeight(this.x, this.z) <= probeY;
   }
 
   // ------------------------------------------------------------------
   // 碰撞
   // ------------------------------------------------------------------
 
-  /** 给定脚底位置，AABB 所覆盖各列中的最高地表。 */
+  /** 脚底矩形与可见三角面的最高交点。 */
   private maxGroundUnder(x: number, z: number): number {
-    const x0 = Math.floor(x - HALF_WIDTH);
-    const x1 = Math.floor(x + HALF_WIDTH - 1e-6);
-    const z0 = Math.floor(z - HALF_WIDTH);
-    const z1 = Math.floor(z + HALF_WIDTH - 1e-6);
-    let m = -Infinity;
-    for (let bx = x0; bx <= x1; bx++) {
-      for (let bz = z0; bz <= z1; bz++) {
-        const h = this.world.getHeight(bx, bz);
-        if (h > m) m = h;
-      }
-    }
-    return m;
+    return this.world.getGroundUnder(x, z, HALF_WIDTH);
   }
 
   private move(dx: number, dy: number, dz: number): void {
@@ -201,6 +186,11 @@ export class Player {
     if (this.y >= ground) {
       this.x = nx;
       this.z = nz;
+      // 沿缓坡下行时贴地，跳跃/飞行仍保留各自的竖直运动。
+      if ((wasGrounded || this.onGround) && !this.flying && this.vy <= 0 && this.y - ground <= STEP_HEIGHT) {
+        this.y = ground;
+        this.onGround = true;
+      }
       return;
     }
     // 自动上台阶（观景模式，方便用方向键在起伏地形上行走）

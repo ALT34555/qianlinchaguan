@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'; font-src 'self'">
+  <title>茜林茶馆</title>
+  <link rel="stylesheet" href="launcher.css">
+</head>
+<body>
+  <header class="bar">
+    <h1>茜林茶馆</h1>
+  </header>
+
+  <main>
+    <section class="intro">
+      <p class="lede">从一粒种子生成完整世界：先在<em>舆图</em>上查看地形与气候，再进入<em>山川</em>实地探索。</p>
+      <p class="sub">世界可保存为本地存档，随时继续。</p>
+      <div class="actions">
+        <button id="play">启动游戏</button>
+        <button id="saves" class="secondary">打开存档目录</button>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <div class="emblem" aria-hidden="true"><span></span><span></span><span></span><i></i></div>
+  </main>
+
+  <footer>
+    <article>
+      <h2>舆图 <small>2D</small></h2>
+      <p>二维世界地图。设定种子与气候配比后生成地形，拖动平移、滚轮缩放，可筛出河流、山地与雪原。</p>
+    </article>
+    <article>
+      <h2>山川 <small>3D</small></h2>
+      <p>三维世界。在舆图上双击任意地块空降进入，或从出生点开始漫游；支持行走、疾跑、浮空与飞行。</p>
+    </article>
+    <article>
+      <h2>本地存档</h2>
+      <p>ESC 菜单保存进度、导出 JSON 备份或返回舆图。存档以独立 JSON 文件保存在本机。</p>
+    </article>
+  </footer>
+
+  <script src="launcher-ui.js"></script>
+</body>
+</html>

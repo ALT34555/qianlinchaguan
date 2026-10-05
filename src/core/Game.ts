@@ -1,277 +1,403 @@
-/**
- * 游戏主体：渲染器 / 场景 / 主循环，串起世界、玩家与 UI。
- */
 import * as THREE from 'three';
 import { CHUNK_SIZE } from './config';
 import { Input } from './Input';
+import { TouchControls } from '../ui/TouchControls';
 import { Player } from '../entities/Player';
 import { World } from '../systems/world/World';
+import { Sky } from '../systems/world/Sky';
 import { WorldGenerator } from '../systems/world/WorldGenerator';
-import { GENERATOR_VERSION, type ClimateWeights } from '../systems/world/WorldSettings';
-import { parseWorldSave, type PlayerPosition } from '../systems/world/WorldSave';
+import { GENERATOR_VERSION, type ClimateWeights, type WorldGeneration } from '../systems/world/WorldSettings';
+import type { PlayerPosition, WorldSave } from '../systems/world/WorldSave';
+import { downloadWorldSave, type SaveStore } from '../systems/world/LocalSaveStore';
 import { DebugOverlay } from '../ui/DebugOverlay';
+import { AtlasView } from '../ui/AtlasView';
+import { SettingsPanel } from '../ui/SettingsPanel';
+import { keyLabel, validateSettings, type GameSettings } from './GameSettings';
 import { CalendarSystem, CalendarClock } from '../systems/calendar/CalendarSystem';
 import type { CalendarSnapshot } from '../systems/calendar/types';
-
+import { formatChunkId } from '../systems/world/ChunkTypes';
+import { calendarLabel, chunkNameById, seasonName } from '../i18n/content';
+import { applyDomI18n, onLocaleChange, t } from '../i18n';
 
 export interface GameOptions {
   seed: number;
   climateWeights: ClimateWeights;
+  generation: WorldGeneration;
   calendarType: 'real' | 'yuan';
   unixMs?: number;
+  utcOffsetMinutes?: number;
+  worldName?: string;
+  saveId?: string;
+  save?: WorldSave;
   initialPlayer?: PlayerPosition;
   renderDistance: number;
   showOverlay: boolean;
+  settings: GameSettings;
+  saveStore: SaveStore;
+  persistSettings: (settings: GameSettings) => void;
 }
-
 const SKY_COLOR = new THREE.Color('#a9d3ff');
-const UNDERWATER_COLOR = new THREE.Color('#1f4f9a');
+const UNDERWATER_COLOR = new THREE.Color('#164b60');
+const UNDERWATER_NIGHT = new THREE.Color('#081523');
 
 export class Game {
-  private readonly renderer: THREE.WebGLRenderer;
+  private renderer: THREE.WebGLRenderer | null = null;
   private readonly scene = new THREE.Scene();
   private readonly camera: THREE.PerspectiveCamera;
   private readonly fog: THREE.Fog;
-  private readonly input: Input;
+  private input: Input | null = null;
+  private touch: TouchControls | null = null;
+  private world: World | null = null;
+  private player: Player | null = null;
+  private overlay: DebugOverlay | null = null;
+  private sky: Sky | null = null;
+  private atlas: AtlasView | null = null;
+  private settingsPanel: SettingsPanel | null = null;
+  private settings: GameSettings;
   readonly calendarSystem: CalendarSystem;
   readonly calendarClock: CalendarClock;
   readonly calendarType: 'real' | 'yuan';
-  currentSeason: number = 0;
-  currentDayRatio: number = 0;
+  currentSeason = 0;
+  currentDayRatio = 0;
   currentSnapshot!: CalendarSnapshot;
-  private readonly world: World;
-  private readonly player: Player;
-  private readonly overlay: DebugOverlay;
-  private readonly clock = new THREE.Clock();
+  private readonly generator: WorldGenerator;
+  private readonly position: PlayerPosition;
+  private readonly mapRoot: HTMLElement;
+  private readonly bar: HTMLElement;
+  private worldName: string;
+  private saveId?: string;
+  private paused = false;
+  private saving = false;
+  private menuPage: 'pause' | 'settings' | null = null;
+  private spawned = false;
+  private previousFrame = 0;
+  private lastCalendarMs = -Infinity;
   private readonly fogNear: number;
   private readonly fogFar: number;
-  private spawned = false;
+  /** 暂停面板里"存档名称"的未提交内容，切换语言重绘时用来恢复。 */
+  private pauseNameDraft = '';
+  private pauseMessage = '';
+  private readonly stopLocaleWatch: () => void;
 
-  constructor(
-    container: HTMLElement,
+  constructor(private readonly container: HTMLElement,
     private readonly ui: { start: HTMLElement; loading: HTMLElement; waterTint: HTMLElement },
-    options: GameOptions,
-  ) {
-    // 先验证出生点；失败时尚未创建画布、事件监听器或 Worker。
-    const spawn = options.initialPlayer
-      ? { cx: Math.floor(options.initialPlayer.x / CHUNK_SIZE), cz: Math.floor(options.initialPlayer.z / CHUNK_SIZE) }
-      : new WorldGenerator(options.seed, options.climateWeights).findSpawnChunk();
-    // 纯色风格：关闭色彩管理，颜色按原值输出
-    THREE.ColorManagement.enabled = false;
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setClearColor(SKY_COLOR);
-    container.appendChild(this.renderer.domElement);
-
-    const viewDist = options.renderDistance * CHUNK_SIZE;
-    this.fogNear = viewDist * 0.55;
-    this.fogFar = viewDist * 0.95;
-    this.fog = new THREE.Fog(SKY_COLOR.clone(), this.fogNear, this.fogFar);
-    this.scene.fog = this.fog;
-
-    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, viewDist * 1.5 + 512);
-    this.camera.rotation.order = 'YXZ';
-
-    this.input = new Input(this.renderer.domElement);
+    private readonly options: GameOptions) {
+    this.settings = validateSettings({ ...options.settings, viewMode: '2d' });
+    this.generator = new WorldGenerator(options.seed, options.climateWeights, options.generation);
+    const spawn = options.initialPlayer ? null : this.generator.findSpawnChunk();
+    const x = spawn ? spawn.cx * CHUNK_SIZE + CHUNK_SIZE / 2 + .5 : options.initialPlayer!.x;
+    const z = spawn ? spawn.cz * CHUNK_SIZE + CHUNK_SIZE / 2 + .5 : options.initialPlayer!.z;
+    this.position = options.initialPlayer ? { ...options.initialPlayer } : { x, z,
+      y: Math.max(this.generator.getHeight(x, z), this.generator.getWaterLevel(x, z)) + .01, yaw: 0, pitch: 0 };
+    this.worldName = options.worldName ?? t('game.defaultWorldName'); this.saveId = options.saveId;
     this.calendarType = options.calendarType;
-    this.calendarSystem = new CalendarSystem({ mode: this.calendarType });
-    this.calendarClock = new CalendarClock({ 
-      epochUnixMs: options.unixMs ?? Date.now(), 
-      dayLengthSeconds: 1200 // 20 minutes for a full day
+    this.calendarSystem = new CalendarSystem({ mode: this.calendarType, utcOffsetMinutes: options.utcOffsetMinutes ?? 480 });
+    this.calendarClock = new CalendarClock({ epochUnixMs: options.unixMs ?? Date.now(), dayLengthSeconds: 1200 });
+    this.syncClock();
+    const distance = options.renderDistance * CHUNK_SIZE;
+    this.fogNear = distance * .55; this.fogFar = distance * .95;
+    this.fog = new THREE.Fog(SKY_COLOR.clone(), this.fogNear, this.fogFar); this.scene.fog = this.fog;
+    this.camera = new THREE.PerspectiveCamera(this.settings.fov, innerWidth / innerHeight, .1, distance * 1.5 + 512);
+    this.camera.rotation.order = 'YXZ';
+    // 在创建 DOM 和监听器前检查 3D 支持，失败时仍可留在创建 / 读取页面改用 2D。
+    if (this.settings.viewMode === '3d') this.ensure3D();
+    this.bar = document.createElement('div'); this.bar.className = 'game-bar';
+    this.bar.innerHTML = `<div class="game-identity"><strong></strong><span data-date></span></div><div class="game-tools"><span data-hint></span><button data-menu>${t('game.menu')}</button></div>`;
+    this.bar.querySelector('strong')!.textContent = this.worldName; container.appendChild(this.bar);
+    this.bar.querySelector('[data-menu]')!.addEventListener('click', () => this.showPause());
+    this.mapRoot = document.createElement('section'); this.mapRoot.className = 'game-map hidden';
+    container.appendChild(this.mapRoot);
+    this.updateCalendar(true); this.setViewMode(); this.syncClock();
+    document.addEventListener('keydown', event => {
+      if (event.code !== 'Escape' || event.repeat) return;
+      event.preventDefault();
+      if (this.menuPage === 'settings') this.showPause();
+      else if (this.paused) this.continueGame(); else this.showPause();
     });
-    this.updateCalendar();
-
-    this.world = new World(this.scene, options.seed, options.renderDistance, options.climateWeights);
-    this.player = new Player(this.world, this.input);
-    this.overlay = new DebugOverlay(document.body, this.world, this.player, this);
-    if (options.showOverlay) this.overlay.setVisible(true);
-
-    // 出生点：最近的陆地区块中心
-    this.player.spawnAt(spawn.cx * CHUNK_SIZE + CHUNK_SIZE / 2 + 0.5, spawn.cz * CHUNK_SIZE + CHUNK_SIZE / 2 + 0.5);
-
-    if (options.initialPlayer) Object.assign(this.player, options.initialPlayer);
-
-    this.input.onPress('F12', () => this.overlay.toggle());
-    
-    // Ignore clicks on buttons to prevent pointer lock
-    this.ui.start.addEventListener('click', (e) => {
-      if (!(e.target as HTMLElement).closest('button, input, a')) {
-        this.input.requestPointerLock();
-      }
-    });
-
-    const btnSave = document.getElementById('btn-save-map');
-    const btnLoad = document.getElementById('btn-load-map');
-    const inputLoad = document.getElementById('input-load-map') as HTMLInputElement;
-
-    if (btnSave) {
-      btnSave.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const data = {
-          calendarType: this.calendarType,
-          unixMs: this.calendarClock.unixMs,
-          generatorVersion: GENERATOR_VERSION,
-          climateWeights: this.world.generator.climateWeights,
-          seed: this.world.generator.seed,
-          player: {
-            x: this.player.x,
-            y: this.player.y,
-            z: this.player.z,
-            yaw: this.player.yaw,
-            pitch: this.player.pitch
-          }
-        };
-        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `qianlin_map_${data.seed}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-    }
-
-    if (btnLoad && inputLoad) {
-      btnLoad.addEventListener('click', (e) => {
-        e.stopPropagation();
-        inputLoad.click();
-      });
-      inputLoad.addEventListener('change', (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (re) => {
-          try {
-            const data = parseWorldSave(re.target?.result as string);
-            sessionStorage.setItem('loadWorldSave', JSON.stringify(data));
-            const url = new URL(location.href);
-            url.searchParams.set('resume', '1');
-            location.href = url.toString();
-          } catch (err) {
-            console.error('Failed to load map', err);
-            alert(err instanceof Error ? err.message : '地图加载失败！');
-          }
-        };
-        reader.readAsText(file);
-        inputLoad.value = '';
-      });
-      
-    }
-    document.getElementById('btn-main-menu')?.addEventListener('click', () => {
-      const url = new URL(location.href);
-      url.searchParams.delete('resume');
-      url.searchParams.set('seed', String(this.world.seed));
-      url.searchParams.set('climate', this.world.generator.climateWeights.join(','));
-      location.href = url.toString();
-    });
-
-    this.renderer.domElement.addEventListener('click', () => this.input.requestPointerLock());
     document.addEventListener('pointerlockchange', () => {
-      this.ui.start.classList.toggle('hidden', document.pointerLockElement === this.renderer.domElement);
+      if (!this.renderer) return;
+      const locked = document.pointerLockElement === this.renderer.domElement;
+      if (this.input) this.input.enabled = (locked || !!this.settings.touchControls) && !this.paused && this.settings.viewMode === '3d';
+      if (!locked && !this.settings.touchControls && this.settings.viewMode === '3d' && !this.paused) this.showPause();
     });
-    // Toggle pointer lock with Ctrl when debug overlay is visible
-    document.addEventListener('keydown', (e) => {
-      if ((e.code === 'ControlLeft' || e.code === 'ControlRight') && this.overlay.isVisible) {
-        if (document.pointerLockElement === this.renderer.domElement) {
-          document.exitPointerLock();
-        } else {
-          this.input.requestPointerLock();
-        }
+    window.addEventListener('resize', () => {
+      this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.renderer?.setSize(innerWidth, innerHeight);
+    });
+    // 语言切换后就地刷新界面文案，不重建场景、不丢视角与草稿。
+    this.stopLocaleWatch = onLocaleChange(() => this.applyLocale());
+  }
+
+  /** 语言变更：刷新所有由本类负责的文案。 */
+  private applyLocale(): void {
+    this.bar.querySelector('[data-menu]')!.textContent = t('game.menu');
+    this.refreshWorldName();
+    this.setViewModeHint();
+    this.updateDocumentTitle();
+    this.updateCalendar(true);
+    this.touch?.applyLocale();
+    this.overlay?.applyLocale();
+    this.overlay?.setKeyLabel(keyLabel(this.settings.keyBindings.debug));
+    // 舆图工具条用 data-i18n 标记，就地替换文案即可保留缩放与勾选状态。
+    applyDomI18n(this.mapRoot);
+    if (this.menuPage === 'pause') this.showPause(this.pauseMessage);
+  }
+
+  /**
+   * 窗口标题跟着视图走：茜林茶馆 · 舆图 / 茜林茶馆 · 山川。
+   * Electron 会用页面的 document.title 覆盖窗口标题，所以这里就是任务栏上看到的名字。
+   */
+  private updateDocumentTitle(): void {
+    document.title = `${t('app.name')} · ${t(this.settings.viewMode === '2d' ? 'view.atlas' : 'view.world')}`;
+  }
+
+  /** 顶栏显示的世界名（读档 / 改名后刷新），与窗口标题无关。 */
+  private refreshWorldName(): void {
+    const strong = this.bar.querySelector('strong');
+    if (strong) strong.textContent = this.worldName;
+  }
+
+  private ensure3D(): void {
+    if (this.renderer) return;
+    THREE.ColorManagement.enabled = true;
+    let renderer: THREE.WebGLRenderer;
+    try { renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); }
+    catch { throw new Error(t('game.renderFailed')); }
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    renderer.domElement.tabIndex = -1;
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight); renderer.setClearColor(SKY_COLOR);
+    this.renderer = renderer; this.container.appendChild(renderer.domElement);
+    this.input = new Input(renderer.domElement);
+    this.touch = new TouchControls(this.input, renderer.domElement); this.input.setBindings(this.settings.keyBindings);
+    this.world = new World(this.scene, this.options.seed, this.options.renderDistance, this.options.climateWeights, this.options.generation);
+    this.sky = new Sky(this.scene);
+    this.player = new Player(this.world, this.input); Object.assign(this.player, this.position);
+    this.player.y = Math.max(this.player.y, this.world.getGroundUnder(this.player.x, this.player.z, .3) + .01);
+    this.player.flying = this.options.save?.flying ?? false;
+    this.overlay = new DebugOverlay(document.body, this.world, this.player, this);
+    this.overlay.setKeyLabel(keyLabel(this.settings.keyBindings.debug));
+    this.input.onAction('debug', () => this.overlay?.toggle());
+    renderer.domElement.addEventListener('click', () => { if (!this.paused && this.settings.viewMode === '3d') this.lockPointer(); });
+  }
+  private lockPointer(): void {
+    if (this.settings.touchControls) { if (this.input) this.input.enabled = !this.paused; this.touch?.setVisible(!this.paused); return; }
+    this.renderer?.domElement.focus({ preventScroll: true });
+    try { void this.input?.requestPointerLock().catch(() => this.showPause(t('game.pointerLockFailed'))); }
+    catch { this.showPause(t('game.pointerLockFailed')); }
+  }
+  private createMap(): void {
+    // 工具条文案用 data-i18n 标记：切换语言时只需重新套用，不必重建地图。
+    this.mapRoot.innerHTML = `<div class="game-map-tools"><div class="map-mode-label" data-i18n="game.map.modeLabel"></div><div class="map-buttons">${this.generator.generation.mode === 'planet' ? `<select data-planet-view aria-label="${t('game.map.viewAria')}"><option value="globe" data-i18n="atlas.view.globe"></option><option value="projection" data-i18n="atlas.view.projection"></option></select><button data-overview data-i18n="game.map.overview"></button>` : ''}<button data-enter data-i18n="game.map.enter3d"></button><button data-position data-i18n="game.map.position"></button><button data-zoom-in data-i18n="atlas.zoomInTitle" data-i18n-attr="aria-label">＋</button><button data-zoom-out data-i18n="atlas.zoomOutTitle" data-i18n-attr="aria-label">－</button><label><input data-info type="checkbox"><span data-i18n="game.map.chunkInfo"></span></label><label><input data-relief type="checkbox"><span data-i18n="game.map.relief"></span></label></div></div><div class="game-map-viewport"><canvas aria-label="${t('game.map.canvasAria')}"></canvas><div class="game-map-tip" data-i18n="game.map.tip"></div></div><footer class="game-map-detail" role="status" data-i18n="game.map.hint"></footer>`;
+    applyDomI18n(this.mapRoot);
+    this.atlas = new AtlasView({ canvas: this.mapRoot.querySelector('canvas')!, generator: this.generator,
+      onChunkActivate: info => this.enter3D(info.cx, info.cz),
+      onChunkSelect: info => {
+        this.mapRoot.querySelector('footer')!.textContent = t('game.map.chunkFooter', {
+          cx: info.cx, cz: info.cz, code: formatChunkId(info.type), name: chunkNameById(info.type),
+          elevation: Math.round(info.elevation), temperature: info.temperature.toFixed(1),
+        });
+      } });
+    const on = (selector: string, fn: () => void) => this.mapRoot.querySelector(selector)?.addEventListener('click', fn);
+    on('[data-enter]', () => this.enter3D());
+    on('[data-position]', () => this.centerMapOnPlayer()); on('[data-zoom-in]', () => this.atlas?.zoomBy(1.4)); on('[data-zoom-out]', () => this.atlas?.zoomBy(1 / 1.4));
+    const view = this.mapRoot.querySelector<HTMLSelectElement>('[data-planet-view]');
+    view?.addEventListener('change', () => this.atlas?.setPlanetView(view.value as 'globe' | 'projection'));
+    on('[data-overview]', () => { this.atlas?.setPlanetView(view!.value as 'globe' | 'projection'); this.atlas?.showOverview(); });
+    const info = this.mapRoot.querySelector<HTMLInputElement>('[data-info]')!;
+    info.addEventListener('change', () => this.atlas?.setShowChunkInfo(info.checked));
+    const relief = this.mapRoot.querySelector<HTMLInputElement>('[data-relief]')!;
+    relief.addEventListener('change', () => this.atlas?.setShowProjection(relief.checked));
+    if (this.options.initialPlayer) this.centerMapOnPlayer();
+  }
+  private enter3D(cx?: number, cz?: number): void {
+    try {
+      this.ensure3D();
+      if (cx !== undefined && cz !== undefined) {
+        const x = cx * CHUNK_SIZE + CHUNK_SIZE / 2 + .5, z = cz * CHUNK_SIZE + CHUNK_SIZE / 2 + .5;
+        this.player!.spawnAt(x, z);
+        this.player!.y = Math.max(this.generator.getHeight(x, z), this.generator.getWaterLevel(x, z)) + 24;
+        this.player!.flying = false; this.spawned = false;
+      }
+      this.settings = { ...this.settings, viewMode: '3d' }; this.setViewMode(); this.lockPointer();
+    } catch (error) { this.mapRoot.querySelector('footer')!.textContent = error instanceof Error ? error.message : t('game.start3dFailed'); }
+  }
+  private centerMapOnPlayer(): void {
+    const p = this.player ?? this.position;
+    this.atlas?.centerAt(Math.floor(p.x / CHUNK_SIZE), Math.floor(p.z / CHUNK_SIZE));
+  }
+  private setViewMode(): void {
+    const is2D = this.settings.viewMode === '2d';
+    if (is2D && document.pointerLockElement) document.exitPointerLock();
+    if (this.input) this.input.enabled = !is2D && !this.paused && (!!this.settings.touchControls || document.pointerLockElement === this.renderer?.domElement);
+    this.touch?.setVisible(!is2D && !this.paused && !!this.settings.touchControls);
+    this.renderer?.domElement.classList.toggle('hidden', is2D);
+    this.mapRoot.classList.toggle('hidden', !is2D);
+    if (is2D) {
+      if (!this.atlas) this.createMap(); else { this.centerMapOnPlayer(); this.atlas.requestRender(); }
+    }
+    this.atlas?.setActive(is2D && !this.paused);
+    this.player?.resetInputGestures();
+    this.overlay?.setVisible(!is2D && this.options.showOverlay);
+    this.ui.loading.classList.toggle('hidden', is2D || this.spawned);
+    this.ui.waterTint.classList.add('hidden');
+    document.getElementById('crosshair')!.classList.toggle('hidden', is2D);
+    this.setViewModeHint();
+    this.updateDocumentTitle();
+  }
+  private setViewModeHint(): void {
+    this.bar.querySelector('[data-hint]')!.textContent = this.settings.viewMode === '2d' ? t('game.hint.2d') : t('game.hint.3d');
+  }
+  applySettings(value: GameSettings): void {
+    const next = validateSettings(value);
+    if (next.viewMode === '3d') this.ensure3D();
+    this.options.persistSettings(next);
+    const changedView = next.viewMode !== this.settings.viewMode;
+    this.settings = next;
+    this.touch?.setVisible(next.viewMode === '3d' && !this.paused && !!next.touchControls);
+    this.lastCalendarMs = -Infinity;
+    this.camera.fov = next.fov; this.camera.updateProjectionMatrix();
+    this.input?.setBindings(next.keyBindings);
+    this.overlay?.setKeyLabel(keyLabel(next.keyBindings.debug));
+    if (changedView) this.setViewMode();
+    this.syncClock();
+    this.updateCalendar(true);
+  }
+  setTimeSpeed(speed: number): void { this.applySettings({ ...this.settings, timeSpeed: speed }); }
+  get timeSpeed(): number { return this.settings.timeSpeed; }
+  private syncClock(): void {
+    this.calendarClock.dayLengthSeconds = 86400 / (this.settings.timeSpeed || 1);
+    this.calendarClock.paused = this.paused || this.settings.timeSpeed === 0;
+  }
+  private showPause(message = ''): void {
+    if (this.saving) return;
+    this.settingsPanel?.destroy(); this.settingsPanel = null;
+    this.touch?.setVisible(false);
+    this.paused = true; this.menuPage = 'pause'; this.syncClock();
+    this.pauseMessage = message;
+    if (this.input) this.input.enabled = false;
+    this.atlas?.setActive(false); this.player?.resetInputGestures();
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.ui.start.classList.remove('hidden');
+    this.ui.start.innerHTML = `<section class="pause-panel"><h1>${t('game.pause.title')}</h1><p class="pause-description">${t('game.pause.description')}</p><label class="field-title" for="save-world-name">${t('game.saveName')}</label><input id="save-world-name" maxlength="80"><div class="pause-actions"><button class="primary" data-continue>${t('game.pause.continue')}</button><button class="secondary" data-save>${t('game.pause.save')}</button><button class="secondary" data-export>${t('game.pause.export')}</button><button class="secondary" data-settings>${t('game.pause.settings')}</button>${this.settings.viewMode === '3d' ? `<button class="secondary" data-map>${t('game.pause.map')}</button>` : ''}<button class="text-button" data-home>${t('game.pause.home')}</button></div><p class="menu-status" role="status" aria-live="polite"></p><small class="pause-note">${t('game.pause.note')}</small></section>`;
+    const name = this.ui.start.querySelector<HTMLInputElement>('#save-world-name')!;
+    // 优先恢复用户已输入但未保存的名称，避免切换语言时把草稿冲掉。
+    name.value = this.pauseNameDraft || this.worldName;
+    name.addEventListener('input', () => { this.pauseNameDraft = name.value; });
+    const status = this.ui.start.querySelector<HTMLElement>('.menu-status')!; status.textContent = message;
+    this.ui.start.querySelector('[data-continue]')!.addEventListener('click', () => this.continueGame());
+    this.ui.start.querySelector('[data-map]')?.addEventListener('click', () => { this.settings = { ...this.settings, viewMode: '2d' }; this.setViewMode(); this.continueGame(); });
+    this.ui.start.querySelector('[data-settings]')!.addEventListener('click', () => this.showSettings());
+    this.ui.start.querySelector('.pause-note')!.textContent = t('game.pause.notePath', { path: this.options.saveStore.locationLabel });
+    const saveButton = this.ui.start.querySelector<HTMLButtonElement>('[data-save]')!;
+    saveButton.addEventListener('click', async () => {
+      if (this.saving) return;
+      this.saving = true;
+      this.ui.start.querySelectorAll<HTMLButtonElement>('button').forEach(button => { button.disabled = true; });
+      name.disabled = true;
+      saveButton.disabled = true; status.textContent = t('game.pause.saving');
+      try {
+        const save = this.createSave(name.value);
+        const item = await this.options.saveStore.put(save, save.worldName!, this.saveId);
+        this.saveId = item.id; this.worldName = item.name; name.value = item.name; this.pauseNameDraft = '';
+        this.refreshWorldName();
+        status.textContent = t('game.pause.saved', { name: item.name });
+      } catch (error) { status.textContent = error instanceof Error ? error.message : t('game.pause.saveFailed'); }
+      finally {
+        this.saving = false; name.disabled = false;
+        this.ui.start.querySelectorAll<HTMLButtonElement>('button').forEach(button => { button.disabled = false; });
       }
     });
-
-    window.addEventListener('resize', () => this.onResize());
+    this.ui.start.querySelector('[data-export]')!.addEventListener('click', () => {
+      try { const save = this.createSave(name.value); downloadWorldSave(save, save.worldName!); status.textContent = t('game.pause.exported'); }
+      catch (error) { status.textContent = error instanceof Error ? error.message : t('game.pause.exportFailed'); }
+    });
+    this.ui.start.querySelector('[data-home]')!.addEventListener('click', () => {
+      const url = new URL(location.href); url.searchParams.delete('resume');
+      url.searchParams.set('seed', String(this.generator.seed)); url.searchParams.set('climate', this.generator.climateWeights.join(','));
+      url.searchParams.set('generation', JSON.stringify(this.generator.generation)); location.href = url.toString();
+    });
   }
-
-  start(): void {
-    this.clock.start();
-    this.renderer.setAnimationLoop(() => this.frame());
+  private showSettings(): void {
+    if (this.saving) return;
+    this.menuPage = 'settings'; this.ui.start.innerHTML = '<section class="pause-panel pause-settings"></section>';
+    this.settingsPanel = new SettingsPanel(this.ui.start.firstElementChild as HTMLElement, this.settings, value => this.applySettings(value), () => this.showPause());
   }
-
-  private updateCalendar(): void {
+  private continueGame(): void {
+    if (this.saving) return;
+    this.settingsPanel?.destroy(); this.settingsPanel = null;
+    this.menuPage = null; this.paused = false; this.syncClock(); this.ui.start.classList.add('hidden');
+    this.atlas?.setActive(this.settings.viewMode === '2d');
+    if (this.settings.viewMode === '3d') this.lockPointer();
+  }
+  private createSave(name: string): WorldSave {
+    const p = this.player ?? this.position;
+    return { generatorVersion: GENERATOR_VERSION, seed: this.generator.seed, climateWeights: this.generator.climateWeights,
+      generation: this.generator.generation, calendarType: this.calendarType, unixMs: this.calendarClock.unixMs,
+      utcOffsetMinutes: this.calendarSystem.utcOffsetMinutes, worldName: name.trim().slice(0, 80) || this.worldName,
+      flying: this.player?.flying ?? this.options.save?.flying ?? false,
+      player: { x: p.x, y: p.y, z: p.z, yaw: p.yaw, pitch: p.pitch } };
+  }
+  start(): void { requestAnimationFrame(time => this.frame(time)); }
+  private updateCalendar(force = false): void {
+    if (!force && Math.abs(this.calendarClock.unixMs - this.lastCalendarMs) < 1000) return;
+    this.lastCalendarMs = this.calendarClock.unixMs;
     this.currentSnapshot = this.calendarSystem.snapshotFromUnixMs(this.calendarClock.unixMs);
-    // calc season
-    if (this.currentSnapshot.season) {
-      this.currentSeason = this.currentSnapshot.season.index;
-    }
-    // time of day: 0 to 1
-    this.currentDayRatio = this.currentSnapshot.instant.frac;
+    this.currentSeason = this.currentSnapshot.season?.index ?? 0; this.currentDayRatio = this.currentSnapshot.instant.frac;
+    const date = this.calendarType === 'yuan' ? this.currentSnapshot.yuan : this.currentSnapshot.gregorian;
+    const pad = (value: number) => String(value).padStart(2, '0');
+    this.bar.querySelector('[data-date]')!.textContent = t('game.date', {
+      calendar: calendarLabel(this.calendarType),
+      year: date.year, month: date.month, day: date.day,
+      time: `${pad(date.time.hour)}:${pad(date.time.minute)}`,
+      season: seasonName(this.currentSeason),
+      speed: this.settings.timeSpeed,
+    });
   }
-
   private updateLighting(): void {
-    // 0 = noon, 0.5 = midnight
-    const timeToMidnight = Math.abs(this.currentDayRatio - 0.5);
-    const brightness = Math.max(0.1, Math.min(1.0, timeToMidnight * 2 + 0.1));
-    
-    // adjust fog and sky color based on season and time
-    const sky = SKY_COLOR.clone();
-    
-    // seasonal tint
-    if (this.currentSeason === 0) sky.lerp(new THREE.Color('#d4ffd4'), 0.2); // Spring
-    if (this.currentSeason === 1) sky.lerp(new THREE.Color('#ffd4d4'), 0.2); // Summer
-    if (this.currentSeason === 2) sky.lerp(new THREE.Color('#ffffd4'), 0.2); // Autumn
-    if (this.currentSeason === 3) sky.lerp(new THREE.Color('#d4d4ff'), 0.2); // Winter
-
-    sky.multiplyScalar(brightness);
-    this.renderer.setClearColor(sky);
-    this.scene.fog!.color.copy(sky);
-
-    // Apply brightness to world material by updating material color
-    // We'll iterate the chunk meshes if needed, or pass it to World
-    this.world.setGlobalBrightness(brightness, this.currentSeason);
+    const sky = this.world!.updateLighting(this.currentDayRatio, this.currentSeason, this.camera.position, performance.now() / 1000);
+    this.renderer!.setClearColor(sky); this.fog.color.copy(sky);
   }
-
-  private onResize(): void {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  private frame(time: number): void {
+    const dt = this.previousFrame ? Math.min((time - this.previousFrame) / 1000, .05) : 0;
+    this.previousFrame = time; this.calendarClock.advance(dt); this.updateCalendar();
+    if (this.settings.viewMode === '3d') this.frame3D(dt);
+    requestAnimationFrame(next => this.frame(next));
   }
-
-  private frame(): void {
-    const dt = Math.min(this.clock.getDelta(), 0.05);
-    this.calendarClock.advance(dt);
-    this.updateCalendar();
-    this.updateLighting();
-    const p = this.player;
-
-    this.world.update(p.x, p.z);
-
-    // 等出生点周围 3x3 区块就绪后再开始物理，避免在空白中下落
-    if (!this.spawned) {
-      const cx = Math.floor(p.x / CHUNK_SIZE);
-      const cz = Math.floor(p.z / CHUNK_SIZE);
-      let ready = true;
-      for (let dz = -1; dz <= 1 && ready; dz++)
-        for (let dx = -1; dx <= 1 && ready; dx++) ready = this.world.isLoaded(cx + dx, cz + dz);
-      if (ready) {
-        this.spawned = true;
-        this.ui.loading.classList.add('hidden');
+  private frame3D(dt: number): void {
+    const p = this.player!, world = this.world!, renderer = this.renderer!;
+    if (world.generator.generation.mode === 'planet') {
+      const circumference = world.generator.generation.planet.equatorChunks * CHUNK_SIZE;
+      p.x = ((p.x + circumference / 2) % circumference + circumference) % circumference - circumference / 2;
+      const pole = circumference / 4;
+      if (p.z < -pole || p.z > pole) {
+        p.z = p.z < -pole ? -2 * pole - p.z : 2 * pole - p.z;
+        p.x = ((p.x + circumference) % circumference + circumference) % circumference - circumference / 2;
+        p.yaw += Math.PI; p.vx = -p.vx; p.vz = -p.vz;
       }
-    } else if (document.pointerLockElement === this.renderer.domElement) {
-      p.update(dt);
     }
-
-    this.camera.position.set(p.x, p.eyeY, p.z);
-    this.camera.rotation.set(p.pitch, p.yaw, 0);
-
-    // 水下效果
-    const eyeUnderwater = p.eyeY < this.world.getWaterLevel(p.x, p.z) - 0.12 && this.world.getHeight(p.x, p.z) < p.eyeY;
-    if (eyeUnderwater) {
-      this.fog.color.copy(UNDERWATER_COLOR);
-      this.fog.near = 1;
-      this.fog.far = 48;
-      this.renderer.setClearColor(UNDERWATER_COLOR);
-    } else {
-      this.fog.color.copy(SKY_COLOR);
-      this.fog.near = this.fogNear;
-      this.fog.far = this.fogFar;
-      this.renderer.setClearColor(SKY_COLOR);
+    world.update(p.x, p.z);
+    if (!this.spawned) {
+      const cx = Math.floor(p.x / CHUNK_SIZE), cz = Math.floor(p.z / CHUNK_SIZE);
+      let ready = true;
+      for (let dz = -1; dz <= 1 && ready; dz++) for (let dx = -1; dx <= 1 && ready; dx++) ready = world.isLoaded(cx + dx, cz + dz);
+      if (ready) { this.spawned = true; this.ui.loading.classList.add('hidden'); }
+    } else if (!this.paused && (this.settings.touchControls || document.pointerLockElement === renderer.domElement)) p.update(dt);
+    this.camera.position.set(p.x, p.eyeY, p.z); this.camera.rotation.set(p.pitch, p.yaw, 0);
+    this.updateLighting();
+    const underwater = p.eyeY < world.getWaterLevel(p.x, p.z) && world.getHeight(p.x, p.z) < p.eyeY;
+    if (underwater) {
+      const day = THREE.MathUtils.smoothstep(-Math.cos(this.currentDayRatio * Math.PI * 2), -.12, .3);
+      this.fog.color.copy(UNDERWATER_NIGHT).lerp(UNDERWATER_COLOR, day);
+      this.fog.near = 1; this.fog.far = 36; renderer.setClearColor(this.fog.color);
     }
-    this.ui.waterTint.classList.toggle('hidden', !eyeUnderwater);
-
-    this.overlay.update(performance.now());
-    this.renderer.render(this.scene, this.camera);
+    else { this.fog.near = this.fogNear; this.fog.far = this.fogFar; }
+    this.sky?.setUnderwater(underwater);
+    // 雾色先更新，再让天空同步；Sky 的相位从正午算起，历法从午夜算起。
+    this.sky?.update((this.currentDayRatio + .5) % 1, this.camera.position, this.calendarClock.unixMs);
+    this.ui.waterTint.classList.toggle('hidden', !underwater);
+    this.overlay?.update(performance.now()); renderer.render(this.scene, this.camera);
   }
+  /** 停止语言监听（页面销毁或返回开始界面时调用）。 */
+  destroy(): void { this.stopLocaleWatch(); }
 }

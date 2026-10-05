@@ -1,0 +1,383 @@
+/* ==========================================================================
+   launcher.css · 茜林茶馆 Windows 启动器
+   --------------------------------------------------------------------------
+   启动器是独立窗口：由 Electron 以 file:// 直接加载，不经过 Vite 打包，
+   因此这里**镜像**了一份 src/ui/theme.css 的设计令牌与印章按钮规则。
+   改动配色 / 字体 / 按钮观感时，请与 src/ui/theme.css 同步修改这两处。
+
+   与游戏内 UI 的差异只有两点，都是刻意的：
+     · 字体用相对路径 —— file:// 下根绝对路径 /content/... 会指向磁盘根目录；
+     · 不引入 theme.css 的 html,body{overflow:hidden} —— 启动器要能滚动。
+   ========================================================================== */
+
+/* ---------- 字体：与游戏同源，来自工程 content/assets/ui/fonts/ ---------- */
+
+@font-face {
+  font-family: 'Qianlin Song';
+  src: url('../../content/assets/ui/fonts/NanoOldSongA-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Qianlin Round';
+  src: url('../../content/assets/ui/fonts/ResourceHanRoundedCN-Medium.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- 设计令牌（镜像 src/ui/theme.css） ---------- */
+
+:root {
+  --ql-paper: #e5d3aa;
+  --ql-ink: #4d4030;
+  --ql-cinnabar: #a61b29;
+  --ql-seal-on: #894e54;
+  --ql-seal-off: #867e76;
+
+  --ql-paper-hi: #f1e5c7;
+  --ql-paper-card: #eee1c2;
+  --ql-ink-2: #6a5942;
+  --ql-ink-3: #8a7a5f;
+  --ql-ink-inv: #fbf4e3;
+  --ql-cinnabar-deep: #7d131e;
+  --ql-seal-on-hi: #9c5c62;
+  --ql-seal-on-lo: #6f3c42;
+
+  --ql-line: rgba(77, 64, 48, .30);
+  --ql-line-soft: rgba(77, 64, 48, .16);
+  --ql-line-faint: rgba(77, 64, 48, .09);
+  --ql-line-seal: rgba(137, 78, 84, .45);
+
+  --ql-shadow-sm: 0 1px 2px rgba(77, 64, 48, .16);
+  --ql-shadow: 0 4px 14px rgba(77, 64, 48, .16);
+
+  --ql-font-display: 'Qianlin Song', 'Songti SC', 'STSong', 'SimSun', Georgia, serif;
+  --ql-font-body: 'Qianlin Round', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+
+  --ql-track-display: .18em;
+  --ql-track-label: .14em;
+  --ql-track-body: .02em;
+  --ql-radius: 3px;
+
+  /* 宣纸底纹：经纬纤维严格正交（90deg / 0deg），格子 4px 见方 */
+  --ql-paper-weave:
+    radial-gradient(ellipse at 18% 12%, rgba(255, 253, 246, .55), transparent 58%),
+    radial-gradient(ellipse at 84% 86%, rgba(166, 27, 41, .045), transparent 52%),
+    radial-gradient(ellipse at 62% 38%, rgba(77, 64, 48, .05), transparent 46%),
+    repeating-linear-gradient(90deg, rgba(77, 64, 48, .026) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(0deg, rgba(77, 64, 48, .026) 0 1px, transparent 1px 4px);
+}
+
+/* ---------- 基础 ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 40px;
+  overflow-x: hidden;
+  color: var(--ql-ink);
+  background-color: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+  background-attachment: fixed;
+  font-family: var(--ql-font-body);
+  font-size: 15px;
+  letter-spacing: var(--ql-track-body);
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--ql-font-display);
+  font-weight: 400;
+  letter-spacing: var(--ql-track-display);
+  line-height: 1.35;
+}
+
+p {
+  margin: 0;
+}
+
+em {
+  color: var(--ql-cinnabar);
+  font-style: normal;
+}
+
+/* ---------- 顶栏：只有工程名 ---------- */
+
+.bar {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--ql-line-soft);
+}
+
+.bar h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+/* ---------- 主区：介绍 + 等高线圈 ---------- */
+
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: center;
+  padding: 44px 0 48px;
+}
+
+.lede {
+  font-family: var(--ql-font-display);
+  font-size: 28px;
+  line-height: 1.7;
+  letter-spacing: var(--ql-track-label);
+  /* 按 em 限宽（汉字约 22 字一行）：ch 以拉丁"0"为基准，量中文行宽不准 */
+  max-width: 22em;
+}
+
+.sub {
+  margin-top: 14px;
+  color: var(--ql-ink-2);
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.status {
+  margin-top: 16px;
+  min-height: 1.75em;
+  color: var(--ql-ink-2);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* 等高线圈：纯几何，不放任何字样 */
+.emblem {
+  position: relative;
+  min-height: 300px;
+}
+
+.emblem span {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border: 1px solid var(--ql-line-seal);
+  border-radius: 50%;
+}
+
+.emblem span:nth-child(1) {
+  width: 116px;
+  height: 116px;
+  background: var(--ql-paper-hi);
+  box-shadow: 0 0 0 10px rgba(137, 78, 84, .07);
+}
+
+.emblem span:nth-child(2) {
+  width: 198px;
+  height: 198px;
+}
+
+.emblem span:nth-child(3) {
+  width: 282px;
+  height: 282px;
+  border-color: var(--ql-line-soft);
+}
+
+.emblem i {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ql-cinnabar);
+  box-shadow: 0 0 0 7px rgba(166, 27, 41, .12);
+  transform: translate(74px, -74px);
+}
+
+/* ---------- 印章按钮（与游戏内同一套观感） ---------- */
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45em;
+  padding: 13px 28px;
+  color: var(--ql-ink-inv);
+  background-color: var(--ql-seal-on);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(0, 0, 0, .14));
+  border: 0;
+  border-radius: var(--ql-radius);
+  font-family: var(--ql-font-display);
+  font-size: 15px;
+  letter-spacing: var(--ql-track-label);
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .28);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .78),
+    inset 0 0 0 3px var(--ql-seal-on),
+    inset 0 0 0 4px rgba(251, 244, 227, .42);
+  transition: background-color .16s ease, box-shadow .16s ease, transform .12s ease;
+}
+
+button:hover:not(:disabled) {
+  background-color: var(--ql-seal-on-hi);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .9),
+    inset 0 0 0 3px var(--ql-seal-on-hi),
+    inset 0 0 0 4px rgba(251, 244, 227, .55),
+    0 0 0 1px var(--ql-cinnabar);
+}
+
+button:active:not(:disabled) {
+  background-color: var(--ql-seal-on-lo);
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .7),
+    inset 0 0 0 3px var(--ql-seal-on-lo),
+    inset 0 0 0 4px rgba(251, 244, 227, .35),
+    inset 0 2px 6px rgba(0, 0, 0, .30);
+}
+
+/* 禁用：一律 #867e76，并取消「可按」的暗示 */
+button:disabled {
+  background-color: var(--ql-seal-off);
+  background-image: none;
+  color: rgba(251, 244, 227, .82);
+  text-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .45),
+    inset 0 0 0 3px var(--ql-seal-off),
+    inset 0 0 0 4px rgba(251, 244, 227, .22);
+}
+
+/* 阳文印：纸面留白、朱线为框 */
+button.secondary {
+  color: var(--ql-ink);
+  background-color: var(--ql-paper-hi);
+  background-image: none;
+  text-shadow: none;
+  box-shadow:
+    inset 0 0 0 1px var(--ql-seal-on),
+    inset 0 0 0 2px var(--ql-paper-hi),
+    inset 0 0 0 3px var(--ql-line-seal);
+}
+
+button.secondary:hover:not(:disabled) {
+  color: var(--ql-cinnabar-deep);
+  background-color: #f8eeda;
+  box-shadow:
+    inset 0 0 0 1px var(--ql-cinnabar),
+    inset 0 0 0 2px #f8eeda,
+    inset 0 0 0 3px rgba(166, 27, 41, .32);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ql-cinnabar);
+  outline-offset: 2px;
+}
+
+/* ---------- 底部：三张说明卡 ---------- */
+
+footer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+article {
+  padding: 22px 24px;
+  background-color: var(--ql-paper-card);
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper-card),
+    inset 0 0 0 3px var(--ql-line-faint),
+    var(--ql-shadow-sm);
+}
+
+article h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin: 0 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ql-line-faint);
+  font-size: 19px;
+}
+
+article h2 small {
+  color: var(--ql-cinnabar);
+  font-family: var(--ql-font-body);
+  font-size: 11px;
+  letter-spacing: var(--ql-track-label);
+}
+
+article p {
+  color: var(--ql-ink-2);
+  font-size: 13px;
+  line-height: 1.85;
+}
+
+/* ---------- 窄窗口 ---------- */
+
+@media (max-width: 860px) {
+  body {
+    padding: 24px;
+  }
+
+  main {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 28px 0 32px;
+  }
+
+  .lede {
+    font-size: 22px;
+    max-width: none;
+  }
+
+  .emblem {
+    min-height: 190px;
+    order: -1;
+  }
+
+  .emblem span:nth-child(1) {
+    width: 78px;
+    height: 78px;
+  }
+
+  .emblem span:nth-child(2) {
+    width: 134px;
+    height: 134px;
+  }
+
+  .emblem span:nth-child(3) {
+    width: 190px;
+    height: 190px;
+  }
+
+  .emblem i {
+    transform: translate(50px, -50px);
+  }
+
+  footer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

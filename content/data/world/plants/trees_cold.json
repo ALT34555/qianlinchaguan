@@ -1,0 +1,74 @@
+{
+  "_note": "寒带乔木：云杉、冷杉、桦、落叶松、极地柳。寒带物种普遍带 snow / snowOn，冬季变体会长出独立材质槽的积雪壳。",
+  "version": 1,
+  "plants": [
+    {
+      "id": "tree.cold.spruce",
+      "archetype": "conifer",
+      "climate": "cold",
+      "name": "云杉",
+      "latin": "Picea",
+      "seed": 401,
+      "tags": ["conifer", "timber", "snow"],
+      "params": { "height": 14, "trunk": 2.4, "canopy": 2.5, "layers": 7, "layerRadius": 2.5, "snow": 0.26, "snowOn": ["canopy", "top"] },
+      "palette": { "foliage": "conifer", "foliageDark": "coniferDark" }
+    },
+    {
+      "id": "tree.cold.fir",
+      "archetype": "conifer",
+      "climate": "cold",
+      "name": "冷杉",
+      "latin": "Abies",
+      "seed": 402,
+      "tags": ["conifer", "timber", "snow"],
+      "params": { "height": 17, "trunk": 3, "canopy": 3.2, "layers": 6, "layerRadius": 3.2, "snow": 0.3, "snowOn": ["canopy", "top"] },
+      "palette": { "foliage": "conifer", "foliageDark": "coniferDark" }
+    },
+    {
+      "id": "tree.cold.birch",
+      "archetype": "broadleaf",
+      "climate": "cold",
+      "name": "垂枝桦",
+      "latin": "Betula pendula",
+      "seed": 403,
+      "tags": ["tree", "snow"],
+      "params": { "height": 9, "trunk": 5.6, "trunkRadius": 0.3, "canopy": 2.4, "blobs": 5, "limbCount": 2, "branchAngle": 0.95, "snow": 0.18, "snowOn": ["canopy", "ground"] },
+      "palette": { "bark": "barkPale", "barkLight": "barkPale", "foliage": "foliage", "canopy": "canopy" }
+    },
+    {
+      "id": "tree.cold.larch",
+      "archetype": "conifer",
+      "climate": "cold",
+      "name": "西伯利亚落叶松",
+      "latin": "Larix sibirica",
+      "seed": 404,
+      "tags": ["conifer", "autumn_color", "snow"],
+      "params": { "height": 15, "trunk": 4.6, "canopy": 2.7, "layers": 6, "layerRadius": 2.7, "snow": 0.22, "snowOn": ["canopy"] },
+      "palette": { "foliage": "larch", "foliageDark": "foliageDark" }
+    },
+    {
+      "id": "tree.cold.willow",
+      "archetype": "broadleaf",
+      "climate": "cold",
+      "name": "极地柳",
+      "latin": "Salix polaris",
+      "seed": 405,
+      "scale": 0.42,
+      "tags": ["shrubby", "tundra", "snow"],
+      "params": { "height": 13, "trunk": 6, "trunkRadius": 0.5, "canopy": 4.2, "blobs": 8, "limbCount": 4, "branchAngle": 0.5, "snow": 0.2, "snowOn": ["canopy", "ground"] },
+      "palette": { "foliage": "canopy", "canopy": "foliage" }
+    },
+    {
+      "id": "tree.cold.juniper",
+      "archetype": "conifer",
+      "climate": "cold",
+      "name": "西伯利亚刺柏",
+      "latin": "Juniperus sibirica",
+      "seed": 406,
+      "scale": 0.55,
+      "tags": ["conifer", "tundra", "snow"],
+      "params": { "height": 13, "trunk": 2.2, "canopy": 2.6, "layers": 4, "layerRadius": 2.6, "snow": 0.24, "snowOn": ["canopy", "top"] },
+      "palette": { "foliage": "coniferDark", "foliageDark": "conifer" }
+    }
+  ]
+}

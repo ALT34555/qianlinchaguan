@@ -1,11 +1,11 @@
 /**
  * 主线程 <-> 区块 Worker 消息协议。
  */
-import type { ClimateWeights } from './WorldSettings';
+import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import type { MeshData } from './ChunkMesher';
 
 export type WorkerRequest =
-  | { kind: 'init'; seed: number; climateWeights: ClimateWeights }
+  | { kind: 'init'; seed: number; climateWeights: ClimateWeights; generation: WorldGeneration }
   | { kind: 'generate'; cx: number; cz: number };
 
 export interface ChunkResultMessage {
@@ -13,7 +13,7 @@ export interface ChunkResultMessage {
   cx: number;
   cz: number;
   type: number;
-  heights: Int16Array;
+  heights: Float32Array;
   surfaces: Uint8Array;
   waterLevels: Float32Array;
   terrain: MeshData | null;

@@ -33,8 +33,7 @@
     "name": "山丘",
     "mapColor": "#8a8a8a",
     "generate": true,
-    "description": "起伏山地",
-    "maxHeight": 256
+    "description": "起伏山地"
   },
   {
     "id": 4,
@@ -91,6 +90,15 @@
     "description": "深裂谷"
   },
   {
+    "id": 10,
+    "code": "010",
+    "key": "waterfall",
+    "name": "落差水（瀑布）",
+    "mapColor": "#70b7dc",
+    "generate": true,
+    "description": "大落差河段；上游水面沿陡坎落向下游，仍参与汇流"
+  },
+  {
     "id": 101,
     "code": "101",
     "key": "tropical_savanna",
@@ -115,8 +123,7 @@
     "name": "热带山丘",
     "mapColor": "#6b8e23",
     "generate": true,
-    "description": "热带山丘",
-    "maxHeight": 256
+    "description": "热带山丘"
   },
   {
     "id": 104,
@@ -197,8 +204,7 @@
     "name": "亚热带山丘",
     "mapColor": "#556b2f",
     "generate": true,
-    "description": "亚热带山丘",
-    "maxHeight": 256
+    "description": "亚热带山丘"
   },
   {
     "id": 204,
@@ -270,8 +276,7 @@
     "name": "温带山丘",
     "mapColor": "#808000",
     "generate": true,
-    "description": "温带山丘",
-    "maxHeight": 256
+    "description": "温带山丘"
   },
   {
     "id": 304,
@@ -343,8 +348,7 @@
     "name": "寒带山丘",
     "mapColor": "#a9a9a9",
     "generate": true,
-    "description": "寒带山丘",
-    "maxHeight": 256
+    "description": "寒带山丘"
   },
   {
     "id": 404,
@@ -371,8 +375,7 @@
     "name": "寒带雪山",
     "mapColor": "#ffffff",
     "generate": true,
-    "description": "寒带雪山",
-    "maxHeight": 256
+    "description": "寒带雪山"
   },
   {
     "id": 407,

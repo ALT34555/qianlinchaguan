@@ -1,0 +1,612 @@
+/* ==========================================================================
+   theme.css · 茜林茶馆 统一视觉基准（古朴中式）
+   --------------------------------------------------------------------------
+   本文件是**唯一**定义颜色、字体、控件外观的地方；其他样式表只引用这里的
+   CSS 变量，不再写死色值。这样"统一 UI 风格"才可持续。
+
+   色板（需求指定）：
+     底色 #e5d3aa  ·  正文 #4d4030  ·  强调 #a61b29
+     可用印 #894e54  ·  禁用印 #867e76
+
+   字体（content/assets/ui/fonts）：
+     NanoOldSongA-Regular.ttf        纳米老宋 —— 标题、印文（雕版感）
+     ResourceHanRoundedCN-Medium.ttf 资源圆体 —— 正文、表单（清晰易读）
+
+   多语言：排版参数全部走 CSS 变量，`:root:lang(en)` 只覆盖变量，
+   中英文因此共用同一套组件样式。
+   ========================================================================== */
+
+/* ---------- 字体：全部取自 content/assets/ui/fonts ---------- */
+
+@font-face {
+  font-family: 'Qianlin Song';
+  src: url('/content/assets/ui/fonts/NanoOldSongA-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Qianlin Round';
+  src: url('/content/assets/ui/fonts/ResourceHanRoundedCN-Medium.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- 设计令牌 ---------- */
+
+:root {
+  /* 主色板 */
+  --ql-paper: #e5d3aa;
+  --ql-ink: #4d4030;
+  --ql-cinnabar: #a61b29;
+  --ql-seal-on: #894e54;
+  --ql-seal-off: #867e76;
+
+  /* 由主色推导的层级色，保持同一色相家族 */
+  --ql-paper-hi: #f1e5c7;
+  --ql-paper-card: #eee1c2;
+  --ql-paper-lo: #d9c69b;
+  --ql-paper-deep: #c9b184;
+  --ql-ink-2: #6a5942;
+  --ql-ink-3: #8a7a5f;
+  --ql-ink-inv: #fbf4e3;
+
+  --ql-cinnabar-soft: #bf3b45;
+  --ql-cinnabar-deep: #7d131e;
+  --ql-seal-on-hi: #9c5c62;
+  --ql-seal-on-lo: #6f3c42;
+
+  /* 线条一律由墨色加透明得到，避免出现"另一套颜色" */
+  --ql-line: rgba(77, 64, 48, .30);
+  --ql-line-soft: rgba(77, 64, 48, .16);
+  --ql-line-faint: rgba(77, 64, 48, .09);
+  --ql-line-seal: rgba(137, 78, 84, .45);
+
+  --ql-shadow-sm: 0 1px 2px rgba(77, 64, 48, .16);
+  --ql-shadow: 0 4px 14px rgba(77, 64, 48, .16);
+  --ql-shadow-lg: 0 14px 44px rgba(58, 47, 33, .26);
+
+  /* 字体族 */
+  --ql-font-display: 'Qianlin Song', 'Songti SC', 'STSong', 'SimSun', Georgia, serif;
+  --ql-font-body: 'Qianlin Round', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+  --ql-font-mono: 'Qianlin Round', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* 兼容旧代码里的 --ui-font 引用 */
+  --ui-font: var(--ql-font-body);
+
+  /* 排版参数（随语言切换，见下方 :root:lang(en)） */
+  --ql-track-display: .18em;
+  --ql-track-label: .14em;
+  --ql-track-body: .02em;
+  --ql-leading-body: 1.75;
+
+  --ql-radius: 3px;
+  --ql-radius-lg: 6px;
+  --ql-radius-pill: 999px;
+
+  /* 宣纸底纹：多层柔和渐变 + 正交纤维网。
+     两条纤维必须是 90deg / 0deg —— 之前写成 92deg / 2deg，
+     整片底纹会歪 2°，看着像没对齐。格子取 4px 见方。 */
+  --ql-paper-weave:
+    radial-gradient(ellipse at 18% 12%, rgba(255, 253, 246, .55), transparent 58%),
+    radial-gradient(ellipse at 84% 86%, rgba(166, 27, 41, .045), transparent 52%),
+    radial-gradient(ellipse at 62% 38%, rgba(77, 64, 48, .05), transparent 46%),
+    repeating-linear-gradient(90deg, rgba(77, 64, 48, .026) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(0deg, rgba(77, 64, 48, .026) 0 1px, transparent 1px 4px);
+}
+
+/* ---------- 英文排版：只覆盖变量，不改任何组件 ---------- */
+
+:root:lang(en) {
+  --ql-font-display: 'Qianlin Song', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --ql-font-body: 'Qianlin Round', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* 拉丁字母不需要汉字那样的字距，收紧后更接近古籍排印 */
+  --ql-track-display: .03em;
+  --ql-track-label: .06em;
+  --ql-track-body: .005em;
+  --ql-leading-body: 1.7;
+}
+
+/* ---------- 基础元素 ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #14100c;
+  color: var(--ql-ink);
+  font-family: var(--ql-font-body);
+  font-size: 15px;
+  letter-spacing: var(--ql-track-body);
+  line-height: var(--ql-leading-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--ql-font-display);
+  font-weight: 400;
+  color: var(--ql-ink);
+  letter-spacing: var(--ql-track-display);
+  line-height: 1.35;
+}
+
+a {
+  color: var(--ql-cinnabar);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--ql-cinnabar-deep);
+}
+
+/* 强调色：朱砂 */
+em,
+.ql-accent {
+  color: var(--ql-cinnabar);
+  font-style: normal;
+}
+
+/* 朱砂小标题：留作可选工具类。界面默认不再放装饰性小标题，
+   原有 .eyebrow 类名已随装饰文字一并移除。 */
+.ql-eyebrow {
+  display: inline-block;
+  color: var(--ql-cinnabar);
+  font-family: var(--ql-font-display);
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: var(--ql-track-label);
+  text-transform: uppercase;
+}
+
+/* 朱砂双线分隔：一粗一细，像印谱的行栏 */
+.ql-rule {
+  height: 3px;
+  border: 0;
+  border-top: 1px solid var(--ql-line);
+  border-bottom: 1px solid var(--ql-line-soft);
+  margin: 14px 0;
+}
+
+/* ---------- 卷面 / 卡片 / 面板 ---------- */
+
+/* 双线框：线装书的边框，用于主要面板 */
+.ql-framed {
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper-card),
+    inset 0 0 0 3px var(--ql-line-soft),
+    var(--ql-shadow);
+}
+
+/* ==========================================================================
+   印章按钮
+   --------------------------------------------------------------------------
+   三个层次叠出"印面"观感：
+     1. 印色底 —— 可用 #894e54 ／ 禁用 #867e76
+     2. 三重内边栏 —— 细白线 / 印色留白 / 细白线，形成双框
+     3. 极轻的上下渐变，模拟印泥的厚薄
+
+   默认作用于全站 <button>：新加的按钮自动就是印章，不需要额外加类。
+   需要"非印章"外观时挂 .ql-plain，或由更具体的类覆盖（.text-button 等）。
+   ========================================================================== */
+
+button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45em;
+  padding: .58em 1.15em;
+  font-family: var(--ql-font-display);
+  font-size: .95rem;
+  font-weight: 400;
+  letter-spacing: var(--ql-track-label);
+  color: var(--ql-ink-inv);
+  background-color: var(--ql-seal-on);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(0, 0, 0, .14));
+  border: 0;
+  border-radius: var(--ql-radius);
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .28);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .78),
+    inset 0 0 0 3px var(--ql-seal-on),
+    inset 0 0 0 4px rgba(251, 244, 227, .42);
+  transition: background-color .16s ease, box-shadow .16s ease, transform .12s ease, color .16s ease;
+}
+
+button:hover:not(:disabled) {
+  background-color: var(--ql-seal-on-hi);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .9),
+    inset 0 0 0 3px var(--ql-seal-on-hi),
+    inset 0 0 0 4px rgba(251, 244, 227, .55),
+    0 0 0 1px var(--ql-cinnabar-soft);
+}
+
+button:active:not(:disabled) {
+  background-color: var(--ql-seal-on-lo);
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .7),
+    inset 0 0 0 3px var(--ql-seal-on-lo),
+    inset 0 0 0 4px rgba(251, 244, 227, .35),
+    inset 0 2px 6px rgba(0, 0, 0, .30);
+}
+
+/* 阳文印：印面留白、朱线为框 */
+.secondary,
+button.is-outline {
+  color: var(--ql-ink);
+  background-color: var(--ql-paper-hi);
+  background-image: none;
+  text-shadow: none;
+  box-shadow:
+    inset 0 0 0 1px var(--ql-seal-on),
+    inset 0 0 0 2px var(--ql-paper-hi),
+    inset 0 0 0 3px var(--ql-line-seal);
+}
+
+.secondary:hover:not(:disabled),
+button.is-outline:hover:not(:disabled) {
+  color: var(--ql-cinnabar-deep);
+  background-color: #f7ecd5;
+  box-shadow:
+    inset 0 0 0 1px var(--ql-cinnabar),
+    inset 0 0 0 2px #f7ecd5,
+    inset 0 0 0 3px rgba(166, 27, 41, .35);
+}
+
+/* 禁用：一律用 #867e76，并取消一切"可按"的暗示 */
+button:disabled {
+  background-color: var(--ql-seal-off);
+  background-image: none;
+  color: rgba(251, 244, 227, .82);
+  text-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .45),
+    inset 0 0 0 3px var(--ql-seal-off),
+    inset 0 0 0 4px rgba(251, 244, 227, .22);
+}
+
+/* 焦点环用朱砂，键盘可达性不因配色而降低 */
+:focus-visible {
+  outline: 2px solid var(--ql-cinnabar);
+  outline-offset: 2px;
+}
+
+/* 逃生口：需要中性按钮时使用（例如第三方 Mod 面板） */
+button.ql-plain {
+  background: none;
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  color: inherit;
+  padding: .2em .4em;
+  border-radius: var(--ql-radius);
+}
+
+/* ==========================================================================
+   小签 / 芯片：工具条、筛选、快捷预设共用
+   ========================================================================== */
+
+:is(.preset-pill, .climate-pill, .qf-btn, .tool-btn, .icon-btn, .key-binding) {
+  padding: .34em .72em;
+  font-family: var(--ql-font-body);
+  font-size: .78rem;
+  letter-spacing: var(--ql-track-body);
+  color: var(--ql-ink);
+  background-color: var(--ql-paper-hi);
+  background-image: none;
+  text-shadow: none;
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 1px var(--ql-line-seal),
+    inset 0 0 0 2px var(--ql-paper-hi),
+    inset 0 0 0 3px var(--ql-line-faint);
+}
+
+:is(.preset-pill, .climate-pill, .qf-btn, .tool-btn, .icon-btn, .key-binding):hover:not(:disabled) {
+  color: var(--ql-cinnabar-deep);
+  background-color: #f8eeda;
+  transform: none;
+  box-shadow:
+    inset 0 0 0 1px var(--ql-cinnabar),
+    inset 0 0 0 2px #f8eeda,
+    inset 0 0 0 3px rgba(166, 27, 41, .3);
+}
+
+/* 选中态：翻成阴文印 */
+:is(.preset-pill, .climate-pill, .qf-btn, .tool-btn, .key-binding).active,
+.climate-pill.active,
+.qf-btn.active,
+.key-binding.capturing {
+  color: var(--ql-ink-inv);
+  background-color: var(--ql-seal-on);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .28);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .78),
+    inset 0 0 0 2px var(--ql-seal-on),
+    inset 0 0 0 3px rgba(251, 244, 227, .42);
+}
+
+/* 选中态悬停时保持"已盖印"的深色，不能被上面的 hover 规则翻回纸色 */
+:is(.preset-pill, .climate-pill, .qf-btn, .tool-btn, .key-binding).active:hover:not(:disabled) {
+  color: var(--ql-ink-inv);
+  background-color: var(--ql-seal-on-hi);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .85),
+    inset 0 0 0 2px var(--ql-seal-on-hi),
+    inset 0 0 0 3px rgba(251, 244, 227, .5);
+}
+
+/* ==========================================================================
+   表单控件
+   ========================================================================== */
+
+input,
+select,
+textarea {
+  font-family: var(--ql-font-body);
+  font-size: inherit;
+  color: var(--ql-ink);
+}
+
+/* `input:not([type])` 也要覆盖：省略 type 的输入框等价于 text，
+   但属性选择器匹配不到，漏掉会让它退回浏览器默认外观。 */
+input:not([type]),
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="search"],
+select,
+textarea {
+  padding: 8px 10px;
+  background-color: var(--ql-paper-hi);
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
+  color: var(--ql-ink);
+  user-select: text;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+input:not([type]):hover,
+input[type="text"]:hover,
+input[type="number"]:hover,
+input[type="date"]:hover,
+input[type="time"]:hover,
+select:hover {
+  border-color: var(--ql-line-seal);
+}
+
+input:not([type]):focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--ql-cinnabar);
+  background-color: #fbf3df;
+  box-shadow: 0 0 0 3px rgba(166, 27, 41, .16);
+}
+
+input::placeholder {
+  color: var(--ql-ink-3);
+}
+
+input[type="range"] {
+  accent-color: var(--ql-cinnabar);
+  cursor: pointer;
+}
+
+input[type="range"]:disabled {
+  cursor: default;
+  opacity: .5;
+}
+
+/* 原生日期/时间控件的图标在浅色纸面上需要反转 */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: sepia(1) saturate(2.4) hue-rotate(-18deg) brightness(.62);
+  cursor: pointer;
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+  /* 纯 CSS 画的下指箭头，不依赖系统控件外观 */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ql-ink-2) 50%),
+    linear-gradient(135deg, var(--ql-ink-2) 50%, transparent 50%);
+  background-position: right 14px center, right 9px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+select option,
+select optgroup {
+  background: var(--ql-paper-hi);
+  color: var(--ql-ink);
+}
+
+/* 复选框：朱砂方框，方形以贴合印章语言 */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  background: var(--ql-paper-hi);
+  border: 1px solid var(--ql-line);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--ql-cinnabar);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--ql-cinnabar);
+  border-color: var(--ql-cinnabar-deep);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--ql-ink-inv);
+  border-width: 0 2px 2px 0;
+  transform: rotate(42deg);
+}
+
+/* 滚动条也纳入配色 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ql-line) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--ql-line);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--ql-radius-pill);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ql-line-seal);
+  background-clip: content-box;
+}
+
+/* ==========================================================================
+   共用零件
+   ========================================================================== */
+
+.hidden {
+  display: none !important;
+}
+
+/* 状态行：默认墨色，出错时才转朱砂 */
+.ql-status,
+.menu-status {
+  color: var(--ql-ink-2);
+  font-size: 12px;
+  line-height: 1.7;
+  min-height: 1.7em;
+}
+
+.ql-status.is-error,
+.menu-status.is-error {
+  color: var(--ql-cinnabar);
+}
+
+/* 提示条：淡朱砂底 */
+.ql-note,
+.setting-note {
+  color: var(--ql-ink-2);
+  background: rgba(166, 27, 41, .06);
+  border-left: 3px solid var(--ql-line-seal);
+  border-radius: 0 var(--ql-radius) var(--ql-radius) 0;
+  padding: 8px 12px;
+  font-size: 11.5px;
+  line-height: 1.8;
+}
+
+/* 小标签 / 徽记 */
+.ql-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: .35em;
+  padding: 2px 9px;
+  font-size: 11px;
+  color: var(--ql-ink-2);
+  background: var(--ql-paper-hi);
+  border: 1px solid var(--ql-line-soft);
+  border-radius: var(--ql-radius-pill);
+}
+
+.ql-tag.is-accent {
+  color: var(--ql-cinnabar);
+  border-color: rgba(166, 27, 41, .35);
+  background: rgba(166, 27, 41, .07);
+}
+
+/* 纯文字按钮（返回开始界面一类）：覆盖印章外观 */
+.text-button,
+button.text-button {
+  display: inline-block;
+  border: 0;
+  background: none;
+  background-image: none;
+  padding: 6px 2px;
+  color: var(--ql-ink-2);
+  font-family: var(--ql-font-body);
+  font-size: 12px;
+  letter-spacing: var(--ql-track-body);
+  text-decoration: underline;
+  text-decoration-color: var(--ql-line-seal);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.text-button:hover:not(:disabled) {
+  color: var(--ql-cinnabar);
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.text-button:disabled {
+  background: none;
+  box-shadow: none;
+  color: var(--ql-seal-off);
+}
+
+/* 屏幕阅读器专用文本 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

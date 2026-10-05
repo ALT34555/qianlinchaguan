@@ -32,7 +32,7 @@ const RECIPES: Record<Family, Recipe> = {
   snowfield: { color: '#e2e8df', material: [[Block.SNOW, .95], [Block.GRAVEL, .05]], roughness: .6, wetness: .15 },
 };
 const FAMILIES: Record<number, Family> = {
-  1: 'plain', 2: 'coast', 3: 'hill', 4: 'dry', 5: 'river', 6: 'forest', 7: 'valley', 8: 'plateau', 9: 'rift',
+  1: 'plain', 2: 'coast', 3: 'hill', 4: 'dry', 5: 'river', 6: 'forest', 7: 'valley', 8: 'plateau', 9: 'rift', 10: 'river',
   101: 'savanna', 102: 'coast', 103: 'hill', 104: 'desert', 105: 'swamp', 106: 'jungle', 107: 'valley', 108: 'plateau', 109: 'monsoon',
   201: 'plain', 202: 'coast', 203: 'hill', 204: 'shrub', 205: 'monsoon', 206: 'jungle', 207: 'valley', 208: 'plateau',
   301: 'plain', 302: 'coast', 303: 'hill', 304: 'shrub', 305: 'monsoon', 306: 'jungle', 307: 'valley', 308: 'plateau',

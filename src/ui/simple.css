@@ -1,0 +1,135 @@
+/* ==========================================================================
+   simple.css · 结构补充（主菜单版式 + 触屏控制）
+   --------------------------------------------------------------------------
+   主菜单的 .simple-home 与触屏按钮的 .touch-* 由这里负责摆放。
+   颜色、字体、控件外观统一由 theme.css 提供。
+   ========================================================================== */
+
+/* ---------- 游戏主菜单 ---------- */
+
+.simple-home {
+  width: min(400px, 100%);
+  margin: 15vh auto 0;
+  text-align: center;
+}
+
+.simple-home h1 {
+  margin: 0 0 18px;
+  color: var(--ql-ink);
+  font-family: var(--ql-font-display);
+  font-size: clamp(40px, 7vw, 60px);
+  font-weight: 400;
+  letter-spacing: .28em;
+  /* 汉字加了字距后右侧会多出一格，向左补偿以保持视觉居中 */
+  text-indent: .28em;
+  line-height: 1.25;
+}
+
+:root:lang(en) .simple-home h1 {
+  letter-spacing: .04em;
+  text-indent: .04em;
+}
+
+/* 标题下的朱砂双线，像书口的鱼尾 */
+.simple-home h1::after {
+  content: "";
+  display: block;
+  width: 128px;
+  height: 4px;
+  margin: 22px auto 0;
+  border-top: 2px solid var(--ql-cinnabar);
+  border-bottom: 1px solid var(--ql-line-seal);
+}
+
+.simple-home nav {
+  display: grid;
+  gap: 14px;
+  margin-top: 48px;
+}
+
+.simple-home button {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 20px;
+  font-size: 18px;
+  letter-spacing: var(--ql-track-label);
+}
+
+.simple-home .menu-status {
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* ---------- 触屏虚拟按键 ---------- */
+
+.touch-controls {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.touch-move,
+.touch-actions {
+  position: absolute;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  display: grid;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.touch-move {
+  left: max(20px, env(safe-area-inset-left));
+  grid-template-columns: repeat(3, 58px);
+}
+
+.touch-move button:first-child {
+  grid-column: 2;
+}
+
+.touch-move button:nth-child(2) {
+  grid-column: 1;
+}
+
+.touch-actions {
+  right: max(20px, env(safe-area-inset-right));
+  grid-template-columns: repeat(2, minmax(66px, auto));
+}
+
+.touch-controls button {
+  min-width: 58px;
+  min-height: 58px;
+  padding: 0;
+  font-family: var(--ql-font-display);
+  font-size: 14px;
+  letter-spacing: var(--ql-track-body);
+  touch-action: none;
+  user-select: none;
+  /* 触屏上没有 hover，用按下态给反馈 */
+  transition: none;
+}
+
+.touch-controls button:active:not(:disabled) {
+  background-color: var(--ql-cinnabar);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .85),
+    inset 0 0 0 3px var(--ql-cinnabar),
+    inset 0 0 0 4px rgba(251, 244, 227, .5),
+    inset 0 3px 10px rgba(0, 0, 0, .35);
+}
+
+/* ---------- 矮屏适配 ---------- */
+
+@media (max-height: 560px) {
+  .simple-home {
+    margin-top: 24px;
+  }
+
+  .simple-home h1 {
+    font-size: 34px;
+  }
+
+  .simple-home nav {
+    margin-top: 20px;
+  }
+}

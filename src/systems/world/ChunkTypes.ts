@@ -11,8 +11,6 @@ export interface ChunkTypeDef {
   mapColor: string;
   generate: boolean;
   description: string;
-  maxHeight?: number;
-  baseHeight?: number;
 }
 
 export const CHUNK_TYPES: readonly ChunkTypeDef[] = (chunkTypeDefs as ChunkTypeDef[]).sort((a, b) => a.id - b.id);
@@ -31,4 +29,4 @@ export function formatChunkId(id: number): string {
   return String(id).padStart(3, '0');
 }
 
-export const HILLS_MAX_HEIGHT = 256;
+export const isRiverType = (type: number): boolean => type === 5 || type === 10;

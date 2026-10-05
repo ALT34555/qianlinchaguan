@@ -1,0 +1,858 @@
+/* ==========================================================================
+   menu.css · 落地页、存档、设置、游戏内菜单与 2D 地图
+   颜色与字体取自 theme.css 的令牌。
+
+   按钮语义（详见 theme.css 的印章按钮一节）：
+     .primary   主按钮 = 实心阴文印 —— 裸 <button> 已是此样式，无需额外声明
+     .secondary 次按钮 = 阳文印（纸面留白、朱线为框）
+     .text-button 纯文字按钮，完全脱离印章外观
+   main.ts 里的引入顺序为 theme → style → start-screen → menu → simple，
+   因此本文件可以覆盖前面各表的同名规则。
+   ========================================================================== */
+
+/* ---------- 落地页 ---------- */
+
+#world-menu.landing-page {
+  background-color: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+  padding-inline: max(28px, calc((100vw - 1240px) / 2));
+}
+
+.landing-page .menu-header {
+  min-height: 100px;
+}
+
+.landing-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  align-items: center;
+  min-height: 370px;
+  padding: 32px 0 24px;
+}
+
+.landing-title h1 {
+  margin: 15px 0 20px;
+  font-size: clamp(40px, 5vw, 66px);
+  line-height: 1.2;
+  letter-spacing: var(--ql-track-display);
+}
+
+.landing-title h1 em {
+  color: var(--ql-cinnabar);
+}
+
+.landing-title p {
+  color: var(--ql-ink-2);
+  font-size: 15px;
+  line-height: 1.9;
+  margin: 0;
+}
+
+/* 装饰：等高线山形 */
+.landing-art {
+  position: relative;
+  min-height: 320px;
+  overflow: hidden;
+  border-radius: 44% 44% 16% 16%;
+  background: repeating-radial-gradient(ellipse at 55% 82%,
+      transparent 0 16px, rgba(137, 78, 84, .18) 17px 18px, transparent 19px 32px);
+}
+
+.orbit {
+  position: absolute;
+  width: 86%;
+  height: 180px;
+  border-radius: 48%;
+  border: 1px solid var(--ql-line-seal);
+  background: rgba(217, 198, 155, .55);
+  transform: rotate(-18deg);
+  top: 40%;
+  left: -15%;
+}
+
+.orbit-one {
+  box-shadow: 0 9px 0 -7px var(--ql-line-seal), 0 20px 0 -18px var(--ql-line-seal), 0 32px 0 -30px var(--ql-line-seal);
+}
+
+.orbit-two {
+  top: 52%;
+  left: 29%;
+  transform: rotate(20deg);
+  background: rgba(201, 177, 132, .5);
+}
+
+.orbit-three {
+  top: 76%;
+  left: -5%;
+  width: 120%;
+  height: 210px;
+  background: rgba(77, 64, 48, .22);
+}
+
+.art-sun {
+  position: absolute;
+  top: 14%;
+  left: 64%;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ql-cinnabar);
+  box-shadow: 0 0 0 12px rgba(166, 27, 41, .12);
+}
+
+.art-label {
+  position: absolute;
+  left: 20px;
+  bottom: 19px;
+  font-size: 10px;
+  letter-spacing: var(--ql-track-label);
+  color: var(--ql-ink-2);
+}
+
+.home-options,
+.creation-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+/* 卡片：素纸为底，朱线为框，悬停时整块像盖了印 */
+.home-card,
+.creation-card {
+  position: relative;
+  display: block;
+  text-align: left;
+  padding: 26px;
+  color: var(--ql-ink);
+  /* 卡片是"纸"，正文用圆体；标题在下方单独换回宋体 */
+  font-family: var(--ql-font-body);
+  letter-spacing: var(--ql-track-body);
+  background-color: var(--ql-paper-card);
+  background-image: none;
+  text-shadow: none;
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper-card),
+    inset 0 0 0 3px var(--ql-line-faint),
+    var(--ql-shadow-sm);
+  transition: transform .2s, background-color .2s, box-shadow .2s, color .2s;
+}
+
+.home-card:hover:not(:disabled),
+.creation-card:hover:not(:disabled) {
+  transform: translateY(-4px);
+  color: var(--ql-ink);
+  background-color: #f6ebd4;
+  box-shadow:
+    inset 0 0 0 2px #f6ebd4,
+    inset 0 0 0 3px var(--ql-cinnabar),
+    var(--ql-shadow);
+}
+
+.home-card:active:not(:disabled),
+.creation-card:active:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.card-number {
+  display: block;
+  font-size: 10px;
+  color: var(--ql-ink-3);
+  letter-spacing: var(--ql-track-label);
+}
+
+.home-card strong {
+  display: block;
+  margin: 17px 0 12px;
+  font-family: var(--ql-font-display);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: var(--ql-track-display);
+}
+
+.home-card p {
+  color: var(--ql-ink-2);
+  line-height: 1.85;
+  font-size: 13px;
+  margin: 0;
+}
+
+.card-arrow {
+  position: absolute;
+  right: 25px;
+  bottom: 25px;
+  font-size: 24px;
+  color: var(--ql-cinnabar);
+}
+
+.landing-status {
+  margin: 20px 0 30px;
+}
+
+/* ---------- 内页通用 ---------- */
+
+.menu-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 45px 0 55px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.panel-heading h1 {
+  margin: 8px 0;
+  color: var(--ql-ink);
+  font-size: 34px;
+}
+
+/* 返回键：小号阳文印 */
+.menu-back {
+  padding: 9px 16px;
+  white-space: nowrap;
+  color: var(--ql-ink);
+  background-color: var(--ql-paper-hi);
+  background-image: none;
+  text-shadow: none;
+  font-family: var(--ql-font-body);
+  font-size: 12px;
+  letter-spacing: var(--ql-track-body);
+  box-shadow:
+    inset 0 0 0 1px var(--ql-seal-on),
+    inset 0 0 0 2px var(--ql-paper-hi),
+    inset 0 0 0 3px var(--ql-line-seal);
+}
+
+.menu-back:hover:not(:disabled) {
+  color: var(--ql-cinnabar-deep);
+  background-color: #f8eeda;
+  box-shadow:
+    inset 0 0 0 1px var(--ql-cinnabar),
+    inset 0 0 0 2px #f8eeda,
+    inset 0 0 0 3px rgba(166, 27, 41, .32);
+}
+
+.panel-intro {
+  color: var(--ql-ink-2);
+  font-size: 14px;
+  line-height: 1.85;
+  margin: 0 0 30px;
+}
+
+.creation-card {
+  padding-block: 40px;
+  min-height: 265px;
+}
+
+.creation-symbol {
+  display: block;
+  margin-bottom: 24px;
+  color: var(--ql-cinnabar);
+  font: 54px var(--ql-font-display);
+}
+
+.creation-card strong {
+  display: block;
+  font-family: var(--ql-font-display);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: var(--ql-track-label);
+}
+
+.creation-card p {
+  font-size: 13px;
+  color: var(--ql-ink-2);
+}
+
+.creation-card small {
+  display: inline-block;
+  padding: 5px 11px;
+  background: rgba(166, 27, 41, .08);
+  border-radius: var(--ql-radius-pill);
+  color: var(--ql-cinnabar);
+  font-size: 11px;
+}
+
+.date-fields {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 10px;
+}
+
+.date-fields label {
+  color: var(--ql-ink-2);
+  font-size: 12px;
+}
+
+.date-fields input {
+  width: 100%;
+  display: block;
+  margin-top: 6px;
+}
+
+/* ---------- 存档列表 ---------- */
+
+.saves-intro {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.saves-intro button {
+  white-space: nowrap;
+  padding: 12px 24px;
+  font-size: 14px;
+}
+
+.save-list {
+  display: grid;
+  gap: 12px;
+}
+
+.save-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 22px 26px;
+  background: var(--ql-paper-card);
+  border: 1px solid var(--ql-line-soft);
+  border-radius: var(--ql-radius);
+  box-shadow: var(--ql-shadow-sm);
+}
+
+.save-info {
+  min-width: 0;
+}
+
+.save-info h2 {
+  margin: 0 0 8px;
+  font-size: 21px;
+  overflow-wrap: anywhere;
+}
+
+.save-info p {
+  color: var(--ql-ink-2);
+  font-size: 12px;
+  line-height: 1.75;
+  margin: 0 0 5px;
+}
+
+.save-info small {
+  color: var(--ql-ink-3);
+  font-size: 11px;
+}
+
+.save-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.save-actions button {
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+.empty-saves {
+  text-align: center;
+  padding: 60px 30px;
+  border: 1px dashed var(--ql-line);
+  border-radius: var(--ql-radius);
+}
+
+.empty-saves span {
+  display: block;
+  font-family: var(--ql-font-display);
+  font-size: 25px;
+  letter-spacing: var(--ql-track-display);
+  color: var(--ql-ink);
+}
+
+.empty-saves p {
+  color: var(--ql-ink-2);
+  font-size: 13px;
+  line-height: 1.85;
+}
+
+/* ---------- 设置面板 ---------- */
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.settings-group {
+  padding: 24px;
+  background: var(--ql-paper-card);
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper-card),
+    inset 0 0 0 3px var(--ql-line-faint);
+}
+
+.settings-group h2 {
+  margin: 0 0 16px;
+  color: var(--ql-cinnabar);
+  font-size: 18px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: space-between;
+  padding: 17px 0;
+  border-bottom: 1px dashed var(--ql-line-faint);
+  color: var(--ql-ink);
+  font-size: 14px;
+}
+
+.setting-row:last-of-type {
+  border-bottom: none;
+}
+
+.setting-row small {
+  display: block;
+  color: var(--ql-ink-3);
+  font-size: 10.5px;
+  line-height: 1.6;
+  margin-top: 5px;
+}
+
+.setting-row input,
+.setting-row select {
+  width: 122px;
+  min-width: 122px;
+  font-size: 13px;
+}
+
+/* 语言选择器给足宽度，避免英文语言名被截断 */
+.setting-row select[data-locale] {
+  width: 160px;
+  min-width: 160px;
+}
+
+.speed-presets {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+
+.key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px dashed var(--ql-line-faint);
+  padding: 9px 0;
+  color: var(--ql-ink);
+  font-size: 12px;
+}
+
+.key-row:last-of-type {
+  border-bottom: none;
+}
+
+.key-binding {
+  min-width: 108px;
+  font-family: var(--ql-font-body);
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.settings-actions button {
+  padding: 11px 24px;
+  font-size: 14px;
+}
+
+/* ---------- 暂停面板（游戏内 ESC） ---------- */
+
+.pause-panel {
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 32px;
+  color: var(--ql-ink);
+  background: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper),
+    inset 0 0 0 3px var(--ql-line),
+    var(--ql-shadow-lg);
+}
+
+.pause-panel h1 {
+  margin: 13px 0;
+  color: var(--ql-ink);
+  font-size: 23px;
+}
+
+.pause-description {
+  color: var(--ql-ink-2);
+  font-size: 12px;
+  margin: 0 0 21px;
+}
+
+.pause-panel .field-title {
+  margin: 14px 0 8px;
+}
+
+.pause-panel>input {
+  width: 100%;
+  font-size: 14px;
+}
+
+.pause-actions {
+  display: grid;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.pause-actions button {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.pause-note {
+  display: block;
+  margin-top: 12px;
+  font-size: 10.5px;
+  line-height: 1.85;
+  color: var(--ql-ink-3);
+}
+
+.pause-settings {
+  width: min(1020px, 100%);
+}
+
+.pause-settings .panel-intro {
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+
+.pause-settings .panel-heading h1 {
+  font-size: 28px;
+}
+
+/* ---------- 游戏内顶栏 ---------- */
+
+.game-bar {
+  position: fixed;
+  z-index: 30;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 22px;
+  min-height: 68px;
+  color: var(--ql-ink);
+  background: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+  border-bottom: 1px solid var(--ql-line);
+  box-shadow: 0 2px 12px rgba(58, 47, 33, .3);
+}
+
+.game-identity {
+  min-width: 0;
+}
+
+.game-identity strong {
+  display: block;
+  font-family: var(--ql-font-display);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: var(--ql-track-label);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-identity span {
+  display: block;
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--ql-ink-2);
+  font-family: var(--ql-font-mono);
+}
+
+.game-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.game-tools>span {
+  font-size: 11px;
+  color: var(--ql-ink-2);
+}
+
+.game-tools button {
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+/* ---------- 游戏内 2D 地图 ---------- */
+
+.game-map {
+  position: fixed;
+  inset: 68px 0 0;
+  display: flex;
+  flex-direction: column;
+  color: var(--ql-ink);
+  background: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+}
+
+.game-map-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: var(--ql-paper-hi);
+  border-bottom: 1px solid var(--ql-line);
+}
+
+.map-mode-label {
+  font-family: var(--ql-font-display);
+  font-size: 15px;
+  letter-spacing: var(--ql-track-label);
+}
+
+.map-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.map-buttons label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--ql-ink-2);
+}
+
+/* 工具条上的印章收小一号，免得一排按钮喧宾夺主 */
+.map-buttons button {
+  padding: 6px 12px;
+  font-family: var(--ql-font-body);
+  font-size: 12px;
+  letter-spacing: var(--ql-track-body);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .7),
+    inset 0 0 0 2px var(--ql-seal-on),
+    inset 0 0 0 3px rgba(251, 244, 227, .3);
+}
+
+.map-buttons select {
+  font-size: 12px;
+  padding: 6px 26px 6px 10px;
+}
+
+.game-map-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: #241c13;
+}
+
+.game-map-viewport canvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.game-map-tip {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  padding: 7px 13px;
+  border-radius: var(--ql-radius);
+  font-size: 11px;
+  color: var(--ql-paper);
+  background: rgba(36, 28, 19, .85);
+  border: 1px solid rgba(251, 244, 227, .18);
+  pointer-events: none;
+}
+
+.game-map-detail {
+  padding: 11px 20px;
+  min-height: 42px;
+  font-size: 12px;
+  color: var(--ql-ink-2);
+  background: var(--ql-paper-hi);
+  border-top: 1px solid var(--ql-line-soft);
+  font-family: var(--ql-font-mono);
+}
+
+/* ==========================================================================
+   响应式适配
+   ========================================================================== */
+
+@media (max-width: 760px) {
+  #world-menu.landing-page {
+    padding-inline: 20px;
+  }
+
+  .landing-page .menu-header {
+    min-height: 80px;
+  }
+
+  .landing-hero {
+    min-height: 280px;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 12px;
+  }
+
+  .landing-art {
+    min-height: 220px;
+  }
+
+  .landing-title h1 {
+    font-size: 38px;
+  }
+
+  .landing-title p {
+    font-size: 12px;
+  }
+
+  .home-options,
+  .creation-options {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .home-card {
+    padding: 18px 22px;
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    align-items: center;
+  }
+
+  .card-number {
+    grid-column: 1 / -1;
+    margin-bottom: 7px;
+  }
+
+  .home-card strong {
+    font-size: 23px;
+    margin: 0;
+  }
+
+  .home-card p {
+    font-size: 11px;
+  }
+
+  .card-arrow {
+    font-size: 19px;
+    right: 16px;
+    bottom: 21px;
+  }
+
+  .menu-page {
+    padding-top: 26px;
+  }
+
+  .panel-heading {
+    align-items: flex-start;
+  }
+
+  .panel-heading h1 {
+    font-size: 27px;
+  }
+
+  .menu-back {
+    font-size: 10px;
+    padding: 9px 11px;
+  }
+
+  .creation-card {
+    padding: 24px;
+    min-height: 0;
+  }
+
+  .creation-symbol {
+    float: right;
+    margin: 0;
+    font-size: 46px;
+  }
+
+  .creation-card strong {
+    font-size: 21px;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-group {
+    padding: 20px;
+  }
+
+  .saves-intro,
+  .save-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .saves-intro {
+    gap: 0;
+    margin-bottom: 22px;
+  }
+
+  .save-actions button {
+    flex: 1;
+  }
+
+  .pause-panel {
+    padding: 24px;
+  }
+
+  .game-bar {
+    padding-inline: 14px;
+  }
+
+  .game-tools>span {
+    display: none;
+  }
+
+  .game-map-tools {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .game-map-detail {
+    font-size: 10px;
+  }
+
+  .game-map-tip {
+    font-size: 9px;
+  }
+}

@@ -1,104 +1,102 @@
-@font-face {
-  font-family: 'ResourceHanRounded';
-  src: url('/content/assets/ui/fonts/ResourceHanRoundedCN-Medium.ttf') format('truetype');
-  font-display: swap;
-}
-
-:root {
-  --ui-font: 'ResourceHanRounded', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  height: 100%;
-  overflow: hidden;
-  background: #000;
-  font-family: var(--ui-font);
-  color: #fff;
-  user-select: none;
-}
+/* ==========================================================================
+   style.css · 全局图层：准星、加载提示、水色滤镜、调试面板
+   颜色与字体一律取自 theme.css 的令牌，本文件不写死色值。
+   ========================================================================== */
 
 #app canvas {
   display: block;
 }
 
-.hidden {
-  display: none !important;
-}
-
+/* ---- 准星：纸白点 + 墨线描边，在任何天光下都能看清 ---- */
 #crosshair {
   position: fixed;
   left: 50%;
   top: 50%;
-  width: 4px;
-  height: 4px;
-  margin: -2px 0 0 -2px;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
-  pointer-events: auto;
+  background: rgba(251, 244, 227, .92);
+  box-shadow: 0 0 0 1px rgba(77, 64, 48, .6);
+  pointer-events: none;
 }
 
+/* ---- 入水滤镜：属于画面效果，保留水色，只压低饱和以免跳出配色 ---- */
 #water-tint {
   position: fixed;
   inset: 0;
-  background: rgba(20, 60, 150, 0.35);
-  pointer-events: auto;
+  background: rgba(20, 60, 150, .32);
+  pointer-events: none;
 }
 
+/* ---- 加载提示：卷面上的小签 ---- */
 #loading {
   position: fixed;
   left: 50%;
   bottom: 12%;
   transform: translateX(-50%);
-  padding: 8px 18px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.55);
+  padding: 9px 22px;
+  font-family: var(--ql-font-display);
   font-size: 15px;
-  pointer-events: auto;
+  letter-spacing: var(--ql-track-label);
+  color: var(--ql-ink);
+  background: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 1px var(--ql-line-seal),
+    inset 0 0 0 2px var(--ql-paper),
+    inset 0 0 0 3px var(--ql-line-faint),
+    var(--ql-shadow);
+  pointer-events: none;
 }
 
-/* ---- 开始 / 暂停界面 ---- */
+/* ==========================================================================
+   开始 / 暂停浮层（旧版面板，保留结构以免影响历史调用方）
+   ========================================================================== */
+
 #start-screen {
   position: fixed;
   inset: 0;
+  z-index: 10010;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 14, 22, 0.45);
-  cursor: pointer;
+  padding: 24px;
+  cursor: default;
+  overflow-y: auto;
+  /* 半透明墨色罩，让纸面界面从场景中"浮"出来 */
+  background: rgba(32, 25, 16, .55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .start-panel {
-  padding: 24px 32px;
-  border-radius: 14px;
-  background: rgba(16, 20, 28, 0.82);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  padding: 26px 34px;
+  color: var(--ql-ink);
+  background: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper),
+    inset 0 0 0 3px var(--ql-line),
+    var(--ql-shadow-lg);
 }
 
 .start-panel h1 {
   margin: 0 0 6px;
-  font-size: 24px;
-  letter-spacing: 1px;
+  font-size: 25px;
 }
 
 .start-hint {
   margin: 0 0 14px;
-  color: #9fc4ff;
-  font-size: 14px;
+  color: var(--ql-cinnabar);
+  font-size: 13.5px;
 }
 
 .controls {
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
 .controls td {
@@ -106,56 +104,80 @@ body {
 }
 
 .controls td:first-child {
-  color: #ffd27a;
+  color: var(--ql-cinnabar);
   white-space: nowrap;
+  font-family: var(--ql-font-display);
 }
 
-/* ---- F12 调试面板 ---- */
+/* ==========================================================================
+   F12 调试面板
+   ========================================================================== */
+
 .debug-overlay {
-  z-index: 10000;
   position: fixed;
+  z-index: 10000;
   top: 12px;
   right: 12px;
-  width: 268px;
-  padding: 10px;
-  border-radius: 10px;
-  background: rgba(12, 14, 20, 0.72);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  width: 276px;
+  padding: 12px;
+  color: var(--ql-ink);
+  background: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper),
+    inset 0 0 0 3px var(--ql-line),
+    var(--ql-shadow);
   font-size: 13px;
   pointer-events: auto;
 }
 
 .debug-title {
-  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--ql-line-soft);
+  color: var(--ql-cinnabar);
+  font-family: var(--ql-font-display);
   font-size: 13px;
-  color: #c9d3e6;
+  letter-spacing: var(--ql-track-label);
 }
 
+/* 快捷键提示：小印章 */
 .debug-key {
-  float: right;
-  padding: 0 6px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.15);
-  font-size: 11px;
+  padding: 1px 7px;
+  color: var(--ql-ink-inv);
+  background: var(--ql-seal-on);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .7),
+    inset 0 0 0 2px var(--ql-seal-on),
+    inset 0 0 0 3px rgba(251, 244, 227, .35);
+  font-family: var(--ql-font-body);
+  font-size: 10.5px;
+  letter-spacing: var(--ql-track-body);
 }
 
 .debug-minimap {
   display: block;
-  width: 248px;
-  height: 248px;
-  border-radius: 6px;
+  width: 252px;
+  height: 252px;
+  border-radius: var(--ql-radius);
   image-rendering: pixelated;
+  box-shadow: 0 0 0 1px var(--ql-line);
 }
 
 .debug-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 10px;
-  margin: 6px 0 4px;
+  margin: 8px 0 4px;
   max-height: 96px;
   overflow-y: auto;
   font-size: 11px;
-  color: #c9d3e6;
+  color: var(--ql-ink-2);
 }
 
 .debug-legend i {
@@ -163,18 +185,73 @@ body {
   width: 9px;
   height: 9px;
   margin-right: 3px;
-  border-radius: 2px;
+  border-radius: 1px;
   vertical-align: -1px;
+  box-shadow: 0 0 0 1px var(--ql-line-soft);
 }
 
 .debug-type {
-  margin-top: 4px;
-  font-size: 15px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ql-line-soft);
+  font-size: 14px;
 }
 
 .debug-info {
   margin-top: 4px;
   font-size: 11px;
-  color: #aab4c8;
+  color: var(--ql-ink-2);
+  line-height: 1.55;
+}
+
+/* ---- 历法控制区（调试面板内） ---- */
+
+.debug-calendar {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ql-line-soft);
+  font-size: 12px;
+}
+
+.debug-calendar-text {
+  margin-bottom: 6px;
+  white-space: pre-wrap;
   line-height: 1.5;
+  color: var(--ql-ink);
+}
+
+.debug-calendar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.debug-calendar-row button {
+  padding: 3px 8px;
+  font-family: var(--ql-font-body);
+  font-size: 11px;
+  letter-spacing: var(--ql-track-body);
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 244, 227, .7),
+    inset 0 0 0 2px var(--ql-seal-on),
+    inset 0 0 0 3px rgba(251, 244, 227, .3);
+}
+
+/* 当前生效的时间流速：翻成阳文印，一眼可辨 */
+.debug-calendar-row button.is-active {
+  color: var(--ql-ink);
+  background-color: var(--ql-paper-hi);
+  background-image: none;
+  text-shadow: none;
+  box-shadow:
+    inset 0 0 0 1px var(--ql-cinnabar),
+    inset 0 0 0 2px var(--ql-paper-hi),
+    inset 0 0 0 3px rgba(166, 27, 41, .35);
+}
+
+#cal-jump-input {
+  padding: 2px 6px;
+  font-size: 11px;
 }

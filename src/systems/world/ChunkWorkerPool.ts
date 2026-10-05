@@ -1,7 +1,7 @@
 /**
  * 区块 Worker 池：把生成任务分发给多个 Worker，限制每个 Worker 的并发数。
  */
-import type { ClimateWeights } from './WorldSettings';
+import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import type { ChunkResultMessage, WorkerRequest } from './ChunkProtocol';
 
 export class ChunkWorkerPool {
@@ -9,7 +9,7 @@ export class ChunkWorkerPool {
   private readonly inFlight: number[] = [];
   private readonly perWorker = 2;
 
-  constructor(seed: number, climateWeights: ClimateWeights, private readonly onResult: (msg: ChunkResultMessage) => void, count?: number) {
+  constructor(seed: number, climateWeights: ClimateWeights, generation: WorldGeneration, private readonly onResult: (msg: ChunkResultMessage) => void, count?: number) {
     const n = count ?? Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 4) - 1));
     for (let i = 0; i < n; i++) {
       const w = new Worker(new URL('./chunk.worker.ts', import.meta.url), { type: 'module' });
@@ -19,7 +19,7 @@ export class ChunkWorkerPool {
         this.onResult(e.data);
       };
       w.onerror = (e) => console.error('[ChunkWorkerPool] worker error', e);
-      w.postMessage({ kind: 'init', seed, climateWeights } satisfies WorkerRequest);
+      w.postMessage({ kind: 'init', seed, climateWeights, generation } satisfies WorkerRequest);
       this.workers.push(w);
       this.inFlight.push(0);
     }

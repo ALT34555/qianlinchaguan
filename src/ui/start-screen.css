@@ -1,5 +1,6 @@
 /* ==========================================================================
-   茜林茶馆 · 世界创建启动画面与 2D 地图视口样式表
+   start-screen.css · 启动界面 / 世界创建器 / 2D 世界图志
+   颜色与字体取自 theme.css 的令牌；内容数据自带的颜色（气候、区块）保留。
    ========================================================================== */
 
 #world-menu {
@@ -7,44 +8,120 @@
   inset: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  background: radial-gradient(circle at 50% 0%, #f4f6ee 0%, #e6ebe0 100%);
-  color: #233e35;
   padding: 0 max(24px, calc((100vw - 1420px) / 2));
-  font-family: var(--ui-font);
+  color: var(--ql-ink);
+  background-color: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+  font-family: var(--ql-font-body);
   transition: background 0.3s ease;
 }
 
 /* 顶部导航条 */
+.planet-settings {
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--ql-paper-hi);
+  border: 1px solid var(--ql-line-soft);
+  border-radius: var(--ql-radius);
+}
+
+.planet-settings .field-title {
+  margin-top: 0;
+}
+
+.planet-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.planet-fields label {
+  font-size: 13px;
+  color: var(--ql-ink);
+}
+
+.planet-fields small {
+  display: block;
+  font-size: 10px;
+  color: var(--ql-ink-3);
+  margin: 2px 0 5px;
+}
+
+.planet-fields input {
+  width: 100%;
+}
+
+.planet-fields .tectonic-setting {
+  grid-column: 1 / -1;
+}
+
+.tectonic-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tectonic-heading output {
+  font-variant-numeric: tabular-nums;
+}
+
+.tectonic-setting input[type="range"] {
+  display: block;
+  height: 28px;
+  margin: 0;
+}
+
+.coverage-setting {
+  display: block;
+  margin-top: 18px;
+  font-size: 13px;
+}
+.coverage-setting small, .coverage-labels {
+  color: var(--ql-ink-3);
+  font-size: 11px;
+}
+.coverage-labels {
+  display: flex;
+  justify-content: space-between;
+}
+.coverage-setting input { width: 100%; }
+
+.planet-view-tools {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.atlas-title-group {
+  flex-wrap: wrap;
+}
+
+.atlas-view-tools {
+  flex-wrap: wrap;
+}
+
 .menu-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   min-height: 84px;
-  border-bottom: 1px solid rgba(41, 77, 57, 0.15);
+  border-bottom: 1px solid var(--ql-line-soft);
   gap: 20px;
 }
 
 .wordmark {
-  color: #233e35;
-  text-decoration: none;
-  font-size: 26px;
-  letter-spacing: 4px;
-  font-weight: 700;
   display: inline-block;
-  transition: transform 0.2s ease;
+  color: var(--ql-ink);
+  text-decoration: none;
+  font-family: var(--ql-font-display);
+  font-size: 26px;
+  letter-spacing: var(--ql-track-display);
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .wordmark:hover {
+  color: var(--ql-cinnabar);
   transform: translateY(-1px);
-}
-
-.wordmark span {
-  display: block;
-  font-size: 9.5px;
-  letter-spacing: 2.8px;
-  margin-top: 4px;
-  opacity: 0.6;
-  font-weight: 500;
 }
 
 .header-right {
@@ -53,22 +130,9 @@
   gap: 16px;
 }
 
-.edition {
-  color: #6d7f71;
-  font-size: 12px;
-  letter-spacing: 1.5px;
-  background: rgba(41, 77, 57, 0.06);
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid rgba(41, 77, 57, 0.12);
-}
-
 .header-action-btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px !important;
-  font-weight: 600;
-  cursor: pointer;
+  padding: 8px 18px;
+  font-size: 13px;
 }
 
 /* 主双栏布局 */
@@ -88,40 +152,31 @@
   display: none;
 }
 
-/* 左侧世界设置面板 */
+/* 左侧世界设置面板：线装书式双框 */
 .world-settings {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(210, 222, 201, 0.8);
-  border-radius: 14px;
+  background: var(--ql-paper-card);
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
   padding: 24px 26px;
-  box-shadow: 0 10px 30px rgba(45, 68, 48, 0.04);
-}
-
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 3px;
-  color: #728a6f;
-  font-weight: 600;
-  text-transform: uppercase;
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper-card),
+    inset 0 0 0 3px var(--ql-line-soft),
+    var(--ql-shadow);
 }
 
 .world-settings h1 {
   font-size: 38px;
-  line-height: 1.25;
-  font-weight: 600;
   margin: 12px 0 14px;
-  letter-spacing: 3px;
-  color: #1e3a2b;
+  color: var(--ql-ink);
 }
 
 .world-settings h1 span {
-  color: #6d8e62;
+  color: var(--ql-cinnabar);
 }
 
 .menu-intro {
   font-size: 13px;
-  color: #6b7a6d;
+  color: var(--ql-ink-2);
   line-height: 1.8;
   margin-bottom: 20px;
 }
@@ -134,9 +189,9 @@
 .field-label-mini {
   display: block;
   font-size: 11px;
-  color: #728472;
-  margin-bottom: 6px;
-  font-weight: 500;
+  color: var(--ql-ink-3);
+  margin-bottom: 8px;
+  letter-spacing: var(--ql-track-label);
 }
 
 .presets-row {
@@ -145,99 +200,112 @@
   gap: 6px;
 }
 
-.preset-pill {
-  background: #f1f4ea;
-  border: 1px solid #d4dec9;
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 11px !important;
-  color: #405943;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.preset-pill:hover {
-  background: #294e3b;
-  color: #ffffff;
-  border-color: #294e3b;
-  transform: translateY(-1px);
-}
-
 /* 表单字段 */
 .field-title {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #2c4a37;
+  margin: 14px 0 8px;
+  color: var(--ql-ink);
+  font-family: var(--ql-font-display);
+  letter-spacing: var(--ql-track-label);
 }
 
 .field-title small {
-  color: #829481;
+  color: var(--ql-ink-3);
   font-size: 11px;
-  font-weight: normal;
+  font-family: var(--ql-font-body);
+  letter-spacing: var(--ql-track-body);
 }
 
 .seed-field {
   display: flex;
-  border: 1px solid #c9d5bf;
-  background: #ffffff;
-  border-radius: 8px;
+  background: var(--ql-paper-hi);
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
   overflow: hidden;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.seed-field:focus-within {
+  border-color: var(--ql-cinnabar);
+  box-shadow: 0 0 0 3px rgba(166, 27, 41, .16);
+}
+
+/* 组合输入框：外框由 .seed-field 提供，内部控件去掉自己的框。
+   注意用 background-color 而不是 background 简写 —— 简写会把
+   select 的下指箭头（background-image）一起清掉。 */
+.seed-field input,
+.seed-field select {
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.seed-field input,
+.seed-field input:not([type]) {
+  padding: 10px 14px;
+}
+
+.seed-field select {
+  padding: 10px 28px 10px 14px;
+  /* 重新声明下拉箭头，避免被 appearance:none 抹掉后没有指示 */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ql-ink-2) 50%),
+    linear-gradient(135deg, var(--ql-ink-2) 50%, transparent 50%);
+  background-position: right 14px center, right 9px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.seed-field input:focus,
+.seed-field select:focus {
+  border: 0;
+  background-color: transparent;
+  box-shadow: none;
 }
 
 #world-menu input,
-#world-menu button,
 #world-menu select {
   font: inherit;
 }
 
 #world-menu button {
-  cursor: pointer;
-  transition: filter 0.15s, transform 0.15s, background 0.15s;
-}
-
-#world-menu button:hover {
-  filter: brightness(0.96);
-}
-
-#world-menu button:focus-visible,
-#world-menu input:focus-visible,
-#world-menu select:focus-visible {
-  outline: 2px solid #2d6b4f;
-  outline-offset: 2px;
-}
-
-#world-menu button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+  transition: background-color .15s ease, box-shadow .15s ease, transform .12s ease;
 }
 
 #world-seed {
   width: 100%;
   padding: 10px 14px;
-  color: #223c2d;
-  border: 0;
-  background: transparent;
+  color: var(--ql-ink);
   font-size: 13.5px;
   user-select: text;
 }
 
-#random-seed {
-  border: 0;
-  border-left: 1px solid #dbe3d2;
-  width: 44px;
-  color: #486d52;
-  background: #f6f8f1;
-  font-size: 20px !important;
+/* 历法下拉在 .seed-field 内，撑满整行 */
+.calendar-select {
+  width: 100%;
 }
 
-#random-seed:hover {
-  background: #edf1e6;
-  color: #234d31;
+#random-seed {
+  flex: 0 0 auto;
+  border-radius: 0;
+  border-left: 1px solid var(--ql-line-soft);
+  width: 46px;
+  padding: 0;
+  font-family: var(--ql-font-display);
+  font-size: 19px;
+  box-shadow: none;
+  background-color: var(--ql-paper-lo);
+  color: var(--ql-ink);
+  text-shadow: none;
+}
+
+#random-seed:hover:not(:disabled) {
+  color: var(--ql-ink-inv);
+  background-color: var(--ql-seal-on);
 }
 
 .climate-heading {
@@ -245,16 +313,20 @@
 }
 
 .climate-bar {
-  height: 8px;
+  height: 10px;
   display: flex;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--ql-radius);
   margin: 10px 0 12px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 1px var(--ql-line-soft), inset 0 1px 2px rgba(77, 64, 48, .18);
 }
 
 .climate-bar span {
   transition: width 0.25s ease-out;
+}
+
+.climate-inputs {
+  padding: 4px 0 2px;
 }
 
 .climate-row {
@@ -264,53 +336,38 @@
   padding: 5px 0;
   gap: 10px;
   font-size: 12.5px;
+  color: var(--ql-ink);
 }
 
 .climate-row i {
   display: inline-block;
   width: 9px;
   height: 9px;
-  border-radius: 50%;
+  border-radius: 1px;
   margin-right: 8px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 1px var(--ql-line-soft);
 }
 
 .climate-row input {
   width: 100%;
   padding: 4px 6px;
-  border: 1px solid #cbd6c2;
-  border-radius: 5px;
-  background: #ffffff;
-  color: #284435;
   font-size: 12px;
-  user-select: text;
   text-align: right;
 }
 
 .climate-row output {
   text-align: right;
   font-size: 11.5px;
-  color: #6a7c68;
-  font-weight: 500;
+  color: var(--ql-ink-2);
+  font-family: var(--ql-font-mono);
 }
 
 .setting-note {
-  font-size: 11px;
-  color: #72846f;
-  line-height: 1.8;
   margin: 14px 0 0;
-  background: rgba(70, 110, 80, 0.05);
-  padding: 8px 10px;
-  border-radius: 6px;
 }
 
 .menu-status {
-  font-size: 11.5px;
-  color: #925816;
-  min-height: 28px;
-  line-height: 1.5;
-  margin: 10px 0;
-  font-weight: 500;
+  margin: 12px 0 10px;
 }
 
 .menu-actions {
@@ -322,63 +379,23 @@
 .menu-actions button {
   flex: 1;
   padding: 12px 14px;
-  border-radius: 8px;
-  font-size: 13.5px !important;
-  font-weight: 600;
-  display: flex;
+  font-size: 13.5px;
   justify-content: space-between;
-  align-items: center;
 }
 
 .btn-arrow {
-  font-size: 16px;
+  font-size: 15px;
   margin-left: 4px;
   transition: transform 0.15s ease;
 }
 
-button:hover .btn-arrow {
+button:hover:not(:disabled) .btn-arrow {
   transform: translateX(2px);
-}
-
-.menu-actions .primary,
-.header-action-btn.primary,
-.hero-browse-btn.primary {
-  background: #254b35;
-  color: #f7f9f2;
-  border: 1px solid #1f3f2d;
-  box-shadow: 0 4px 12px rgba(37, 75, 53, 0.25);
-}
-
-.menu-actions .primary:hover,
-.hero-browse-btn.primary:hover {
-  background: #1d3e2b;
-}
-
-.menu-actions .secondary {
-  background: #ffffff;
-  color: #2b4f37;
-  border: 1px solid #bfccb4;
-}
-
-.menu-actions .secondary:hover {
-  background: #f4f7ee;
-  border-color: #9eaf91;
 }
 
 .text-button {
   display: block;
-  margin: 14px auto 0;
-  border: 0;
-  background: none;
-  color: #6f806d;
-  font-size: 11.5px !important;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
-.text-button:hover {
-  color: #254b35;
+  margin: 16px auto 0;
 }
 
 /* ==========================================================================
@@ -387,17 +404,20 @@ button:hover .btn-arrow {
 
 .atlas-panel {
   min-width: 0;
-  background: #ffffff;
-  border: 1px solid #d2dbc9;
-  border-radius: 14px;
-  padding: 22px;
   align-self: start;
-  box-shadow: 0 16px 45px rgba(38, 59, 42, 0.06);
   display: flex;
   flex-direction: column;
+  padding: 22px;
+  background: var(--ql-paper-card);
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper-card),
+    inset 0 0 0 3px var(--ql-line-soft),
+    var(--ql-shadow);
 }
 
-/* 未开启地图时的占位视觉卡片 */
+/* 未开启地图时的占位视觉卡片：以等高线画"山" */
 .atlas-placeholder {
   min-height: 580px;
   display: flex;
@@ -405,9 +425,13 @@ button:hover .btn-arrow {
   justify-content: center;
   align-items: center;
   text-align: center;
-  background: radial-gradient(ellipse at 50% 38%, #f0f4e6 0%, #ffffff 70%);
-  border-radius: 10px;
   padding: 40px 20px;
+  border-radius: var(--ql-radius);
+  /* 先铺一层中心提亮的柔光，再叠宣纸底纹；变量展开后是多个 background-image 层 */
+  background-color: var(--ql-paper);
+  background-image:
+    radial-gradient(ellipse at 50% 38%, rgba(255, 253, 246, .7) 0%, rgba(255, 253, 246, 0) 68%),
+    var(--ql-paper-weave);
 }
 
 .hero-art-container {
@@ -418,67 +442,40 @@ button:hover .btn-arrow {
   width: 220px;
   height: 220px;
   border-radius: 48% 52% 66% 34% / 52% 43% 57% 48%;
-  border: 1.5px solid rgba(130, 160, 120, 0.35);
+  border: 1.5px solid var(--ql-line-seal);
   box-shadow:
-    0 0 0 16px rgba(160, 190, 150, 0.12),
-    0 0 0 17px rgba(130, 160, 120, 0.28),
-    0 0 0 34px rgba(160, 190, 150, 0.08),
-    0 0 0 35px rgba(130, 160, 120, 0.22),
-    0 0 0 52px rgba(160, 190, 150, 0.05),
-    0 0 0 53px rgba(130, 160, 120, 0.15);
+    0 0 0 16px rgba(137, 78, 84, .08),
+    0 0 0 17px rgba(137, 78, 84, .22),
+    0 0 0 34px rgba(137, 78, 84, .05),
+    0 0 0 35px rgba(137, 78, 84, .16),
+    0 0 0 52px rgba(137, 78, 84, .03),
+    0 0 0 53px rgba(137, 78, 84, .1);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 22px;
-  transform: rotate(-12deg);
+  /* 摆正：等高线圈不再倾斜，悬停只做轻微放大 */
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .contour-art:hover {
-  transform: rotate(-5deg) scale(1.03);
-}
-
-.contour-art span {
-  font-size: 44px;
-  color: #55754b;
-  writing-mode: vertical-rl;
-  transform: rotate(12deg);
-  letter-spacing: 12px;
-  font-weight: 700;
-}
-
-.contour-art span:last-child {
-  margin-top: 40px;
-  color: #8fa881;
+  transform: scale(1.03);
 }
 
 .placeholder-text-group {
   max-width: 440px;
 }
 
-.hero-tag {
-  display: inline-block;
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: #6a8264;
-  background: rgba(106, 130, 100, 0.12);
-  padding: 4px 10px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  font-weight: 600;
-}
-
 .placeholder-text-group h3 {
-  font-size: 20px;
+  font-size: 21px;
   margin: 0 0 10px;
-  color: #1f3b2a;
-  letter-spacing: 1px;
+  color: var(--ql-ink);
 }
 
 .placeholder-text-group p {
-  color: #71846f;
+  color: var(--ql-ink-2);
   font-size: 13px;
-  line-height: 1.8;
+  line-height: 1.85;
   margin: 0 0 24px;
 }
 
@@ -487,10 +484,7 @@ button:hover .btn-arrow {
   align-items: center;
   gap: 8px;
   padding: 13px 28px;
-  border-radius: 8px;
-  font-size: 14px !important;
-  font-weight: 600;
-  cursor: pointer;
+  font-size: 14px;
 }
 
 /* ==========================================================================
@@ -503,7 +497,6 @@ button:hover .btn-arrow {
   gap: 14px;
 }
 
-/* 顶部操作条 */
 .atlas-header-bar {
   display: flex;
   justify-content: space-between;
@@ -511,7 +504,7 @@ button:hover .btn-arrow {
   flex-wrap: wrap;
   gap: 12px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #e1e7da;
+  border-bottom: 1px solid var(--ql-line-soft);
 }
 
 .atlas-title-group {
@@ -521,21 +514,19 @@ button:hover .btn-arrow {
 }
 
 .atlas-title-group h2 {
-  font-size: 18px;
+  font-size: 19px;
   margin: 0;
-  color: #1e3a2b;
-  font-weight: 600;
-  letter-spacing: 1px;
+  color: var(--ql-ink);
 }
 
 .coord-pill {
   font-size: 11.5px;
-  color: #557053;
-  background: #edf2e4;
-  border: 1px solid #d5dec9;
-  border-radius: 14px;
-  padding: 3px 10px;
-  font-family: system-ui, sans-serif;
+  color: var(--ql-ink-2);
+  background: var(--ql-paper-hi);
+  border: 1px solid var(--ql-line-soft);
+  border-radius: var(--ql-radius-pill);
+  padding: 3px 11px;
+  font-family: var(--ql-font-mono);
 }
 
 .atlas-view-tools {
@@ -544,27 +535,10 @@ button:hover .btn-arrow {
   gap: 6px;
 }
 
-.tool-btn {
-  background: #f1f5e9;
-  border: 1px solid #cad6bf;
-  border-radius: 5px;
-  padding: 5px 10px;
-  color: #38563a;
-  font-size: 12px !important;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.tool-btn:hover {
-  background: #e2ecd6;
-  border-color: #aebfa0;
-  color: #1c3d1f;
-}
-
 .tool-btn.icon-btn {
-  padding: 5px 9px;
-  font-size: 13px !important;
+  min-width: 30px;
+  padding: 5px 8px;
+  font-size: 12px;
 }
 
 /* 地图主体工作区：视口 + 右侧控制器 */
@@ -575,16 +549,18 @@ button:hover .btn-arrow {
   min-height: 560px;
 }
 
-/* 地图视口 */
+/* 地图视口：以深墨色衬托地图色块 */
 .map-viewport-wrapper {
   position: relative;
-  background: #171c19;
-  border: 1px solid #bccab0;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
   display: flex;
   min-height: 540px;
+  overflow: hidden;
+  background: #241c13;
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
+  box-shadow:
+    inset 0 0 0 2px rgba(251, 244, 227, .1),
+    inset 0 2px 10px rgba(0, 0, 0, .5);
 }
 
 .atlas-canvas {
@@ -599,68 +575,70 @@ button:hover .btn-arrow {
   position: absolute;
   left: 12px;
   bottom: 12px;
-  background: rgba(14, 20, 16, 0.82);
-  backdrop-filter: blur(8px);
-  color: #d1dcd0;
+  padding: 5px 12px;
+  color: var(--ql-paper);
+  background: rgba(36, 28, 19, .85);
+  border: 1px solid rgba(251, 244, 227, .18);
+  border-radius: var(--ql-radius);
   font-size: 11px;
-  padding: 5px 11px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
 }
 
 /* ==========================================================================
-   右侧新增控制窗口 (.atlas-control-panel)
+   右侧控制窗口
    ========================================================================== */
 
 .atlas-control-panel {
-  background: #f8faf4;
-  border: 1px solid #d2dec7;
-  border-radius: 10px;
-  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
+  padding: 16px;
   max-height: 640px;
+  overflow-y: auto;
+  background: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius);
 }
 
 .ctrl-group {
-  background: #ffffff;
-  border: 1px solid #dfe7d7;
-  border-radius: 8px;
   padding: 12px 14px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  background: var(--ql-paper-card);
+  border: 1px solid var(--ql-line-soft);
+  border-radius: var(--ql-radius);
 }
 
 .ctrl-group-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #21402d;
+  gap: 8px;
   margin-bottom: 10px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #ecf1e6;
+  border-bottom: 1px solid var(--ql-line-faint);
+  color: var(--ql-ink);
+  font-family: var(--ql-font-display);
+  font-size: 13px;
+  letter-spacing: var(--ql-track-label);
 }
 
 .red-line-badge {
+  font-family: var(--ql-font-body);
   font-size: 10.5px;
-  color: #d62828;
-  font-weight: 500;
+  letter-spacing: var(--ql-track-body);
+  color: var(--ql-cinnabar);
 }
 
-/* 开关行 (Toggle Switch) */
+/* 开关行 */
 .ctrl-toggle-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 7px 0;
+  padding: 8px 0;
   cursor: pointer;
   user-select: none;
-  border-bottom: 1px dashed #f0f4ea;
+  border-bottom: 1px dashed var(--ql-line-faint);
 }
 
 .ctrl-toggle-row:last-of-type {
@@ -674,66 +652,80 @@ button:hover .btn-arrow {
 }
 
 .toggle-text strong {
+  font-family: var(--ql-font-body);
   font-size: 12px;
-  color: #264230;
-  font-weight: 600;
+  color: var(--ql-ink);
+  font-weight: 400;
+  letter-spacing: var(--ql-track-body);
 }
 
 .toggle-text small {
   font-size: 10px;
-  color: #7b8e78;
+  color: var(--ql-ink-3);
 }
 
-/* 现代化开关样式 */
-.switch-input {
+/* 开关：方形滑钮，与印章语言一致。
+   写成 input.switch-input 是为了压过 theme.css 的 input[type="checkbox"] 尺寸，
+   真正的可见控件是后面的 .switch-slider。 */
+input.switch-input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
+  margin: 0;
+  border: 0;
+  pointer-events: none;
 }
 
 .switch-slider {
   position: relative;
-  width: 36px;
-  height: 20px;
-  background-color: #d2dcce;
-  border-radius: 20px;
-  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
+  width: 38px;
+  height: 20px;
   margin-left: 10px;
+  background-color: var(--ql-paper-deep);
+  border: 1px solid var(--ql-line);
+  border-radius: var(--ql-radius-pill);
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
 }
 
 .switch-slider::before {
   position: absolute;
   content: "";
-  height: 16px;
-  width: 16px;
+  height: 14px;
+  width: 14px;
   left: 2px;
-  bottom: 2px;
-  background-color: white;
+  bottom: 1px;
+  background-color: var(--ql-paper-hi);
   border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(58, 47, 33, .4);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .switch-input:checked + .switch-slider {
-  background-color: #286443;
+  background-color: var(--ql-cinnabar);
+  border-color: var(--ql-cinnabar-deep);
 }
 
 .switch-input:checked + .switch-slider::before {
-  transform: translateX(16px);
+  transform: translateX(18px);
+}
+
+.switch-input:focus-visible + .switch-slider {
+  outline: 2px solid var(--ql-cinnabar);
+  outline-offset: 2px;
 }
 
 /* 气候细分标签面板 */
 .climate-tags-panel {
   margin-top: 10px;
   padding-top: 8px;
-  border-top: 1px solid #edf2e6;
+  border-top: 1px solid var(--ql-line-faint);
 }
 
 .climate-tags-title {
   font-size: 10.5px;
-  color: #758772;
+  color: var(--ql-ink-2);
   margin-bottom: 6px;
 }
 
@@ -744,48 +736,27 @@ button:hover .btn-arrow {
 }
 
 .climate-pill {
-  display: inline-flex;
-  align-items: center;
   gap: 5px;
-  background: #f3f6ec;
-  border: 1px solid #d5dec9;
-  border-radius: 14px;
-  padding: 3px 8px;
-  font-size: 10.5px !important;
-  color: #3b543c;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .climate-pill i {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 1px;
   display: inline-block;
 }
 
 .climate-pill b {
   font-size: 9.5px;
-  opacity: 0.8;
-  font-weight: 500;
-}
-
-.climate-pill:hover {
-  background: #e3ebd6;
-  border-color: #b7c7a5;
-}
-
-.climate-pill.active {
-  background: #254b35;
-  color: #ffffff;
-  border-color: #254b35;
+  opacity: .75;
+  font-weight: 400;
 }
 
 .climate-pill.active b {
   opacity: 1;
 }
 
-/* 筛选特定区块区域 */
+/* 区块筛选 */
 .filter-controls-area {
   display: flex;
   flex-direction: column;
@@ -794,18 +765,11 @@ button:hover .btn-arrow {
 
 .filter-dropdown {
   width: 100%;
-  padding: 6px 10px;
-  border: 1px solid #c9d5be;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #25402f;
   font-size: 12px;
-  outline: none;
 }
 
 .filter-dropdown optgroup {
-  font-weight: 600;
-  color: #4b6851;
+  color: var(--ql-ink-2);
 }
 
 .quick-filter-row {
@@ -814,56 +778,32 @@ button:hover .btn-arrow {
   gap: 5px;
 }
 
-.qf-btn {
-  background: #f1f5ea;
-  border: 1px solid #d3dec9;
-  border-radius: 5px;
-  padding: 3px 7px;
-  font-size: 10.5px !important;
-  color: #435c46;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.qf-btn:hover {
-  background: #e1ebda;
-  color: #1e3a24;
-}
-
-.qf-btn.active {
-  background: #d62828;
-  color: #ffffff;
-  border-color: #b01b1b;
-}
-
 .qf-btn.clear-btn {
-  background: transparent;
-  border-color: #d9dfd3;
-  color: #798b76;
+  color: var(--ql-ink-2);
 }
 
-.qf-btn.clear-btn:hover {
-  background: #fdf2f2;
-  color: #d62828;
-  border-color: #f5c2c2;
+.qf-btn.clear-btn:hover:not(:disabled) {
+  color: var(--ql-cinnabar);
 }
 
 .filter-match-status {
-  background: #fff3f3;
-  border: 1px solid #ffcccc;
-  border-radius: 5px;
-  padding: 5px 8px;
+  padding: 5px 9px;
   font-size: 11px;
-  color: #c91818;
+  color: var(--ql-cinnabar-deep);
+  background: rgba(166, 27, 41, .08);
+  border: 1px solid rgba(166, 27, 41, .28);
+  border-radius: var(--ql-radius);
 }
 
 /* 区块详情卡片 */
 .detail-badge {
+  font-family: var(--ql-font-mono);
   font-size: 10px;
-  color: #6d826a;
-  background: #edf2e5;
-  padding: 2px 6px;
-  border-radius: 10px;
+  color: var(--ql-ink-2);
+  background: var(--ql-paper-hi);
+  border: 1px solid var(--ql-line-faint);
+  padding: 2px 7px;
+  border-radius: var(--ql-radius-pill);
 }
 
 .chunk-detail-card {
@@ -871,35 +811,34 @@ button:hover .btn-arrow {
 }
 
 .detail-placeholder {
-  color: #8c9c89;
+  color: var(--ql-ink-3);
   font-size: 11px;
   text-align: center;
   padding: 16px 0;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
 .detail-type-tag {
-  color: #ffffff;
+  color: var(--ql-ink-inv);
   font-size: 11.5px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 4px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  padding: 3px 9px;
+  border-radius: var(--ql-radius);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
 }
 
 .detail-climate-tag {
   font-size: 11px;
-  font-weight: 500;
   border: 1px solid;
-  padding: 2px 7px;
-  border-radius: 12px;
+  padding: 2px 8px;
+  border-radius: var(--ql-radius-pill);
 }
 
 .detail-grid {
@@ -916,21 +855,21 @@ button:hover .btn-arrow {
 }
 
 .detail-label {
-  color: #869883;
+  color: var(--ql-ink-3);
   font-size: 10px;
 }
 
 .detail-val {
-  color: #25402f;
-  font-weight: 600;
+  color: var(--ql-ink);
   margin-top: 1px;
+  font-family: var(--ql-font-mono);
 }
 
 .detail-desc {
   font-size: 10.5px;
-  color: #697c66;
-  line-height: 1.5;
-  border-top: 1px dashed #e7ede0;
+  color: var(--ql-ink-2);
+  line-height: 1.6;
+  border-top: 1px dashed var(--ql-line-faint);
   padding-top: 6px;
 }
 
@@ -943,26 +882,25 @@ button:hover .btn-arrow {
 .full-width {
   width: 100%;
   padding: 11px;
-  border-radius: 7px;
-  font-size: 13px !important;
-  font-weight: 600;
-  display: flex;
+  font-size: 13px;
   justify-content: space-between;
-  align-items: center;
 }
 
 .atlas-footer {
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid #e1e7da;
-  padding-top: 14px;
-  margin-top: 16px;
-  font-size: 10.5px;
-  color: #8d9e87;
   gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ql-line-soft);
+  font-size: 10.5px;
+  color: var(--ql-ink-3);
 }
 
-/* 响应式适配 */
+/* ==========================================================================
+   响应式适配
+   ========================================================================== */
+
 @media (max-width: 1180px) {
   .atlas-workspace {
     grid-template-columns: 1fr;

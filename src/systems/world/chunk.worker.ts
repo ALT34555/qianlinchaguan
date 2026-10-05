@@ -11,12 +11,13 @@ let generator: WorldGenerator | null = null;
 function pushBuffers(mesh: MeshData | null, out: Transferable[]): void {
   if (!mesh) return;
   out.push(mesh.positions.buffer, mesh.colors.buffer, mesh.indices.buffer);
+  if (mesh.waterDepths) out.push(mesh.waterDepths.buffer);
 }
 
 ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data;
   if (msg.kind === 'init') {
-    generator = new WorldGenerator(msg.seed, msg.climateWeights);
+    generator = new WorldGenerator(msg.seed, msg.climateWeights, msg.generation);
     return;
   }
   if (msg.kind === 'generate') {
@@ -28,7 +29,7 @@ ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
     // 主线程只需要区块内部的高度（去掉外扩一圈）
     const S = Math.sqrt(chunk.surfaces.length);
     const P = S + 2;
-    const inner = new Int16Array(S * S);
+    const inner = new Float32Array(S * S);
     const waterLevels = new Float32Array(S * S);
     for (let z = 0; z < S; z++) {
       inner.set(chunk.heights.subarray((z + 1) * P + 1, (z + 1) * P + 1 + S), z * S);

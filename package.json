@@ -1,26 +1,32 @@
 {
-  "name": "qianlinchaguan-base",
+  "name": "qianlinchaguan",
   "version": "0.1.0",
   "private": true,
-  "description": "茜林茶馆 - 类 Minecraft 沙盒原型（地图生成器框架）",
+  "description": "茜林茶馆：从种子生成世界的沙盒。舆图为 2D 世界地图，山川为 3D 世界。",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "desktop": "npm run build && node platforms/windows/build-desktop.mjs && electron .",
+    "build:windows": "npm run build && node platforms/windows/build-desktop.mjs --package"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ALT34555/qianlinchaguan-base.git"
+    "url": "git+https://github.com/ALT34555/qianlinchaguan.git"
   },
   "dependencies": {
     "simplex-noise": "^4.0.3",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "@types/node": "^24.19.1",
     "@types/three": "^0.186.0",
+    "electron": "^44.5.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.2"
-  }
+  },
+  "main": "platforms/windows/desktop.cjs"
 }

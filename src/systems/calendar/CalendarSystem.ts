@@ -218,7 +218,7 @@ export interface CalendarClockOptions {
 
 /**
  * 把现实经过的时间映射为游戏内时刻。
- * 时钟不依赖 three.js，也不读取任何全局状态，便于单独测试。
+ * 时钟不依赖 three.js，也不读取任何全局状态。
  */
 export class CalendarClock {
   private epochUnixMsValue: number;

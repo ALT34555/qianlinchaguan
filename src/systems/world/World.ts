@@ -2,19 +2,23 @@
  * 世界 / 区块管理（主线程）：按玩家位置加载、卸载区块，并把 Worker 产出的网格挂进场景。
  */
 import * as THREE from 'three';
-import type { ClimateWeights } from './WorldSettings';
+import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import { CHUNK_SIZE } from '../../core/config';
 import type { MeshData } from './ChunkMesher';
 import type { ChunkResultMessage } from './ChunkProtocol';
 import { ChunkWorkerPool } from './ChunkWorkerPool';
 import { WorldGenerator } from './WorldGenerator';
+import { terrainHeightAt, terrainGroundUnder } from './TerrainSurface';
+import { WorldLighting } from './WorldLighting';
+import { WaterMaterial, decodeSurfaceColors } from './WaterMaterial';
+import { waterHeightAt } from './WaterSurface';
 
 export interface LoadedChunk {
   cx: number;
   cz: number;
   type: number;
   /** 区块内高度图 64x64 */
-  heights: Int16Array;
+  heights: Float32Array;
   surfaces: Uint8Array;
   waterLevels: Float32Array;
   minimap: ImageData;
@@ -34,14 +38,9 @@ export class World {
   private readonly ready: ChunkResultMessage[] = [];
   private readonly pool: ChunkWorkerPool;
   private readonly group = new THREE.Group();
-  private readonly terrainMaterial = new THREE.MeshBasicMaterial({ vertexColors: true });
-  private readonly waterMaterial = new THREE.MeshBasicMaterial({
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.66,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  });
+  private readonly terrainMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .95 });
+  private readonly waterMaterial = new WaterMaterial();
+  private readonly lighting: WorldLighting;
   /** 以距离排序的加载偏移表（圆形范围） */
   private offsets: [number, number][] = [];
   private renderDistance = 0;
@@ -49,24 +48,20 @@ export class World {
   private centerCz = Number.NaN;
   private readonly listeners: ((c: LoadedChunk) => void)[] = [];
 
-  constructor(scene: THREE.Scene, readonly seed: number, renderDistance: number, climateWeights: ClimateWeights) {
-    this.generator = new WorldGenerator(seed, climateWeights);
-    this.pool = new ChunkWorkerPool(seed, climateWeights, (msg) => this.ready.push(msg));
+  constructor(scene: THREE.Scene, readonly seed: number, renderDistance: number, climateWeights: ClimateWeights, generation?: WorldGeneration) {
+    this.generator = new WorldGenerator(seed, climateWeights, generation);
+    this.terrainMaterial.onBeforeCompile = decodeSurfaceColors;
+    this.lighting = new WorldLighting(scene);
+    this.pool = new ChunkWorkerPool(seed, climateWeights, this.generator.generation, (msg) => this.ready.push(msg));
     this.setRenderDistance(renderDistance);
     scene.add(this.group);
   }
 
-  setGlobalBrightness(brightness: number, season: number): void {
-    const c = new THREE.Color(0xffffff);
-    // Apply season tint
-    if (season === 0) c.lerp(new THREE.Color('#e6ffe6'), 0.1); // Spring
-    else if (season === 1) c.lerp(new THREE.Color('#ffe6e6'), 0.1); // Summer
-    else if (season === 2) c.lerp(new THREE.Color('#ffffe6'), 0.1); // Autumn
-    else if (season === 3) c.lerp(new THREE.Color('#e6e6ff'), 0.1); // Winter
-    
-    c.multiplyScalar(brightness);
-    this.terrainMaterial.color.copy(c);
-    this.waterMaterial.color.copy(c);
+  updateLighting(dayRatio: number, season: number, camera: THREE.Vector3, time: number): THREE.Color {
+    const state = this.lighting.update(dayRatio, season, camera);
+    this.terrainMaterial.color.copy(this.lighting.tint);
+    this.waterMaterial.update(time, this.lighting, state.daylight, state.night);
+    return this.lighting.fogColor;
   }
 
   setRenderDistance(rd: number): void {
@@ -105,8 +100,8 @@ export class World {
     return this.getChunk(cx, cz)?.type ?? this.generator.getChunkType(cx, cz);
   }
 
-  /** 地表高度（顶面 y）。已加载区块查表，否则直接用生成器计算（结果一致）。 */
-  getHeight(wx: number, wz: number): number {
+  /** 原始格中心高度：仅供连续地表的公共插值规则采样。 */
+  private readonly columnHeight = (wx: number, wz: number): number => {
     const bx = Math.floor(wx);
     const bz = Math.floor(wz);
     const cx = Math.floor(bx / CHUNK_SIZE);
@@ -114,14 +109,27 @@ export class World {
     const c = this.chunks.get(chunkKey(cx, cz));
     if (c) return c.heights[(bz - cz * CHUNK_SIZE) * CHUNK_SIZE + (bx - cx * CHUNK_SIZE)];
     return this.generator.getHeight(bx, bz);
+  };
+
+  /** 精确采样可见三角面，跨区块/负坐标也采用同一规则。 */
+  getHeight(wx: number, wz: number): number {
+    return terrainHeightAt(wx, wz, this.seed, this.columnHeight);
   }
 
-  getWaterLevel(wx: number, wz: number): number {
+  getGroundUnder(wx: number, wz: number, halfWidth: number): number {
+    return terrainGroundUnder(wx, wz, halfWidth, this.seed, (x, z) => this.getHeight(x, z));
+  }
+
+  private readonly columnWater = (wx: number, wz: number): number => {
     const bx = Math.floor(wx), bz = Math.floor(wz);
     const cx = Math.floor(bx / CHUNK_SIZE), cz = Math.floor(bz / CHUNK_SIZE);
     const c = this.getChunk(cx, cz);
     return c ? c.waterLevels[(bz - cz * CHUNK_SIZE) * CHUNK_SIZE + bx - cx * CHUNK_SIZE]
       : this.generator.getWaterLevel(bx, bz);
+  };
+
+  getWaterLevel(wx: number, wz: number): number {
+    return waterHeightAt(wx, wz, this.seed, this.columnHeight, this.columnWater);
   }
 
   update(playerX: number, playerZ: number): void {
@@ -171,7 +179,9 @@ export class World {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(data.positions, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(data.colors, 3, true));
+    if (data.waterDepths) geo.setAttribute('waterDepth', new THREE.BufferAttribute(data.waterDepths, 1));
     geo.setIndex(new THREE.BufferAttribute(data.indices, 1));
+    geo.computeVertexNormals();
     geo.computeBoundingSphere();
     const mesh = new THREE.Mesh(geo, material);
     mesh.position.set(cx * CHUNK_SIZE, 0, cz * CHUNK_SIZE);
@@ -220,5 +230,7 @@ export class World {
     this.pool.dispose();
     this.terrainMaterial.dispose();
     this.waterMaterial.dispose();
+    this.lighting.dispose();
+    this.group.removeFromParent();
   }
 }

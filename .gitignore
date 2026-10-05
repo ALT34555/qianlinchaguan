@@ -2,3 +2,7 @@ node_modules/
 dist/
 *.log
 .vite/
+userdata/
+release/
+platforms/windows/runtime/
+.temp/

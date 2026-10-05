@@ -4,7 +4,7 @@
  * 特点：
  *  - 自带样式并在首次创建时注入 <style>，不需要改动 src/ui/style.css；
  *  - 只依赖真实 DOM，不依赖 three.js，可独立挂在任意容器上；
- *  - 元素全部由代码创建（不使用 innerHTML），便于在无浏览器环境下做单测；
+ *  - 元素全部由代码创建（不使用 innerHTML）；
  *  - update() 成本很低，可每帧调用，也可用 refreshIntervalMs 让它自行定时刷新。
  *
  * 用法：
@@ -13,6 +13,7 @@
  *   // 关闭：hud.dispose()
  */
 import type { CalendarSystem, CalendarClock } from './CalendarSystem';
+import { t } from '../../i18n';
 
 /** HUD 停靠位置。 */
 export type CalendarHudPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -39,17 +40,22 @@ export interface CalendarHudOptions {
 const STYLE_ID = 'calendar-hud-style';
 
 const HUD_CSS = `
+/* 配色引用 theme.css 的令牌，因此自动跟随"古朴中式"主题与语言切换。 */
 .calendar-hud {
   position: fixed;
   z-index: 20;
   min-width: 236px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(12, 14, 20, 0.72);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  padding: 10px 13px;
+  border-radius: var(--ql-radius, 3px);
+  background: var(--ql-paper, #e5d3aa);
+  color: var(--ql-ink, #4d4030);
+  box-shadow:
+    inset 0 0 0 2px var(--ql-paper, #e5d3aa),
+    inset 0 0 0 3px var(--ql-line, rgba(77, 64, 48, .3)),
+    0 4px 18px rgba(58, 47, 33, .28);
+  font-family: var(--ql-font-body, system-ui, sans-serif);
   font-size: 13px;
   line-height: 1.6;
-  color: #e8edf6;
   pointer-events: none;
 }
 .calendar-hud.top-left { top: 12px; left: 12px; }
@@ -57,38 +63,55 @@ const HUD_CSS = `
 .calendar-hud.bottom-left { bottom: 12px; left: 12px; }
 .calendar-hud.bottom-right { bottom: 12px; right: 12px; }
 .calendar-hud-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--ql-line-soft, rgba(77, 64, 48, .16));
+  color: var(--ql-cinnabar, #a61b29);
+  font-family: var(--ql-font-display, serif);
   font-size: 13px;
-  color: #c9d3e6;
+  letter-spacing: var(--ql-track-label, .14em);
 }
 .calendar-hud-key {
-  float: right;
   padding: 0 6px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.15);
-  font-size: 11px;
+  border-radius: var(--ql-radius, 3px);
+  background: var(--ql-seal-on, #894e54);
+  color: var(--ql-ink-inv, #fbf4e3);
+  font-family: var(--ql-font-body, system-ui, sans-serif);
+  font-size: 10.5px;
+  letter-spacing: var(--ql-track-body, .02em);
 }
 .calendar-hud-row { display: flex; gap: 8px; }
 .calendar-hud-label {
-  flex: 0 0 36px;
-  color: #8f9bb3;
+  flex: 0 0 auto;
+  min-width: 38px;
+  color: var(--ql-ink-3, #8a7a5f);
   font-size: 12px;
 }
+/* 拉丁文字比两个汉字宽，英文下放宽标签栏 */
+:lang(en) .calendar-hud-label { min-width: 66px; }
 .calendar-hud-value { flex: 1 1 auto; }
-.calendar-hud-gregorian .calendar-hud-value { color: #e8edf6; }
-.calendar-hud-chinese .calendar-hud-value { color: #ffd27a; }
-.calendar-hud-yuan .calendar-hud-value { color: #9fe0b8; }
-.calendar-hud-term .calendar-hud-value { color: #9fc4ff; font-size: 12px; }
+.calendar-hud-gregorian .calendar-hud-value { color: var(--ql-ink, #4d4030); font-family: var(--ql-font-mono, monospace); }
+.calendar-hud-chinese .calendar-hud-value { color: var(--ql-cinnabar, #a61b29); }
+.calendar-hud-yuan .calendar-hud-value { color: var(--ql-seal-on, #894e54); }
+.calendar-hud-term .calendar-hud-value { color: var(--ql-ink-2, #6a5942); font-size: 12px; }
 .calendar-hud-clock {
-  margin-top: 4px;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--ql-line-faint, rgba(77, 64, 48, .09));
   font-size: 12px;
-  color: #aab4c8;
+  color: var(--ql-ink-2, #6a5942);
+  font-family: var(--ql-font-mono, monospace);
 }
 `;
 
 /** 一行"标签 + 数值"。 */
 interface HudRow {
   row: HTMLDivElement;
+  label: HTMLSpanElement;
   value: HTMLSpanElement;
 }
 
@@ -103,6 +126,10 @@ export class CalendarHud {
   private readonly clockEl: HTMLDivElement | undefined;
   private readonly timer: number | undefined;
   private readonly ownerDocument: Document;
+  private readonly titleEl: HTMLDivElement;
+  /** 标题语言包键；由 options.title 显式指定时退化为字面量。 */
+  private readonly titleText: string;
+  private readonly titleKey: string | null;
   private visible = true;
   private lastText = '';
 
@@ -113,7 +140,7 @@ export class CalendarHud {
   ) {
     const {
       position = 'top-left',
-      title = '历法',
+      title,
       hotkey,
       showSolarTerm = true,
       showClock = true,
@@ -127,9 +154,12 @@ export class CalendarHud {
     this.element = doc.createElement('div');
     this.element.className = `calendar-hud ${position}`;
 
+    this.titleKey = title === undefined ? 'hud.title' : null;
+    this.titleText = title ?? t('hud.title');
     const titleEl = doc.createElement('div');
     titleEl.className = 'calendar-hud-title';
-    titleEl.textContent = title;
+    titleEl.textContent = this.titleText;
+    this.titleEl = titleEl;
     if (hotkey) {
       const keyEl = doc.createElement('span');
       keyEl.className = 'calendar-hud-key';
@@ -138,10 +168,10 @@ export class CalendarHud {
     }
     this.element.appendChild(titleEl);
 
-    this.gregorianRow = this.createRow('公历', 'calendar-hud-gregorian');
-    this.chineseRow = this.createRow('农历', 'calendar-hud-chinese');
-    this.termRow = showSolarTerm ? this.createRow('节气', 'calendar-hud-term') : undefined;
-    this.yuanRow = this.createRow('元历', 'calendar-hud-yuan');
+    this.gregorianRow = this.createRow('hud.gregorian', 'calendar-hud-gregorian');
+    this.chineseRow = this.createRow('hud.chinese', 'calendar-hud-chinese');
+    this.termRow = showSolarTerm ? this.createRow('hud.solarTerm', 'calendar-hud-term') : undefined;
+    this.yuanRow = this.createRow('hud.yuan', 'calendar-hud-yuan');
     if (showClock) {
       const clockEl = doc.createElement('div');
       clockEl.className = 'calendar-hud-clock';
@@ -158,22 +188,33 @@ export class CalendarHud {
         : undefined;
   }
 
-  private createRow(label: string, className: string): HudRow {
+  private createRow(labelKey: string, className: string): HudRow {
     const doc = this.ownerDocument;
     const row = doc.createElement('div');
     row.className = `calendar-hud-row ${className}`;
     const labelEl = doc.createElement('span');
     labelEl.className = 'calendar-hud-label';
-    labelEl.textContent = label;
+    labelEl.textContent = t(labelKey);
     const value = doc.createElement('span');
     value.className = 'calendar-hud-value';
     row.appendChild(labelEl);
     row.appendChild(value);
     this.element.appendChild(row);
-    return { row, value };
+    return { row, label: labelEl, value };
   }
 
-  /** 最近一次刷新得到的整体文本（多行），便于测试与日志复用。 */
+  /** 语言变更后刷新标题与行标签；数值文本交给 update()。 */
+  applyLocale(): void {
+    if (this.titleKey) this.titleEl.textContent = t(this.titleKey);
+    else this.titleEl.textContent = this.titleText;
+    this.gregorianRow.label.textContent = t('hud.gregorian');
+    this.chineseRow.label.textContent = t('hud.chinese');
+    if (this.termRow) this.termRow.label.textContent = t('hud.solarTerm');
+    this.yuanRow.label.textContent = t('hud.yuan');
+    this.update();
+  }
+
+  /** 最近一次刷新得到的整体文本（多行）。 */
   get text(): string {
     return this.lastText;
   }
@@ -209,22 +250,23 @@ export class CalendarHud {
     this.yuanRow.value.textContent = yuanText;
 
     const pad = (n: number) => String(n).padStart(2, '0');
-    const t = gregorian.time;
-    const clockText = `${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}　元历第 ${yuan.xunOfYear} 旬`;
+    // 注意：变量名不能叫 t，否则会遮蔽 i18n 的 t()。
+    const clockTime = gregorian.time;
+    const clockText = t('hud.clock', { time: `${pad(clockTime.hour)}:${pad(clockTime.minute)}:${pad(clockTime.second)}`, xun: yuan.xunOfYear });
     if (this.clockEl) this.clockEl.textContent = clockText;
 
     let termText = '';
     if (this.termRow) {
       if (chinese.solarTerm) {
-        termText = `今日 ${chinese.solarTerm}`;
+        termText = t('hud.termToday', { term: chinese.solarTerm });
       } else {
-        termText = `距${chinese.nextSolarTerm.name} ${chinese.nextSolarTerm.jdn - chinese.jdn} 天`;
+        termText = t('hud.termNext', { term: chinese.nextSolarTerm.name, days: chinese.nextSolarTerm.jdn - chinese.jdn });
       }
       this.termRow.value.textContent = termText;
     }
 
-    const lines = [`公历 ${gregorianText}`, `农历 ${chineseText}`];
-    if (termText) lines.push(`节气 ${termText}`);
+    const lines = [t('hud.line.gregorian', { value: gregorianText }), t('hud.line.chinese', { value: chineseText })];
+    if (termText) lines.push(t('hud.line.solarTerm', { value: termText }));
     lines.push(yuanText);
     if (this.clockEl) lines.push(clockText);
     this.lastText = lines.join('\n');

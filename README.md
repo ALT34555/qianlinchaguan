@@ -5,50 +5,48 @@
 ## 目录结构规划
 
 ```text
-qianlinchaguan-base/
-│
-├── docs/                   # 项目文档区 (GDD, 设定集, 接口文档等)。文档人员和策划主要使用。
+qianlinchaguan/
 │
 ├── src/                    # 核心源代码区 (程序员工作区)
-│   ├── core/               # 游戏核心逻辑 (启动, 状态机, 存取档底层系统)
-│   ├── systems/            # 玩法系统 (各种脚本等)
-│   ├── entities/           # 实体类代码 (玩家, NPC, 怪物)
-│   ├── ui/                 # 界面控制与交互逻辑
+│   ├── core/               # 游戏核心逻辑 (启动, 状态机, 设置持久化)
+│   ├── systems/            # 玩法系统 (世界生成、日历系统、植被等)
+│   │   ├── world/          # 体素/高度图世界、区块生成、Worker 池、存档客户端
+│   │   │   └── vegetation/ #   植物低模生成 (几何构建 + 原型 + 注册表 + 散布)
+│   │   └── calendar/       # 公历 / 农历 / 元历三套历法
+│   ├── entities/           # 实体类代码 (玩家运动与交互)
+│   ├── i18n/               # 多语言接口与语言包 (中英双语)
+│   ├── ui/                 # 界面控制与交互逻辑 (开始菜单、设置、舆图、调试面板等)
 │   └── modding_api/        # 暴露给插件/Mod调用的API接口层
 │
 ├── content/                # 游戏内容区 (策划与美术工作区，与代码解耦)
 │   ├── assets/             # 媒体资源 (2d, 3d, 音效, UI切图, 字体)
-│   ├── data/               # 配置数据 (JSON/CSV格式: 物品表, 怪物表, 技能表)
-│   └── maps/               # 官方内置的地图数据 (比如使用Tiled导出的JSON/XML)
+│   │   └── ui/fonts/       #   UI 字体包 (资源圆体等)
+│   ├── data/               # 配置数据 (JSON/CSV格式: 方块表、地貌表、植物参数表等)
+│   │   └── world/          #   世界配置 (blocks.json, chunk_types.json, plants/)
+│   └── maps/               # 官方内置的地图数据 (含模拟地球大陆 land.json)
 │
-├── userdata_dev/           # 开发期的用户数据区 (★对应玩家电脑上的本地存档/Mod目录)
-│   ├── saves/              # 玩家的存档文件存放处
-│   ├── mods/               # 玩家安装的插件/Mod目录 (在此处编写的脚本可覆盖或扩充游戏)
-│   └── shared_maps/        # 玩家下载分享的自定义地图存放处 (类似Minecraft地图存档)
+├── platforms/              # 平台适配区 (一次开发，多向编译)
+│   ├── windows/            # Windows 本地启动器与桌面客户端 (launcher.mjs + 桌面端脚本 + 图标)
+│   ├── saves/              # 存档后端 local-saves.ts (Node 侧生产代码，dev / preview / 启动器共用)
+│   ├── linux/              # Linux 构建脚本和配置 (待建)
+│   └── android/            # Android 构建脚本 (待建)
 │
-├── platforms/              # 多平台编译配置区 (一次开发，多向编译)
-│   ├── windows/            # Windows 构建脚本和特定配置 (如 .ico, 启动器)
-│   ├── linux/              # Linux 构建脚本和配置
-│   └── android/            # Android 构建脚本 (如 AndroidManifest.xml, 签名配置)
+├── userdata/               # 运行时存档目录 (userdata/saves/*.json，已被 .gitignore 忽略)
 │
-└── tools/                  # 开发辅助工具 (地图编辑器, 自动打包脚本, Excel转JSON导表工具等)
+└── index.html / package.json / tsconfig.json / vite.config.ts
 ```
 
-## 设计理念与如何满足您的需求：
+## 设计理念
 
 ### 1. 一次开发，多向编译 (跨平台)
 - **解耦平台相关代码**：所有的业务逻辑全部集中在 `src/` 中，尽量不使用与特定操作系统绑定的底层 API。
-- **独立编译配置**：`platforms/` 目录下按系统存放编译配置文件。无论您最终选择哪个跨平台引擎（如 Godot, Unity 或自研基于 SDL/Cocos 的引擎），这种结构都能让持续集成（CI/CD）和多端打包变得非常清晰。
+- **独立编译配置**：`platforms/` 目录下按系统存放编译配置文件，让持续集成（CI/CD）和多端打包变得非常清晰。
 
 ### 2. 支持插件、存档、地图分享
-- **数据驱动设计**：游戏的主体内容（物品、地图、怪物等）全部存放在 `content/` 目录下，并以 JSON/XML/CSV 等通用数据格式读取。
-- **沙盒化的用户目录**：`userdata_dev/` 完美模拟了玩家下载游戏后的真实目录。
-  - **存档**：存入 `saves/`。
-  - **插件/Mod**：玩家把第三方脚本或资源放进 `mods/`，游戏启动时通过 `src/modding_api/` 暴露的接口去挂载这些第三方逻辑，实现类似 Minecraft 的 Mod 效果。
-  - **地图分享**：只需将地图文件放进 `shared_maps/`，游戏的选关/创图界面自动扫描此目录进行加载。
+- **数据驱动设计**：游戏的主体内容（物品、地图、参数表等）全部存放在 `content/` 目录下，并以 JSON/XML/CSV 等通用数据格式读取。
+- **本地存档**：存档以独立 JSON 文件保存在 `userdata/saves/`，支持导入、导出备份及多端同步。
 
 ### 3. 清晰的分工协作
 - **程序开发**：只关注 `src/` 和 `platforms/`，修改代码，扩充 `modding_api`。
 - **美术音频**：只关注 `content/assets/`，更新资源文件。
-- **游戏策划**：只关注 `content/data/` 和 `content/maps/`，通过表格和地图编辑器修改游戏数值和关卡，不需要动一行代码。
-- 相互独立的工作流最大程度地避免了 Git/SVN 提交时的冲突。
+- **游戏策划**：只关注 `content/data/` 和 `content/maps/`，通过表格和数据修改游戏数值和关卡，不需要动核心代码。
