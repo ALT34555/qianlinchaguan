@@ -6,7 +6,8 @@ import { Player } from '../entities/Player';
 import { World } from '../systems/world/World';
 import { Sky } from '../systems/world/Sky';
 import { WorldGenerator } from '../systems/world/WorldGenerator';
-import { GENERATOR_VERSION, type ClimateWeights, type WorldGeneration } from '../systems/world/WorldSettings';
+import { type ClimateWeights, type WorldGeneration } from '../systems/world/WorldSettings';
+import { GENERATOR_VERSION } from './version';
 import type { PlayerPosition, WorldSave } from '../systems/world/WorldSave';
 import { downloadWorldSave, type SaveStore } from '../systems/world/LocalSaveStore';
 import { DebugOverlay } from '../ui/DebugOverlay';
@@ -30,7 +31,6 @@ export interface GameOptions {
   saveId?: string;
   save?: WorldSave;
   initialPlayer?: PlayerPosition;
-  renderDistance: number;
   showOverlay: boolean;
   settings: GameSettings;
   saveStore: SaveStore;
@@ -72,8 +72,8 @@ export class Game {
   private spawned = false;
   private previousFrame = 0;
   private lastCalendarMs = -Infinity;
-  private readonly fogNear: number;
-  private readonly fogFar: number;
+  private fogNear: number;
+  private fogFar: number;
   /** 暂停面板存档名草稿 */
   private pauseNameDraft = '';
   private pauseMessage = '';
@@ -94,7 +94,7 @@ export class Game {
     this.calendarSystem = new CalendarSystem({ mode: this.calendarType, utcOffsetMinutes: options.utcOffsetMinutes ?? 480 });
     this.calendarClock = new CalendarClock({ epochUnixMs: options.unixMs ?? Date.now(), dayLengthSeconds: 1200 });
     this.syncClock();
-    const distance = options.renderDistance * CHUNK_SIZE;
+    const distance = this.settings.renderDistance * CHUNK_SIZE;
     this.fogNear = distance * .55; this.fogFar = distance * .95;
     this.fog = new THREE.Fog(SKY_COLOR.clone(), this.fogNear, this.fogFar); this.scene.fog = this.fog;
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, innerWidth / innerHeight, .1, distance * 1.5 + 512);
@@ -122,6 +122,7 @@ export class Game {
     });
     window.addEventListener('resize', () => {
       this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.renderer?.setSize(innerWidth, innerHeight);
+      if (this.renderer) this.world?.setMistProjection(this.camera.fov, this.renderer.domElement.height, this.renderer.getPixelRatio());
     });
     // 语言切换后就地刷新界面文案
     this.stopLocaleWatch = onLocaleChange(() => this.applyLocale());
@@ -167,7 +168,9 @@ export class Game {
     this.renderer = renderer; this.container.appendChild(renderer.domElement);
     this.input = new Input(renderer.domElement);
     this.touch = new TouchControls(this.input, renderer.domElement); this.input.setBindings(this.settings.keyBindings);
-    this.world = new World(this.scene, this.options.seed, this.options.renderDistance, this.options.climateWeights, this.options.generation);
+    this.world = new World(this.scene, this.options.seed, this.settings.renderDistance, this.options.climateWeights, this.options.generation);
+    this.world.setMistEnabled(this.settings.particles !== false);
+    this.world.setMistProjection(this.camera.fov, renderer.domElement.height, renderer.getPixelRatio());
     this.sky = new Sky(this.scene);
     this.player = new Player(this.world, this.input); Object.assign(this.player, this.position);
     this.player.y = Math.max(this.player.y, this.world.getGroundUnder(this.player.x, this.player.z, .3) + .01);
@@ -252,10 +255,22 @@ export class Game {
     if (next.viewMode === '3d') this.ensure3D();
     this.options.persistSettings(next);
     const changedView = next.viewMode !== this.settings.viewMode;
+    const changedDistance = next.renderDistance !== this.settings.renderDistance;
+    const changedParticles = (next.particles !== false) !== (this.settings.particles !== false);
     this.settings = next;
+    if (changedParticles) this.world?.setMistEnabled(next.particles !== false);
+    if (changedDistance) {
+      this.world?.setRenderDistance(next.renderDistance);
+      if (this.world && this.player) this.world.update(this.player.x, this.player.z);
+      const distance = next.renderDistance * CHUNK_SIZE;
+      this.fogNear = distance * .55; this.fogFar = distance * .95;
+      this.fog.near = this.fogNear; this.fog.far = this.fogFar;
+      this.camera.far = distance * 1.5 + 512;
+    }
     this.touch?.setVisible(next.viewMode === '3d' && !this.paused && !!next.touchControls);
     this.lastCalendarMs = -Infinity;
     this.camera.fov = next.fov; this.camera.updateProjectionMatrix();
+    if (this.renderer) this.world?.setMistProjection(next.fov, this.renderer.domElement.height, this.renderer.getPixelRatio());
     this.input?.setBindings(next.keyBindings);
     this.overlay?.setKeyLabel(keyLabel(next.keyBindings.debug));
     if (changedView) this.setViewMode();

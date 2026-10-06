@@ -1,4 +1,4 @@
-/** 岩石系统入口 */
+/** 岩石系统入口：逐个列出导出，rolldown 打包更稳 */
 
 export {
   ROCK_COLOR_SLOTS, ROCK_FORMS, ROCK_FORM_CODES, ROCK_MATERIALS, ROCK_MATERIAL_FAMILIES,
@@ -21,11 +21,12 @@ export {
 export type { RockArchetypeName } from './archetypes';
 
 export {
-  ROCK_CHUNK_IDS, ROCK_DATA_VERSION, ROCK_DEFS, ROCK_FILES, ROCK_GLOBAL_DEFAULTS, ROCK_IDS,
+  ROCK_CHUNK_IDS, ROCK_DEFS, ROCK_FILES, ROCK_GLOBAL_DEFAULTS, ROCK_IDS,
   ROCK_PALETTES, ROCKS_BY_CHUNK, Rock, buildAllForms, buildRockById, defaultCrustKey, formMatrixOf,
   getRockDef, mergeRockParams, resolveRockForm, resolveRockPalette, rocksByTag, rocksForChunk,
   scaleGeometry, statOf,
 } from './Rocks';
+export { CONTENT_DATA_VERSION } from '../../../core/version';
 export type { ResolvedRockForm, RockStat, RockUnitDef } from './Rocks';
 
 export { canHostRock, rockQuery, rocksAt, scatterRocks } from './placement';

@@ -58,6 +58,7 @@ import huaLan from '../../../../content/data/world/plants/herbaceous/hua.lan.jso
 import huaZhu from '../../../../content/data/world/plants/herbaceous/hua.zhu.json';
 import huaJu from '../../../../content/data/world/plants/herbaceous/hua.ju.json';
 import { hashString } from '../../../core/math/Random';
+import { assertNoTableVersion } from '../../../core/version';
 import { ARCHETYPES, ARCHETYPE_DEFAULTS, CLIMATE_DEFAULTS, GLOBAL_DEFAULTS, buildPlant } from './archetypes';
 import type { PlantGeometry } from './geometry';
 import {
@@ -133,8 +134,7 @@ export const PLANT_FILES: readonly { file: string; data: PlantFile }[] = [
   { file: 'herbaceous/hua.ju.json', data: asPlantFile(huaJu) },
 ];
 
-/** 参数表格式版本 */
-export const PLANT_DATA_VERSION = 2;
+/** 参数表格式版本由 src/core/version.ts 统一声明 */
 
 const paletteData = palettesJson as PaletteFile;
 
@@ -490,11 +490,7 @@ function speciesOf(variant: PlantVariantDef): SpeciesEntry | undefined {
 }
 
 for (const { file, data } of PLANT_FILES) {
-  // 参数表**不再需要写 version**
-  // 平时它只是每份文件里的一行冗余噪声
-  if (data.version !== undefined && data.version !== PLANT_DATA_VERSION) {
-    throw new Error(`[Vegetation] ${file} 的 version=${data.version}，当前支持 ${PLANT_DATA_VERSION}（若确实要升级格式，请同步提升 Plants.ts 的 PLANT_DATA_VERSION）`);
-  }
+  assertNoTableVersion(file, data);
   if (!Array.isArray(data.plants) || data.plants.length === 0) {
     throw new Error(`[Vegetation] ${file} 缺少 plants 数组`);
   }

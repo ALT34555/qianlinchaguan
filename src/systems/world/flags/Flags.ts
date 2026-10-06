@@ -5,6 +5,7 @@ import flagsJson from '../../../../content/data/world/flags/flags.json';
 import palettesJson from '../../../../content/data/world/flags/palettes.json';
 import polesJson from '../../../../content/data/world/flags/poles.json';
 import { hashString } from '../../../core/math/Random';
+import { assertNoTableVersion } from '../../../core/version';
 import {
   FLAG_GLOBAL_DEFAULTS, FLAG_MOUNT_TABLE, FLAG_SHAPE_TABLE, FLAG_WAVE_DEFAULTS,
   FLAGPOLE_GLOBAL_DEFAULTS, FLAGPOLE_KIND_DEFAULTS, buildFlagCloth, buildFlagpole,
@@ -16,15 +17,16 @@ import {
   FLAG_COLOR_SLOTS, FLAG_MOUNTS, FLAG_SHAPES, FLAGPOLE_BASE_STYLES, FLAGPOLE_COLLAR_STYLES,
   FLAGPOLE_FINIAL_STYLES, FLAGPOLE_KINDS, FLAGPOLE_PLATE_STYLES,
   type FlagAssemblyOptions, type FlagAttachment, type FlagBuildOptions, type FlagClothDef, type FlagDef,
-  type FlagEmblemDef, type FlagEmblemFile, type FlagFile, type FlagMount, type FlagOrientation,
+  type FlagEmblemDef, type FlagEmblemFile, type FlagFile, type FlagMount, type FlagMountSolution, type FlagOrientation,
   type FlagPalette, type FlagPaletteEntry, type FlagPaletteFile, type FlagParams, type FlagShape,
   type FlagpoleBuildDef, type FlagpoleBuildOptions, type FlagpoleDef, type FlagpoleFile, type FlagpoleKind,
   type FlagpoleParams, type ResolvedFlagCharge, type ResolvedFlagPalette, type ResolvedFlagpoleParams,
+  type V3,
 } from './types';
 
 const palettes = palettesJson as FlagPaletteFile;
 
-export const FLAG_DATA_VERSION = 1;
+/** 参数表格式版本由 src/core/version.ts 统一声明，这里不写 */
 
 export const FLAG_PALETTES: ReadonlyMap<string, FlagPaletteEntry> = new Map<string, FlagPaletteEntry>([
   ...Object.entries(palettes.cloth ?? {}),
@@ -86,12 +88,6 @@ const poleFiles: readonly { file: string; data: FlagpoleFile }[] = [
   { file: 'poles.json', data: polesJson as FlagpoleFile },
 ];
 
-function checkVersion(file: string, version: number | undefined, label: string): void {
-  if (version !== undefined && version !== FLAG_DATA_VERSION) {
-    throw new Error(`[Flags] ${file} 的 version=${version}，当前支持 ${FLAG_DATA_VERSION}（${label}格式升级需同步 Flags.ts 的 FLAG_DATA_VERSION）`);
-  }
-}
-
 function checkPaletteKeys(id: string, palette: FlagPalette | undefined): void {
   for (const [slot, key] of Object.entries(palette ?? {})) {
     if (!(FLAG_COLOR_SLOTS as readonly string[]).includes(slot)) {
@@ -105,7 +101,7 @@ const flagUnits: FlagUnitDef[] = [];
 const flagById = new Map<string, FlagUnitDef>();
 
 for (const { file, data } of flagFiles) {
-  checkVersion(file, data.version, '旗帜');
+  assertNoTableVersion(file, data);
   if (!Array.isArray(data.flags) || data.flags.length === 0) throw new Error(`[Flags] ${file} 缺少 flags 数组`);
   for (const raw of data.flags) {
     if (!raw.id) throw new Error(`[Flags] ${file} 里有条目缺少 id`);
@@ -132,7 +128,7 @@ const poleUnits: FlagpoleUnitDef[] = [];
 const poleById = new Map<string, FlagpoleUnitDef>();
 
 for (const { file, data } of poleFiles) {
-  checkVersion(file, data.version, '旗杆');
+  assertNoTableVersion(file, data);
   if (!Array.isArray(data.poles) || data.poles.length === 0) throw new Error(`[Flags] ${file} 缺少 poles 数组`);
   for (const raw of data.poles) {
     if (!raw.id) throw new Error(`[Flags] ${file} 里有条目缺少 id`);
@@ -205,9 +201,7 @@ export function polesByKind(kind: FlagpoleKind): readonly FlagpoleUnitDef[] {
 
 const emblemData = emblemsJson as FlagEmblemFile;
 
-if (emblemData.version !== undefined && emblemData.version !== FLAG_DATA_VERSION) {
-  throw new Error(`[Flags] emblems.json 的 version=${emblemData.version}，当前支持 ${FLAG_DATA_VERSION}`);
-}
+assertNoTableVersion('emblems.json', emblemData);
 
 export const FLAG_EMBLEMS: readonly FlagEmblemDef[] = Object.freeze(
   Array.isArray(emblemData.emblems) ? [...emblemData.emblems] : [],
@@ -473,6 +467,48 @@ export function defaultMountOf(unit: FlagpoleUnitDef, params: ResolvedFlagpolePa
   return pool[0];
 }
 
+export interface FlagSocketDef {
+  name: 'socket_mount' | 'socket_emblem' | 'socket_flyend' | string;
+  translation: V3;
+  extras?: { interface: boolean; note?: string };
+}
+
+export function assemblySocketsOf(assembly: {
+  attachment: FlagMountSolution;
+  fly: number;
+  hoist: number;
+  mount: FlagMount;
+  scale?: number;
+}): FlagSocketDef[] {
+  const a = assembly.attachment;
+  const sc = assembly.scale ?? 1;
+  const o: V3 = [a.origin[0] * sc, a.origin[1] * sc, a.origin[2] * sc];
+  const rz = a.rotZ ?? 0;
+  const c = Math.cos(rz);
+  const s = Math.sin(rz);
+  const rot = (x: number, y: number): [number, number] => [x * c - y * s, x * s + y * c];
+  const [ex, ey] = rot(assembly.fly / 2, assembly.hoist / 2);
+  const [fx, fy] = rot(assembly.fly, assembly.hoist / 2);
+  const round6 = (v: number) => (Math.abs(v) < 1e-9 ? 0 : Math.round(v * 1e6) / 1e6);
+  return [
+    {
+      name: 'socket_mount',
+      translation: [round6(o[0]), round6(o[1]), round6(o[2])],
+      extras: { interface: true, note: `挂载原点 ${assembly.mount}` },
+    },
+    {
+      name: 'socket_emblem',
+      translation: [round6(o[0] + ex), round6(o[1] + ey), round6(o[2])],
+      extras: { interface: true, note: '徽标插入点（旗面中心）' },
+    },
+    {
+      name: 'socket_flyend',
+      translation: [round6(o[0] + fx), round6(o[1] + fy), round6(o[2])],
+      extras: { interface: true, note: '旗面外缘中心' },
+    },
+  ];
+}
+
 export interface FlagAssembly {
   flag: string;
   pole: string;
@@ -488,6 +524,7 @@ export interface FlagAssembly {
   hoist: number;
   scale: number;
   yaw: number;
+  sockets: readonly FlagSocketDef[];
 }
 
 export function buildFlagAssembly(options: FlagAssemblyOptions): FlagAssembly {
@@ -530,6 +567,9 @@ export function buildFlagAssembly(options: FlagAssemblyOptions): FlagAssembly {
       attachment.origin[2] * scale,
     ],
   });
+  const fly = clothDef.fly * scale;
+  const hoist = clothDef.hoist * scale;
+  const sockets = assemblySocketsOf({ attachment, fly, hoist, scale, mount });
   return {
     flag: flagUnit.id,
     pole: poleUnit.id,
@@ -541,10 +581,11 @@ export function buildFlagAssembly(options: FlagAssemblyOptions): FlagAssembly {
     geometry: merged.build(),
     clothDef,
     poleDef,
-    fly: clothDef.fly * scale,
-    hoist: clothDef.hoist * scale,
+    fly,
+    hoist,
     scale,
     yaw: opts.yaw ?? 0,
+    sockets,
   };
 }
 

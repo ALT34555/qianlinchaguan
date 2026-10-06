@@ -27,15 +27,20 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
       shader.vertexShader = `
         attribute float waterDepth;
         attribute vec2 waterFlow;
+        attribute float waterFall;
         varying vec2 vWaterFlow;
         varying float vWaterDepth;
+        varying float vWaterFall;
         varying vec3 vWaterWorld;
+        varying vec3 vWaterLocal;
       ` + shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace('#include <worldpos_vertex>', `
         #include <worldpos_vertex>
         vWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
+        vWaterLocal = transformed;
         vWaterDepth = waterDepth;
         vWaterFlow = waterFlow;
+        vWaterFall = waterFall;
       `);
       shader.fragmentShader = `
         uniform float uWaterTime;
@@ -47,7 +52,9 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         uniform vec3 uWaterMoon;
         varying float vWaterDepth;
         varying vec2 vWaterFlow;
+        varying float vWaterFall;
         varying vec3 vWaterWorld;
+        varying vec3 vWaterLocal;
       ` + shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `
         #include <normal_fragment_maps>
@@ -79,18 +86,30 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         float shore = (1.0 - smoothstep(0.08, 0.7, vWaterDepth)) * smoothstep(0.0, 0.08, vWaterDepth);
         float shoreWave = smoothstep(0.55, 0.95, sin(vWaterDepth * 18.0 - uWaterTime * 1.4 + sin(w1) * 0.6));
         outgoingLight += vec3(0.4, 0.48, 0.45) * shore * shoreWave * (0.08 + 0.32 * uWaterDaylight) * waterTop;
-        // 真正陡落的面产生沿高度下落的水丝与白沫；缓坡水面不加竖向纹理。
-        float falling=(1.0-waterTop)*smoothstep(1.2,4.0,length(vWaterFlow));
-        float streak=smoothstep(0.1,0.85,sin(dot(vWaterWorld.xz,vec2(2.3,1.7))+vWaterWorld.y*.6+uWaterTime*7.0));
-        outgoingLight=mix(outgoingLight,vec3(.63,.78,.8)*(0.25+uWaterDaylight*.65),falling*(.35+streak*.45));
+        float falling=(1.0-waterTop)*max(smoothstep(1.2,4.0,length(vWaterFlow))*.35,smoothstep(.3,.7,vWaterFall));
+        float streak=0.0;
+        if(falling>0.003){
+          vec2 fallFlow=vWaterFlow+vec2(1e-5,0.0);
+          float across=dot(normalize(vec2(-fallFlow.y,fallFlow.x)),vWaterLocal.xz);
+          across+=sin(vWaterLocal.z*.37+vWaterLocal.x*.29)*.9;
+          float rush=uWaterTime*3.0;
+          float thread1=sin(across*3.1+vWaterWorld.y*.12+rush);
+          float thread2=sin(across*7.3+vWaterWorld.y*.31+rush*1.6+2.1);
+          streak=smoothstep(.05,.9,thread1*.6+thread2*.4);
+          streak*=.55+.45*sin(across*.7+vWaterWorld.y*.045+rush*.35+2.0);
+          float foam=smoothstep(.55,.95,thread1*.5+thread2*.5);
+          vec3 fallColor=mix(vec3(.55,.72,.78),vec3(.97,1.0,1.0),streak)*(.28+uWaterDaylight*.72);
+          fallColor+=vec3(.9,.96,1.0)*foam*.3*(.2+uWaterDaylight*.8);
+          outgoingLight=mix(outgoingLight,fallColor,falling*(.4+streak*.6));
+        }
         diffuseColor.a = clamp(0.18 + 0.58 * (1.0 - exp(-vWaterDepth * 0.32)) + reflectionWeight * 0.25, 0.18, 0.9);
-        diffuseColor.a=max(diffuseColor.a,falling*.85);
+        diffuseColor.a=max(diffuseColor.a,falling*(.5+streak*.5));
         #include <opaque_fragment>
       `);
     };
   }
 
-  override customProgramCacheKey(): string { return 'qianlin-water-v3-falls'; }
+  override customProgramCacheKey(): string { return 'qianlin-water-v4-falls-mist'; }
 
   update(time: number, lighting: WorldLighting, daylight: number, night: number): void {
     // 周期远大于一次游玩

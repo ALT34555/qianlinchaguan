@@ -176,7 +176,6 @@ export interface FlagDef {
 }
 
 export interface FlagFile {
-  version?: number;
   flags: FlagDef[];
 }
 
@@ -243,7 +242,6 @@ export interface FlagpoleDef {
 }
 
 export interface FlagpoleFile {
-  version?: number;
   poles: FlagpoleDef[];
 }
 
@@ -280,7 +278,6 @@ export interface FlagPaletteEntry {
 }
 
 export interface FlagPaletteFile {
-  version?: number;
   cloth?: Record<string, FlagPaletteEntry>;
   hardware?: Record<string, FlagPaletteEntry>;
 }
@@ -295,7 +292,6 @@ export interface FlagEmblemDef {
 }
 
 export interface FlagEmblemFile {
-  version?: number;
   emblems: FlagEmblemDef[];
 }
 

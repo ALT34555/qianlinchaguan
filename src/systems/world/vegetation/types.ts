@@ -308,8 +308,6 @@ export interface PlantVariantDef {
 }
 
 export interface PlantFile {
-  /** 参数表格式版本，目前为 1 */
-  version?: number;
   plants: PlantVariantDef[];
 }
 
@@ -323,7 +321,6 @@ export interface PaletteEntry {
 }
 
 export interface PaletteFile {
-  version?: number;
   /** 树干、土壤、雪、刺、干枯等非叶色板 */
   bark?: Record<string, PaletteEntry>;
   /** 叶、花、果色板 */

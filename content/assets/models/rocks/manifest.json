@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 3,
   "generator": "src/systems/world/rocks/（Rocks.ts / archetypes.ts / geometry.ts）",
-  "note": "统计量由当前参数表与生成器实时算出。⚠️ 各处 glb 路径是**导出目标路径，目前尚未生成**。字段语义、形态档规则与区块配色办法见 .fordev_docs/rocks.md。重出本文件：node 000base/tools/rock-manifest.mjs",
+  "note": "统计量由当前参数表与生成器实时算出。各处 glb 是**导出目标路径**，由 node 000base/tools/asset-export.mjs 实际写出（GLB 只作检视与外包交付，运行时不读）。字段语义、形态档规则与区块配色办法见 .fordev_docs/src/systems/world/rocks/rocks.md。重出本文件：node 000base/tools/rock-manifest.mjs",
   "units": [
     {
       "id": "rock.boulder",

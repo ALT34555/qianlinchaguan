@@ -20,7 +20,9 @@ export interface ChunkResultMessage {
   waterField: WaterField;
   terrain: MeshData | null;
   water: MeshData | null;
+  decoration: MeshData | null;
   minimap: Uint8ClampedArray<ArrayBuffer>;
+  mist?: Float32Array;
   /** 生成 + 构建网格耗时（毫秒） */
   elapsed: number;
 }

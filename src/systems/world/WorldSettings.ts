@@ -9,7 +9,6 @@ export const CLIMATES = [
 
 export type ClimateWeights = [number, number, number, number, number];
 export const DEFAULT_CLIMATE_WEIGHTS: ClimateWeights = [20, 20, 20, 20, 20];
-export const GENERATOR_VERSION = 22;
 
 export interface PlanetSettings {
   map: 'procedural' | 'earth';

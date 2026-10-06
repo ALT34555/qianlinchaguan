@@ -1,4 +1,4 @@
-import { smooth } from './TerrainLayers';
+import { clamp, smooth } from './TerrainLayers';
 
 /** width 为半宽 */
 export const MAX_RIVER_RADIUS = 192;
@@ -14,11 +14,62 @@ export function riverWidth(discharge:number,blocks=discharge>=2500?2:1):number{
   if(blocks===5)return 144+16*smooth((q-60000)/100000);
   return 160+32*smooth((q-160000)/200000);
 }
-export const riverDepth = (discharge: number,blocks=discharge>=2500?2:1): number =>
-  Math.min(4+blocks*4,1.1+19*(1-Math.exp(-Math.cbrt(Math.max(0,discharge))*.05))+Math.max(0,blocks-2)*2.2);
+/** 分级深度上限（格，自水面起算）：1~6 区块河宽 */
+export const RIVER_TIER_DEPTH = [16, 32, 64, 128, 256, 256];
+export const riverDepthLimit = (blocks: number): number =>
+  RIVER_TIER_DEPTH[Math.min(RIVER_TIER_DEPTH.length, Math.max(1, Math.round(blocks))) - 1];
+/** 随流量成熟度逼近本级上限，源头保留最小下切 */
+export const riverDepth = (discharge: number,blocks=discharge>=2500?2:1): number => {
+  const cap=riverDepthLimit(blocks),shallow=cap*.2;
+  return Math.min(cap,shallow+(cap-shallow)*(1-Math.exp(-Math.cbrt(Math.max(0,discharge))*.052)));
+};
+/** 深槽外缘半径比例：此处河床抬回水面下 .85 */
+export const RIVER_BED_CORE = .65;
+/** 深槽平底半宽比例：越宽的河越平，1 级仍是 V 形 */
+export const riverBedFlat = (width: number): number => clamp((width / 32 - 1) * .11, 0, .5);
 export const riverShore = (width: number): number => Math.min(22, 5 + width * .45);
 export const riverFloodplain = (width: number): number => Math.min(48, 18 + width * .4);
+/** 水边半径扰动幅度（湖面另用更大噪声） */
+export const RIVER_EDGE_WOBBLE = .16;
+export const RIVER_EDGE_NOISE = .07;
+export const RIVER_LAKE_EDGE_NOISE = .18;
+/** 岸坡重映射位移上限 */
+export const RIVER_BEACH_WOBBLE = .34;
+/** 岸带 / 滩地宽度倍率幅度与上限 */
+export const RIVER_SHORE_SCALE = .38;
+export const RIVER_FLOOD_SCALE = .22;
+export const RIVER_SHORE_BUDGET = 1 + RIVER_SHORE_SCALE;
+export const RIVER_FLOOD_BUDGET = 1 + RIVER_FLOOD_SCALE;
+/** 岸顶抬升倍率幅度 */
+export const RIVER_CREST_SCALE = .42;
 export const riverInfluence = (width: number): number => width + riverShore(width) + riverFloodplain(width);
+/** 岸形扰动多伸出的半径，逐段查询范围按此收紧 */
+export const riverInfluenceMargin = (width: number, lake = false): number => {
+  const noise = lake ? RIVER_LAKE_EDGE_NOISE : RIVER_EDGE_NOISE;
+  const narrow = width * (1 - noise - RIVER_EDGE_WOBBLE), wide = width * (1 + noise + RIVER_EDGE_WOBBLE);
+  const steep = narrow + riverShore(narrow) * RIVER_SHORE_BUDGET + riverFloodplain(narrow) * RIVER_FLOOD_BUDGET;
+  const shoal = wide + riverShore(wide) * (2 - RIVER_SHORE_BUDGET) + riverFloodplain(wide) * (2 - RIVER_FLOOD_BUDGET);
+  return Math.max(0, Math.max(steep, shoal) - riverInfluence(width * (lake ? 1.18 : 1.07)));
+};
+
+/** 横断面外侧的岸形扰动参数 */
+export interface RiverBankShape {
+  /** 水边半径倍率偏移：正=水边外移 */
+  edgeShift: number;
+  /** 岸坡重映射位移：正=贴水先抬升 */
+  beachShift: number;
+  shoreScale: number;
+  floodScale: number;
+  crestScale: number;
+}
+/** 正=凹岸陡窄高，负=凸岸缓宽低；岸坡端点位移为零。 */
+export function riverBankShape(character: number): RiverBankShape {
+  const c = clamp(character, -1, 1);
+  return {edgeShift: RIVER_EDGE_WOBBLE * c, beachShift: -RIVER_BEACH_WOBBLE * c,
+    shoreScale: clamp(1 - RIVER_SHORE_SCALE * c, 2 - RIVER_SHORE_BUDGET, RIVER_SHORE_BUDGET),
+    floodScale: clamp(1 - RIVER_FLOOD_SCALE * c, 2 - RIVER_FLOOD_BUDGET, RIVER_FLOOD_BUDGET),
+    crestScale: clamp(1 + RIVER_CREST_SCALE * c, .5, 1.7)};
+}
 
 export interface RiverPoint {
   x: number; z: number; level: number; width: number; depth: number; discharge: number;

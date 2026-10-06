@@ -1,0 +1,3392 @@
+{
+  "version": 3,
+  "generator": "src/systems/world/flags/（Flags.ts / archetypes.ts / geometry.ts）",
+  "note": "统计量由当前参数表与生成器实时算出。GLB 由 node 000base/tools/asset-export.mjs 写出（100 个可用组合 + 16 个徽标文字测试件，只作检视与外包交付、运行时不读）。字段语义、旗形与挂载规则见 .fordev_docs/src/systems/world/flags/flags.md。重出本文件：node 000base/tools/flag-manifest.mjs",
+  "units": "1 = 1 block（1 格）；旗杆原点在杆底中心（y=0 为地面线），+Y 向上，旗帜原点为旗面挂接边（hoist）下角，向 +X 飘出，波形沿 ±Z",
+  "up": "Y",
+  "materials": [
+    "cloth",
+    "trim",
+    "charge",
+    "emblem",
+    "pole",
+    "metal",
+    "stone"
+  ],
+  "colorSlots": [
+    "field",
+    "trim",
+    "charge",
+    "emblem",
+    "pole",
+    "metal",
+    "stone",
+    "cord"
+  ],
+  "shapes": [
+    {
+      "shape": "rect",
+      "code": 0,
+      "label": "长方旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "defaultOrientation": "fly",
+      "ratio": 1.5,
+      "hoist": 1
+    },
+    {
+      "shape": "square",
+      "code": 1,
+      "label": "方旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "defaultOrientation": "fly",
+      "ratio": 1,
+      "hoist": 0.9
+    },
+    {
+      "shape": "swallowtail",
+      "code": 2,
+      "label": "燕尾旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "defaultOrientation": "fly",
+      "ratio": 1.65,
+      "hoist": 1
+    },
+    {
+      "shape": "pennant",
+      "code": 3,
+      "label": "三角尖旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "defaultOrientation": "fly",
+      "ratio": 1.9,
+      "hoist": 0.8
+    },
+    {
+      "shape": "notched",
+      "code": 4,
+      "label": "缺口尾旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "defaultOrientation": "fly",
+      "ratio": 1.55,
+      "hoist": 0.95
+    },
+    {
+      "shape": "roundFly",
+      "code": 5,
+      "label": "圆尾旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "defaultOrientation": "fly",
+      "ratio": 1.35,
+      "hoist": 1
+    },
+    {
+      "shape": "gonfalon",
+      "code": 6,
+      "label": "垂幅幡",
+      "orientations": [
+        "hang"
+      ],
+      "defaultOrientation": "hang",
+      "ratio": 1.7,
+      "hoist": 0.85
+    }
+  ],
+  "poleKinds": [
+    "ground",
+    "horizontal",
+    "stick"
+  ],
+  "mounts": [
+    {
+      "id": "masthead",
+      "label": "杆顶飘扬",
+      "latin": "masthead",
+      "kinds": [
+        "ground",
+        "stick"
+      ],
+      "orientation": "fly",
+      "needsArm": false,
+      "forbidsArm": true
+    },
+    {
+      "id": "midmast",
+      "label": "杆中悬挂",
+      "latin": "midmast",
+      "kinds": [
+        "ground",
+        "stick"
+      ],
+      "orientation": "fly",
+      "needsArm": false,
+      "forbidsArm": true
+    },
+    {
+      "id": "armFly",
+      "label": "杆头飘扬",
+      "latin": "armFly",
+      "kinds": [
+        "ground",
+        "horizontal",
+        "stick"
+      ],
+      "orientation": "fly",
+      "needsArm": true
+    },
+    {
+      "id": "armHang",
+      "label": "横木垂挂",
+      "latin": "armHang",
+      "kinds": [
+        "ground",
+        "horizontal",
+        "stick"
+      ],
+      "orientation": "hang",
+      "needsArm": true
+    }
+  ],
+  "chargeKinds": [
+    "none",
+    "square"
+  ],
+  "emblems": [],
+  "counts": {
+    "flags": 9,
+    "poles": 6,
+    "assemblies": 100,
+    "skipped": 2,
+    "trianglesTotal": 22274,
+    "trianglesAverage": 223,
+    "trianglesMax": 302,
+    "trianglesMaxAt": "flag.rect.chizhi@pole.ground.miaogan/armFly",
+    "trianglesMin": 180,
+    "trianglesMinAt": "flag.rect.suqi@pole.stick.mugun/masthead"
+  },
+  "cloth": [
+    {
+      "id": "flag.rect.chizhi",
+      "name": "赤帜",
+      "latin": "chizhi",
+      "shape": "rect",
+      "shapeLabel": "长方旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "palette": {
+        "field": "vermilion",
+        "trim": "gold",
+        "charge": "ivory"
+      },
+      "params": {
+        "charge": {
+          "kind": "square",
+          "size": 0.44
+        },
+        "wave": {
+          "waves": 1.3
+        }
+      },
+      "tags": [
+        "faction",
+        "war"
+      ],
+      "stat": {
+        "fly": 1.5,
+        "hoist": 1,
+        "trimWidth": 0.11,
+        "sleeve": true,
+        "charge": "square",
+        "columns": 6,
+        "bands": 5,
+        "waves": 1.3,
+        "amplitude": 0.12,
+        "height": 1,
+        "radius": 1.53,
+        "triangles": 124,
+        "vertices": 372,
+        "materials": "cloth:48 trim:72 charge:4",
+        "resolved": {
+          "field": "#b03a2e",
+          "trim": "#c9a227",
+          "charge": "#e6ded0",
+          "emblem": "#c9a227"
+        }
+      }
+    },
+    {
+      "id": "flag.rect.suqi",
+      "name": "素旗",
+      "latin": "suqi",
+      "shape": "rect",
+      "shapeLabel": "长方旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "palette": {
+        "field": "ivory",
+        "trim": "charcoal"
+      },
+      "params": {
+        "charge": {
+          "kind": "none"
+        },
+        "wave": {
+          "waves": 1.5,
+          "amplitude": 0.12
+        }
+      },
+      "tags": [
+        "plain",
+        "ceremony"
+      ],
+      "stat": {
+        "fly": 1.5,
+        "hoist": 1,
+        "trimWidth": 0.11,
+        "sleeve": true,
+        "charge": "none",
+        "columns": 6,
+        "bands": 5,
+        "waves": 1.5,
+        "amplitude": 0.12,
+        "height": 1,
+        "radius": 1.521,
+        "triangles": 120,
+        "vertices": 360,
+        "materials": "cloth:48 trim:72",
+        "resolved": {
+          "field": "#e6ded0",
+          "trim": "#2f2c29",
+          "charge": "#e6ded0",
+          "emblem": "#c9a227"
+        }
+      }
+    },
+    {
+      "id": "flag.square.qingqi",
+      "name": "青旗",
+      "latin": "qingqi",
+      "shape": "square",
+      "shapeLabel": "方旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "palette": {
+        "field": "azure",
+        "trim": "white",
+        "charge": "ivory"
+      },
+      "params": {
+        "charge": {
+          "kind": "square",
+          "size": 0.5
+        }
+      },
+      "tags": [
+        "faction",
+        "naval"
+      ],
+      "stat": {
+        "fly": 0.9,
+        "hoist": 0.9,
+        "trimWidth": 0.1,
+        "sleeve": true,
+        "charge": "square",
+        "columns": 6,
+        "bands": 5,
+        "waves": 1.35,
+        "amplitude": 0.12,
+        "height": 0.9,
+        "radius": 0.935,
+        "triangles": 124,
+        "vertices": 372,
+        "materials": "cloth:48 trim:72 charge:4",
+        "resolved": {
+          "field": "#2f5f96",
+          "trim": "#f2f0ea",
+          "charge": "#e6ded0",
+          "emblem": "#c9a227"
+        }
+      }
+    },
+    {
+      "id": "flag.square.huangqi",
+      "name": "黄方旗",
+      "latin": "huangqi",
+      "shape": "square",
+      "shapeLabel": "方旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "palette": {
+        "field": "ochre",
+        "trim": "charcoal"
+      },
+      "params": {
+        "charge": {
+          "kind": "none"
+        },
+        "wave": {
+          "waves": 1.1,
+          "amplitude": 0.08
+        }
+      },
+      "tags": [
+        "plain",
+        "market"
+      ],
+      "stat": {
+        "fly": 0.9,
+        "hoist": 0.9,
+        "trimWidth": 0.1,
+        "sleeve": true,
+        "charge": "none",
+        "columns": 6,
+        "bands": 5,
+        "waves": 1.1,
+        "amplitude": 0.08,
+        "height": 0.9,
+        "radius": 0.962,
+        "triangles": 120,
+        "vertices": 360,
+        "materials": "cloth:48 trim:72",
+        "resolved": {
+          "field": "#a9761f",
+          "trim": "#2f2c29",
+          "charge": "#e6ded0",
+          "emblem": "#c9a227"
+        }
+      }
+    },
+    {
+      "id": "flag.swallowtail.jinyan",
+      "name": "金燕尾旗",
+      "latin": "jinyan",
+      "shape": "swallowtail",
+      "shapeLabel": "燕尾旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "palette": {
+        "field": "gold",
+        "trim": "crimson"
+      },
+      "params": {
+        "charge": {
+          "kind": "none"
+        },
+        "wave": {
+          "waves": 1.45
+        }
+      },
+      "tags": [
+        "noble",
+        "ceremony"
+      ],
+      "stat": {
+        "fly": 1.65,
+        "hoist": 1,
+        "trimWidth": 0.1,
+        "sleeve": true,
+        "charge": "none",
+        "columns": 6,
+        "bands": 5,
+        "waves": 1.45,
+        "amplitude": 0.12,
+        "height": 1,
+        "radius": 1.671,
+        "triangles": 120,
+        "vertices": 360,
+        "materials": "cloth:48 trim:72",
+        "resolved": {
+          "field": "#c9a227",
+          "trim": "#8c1f24",
+          "charge": "#8c1f24",
+          "emblem": "#8c1f24"
+        }
+      }
+    },
+    {
+      "id": "flag.pennant.lingqi",
+      "name": "令旗",
+      "latin": "lingqi",
+      "shape": "pennant",
+      "shapeLabel": "三角尖旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "palette": {
+        "field": "crimson",
+        "trim": "ivory"
+      },
+      "params": {
+        "charge": {
+          "kind": "none"
+        },
+        "wave": {
+          "waves": 1.6,
+          "amplitude": 0.13,
+          "droop": 0.18
+        }
+      },
+      "tags": [
+        "military",
+        "command"
+      ],
+      "stat": {
+        "fly": 1.52,
+        "hoist": 0.8,
+        "trimWidth": 0.09,
+        "sleeve": true,
+        "charge": "none",
+        "columns": 6,
+        "bands": 5,
+        "waves": 1.6,
+        "amplitude": 0.13,
+        "height": 0.8,
+        "radius": 1.128,
+        "triangles": 120,
+        "vertices": 360,
+        "materials": "cloth:48 trim:72",
+        "resolved": {
+          "field": "#8c1f24",
+          "trim": "#e6ded0",
+          "charge": "#e6ded0",
+          "emblem": "#c9a227"
+        }
+      }
+    },
+    {
+      "id": "flag.notched.dianqi",
+      "name": "靛缺旗",
+      "latin": "dianqi",
+      "shape": "notched",
+      "shapeLabel": "缺口尾旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "palette": {
+        "field": "indigo",
+        "trim": "silver",
+        "charge": "ivory"
+      },
+      "params": {
+        "charge": {
+          "kind": "square",
+          "size": 0.42
+        }
+      },
+      "tags": [
+        "faction",
+        "watch"
+      ],
+      "stat": {
+        "fly": 1.473,
+        "hoist": 0.95,
+        "trimWidth": 0.1,
+        "sleeve": true,
+        "charge": "square",
+        "columns": 6,
+        "bands": 5,
+        "waves": 1.35,
+        "amplitude": 0.12,
+        "height": 0.95,
+        "radius": 1.496,
+        "triangles": 124,
+        "vertices": 372,
+        "materials": "cloth:48 trim:72 charge:4",
+        "resolved": {
+          "field": "#29344d",
+          "trim": "#c6c9cc",
+          "charge": "#e6ded0",
+          "emblem": "#c6c9cc"
+        }
+      }
+    },
+    {
+      "id": "flag.roundFly.cuiqi",
+      "name": "翠圆旗",
+      "latin": "cuiqi",
+      "shape": "roundFly",
+      "shapeLabel": "圆尾旗",
+      "orientations": [
+        "fly",
+        "hang"
+      ],
+      "palette": {
+        "field": "jade",
+        "trim": "gold"
+      },
+      "params": {
+        "charge": {
+          "kind": "none"
+        },
+        "wave": {
+          "waves": 1.25
+        }
+      },
+      "tags": [
+        "faction",
+        "guard"
+      ],
+      "stat": {
+        "fly": 1.35,
+        "hoist": 1,
+        "trimWidth": 0.1,
+        "sleeve": true,
+        "charge": "none",
+        "columns": 6,
+        "bands": 5,
+        "waves": 1.25,
+        "amplitude": 0.12,
+        "height": 1,
+        "radius": 1.314,
+        "triangles": 120,
+        "vertices": 360,
+        "materials": "cloth:48 trim:72",
+        "resolved": {
+          "field": "#2f6f52",
+          "trim": "#c9a227",
+          "charge": "#e6ded0",
+          "emblem": "#c9a227"
+        }
+      }
+    },
+    {
+      "id": "flag.gonfalon.zifan",
+      "name": "紫幡",
+      "latin": "zifan",
+      "shape": "gonfalon",
+      "shapeLabel": "垂幅幡",
+      "orientations": [
+        "hang"
+      ],
+      "palette": {
+        "field": "purple",
+        "trim": "gold",
+        "charge": "ivory"
+      },
+      "params": {
+        "hoist": 0.8,
+        "charge": {
+          "kind": "square",
+          "size": 0.4,
+          "offsetY": -0.08
+        },
+        "wave": {
+          "waves": 0.9,
+          "amplitude": 0.07,
+          "twist": 0.3,
+          "bands": 5
+        }
+      },
+      "tags": [
+        "temple",
+        "ceremony"
+      ],
+      "stat": {
+        "fly": 1.36,
+        "hoist": 0.8,
+        "trimWidth": 0.09,
+        "sleeve": true,
+        "charge": "square",
+        "columns": 6,
+        "bands": 5,
+        "waves": 0.9,
+        "amplitude": 0.07,
+        "height": 0.8,
+        "radius": 1.371,
+        "triangles": 124,
+        "vertices": 372,
+        "materials": "cloth:48 trim:72 charge:4",
+        "resolved": {
+          "field": "#5b3a72",
+          "trim": "#c9a227",
+          "charge": "#e6ded0",
+          "emblem": "#c9a227"
+        }
+      }
+    }
+  ],
+  "poles": [
+    {
+      "id": "pole.ground.gaogan",
+      "name": "落地高杆",
+      "latin": "gaogan",
+      "kind": "ground",
+      "palette": {
+        "pole": "oakWood",
+        "metal": "bronze",
+        "stone": "granite"
+      },
+      "params": {
+        "height": 5.2,
+        "radius": 0.085,
+        "tipRatio": 0.74,
+        "segments": 3,
+        "joints": 2,
+        "base": {
+          "style": "step",
+          "height": 0.34
+        },
+        "finial": {
+          "style": "ball",
+          "size": 1
+        },
+        "collar": {
+          "style": "band",
+          "size": 1
+        }
+      },
+      "tags": [
+        "outdoor",
+        "square"
+      ],
+      "stat": {
+        "height": 5.2,
+        "radius": 0.085,
+        "sides": 6,
+        "segments": 3,
+        "joints": 2,
+        "base": "step",
+        "finial": "ball",
+        "plate": "none",
+        "arm": "none",
+        "triangles": 138,
+        "vertices": 414,
+        "materials": "pole:80 metal:34 stone:24",
+        "resolved": {
+          "pole": "#8a6a45",
+          "metal": "#a5843f",
+          "stone": "#8b8b8b",
+          "cord": "#b7a583"
+        }
+      }
+    },
+    {
+      "id": "pole.ground.miaogan",
+      "name": "庙杆",
+      "latin": "miaogan",
+      "kind": "ground",
+      "palette": {
+        "pole": "lacquer",
+        "metal": "brass",
+        "stone": "sandstone"
+      },
+      "params": {
+        "height": 4.2,
+        "radius": 0.1,
+        "tipRatio": 0.68,
+        "segments": 3,
+        "joints": 2,
+        "base": {
+          "style": "stone",
+          "radius": 0.42,
+          "height": 0.42,
+          "sides": 6
+        },
+        "finial": {
+          "style": "spear",
+          "size": 0.9
+        },
+        "arm": {
+          "length": 1.25,
+          "rise": 0.16,
+          "radius": 0.068,
+          "sides": 6,
+          "tipKnob": 1.6,
+          "brace": 0.85
+        },
+        "collar": {
+          "style": "band",
+          "size": 1.1
+        }
+      },
+      "tags": [
+        "outdoor",
+        "temple"
+      ],
+      "stat": {
+        "height": 4.2,
+        "radius": 0.1,
+        "sides": 6,
+        "segments": 3,
+        "joints": 2,
+        "base": "stone",
+        "finial": "spear",
+        "plate": "none",
+        "arm": "L1.25@3.61",
+        "triangles": 178,
+        "vertices": 534,
+        "materials": "pole:96 metal:62 stone:20",
+        "resolved": {
+          "pole": "#7c2320",
+          "metal": "#b08a3e",
+          "stone": "#b9a37f",
+          "cord": "#b7a583"
+        }
+      }
+    },
+    {
+      "id": "pole.horizontal.big",
+      "name": "壁挂横杆",
+      "latin": "bigua",
+      "kind": "horizontal",
+      "palette": {
+        "pole": "iron",
+        "metal": "iron",
+        "stone": "granite",
+        "cord": "hemp"
+      },
+      "params": {
+        "height": 3.2,
+        "radius": 0.07,
+        "tipRatio": 0.84,
+        "segments": 1,
+        "joints": 0,
+        "plate": {
+          "style": "plate",
+          "width": 0.44,
+          "height": 0.62,
+          "depth": 0.09
+        },
+        "arm": {
+          "length": 2.4,
+          "rise": 0,
+          "radius": 0.062,
+          "sides": 6,
+          "tipKnob": 1.75
+        },
+        "finial": {
+          "style": "none"
+        },
+        "collar": {
+          "style": "band",
+          "size": 1
+        }
+      },
+      "tags": [
+        "wall",
+        "indoor"
+      ],
+      "stat": {
+        "height": 3.2,
+        "radius": 0.07,
+        "sides": 6,
+        "segments": 1,
+        "joints": 0,
+        "base": "none",
+        "finial": "none",
+        "plate": "plate",
+        "arm": "L2.40@3.20",
+        "triangles": 62,
+        "vertices": 186,
+        "materials": "pole:40 metal:22",
+        "resolved": {
+          "pole": "#4a4f55",
+          "metal": "#4a4f55",
+          "stone": "#8b8b8b",
+          "cord": "#b7a583"
+        }
+      }
+    },
+    {
+      "id": "pole.horizontal.xiecheng",
+      "name": "斜撑横杆",
+      "latin": "xiecheng",
+      "kind": "horizontal",
+      "palette": {
+        "pole": "ashWood",
+        "metal": "iron",
+        "cord": "hemp"
+      },
+      "params": {
+        "height": 2.9,
+        "radius": 0.062,
+        "tipRatio": 0.86,
+        "segments": 1,
+        "joints": 0,
+        "plate": {
+          "style": "bracket",
+          "width": 0.38,
+          "height": 0.56,
+          "depth": 0.08
+        },
+        "arm": {
+          "length": 1.9,
+          "rise": 0.1,
+          "radius": 0.056,
+          "sides": 6,
+          "tipKnob": 1.6
+        },
+        "base": {
+          "style": "none"
+        },
+        "finial": {
+          "style": "none"
+        },
+        "collar": {
+          "style": "ring",
+          "size": 0.9
+        }
+      },
+      "tags": [
+        "wall",
+        "shop"
+      ],
+      "stat": {
+        "height": 2.9,
+        "radius": 0.062,
+        "sides": 6,
+        "segments": 1,
+        "joints": 0,
+        "base": "none",
+        "finial": "none",
+        "plate": "bracket",
+        "arm": "L1.90@2.90",
+        "triangles": 74,
+        "vertices": 222,
+        "materials": "pole:40 metal:34",
+        "resolved": {
+          "pole": "#b59a76",
+          "metal": "#4a4f55",
+          "stone": "#8b8b8b",
+          "cord": "#b7a583"
+        }
+      }
+    },
+    {
+      "id": "pole.stick.mugun",
+      "name": "素木棍",
+      "latin": "mugun",
+      "kind": "stick",
+      "palette": {
+        "pole": "bamboo",
+        "metal": "brass",
+        "cord": "hemp"
+      },
+      "params": {
+        "height": 1.9,
+        "radius": 0.042,
+        "sides": 5,
+        "tipRatio": 0.95,
+        "segments": 1,
+        "joints": 0,
+        "base": {
+          "style": "none"
+        },
+        "finial": {
+          "style": "knob",
+          "size": 1
+        },
+        "collar": {
+          "style": "ring",
+          "size": 0.8
+        }
+      },
+      "tags": [
+        "hand",
+        "plain"
+      ],
+      "stat": {
+        "height": 1.9,
+        "radius": 0.042,
+        "sides": 5,
+        "segments": 1,
+        "joints": 0,
+        "base": "none",
+        "finial": "knob",
+        "plate": "none",
+        "arm": "none",
+        "triangles": 40,
+        "vertices": 120,
+        "materials": "pole:32 metal:8",
+        "resolved": {
+          "pole": "#c2b06a",
+          "metal": "#b08a3e",
+          "stone": "#8b8b8b",
+          "cord": "#b7a583"
+        }
+      }
+    },
+    {
+      "id": "pole.stick.fangun",
+      "name": "幡棍",
+      "latin": "fangun",
+      "kind": "stick",
+      "palette": {
+        "pole": "ebony",
+        "metal": "brass",
+        "cord": "hemp"
+      },
+      "params": {
+        "height": 2.1,
+        "radius": 0.045,
+        "sides": 5,
+        "tipRatio": 0.95,
+        "segments": 1,
+        "joints": 0,
+        "base": {
+          "style": "none"
+        },
+        "finial": {
+          "style": "knob",
+          "size": 0.9
+        },
+        "arm": {
+          "length": 0.95,
+          "rise": 0,
+          "radius": 0.03,
+          "sides": 4,
+          "tipKnob": 1.3
+        },
+        "collar": {
+          "style": "ring",
+          "size": 0.7
+        },
+        "cord": 0.55
+      },
+      "tags": [
+        "hand",
+        "temple"
+      ],
+      "stat": {
+        "height": 2.1,
+        "radius": 0.045,
+        "sides": 5,
+        "segments": 1,
+        "joints": 0,
+        "base": "none",
+        "finial": "knob",
+        "plate": "none",
+        "arm": "L0.95@2.07",
+        "triangles": 72,
+        "vertices": 216,
+        "materials": "trim:12 pole:44 metal:16",
+        "resolved": {
+          "pole": "#35302c",
+          "metal": "#b08a3e",
+          "stone": "#8b8b8b",
+          "cord": "#b7a583"
+        }
+      }
+    }
+  ],
+  "assemblies": [
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.ground.gaogan",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.632,
+      "bottom": 0,
+      "collars": [
+        3.844,
+        4.844
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 162,
+      "triangles": 286,
+      "vertices": 858,
+      "materials": "cloth:48 trim:72 charge:4 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.ground.gaogan",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.639,
+      "bottom": 0,
+      "collars": [
+        2.224,
+        3.224
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 162,
+      "triangles": 286,
+      "vertices": 858,
+      "materials": "cloth:48 trim:72 charge:4 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.624,
+      "bottom": 0,
+      "collars": [
+        3.844,
+        4.844
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.631,
+      "bottom": 0,
+      "collars": [
+        2.224,
+        3.224
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.036,
+      "bottom": 0,
+      "collars": [
+        3.944,
+        4.844
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 162,
+      "triangles": 286,
+      "vertices": 858,
+      "materials": "cloth:48 trim:72 charge:4 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.043,
+      "bottom": 0,
+      "collars": [
+        2.324,
+        3.224
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 162,
+      "triangles": 286,
+      "vertices": 858,
+      "materials": "cloth:48 trim:72 charge:4 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.06,
+      "bottom": 0,
+      "collars": [
+        3.944,
+        4.844
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.067,
+      "bottom": 0,
+      "collars": [
+        2.324,
+        3.224
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.ground.gaogan",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.774,
+      "bottom": 0,
+      "collars": [
+        3.844,
+        4.844
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.ground.gaogan",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.781,
+      "bottom": 0,
+      "collars": [
+        2.224,
+        3.224
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.233,
+      "bottom": 0,
+      "collars": [
+        4.044,
+        4.844
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.24,
+      "bottom": 0,
+      "collars": [
+        2.424,
+        3.224
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.599,
+      "bottom": 0,
+      "collars": [
+        3.894,
+        4.844
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 162,
+      "triangles": 286,
+      "vertices": 858,
+      "materials": "cloth:48 trim:72 charge:4 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.606,
+      "bottom": 0,
+      "collars": [
+        2.274,
+        3.224
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 162,
+      "triangles": 286,
+      "vertices": 858,
+      "materials": "cloth:48 trim:72 charge:4 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.418,
+      "bottom": 0,
+      "collars": [
+        3.844,
+        4.844
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.ground.gaogan",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 5.2,
+      "height": 5.719,
+      "radius": 1.425,
+      "bottom": 0,
+      "collars": [
+        2.224,
+        3.224
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 162,
+      "triangles": 282,
+      "vertices": 846,
+      "materials": "cloth:48 trim:72 pole:80 metal:58 stone:24"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 2.806,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 178,
+      "triangles": 302,
+      "vertices": 906,
+      "materials": "cloth:48 trim:72 charge:4 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 1.359,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 178,
+      "triangles": 302,
+      "vertices": 906,
+      "materials": "cloth:48 trim:72 charge:4 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 2.801,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 1.359,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 2.205,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 178,
+      "triangles": 302,
+      "vertices": 906,
+      "materials": "cloth:48 trim:72 charge:4 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 1.359,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 178,
+      "triangles": 302,
+      "vertices": 906,
+      "materials": "cloth:48 trim:72 charge:4 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 2.216,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 1.359,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.ground.miaogan",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 2.952,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.ground.miaogan",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 1.359,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 2.418,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 1.359,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 2.775,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 178,
+      "triangles": 302,
+      "vertices": 906,
+      "materials": "cloth:48 trim:72 charge:4 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 1.359,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 178,
+      "triangles": 302,
+      "vertices": 906,
+      "materials": "cloth:48 trim:72 charge:4 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 2.602,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.ground.miaogan",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 1.359,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 178,
+      "triangles": 298,
+      "vertices": 894,
+      "materials": "cloth:48 trim:72 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.ground.miaogan",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.36,
+      "hoist": 0.8,
+      "poleHeight": 4.2,
+      "height": 5.156,
+      "radius": 1.359,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 178,
+      "triangles": 302,
+      "vertices": 906,
+      "materials": "cloth:48 trim:72 charge:4 pole:96 metal:62 stone:20"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.horizontal.big",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 3.2,
+      "height": 3.7,
+      "radius": 4.041,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 62,
+      "triangles": 186,
+      "vertices": 558,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.horizontal.big",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 3.2,
+      "height": 3.51,
+      "radius": 2.599,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 62,
+      "triangles": 186,
+      "vertices": 558,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 3.2,
+      "height": 3.7,
+      "radius": 4.038,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 3.2,
+      "height": 3.51,
+      "radius": 2.599,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 3.2,
+      "height": 3.65,
+      "radius": 3.439,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 62,
+      "triangles": 186,
+      "vertices": 558,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 3.2,
+      "height": 3.51,
+      "radius": 2.599,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 62,
+      "triangles": 186,
+      "vertices": 558,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 3.2,
+      "height": 3.65,
+      "radius": 3.447,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 3.2,
+      "height": 3.51,
+      "radius": 2.599,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.horizontal.big",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 3.2,
+      "height": 3.7,
+      "radius": 4.188,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.horizontal.big",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 3.2,
+      "height": 3.51,
+      "radius": 2.599,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 3.2,
+      "height": 3.6,
+      "radius": 3.658,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 3.2,
+      "height": 3.51,
+      "radius": 2.599,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 3.2,
+      "height": 3.675,
+      "radius": 4.011,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 62,
+      "triangles": 186,
+      "vertices": 558,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 3.2,
+      "height": 3.51,
+      "radius": 2.599,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 62,
+      "triangles": 186,
+      "vertices": 558,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 3.2,
+      "height": 3.7,
+      "radius": 3.842,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.horizontal.big",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 3.2,
+      "height": 3.51,
+      "radius": 2.599,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 62,
+      "triangles": 182,
+      "vertices": 546,
+      "materials": "cloth:48 trim:72 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.horizontal.big",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.36,
+      "hoist": 0.8,
+      "poleHeight": 3.2,
+      "height": 3.51,
+      "radius": 2.599,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 62,
+      "triangles": 186,
+      "vertices": 558,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:22"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 2.9,
+      "height": 3.5,
+      "radius": 3.533,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 74,
+      "triangles": 198,
+      "vertices": 594,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 2.9,
+      "height": 3.18,
+      "radius": 2.07,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 74,
+      "triangles": 198,
+      "vertices": 594,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 2.9,
+      "height": 3.5,
+      "radius": 3.529,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 2.9,
+      "height": 3.18,
+      "radius": 2.07,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 2.9,
+      "height": 3.45,
+      "radius": 2.931,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 74,
+      "triangles": 198,
+      "vertices": 594,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 2.9,
+      "height": 3.18,
+      "radius": 2.07,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 74,
+      "triangles": 198,
+      "vertices": 594,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 2.9,
+      "height": 3.45,
+      "radius": 2.94,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 2.9,
+      "height": 3.18,
+      "radius": 2.07,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 2.9,
+      "height": 3.5,
+      "radius": 3.679,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 2.9,
+      "height": 3.18,
+      "radius": 2.07,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 2.9,
+      "height": 3.4,
+      "radius": 3.148,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 2.9,
+      "height": 3.18,
+      "radius": 2.07,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 2.9,
+      "height": 3.475,
+      "radius": 3.502,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 74,
+      "triangles": 198,
+      "vertices": 594,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 2.9,
+      "height": 3.18,
+      "radius": 2.07,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 74,
+      "triangles": 198,
+      "vertices": 594,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 2.9,
+      "height": 3.5,
+      "radius": 3.332,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 2.9,
+      "height": 3.18,
+      "radius": 2.07,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 74,
+      "triangles": 194,
+      "vertices": 582,
+      "materials": "cloth:48 trim:72 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.horizontal.xiecheng",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.36,
+      "hoist": 0.8,
+      "poleHeight": 2.9,
+      "height": 3.18,
+      "radius": 2.07,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 74,
+      "triangles": 198,
+      "vertices": 594,
+      "materials": "cloth:48 trim:72 charge:4 pole:40 metal:34"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.stick.mugun",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.608,
+      "bottom": 0,
+      "collars": [
+        0.749,
+        1.749
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 60,
+      "triangles": 184,
+      "vertices": 552,
+      "materials": "cloth:48 trim:72 charge:4 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.stick.mugun",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.609,
+      "bottom": 0,
+      "collars": [
+        0.178,
+        1.178
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 60,
+      "triangles": 184,
+      "vertices": 552,
+      "materials": "cloth:48 trim:72 charge:4 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.stick.mugun",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.6,
+      "bottom": 0,
+      "collars": [
+        0.749,
+        1.749
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.stick.mugun",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.6,
+      "bottom": 0,
+      "collars": [
+        0.178,
+        1.178
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.stick.mugun",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.012,
+      "bottom": 0,
+      "collars": [
+        0.849,
+        1.749
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 60,
+      "triangles": 184,
+      "vertices": 552,
+      "materials": "cloth:48 trim:72 charge:4 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.stick.mugun",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.013,
+      "bottom": 0,
+      "collars": [
+        0.278,
+        1.178
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 60,
+      "triangles": 184,
+      "vertices": 552,
+      "materials": "cloth:48 trim:72 charge:4 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.stick.mugun",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.037,
+      "bottom": 0,
+      "collars": [
+        0.849,
+        1.749
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.stick.mugun",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.038,
+      "bottom": 0,
+      "collars": [
+        0.278,
+        1.178
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.stick.mugun",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.75,
+      "bottom": 0,
+      "collars": [
+        0.749,
+        1.749
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.stick.mugun",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.751,
+      "bottom": 0,
+      "collars": [
+        0.178,
+        1.178
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.stick.mugun",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.208,
+      "bottom": 0,
+      "collars": [
+        0.949,
+        1.749
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.stick.mugun",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.209,
+      "bottom": 0,
+      "collars": [
+        0.378,
+        1.178
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.stick.mugun",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.575,
+      "bottom": 0,
+      "collars": [
+        0.799,
+        1.749
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 60,
+      "triangles": 184,
+      "vertices": 552,
+      "materials": "cloth:48 trim:72 charge:4 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.stick.mugun",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.575,
+      "bottom": 0,
+      "collars": [
+        0.228,
+        1.178
+      ],
+      "clothTriangles": 124,
+      "poleTriangles": 60,
+      "triangles": 184,
+      "vertices": 552,
+      "materials": "cloth:48 trim:72 charge:4 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.stick.mugun",
+      "mount": "masthead",
+      "orientation": "fly",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.394,
+      "bottom": 0,
+      "collars": [
+        0.749,
+        1.749
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.stick.mugun",
+      "mount": "midmast",
+      "orientation": "fly",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 1.9,
+      "height": 2.085,
+      "radius": 1.394,
+      "bottom": 0,
+      "collars": [
+        0.178,
+        1.178
+      ],
+      "clothTriangles": 120,
+      "poleTriangles": 60,
+      "triangles": 180,
+      "vertices": 540,
+      "materials": "cloth:48 trim:72 pole:32 metal:28"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.stick.fangun",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 2.1,
+      "height": 2.569,
+      "radius": 2.508,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 72,
+      "triangles": 196,
+      "vertices": 588,
+      "materials": "cloth:48 trim:84 charge:4 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.stick.fangun",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 2.1,
+      "height": 2.284,
+      "radius": 1.035,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 72,
+      "triangles": 196,
+      "vertices": 588,
+      "materials": "cloth:48 trim:84 charge:4 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 2.1,
+      "height": 2.569,
+      "radius": 2.502,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.5,
+      "hoist": 1,
+      "poleHeight": 2.1,
+      "height": 2.284,
+      "radius": 1.035,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 2.1,
+      "height": 2.518,
+      "radius": 1.907,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 72,
+      "triangles": 196,
+      "vertices": 588,
+      "materials": "cloth:48 trim:84 charge:4 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 2.1,
+      "height": 2.284,
+      "radius": 0.989,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 72,
+      "triangles": 196,
+      "vertices": 588,
+      "materials": "cloth:48 trim:84 charge:4 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 2.1,
+      "height": 2.518,
+      "radius": 1.92,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 0.9,
+      "hoist": 0.9,
+      "poleHeight": 2.1,
+      "height": 2.284,
+      "radius": 0.989,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.stick.fangun",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 2.1,
+      "height": 2.569,
+      "radius": 2.653,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.stick.fangun",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.65,
+      "hoist": 1,
+      "poleHeight": 2.1,
+      "height": 2.284,
+      "radius": 1.035,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 2.1,
+      "height": 2.469,
+      "radius": 2.118,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.52,
+      "hoist": 0.8,
+      "poleHeight": 2.1,
+      "height": 2.284,
+      "radius": 0.989,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 2.1,
+      "height": 2.543,
+      "radius": 2.477,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 72,
+      "triangles": 196,
+      "vertices": 588,
+      "materials": "cloth:48 trim:84 charge:4 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.473,
+      "hoist": 0.95,
+      "poleHeight": 2.1,
+      "height": 2.284,
+      "radius": 0.989,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 72,
+      "triangles": 196,
+      "vertices": 588,
+      "materials": "cloth:48 trim:84 charge:4 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armFly",
+      "orientation": "fly",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 2.1,
+      "height": 2.569,
+      "radius": 2.302,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.stick.fangun",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.35,
+      "hoist": 1,
+      "poleHeight": 2.1,
+      "height": 2.284,
+      "radius": 1.035,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 120,
+      "poleTriangles": 72,
+      "triangles": 192,
+      "vertices": 576,
+      "materials": "cloth:48 trim:84 pole:44 metal:16"
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.stick.fangun",
+      "mount": "armHang",
+      "orientation": "hang",
+      "fly": 1.36,
+      "hoist": 0.8,
+      "poleHeight": 2.1,
+      "height": 2.284,
+      "radius": 0.989,
+      "bottom": 0,
+      "collars": [],
+      "clothTriangles": 124,
+      "poleTriangles": 72,
+      "triangles": 196,
+      "vertices": 588,
+      "materials": "cloth:48 trim:84 charge:4 pole:44 metal:16"
+    }
+  ],
+  "matrix": [
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mounts": []
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.ground.miaogan",
+      "kind": "ground",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.ground.miaogan",
+      "kind": "ground",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.ground.miaogan",
+      "kind": "ground",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.ground.miaogan",
+      "kind": "ground",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.ground.miaogan",
+      "kind": "ground",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.ground.miaogan",
+      "kind": "ground",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.ground.miaogan",
+      "kind": "ground",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.ground.miaogan",
+      "kind": "ground",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.ground.miaogan",
+      "kind": "ground",
+      "mounts": [
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.horizontal.big",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.horizontal.big",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.horizontal.big",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.horizontal.big",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.horizontal.big",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.horizontal.big",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.horizontal.big",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.horizontal.big",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.horizontal.big",
+      "kind": "horizontal",
+      "mounts": [
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.horizontal.xiecheng",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.horizontal.xiecheng",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.horizontal.xiecheng",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.horizontal.xiecheng",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.horizontal.xiecheng",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.horizontal.xiecheng",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.horizontal.xiecheng",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.horizontal.xiecheng",
+      "kind": "horizontal",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.horizontal.xiecheng",
+      "kind": "horizontal",
+      "mounts": [
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mounts": [
+        "masthead",
+        "midmast"
+      ]
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mounts": []
+    },
+    {
+      "flag": "flag.rect.chizhi",
+      "pole": "pole.stick.fangun",
+      "kind": "stick",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.rect.suqi",
+      "pole": "pole.stick.fangun",
+      "kind": "stick",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.square.qingqi",
+      "pole": "pole.stick.fangun",
+      "kind": "stick",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.square.huangqi",
+      "pole": "pole.stick.fangun",
+      "kind": "stick",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.swallowtail.jinyan",
+      "pole": "pole.stick.fangun",
+      "kind": "stick",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.pennant.lingqi",
+      "pole": "pole.stick.fangun",
+      "kind": "stick",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.notched.dianqi",
+      "pole": "pole.stick.fangun",
+      "kind": "stick",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.roundFly.cuiqi",
+      "pole": "pole.stick.fangun",
+      "kind": "stick",
+      "mounts": [
+        "armFly",
+        "armHang"
+      ]
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.stick.fangun",
+      "kind": "stick",
+      "mounts": [
+        "armHang"
+      ]
+    }
+  ],
+  "skipped": [
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.ground.gaogan",
+      "kind": "ground",
+      "mount": null,
+      "reason": "[Flags] ground 型旗杆 pole.ground.gaogan 无法挂载 gonfalon 旗形（该杆没有可用挂载点，或旗形朝向不匹配）"
+    },
+    {
+      "flag": "flag.gonfalon.zifan",
+      "pole": "pole.stick.mugun",
+      "kind": "stick",
+      "mount": null,
+      "reason": "[Flags] stick 型旗杆 pole.stick.mugun 无法挂载 gonfalon 旗形（该杆没有可用挂载点，或旗形朝向不匹配）"
+    }
+  ]
+}

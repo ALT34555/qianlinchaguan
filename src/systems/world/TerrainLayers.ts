@@ -79,9 +79,24 @@ export class TerrainLayers {
     const rift = (1 - smooth(Math.abs(this.field(point, 4, 2, 90)) / .09)) * coast;
     const plainBase=48+48*smooth(Math.max(0,coverage)/.65)+regional*16-valley*16-rift*24;
     const uplift=plate.base*coast;
-    return {height:coverage<=0?Math.max(-160,coverage*240):(plainBase+plate.base+hillRelief+highlandRelief)*coast,
+    return {height:coverage<=0?this.seabed(coverage,point):(plainBase+plate.base+hillRelief+highlandRelief)*coast,
       uplift,plateau,valley,rift,moisture:this.field(point,1.1,2,79)*.85+this.field(point,6,2,79)*.15,
       coverage,baseCoverage,largeLandmass:baseCoverage>.4,elevationTier:coverage>0?plate.tier:0,
       plateBase:plate.base,plateEdge:plate.edge,hillRelief,highlandRelief};
+  }
+
+  /** 海床：陆架不动，深海叠加丘陵/海岭/海山/海沟 */
+  private seabed(coverage: number, point: SurfacePoint): number {
+    const base = Math.max(-160, coverage * 240);
+    // 近岸不动，海岸线与沿岸汇水与旧版逐字一致
+    const room = Math.max(0, Math.min(1, (-base - 6) / 96));
+    if (!room) return base;
+    const t = clamp(-coverage / .667), open = smooth(t / .3);
+    const hill = this.field(point, 9, 1) * .62 + this.field(point, 22, 1, 61) * .38;
+    const ridge = (1 - Math.abs(this.field(point, 7, 4, 29))) ** 2;
+    const seamount = smooth((this.field(point, 5.5, 4, 97) - .45) / .2);
+    const trench = smooth((-.58 - this.field(point, 4.2, 3, 211)) / .18);
+    const rise = hill * (4 + 16 * t) + ridge * 14 * t + seamount * (30 + 70 * t);
+    return base + open * room * (rise - trench * 55 * smooth((t - .1) / .3));
   }
 }

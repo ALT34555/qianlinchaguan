@@ -41,8 +41,7 @@ export function canHostRock(q: SurfaceQuery, x: number, z: number, maxSlope = 3)
   if (!Number.isFinite(h)) return false;
   const wl = q.waterLevel(x, z);
   if (Number.isFinite(wl) && h < wl) return false;
-  // 海平面以下的干地（河床、谷底）允许
-  // 只在"真的泡在水面下"时才排除（上面那条水线判断
+  // 海平面以下的干地（河床、谷底）允许，只在真的泡在水下时才排除
   let maxDelta = 0;
   for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
     const nh = q.height(x + dx, z + dz);

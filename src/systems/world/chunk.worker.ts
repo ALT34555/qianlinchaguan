@@ -2,6 +2,7 @@
 import { buildChunkMeshes, type MeshData } from './ChunkMesher';
 import type { ChunkResultMessage, WorkerRequest } from './ChunkProtocol';
 import { WorldGenerator } from './WorldGenerator';
+import { buildDecorationMesh } from './WorldDecoration';
 
 const ctx = self as unknown as Worker;
 let generator: WorldGenerator | null = null;
@@ -11,6 +12,7 @@ function pushBuffers(mesh: MeshData | null, out: Transferable[]): void {
   out.push(mesh.positions.buffer, mesh.colors.buffer, mesh.indices.buffer);
   if (mesh.waterDepths) out.push(mesh.waterDepths.buffer);
   if (mesh.waterFlows) out.push(mesh.waterFlows.buffer);
+  if (mesh.waterFalls) out.push(mesh.waterFalls.buffer);
 }
 
 ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
@@ -24,6 +26,8 @@ ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
     const t0 = performance.now();
     const chunk = generator.generateChunk(msg.cx, msg.cz);
     const meshes = buildChunkMeshes(msg.cx, msg.cz, chunk.heights, chunk.surfaces, generator.seed, chunk.waterLevels, chunk.surfaceColors,chunk.waterField);
+    const decoration = buildDecorationMesh({ ...chunk, cx: msg.cx, cz: msg.cz,
+      seed: generator.seed, temperature: generator.getClimate(msg.cx, msg.cz).temperature });
 
     // 主线程只需要区块内部的高度（去掉外扩一圈）
     const S = Math.sqrt(chunk.surfaces.length);
@@ -50,12 +54,16 @@ ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
       waterField:{levels:waterLevels,kinds,velocities,discharge},
       terrain: meshes.terrain,
       water: meshes.water,
+      decoration,
       minimap: meshes.minimap,
+      ...(meshes.mist ? { mist: meshes.mist } : {}),
       elapsed: performance.now() - t0,
     };
     const transfer: Transferable[] = [inner.buffer, waterLevels.buffer, kinds.buffer,velocities.buffer,discharge.buffer,chunk.surfaces.buffer, meshes.minimap.buffer];
+    if (meshes.mist) transfer.push(meshes.mist.buffer);
     pushBuffers(meshes.terrain, transfer);
     pushBuffers(meshes.water, transfer);
+    pushBuffers(decoration, transfer);
     ctx.postMessage(result, transfer);
   }
 };

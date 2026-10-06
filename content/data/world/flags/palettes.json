@@ -1,5 +1,4 @@
 {
-  "version": 1,
   "cloth": {
     "vermilion": { "default": "#b03a2e", "note": "朱红：旗帜主色" },
     "crimson": { "default": "#8c1f24", "note": "绛红：旗帜主色 / 镶边" },

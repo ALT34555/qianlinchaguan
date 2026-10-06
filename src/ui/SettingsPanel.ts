@@ -1,5 +1,7 @@
 import { ACTIONS, actionLabel, defaultSettings, keyLabel, validateSettings, validBinding, type GameAction, type GameSettings } from '../core/GameSettings';
 import { availableLocales, getLocale, onLocaleChange, setLocale, t } from '../i18n';
+import { CHUNK_SIZE } from '../core/config';
+import { MIN_RENDER_DISTANCE, MAX_RENDER_DISTANCE, renderChunkOffsets } from '../core/RenderDistance';
 
 /** 开始界面与 ESC 菜单共用 */
 export class SettingsPanel {
@@ -26,9 +28,12 @@ export class SettingsPanel {
       <p class="panel-intro">${t('settings.intro')}</p>
       <div class="settings-grid"><section class="settings-group"><h2>${t('settings.display')}</h2>
         <label class="setting-row"><span>${t('settings.fov')} <small>${t('settings.fov.hint')}</small></span><input data-fov type="number" min="30" max="120" step="1"></label>
+        <label class="setting-row"><span>${t('settings.renderDistance')} <small>${t('settings.renderDistance.hint')}</small></span><input data-render-distance type="number" min="${MIN_RENDER_DISTANCE}" max="${MAX_RENDER_DISTANCE}" step="1"></label>
+        <p class="setting-note" data-render-budget aria-live="polite"></p>
         <label class="setting-row"><span>${t('settings.speed')} <small>${t('settings.speed.hint')}</small></span><input data-speed type="number" min="0" max="86400" step="0.5"></label>
         <div class="speed-presets">${[0, 1, 72, 360].map(n => `<button data-speed-preset="${n}">${n === 0 ? t('settings.speed.pause') : `${n}×`}</button>`).join('')}</div>
         <label class="setting-row"><span>${t('settings.touch')} <small>${t('settings.touch.hint')}</small></span><input data-touch type="checkbox"></label>
+        <label class="setting-row"><span>${t('settings.particles')} <small>${t('settings.particles.hint')}</small></span><input data-particles type="checkbox"></label>
         <label class="setting-row"><span>${t('settings.language')} <small>${t('settings.language.hint')}</small></span><select data-locale>${localeOptions}</select></label>
       </section><section class="settings-group"><h2>${t('settings.keys')}</h2><p class="setting-note">${t('settings.keys.note')}</p>
         ${ACTIONS.map(action => `<div class="key-row"><span>${actionLabel(action)}</span><button class="key-binding" data-bind="${action}"></button></div>`).join('')}
@@ -44,6 +49,7 @@ export class SettingsPanel {
       this.status.textContent = t('settings.status.reset');
     }, { signal });
     this.root.querySelector('[data-apply]')!.addEventListener('click', () => this.submit(), { signal });
+    this.field<HTMLInputElement>('[data-render-distance]').addEventListener('input', () => this.renderBudget(), { signal });
     this.root.querySelector<HTMLSelectElement>('[data-locale]')!.addEventListener('change', event => {
       // setLocale 会触发 onLocaleCh
       setLocale((event.currentTarget as HTMLSelectElement).value);
@@ -60,9 +66,19 @@ export class SettingsPanel {
   private field<T extends HTMLElement>(selector: string): T { return this.root.querySelector<T>(selector)!; }
   private renderValues(): void {
     this.field<HTMLInputElement>('[data-fov]').value = String(this.draft.fov);
+    this.field<HTMLInputElement>('[data-render-distance]').value = String(this.draft.renderDistance);
+    this.renderBudget();
     this.field<HTMLInputElement>('[data-speed]').value = String(this.draft.timeSpeed);
     this.field<HTMLInputElement>('[data-touch]').checked = !!this.draft.touchControls;
+    this.field<HTMLInputElement>('[data-particles]').checked = this.draft.particles !== false;
     this.renderKeys();
+  }
+  private renderBudget(): void {
+    const radius = this.field<HTMLInputElement>('[data-render-distance]').valueAsNumber;
+    const valid = Number.isInteger(radius) && radius >= MIN_RENDER_DISTANCE && radius <= MAX_RENDER_DISTANCE;
+    this.field<HTMLElement>('[data-render-budget]').textContent = valid
+      ? t('settings.renderDistance.budget', { count: renderChunkOffsets(radius).length, distance: radius * CHUNK_SIZE })
+      : t('error.renderDistance');
   }
   private renderKeys(): void {
     this.root.querySelectorAll<HTMLButtonElement>('[data-bind]').forEach(button => {
@@ -90,8 +106,11 @@ export class SettingsPanel {
       if (this.pending) throw new Error(t('settings.status.pending'));
       const fov = this.field<HTMLInputElement>('[data-fov]').value.trim();
       const speed = this.field<HTMLInputElement>('[data-speed]').value.trim();
+      const renderDistance = this.field<HTMLInputElement>('[data-render-distance]').valueAsNumber;
       const value = validateSettings({ ...this.draft, fov: fov ? Number(fov) : NaN, timeSpeed: speed ? Number(speed) : NaN,
-        viewMode: this.draft.viewMode, touchControls: this.field<HTMLInputElement>('[data-touch]').checked });
+        renderDistance,
+        viewMode: this.draft.viewMode, touchControls: this.field<HTMLInputElement>('[data-touch]').checked,
+        particles: this.field<HTMLInputElement>('[data-particles]').checked });
       this.apply(value); this.draft = value; this.status.textContent = t('settings.status.applied');
     } catch (error) { this.status.textContent = error instanceof Error ? error.message : t('settings.status.failed'); }
   }

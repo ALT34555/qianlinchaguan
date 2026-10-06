@@ -1,4 +1,6 @@
 import { t } from '../i18n';
+import { DEFAULT_RENDER_DISTANCE } from './config';
+import { MIN_RENDER_DISTANCE, MAX_RENDER_DISTANCE } from './RenderDistance';
 
 export const ACTIONS = ['forward', 'back', 'left', 'right', 'jump', 'sprint', 'descend', 'debug'] as const;
 export type GameAction = typeof ACTIONS[number];
@@ -10,9 +12,11 @@ export function actionLabel(action: GameAction): string {
 
 export interface GameSettings {
   fov: number;
+  renderDistance: number;
   timeSpeed: number;
   viewMode: '2d' | '3d';
   touchControls?: boolean;
+  particles?: boolean;
   keyBindings: Record<GameAction, string>;
 }
 export interface StorageLike {
@@ -21,7 +25,7 @@ export interface StorageLike {
 }
 export const SETTINGS_KEY = 'qianlin.settings.v1';
 export function defaultSettings(): GameSettings {
-  return { fov: 75, timeSpeed: 72, viewMode: '2d', touchControls: typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0, keyBindings: {
+  return { fov: 75, renderDistance: DEFAULT_RENDER_DISTANCE, timeSpeed: 72, viewMode: '2d', touchControls: typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0, particles: true, keyBindings: {
     forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space',
     sprint: 'ShiftLeft', descend: 'ControlLeft', debug: 'F12',
   } };
@@ -31,6 +35,8 @@ export function validBinding(code: unknown): code is string {
 }
 function canonicalKey(code: string): string { return code.replace(/(Shift|Control)(Left|Right)/, '$1'); }
 export function validateSettings(value: GameSettings): GameSettings {
+  const renderDistance = value.renderDistance === undefined ? DEFAULT_RENDER_DISTANCE : value.renderDistance;
+  if (!Number.isInteger(renderDistance) || renderDistance < MIN_RENDER_DISTANCE || renderDistance > MAX_RENDER_DISTANCE) throw new Error(t('error.renderDistance'));
   if (!Number.isFinite(value.fov) || value.fov < 30 || value.fov > 120) throw new Error(t('error.fov'));
   if (!Number.isFinite(value.timeSpeed) || value.timeSpeed < 0 || value.timeSpeed > 86400) throw new Error(t('error.timeSpeed'));
   if (!['2d', '3d'].includes(value.viewMode)) throw new Error(t('error.viewMode'));
@@ -42,7 +48,7 @@ export function validateSettings(value: GameSettings): GameSettings {
     if (used.has(key)) throw new Error(t('error.duplicateBinding'));
     used.add(key);
   }
-  return { fov: value.fov, timeSpeed: value.timeSpeed, viewMode: value.viewMode, touchControls: typeof value.touchControls === 'boolean' ? value.touchControls : defaultSettings().touchControls, keyBindings: { ...value.keyBindings } };
+  return { fov: value.fov, renderDistance, timeSpeed: value.timeSpeed, viewMode: value.viewMode, touchControls: typeof value.touchControls === 'boolean' ? value.touchControls : defaultSettings().touchControls, particles: typeof value.particles === 'boolean' ? value.particles : true, keyBindings: { ...value.keyBindings } };
 }
 export function loadSettings(storage: StorageLike): GameSettings {
   try {

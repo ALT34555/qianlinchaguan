@@ -75,7 +75,10 @@ export function mixTerrainProfiles(weights: readonly TerrainWeight[]): TerrainPr
 /** 连续叠加岩石、积雪、沉积物等环境层 */
 export function overlayTerrain(profile: TerrainProfile, amount: number, color: readonly number[], materials: [number, number][]): void {
   const t = Math.max(0, Math.min(1, amount));
+  if (t <= 0) return;
   for (let i = 0; i < 3; i++) profile.color[i] += (color[i] - profile.color[i]) * t;
-  for (const [id, weight] of profile.materials) profile.materials.set(id, weight * (1 - t));
+  // t=1 时原有材质全部清零，无需遍历缩放
+  if (t < 1) for (const [id, weight] of profile.materials) profile.materials.set(id, weight * (1 - t));
+  else profile.materials.clear();
   for (const [id, weight] of materials) profile.materials.set(id, (profile.materials.get(id) ?? 0) + weight * t);
 }

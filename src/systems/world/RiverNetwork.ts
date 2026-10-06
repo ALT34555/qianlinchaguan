@@ -8,6 +8,10 @@ import {CHUNK_SIZE} from '../../core/config';
 import { FLOW_DIRECTIONS, effectiveRunoff, RIVER_THRESHOLD, liquidRiverAllowed, waterfallDrop, splashWetlandDrop, type DrainageNode } from './Hydrology';
 export { FLOW_DIRECTIONS, effectiveRunoff, RIVER_THRESHOLD, type DrainageNode } from './Hydrology';
 const key = (x: number, z: number) => `${x},${z}`;
+/** 非主河格取邻近主河道流向时的最大搜索半径（切比雪夫距离） */
+const CORRIDOR_FLOW_RADIUS = 2;
+/** 方向与“主河→本块”连线的最小同向余弦，避免借到反向河道 */
+const CORRIDOR_FLOW_ALIGNMENT = .5;
 /** 河槽带按水面真正覆盖到的陆地核心判定，核心从区块边界内收。 */
 function coreDistance(cx: number, cz: number, ax: number, az: number, bx: number, bz: number): number {
   const minX = cx * CHUNK_SIZE + RIVER_BANK_BLEND, maxX = (cx + 1) * CHUNK_SIZE - RIVER_BANK_BLEND;
@@ -46,6 +50,7 @@ export class RiverNetwork {
   private readonly rounded=new Map<string,RiverRoute|undefined>();
   private readonly corridors=new Map<string,number>();
   private readonly corridorBlocks=new Map<string,number>();
+  private readonly corridorDirs=new Map<string,number>();
   private readonly reaches = new Set<string>();
   private readonly queried = new Set<string>();
   private readonly fans = new Map<string, AlluvialFan | null>();
@@ -64,6 +69,7 @@ export class RiverNetwork {
     this.turns.clear();this.rounded.clear();
     this.corridors.clear();
     this.corridorBlocks.clear();
+    this.corridorDirs.clear();
     this.wetlands.clear();this.falls.clear();
     this.watershed.clear();
   }
@@ -224,19 +230,36 @@ export class RiverNetwork {
     const r=this.route(cx,cz);if(r?.main)return r.widthBlocks??(r.discharge>=2500?2:1);
     this.corridor(cx,cz);return this.corridorBlocks.get(key(this.wrap(cx),cz))??1;
   }
-  /** 河槽带区块沿用相邻主河道流向，边缘河格才有流向。 */
+  /** 河区块流向：非主河格先取指向本块的邻近主河道，再退化为同向的最近主河道。 */
   corridorDirection(cx:number,cz:number):number{
     cx=this.wrap(cx);
-    const r=this.route(cx,cz);if(r?.main)return r.direction;
-    // 只读邻近主河道，不触发走廊缓存重排
-    let best=-1,discharge=-1;
-    for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){
-      const up=this.route(x,z);if(!up?.main||up.displaced)continue;
-      const d=FLOW_DIRECTIONS[up.direction];
-      if(x+d.dx!==cx||z+d.dz!==cz)continue;
-      if(up.discharge>discharge){discharge=up.discharge;best=up.direction;}
+    const k=key(cx,cz),cached=this.corridorDirs.get(k);if(cached!==undefined)return cached;
+    let result=-1;
+    const r=this.route(cx,cz);
+    if(r?.main)result=r.direction;
+    else {
+      // 1) 指向本块的邻近主河道（原河槽带判据，取流量最大者）
+      let strictQ=-1;
+      for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){
+        const up=this.route(x,z);if(!up?.main||up.displaced)continue;
+        const d=FLOW_DIRECTIONS[up.direction];
+        if(x+d.dx!==cx||z+d.dz!==cz)continue;
+        if(up.discharge>strictQ){strictQ=up.discharge;result=up.direction;}
+      }
+      // 2) 仍未定向时取邻近主河道方向，要求方向与连线同向（水面本身就是这么流的）
+      if(result<0){
+        let bestQ=-1,bestDist=Infinity;
+        for(let z=cz-CORRIDOR_FLOW_RADIUS;z<=cz+CORRIDOR_FLOW_RADIUS;z++)for(let x=cx-CORRIDOR_FLOW_RADIUS;x<=cx+CORRIDOR_FLOW_RADIUS;x++){
+          const up=this.route(x,z);if(!up?.main)continue;
+          const dist=Math.max(Math.abs(x-cx),Math.abs(z-cz));
+          if(dist>bestDist||dist===bestDist&&up.discharge<=bestQ)continue;
+          const dx=cx-x,dz=cz-z,length=Math.hypot(dx,dz)||1,d=FLOW_DIRECTIONS[up.direction];
+          if((dx*d.dx+dz*d.dz)/length<CORRIDOR_FLOW_ALIGNMENT)continue;
+          bestDist=dist;bestQ=up.discharge;result=up.direction;
+        }
+      }
     }
-    return best;
+    this.corridorDirs.set(k,result);return result;
   }
   /** 大河河槽随流量扩展到邻接区块。 */
   corridor(cx:number,cz:number):number{
@@ -283,7 +306,7 @@ export class RiverNetwork {
       const grade=Math.max(0,r.level-this.level(x+d.dx,z+d.dz))/64;
       // 被弯折替代的原河格转为湿地。
       if(r.displaced?.cx===cx&&r.displaced.cz===cz)strength=Math.max(strength,.8);
-      if(splashWetlandDrop(drop)&&along>=-1&&along<=4&&lateral<3.5&&n.height<=lower.height+64){
+      if(splashWetlandDrop(drop)&&along>=-1&&along<=4&&lateral<3.5&&Math.abs(n.height-lower.height)<=8){
         strength=Math.max(strength,(1-lateral/3.5)*(1-Math.max(0,along)/5));
       }
       const dist=Math.hypot(cx-x,cz-z);

@@ -1,5 +1,4 @@
 {
-  "version": 1,
   "note": "岩石单位索引（生成物，运行时不读）。重出：node 000base/tools/rock-index.mjs",
   "generator": "src/systems/world/rocks/（Rocks.ts / archetypes.ts）",
   "counts": {

@@ -424,6 +424,10 @@ export class AtlasView {
     // 收集可视区块
     const visibleChunks: { info: ChunkInfo; sx: number; sy: number }[] = [];
 
+    // 收集可见区块时顺带请求流向，之后的绘制不再触发邻近主河查询
+    const wantFlow = this.showProjection;
+    if (wantFlow) this.generator.displayFlowWanted = true;
+    try {
     for (let cz = minCz; cz <= maxCz; cz++) {
       for (let cx = minCx; cx <= maxCx; cx++) {
         if (this.isPlanet && (cz < -this.generator.generation.planet.equatorChunks / 4 || cz >= this.generator.generation.planet.equatorChunks / 4)) continue;
@@ -445,6 +449,9 @@ export class AtlasView {
           matchedCount++;
         }
       }
+    }
+    } finally {
+      if (wantFlow) this.generator.displayFlowWanted = false;
     }
 
     // 1. 绘制基础底色（默认模式下只显示色块）
@@ -546,14 +553,15 @@ export class AtlasView {
           }
         }
       }
-      if (this.showProjection && cellSize >= 18) for (const {info, sx, sy} of visibleChunks) {
-        if (!isRiverType(info.type) || info.flow < 0) continue;
+      // 所有河区块都标出流向；放大到能分辨区块时才画
+      if (this.showProjection && cellSize >= 10) for (const {info, sx, sy} of visibleChunks) {
+        if (!isRiverType(info.type) || info.displayFlow < 0) continue;
         ctx.fillStyle = '#ffffff';
         ctx.shadowColor = '#000000';
         ctx.shadowBlur = 3;
         ctx.font = `bold ${Math.max(10, Math.round(cellSize * .36))}px ${CANVAS_FONT}`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(FLOW_DIRECTIONS[info.flow].arrow, sx + cellSize * .5, sy + cellSize * .5);
+        ctx.fillText(FLOW_DIRECTIONS[info.displayFlow].arrow, sx + cellSize * .5, sy + cellSize * .5);
       }
       ctx.restore();
     }

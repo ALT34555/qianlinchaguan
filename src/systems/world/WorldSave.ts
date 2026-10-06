@@ -1,4 +1,5 @@
-import { GENERATOR_VERSION, normalizeClimateWeights, normalizeGeneration, type ClimateWeights, type WorldGeneration } from './WorldSettings.ts';
+import { normalizeClimateWeights, normalizeGeneration, type ClimateWeights, type WorldGeneration } from './WorldSettings.ts';
+import { GENERATOR_VERSION, isSupportedGeneratorVersion } from '../../core/version.ts';
 import { CHUNK_SIZE, WORLD_MAX_Y, WORLD_MIN_Y } from '../../core/config.ts';
 
 export interface PlayerPosition { x: number; y: number; z: number; yaw: number; pitch: number }
@@ -21,7 +22,7 @@ export function parseWorldSave(text: string): WorldSave {
     catch { throw new Error('存档不是有效的 JSON 文件。'); }
   })();
   // 保留旧参数与观察位置。
-  if (!data || ![GENERATOR_VERSION,14,15,16,17,18,19,20,21].includes(data.generatorVersion)) {
+  if (!data || !isSupportedGeneratorVersion(data.generatorVersion)) {
     throw new Error('此存档使用旧版或不支持的生成算法。请使用其中的种子新建世界；新版地形无法还原旧版位置。');
   }
   if (!Number.isInteger(data.seed) || data.seed < 0 || data.seed > 0xffffffff) throw new Error('存档种子无效。');

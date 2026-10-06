@@ -4,7 +4,7 @@ import { BLOCK_RGB, Block } from './Blocks';
 import { PADDED_SIZE } from './WorldGenerator';
 import { TERRAIN_GRID, terrainDiagonal, terrainHeightAt } from './TerrainSurface';
 import { WATER_OFFSET, waterVertexLevel } from './WaterSurface';
-import type {WaterField} from './DynamicWater';
+import { WaterKind, type WaterField } from './DynamicWater';
 
 export interface MeshData {
   positions: Int16Array | Float32Array;
@@ -14,11 +14,13 @@ export interface MeshData {
   /** 水面至可见地表的距离，用于浅水透明度和岸边细浪。 */
   waterDepths?: Float32Array;
   waterFlows?: Float32Array;
+  waterFalls?: Float32Array;
 }
 export interface ChunkMeshes {
   terrain: MeshData | null;
   water: MeshData | null;
   minimap: Uint8ClampedArray<ArrayBuffer>;
+  mist?: Float32Array;
 }
 const WATER_SHALLOW = [96, 166, 158];
 const WATER_DEEP = [28, 70, 104];
@@ -30,6 +32,7 @@ class GeoBuilder {
   private idx: Uint32Array;
   private depth: Float32Array | undefined;
   private flow: Float32Array | undefined;
+  private fall: Float32Array | undefined;
   private vc = 0;
   private ic = 0;
 
@@ -37,7 +40,7 @@ class GeoBuilder {
     this.pos = new Float32Array(capVerts * 3);
     this.col = new Uint8Array(capVerts * 3);
     this.idx = new Uint32Array(capVerts * 2);
-    if (withDepth) {this.depth = new Float32Array(capVerts);this.flow=new Float32Array(capVerts*2);}
+    if (withDepth) {this.depth = new Float32Array(capVerts);this.flow=new Float32Array(capVerts*2);this.fall=new Float32Array(capVerts);}
   }
   private grow(): void {
     const cap = this.pos.length / 3 * 2;
@@ -46,8 +49,9 @@ class GeoBuilder {
     const idx = new Uint32Array(cap * 2); idx.set(this.idx); this.idx = idx;
     if (this.depth) { const depth = new Float32Array(cap); depth.set(this.depth); this.depth = depth; }
     if (this.flow) {const flow=new Float32Array(cap*2);flow.set(this.flow);this.flow=flow;}
+    if (this.fall) {const fall=new Float32Array(cap);fall.set(this.fall);this.fall=fall;}
   }
-  vertex(x: number, y: number, z: number, r: number, g: number, b: number, depth = 0,vx=0,vz=0): void {
+  vertex(x: number, y: number, z: number, r: number, g: number, b: number, depth = 0,vx=0,vz=0,fall=0): void {
     if (this.vc * 3 + 3 > this.pos.length) this.grow();
     const o = this.vc * 3;
     this.pos[o] = x; this.pos[o + 1] = y; this.pos[o + 2] = z;
@@ -56,6 +60,7 @@ class GeoBuilder {
     this.col[o + 2] = Math.max(0, Math.min(255, b));
     if (this.depth) this.depth[this.vc] = Math.max(0, depth);
     if (this.flow) {this.flow[this.vc*2]=vx;this.flow[this.vc*2+1]=vz;}
+    if (this.fall) this.fall[this.vc]=fall;
     this.vc++;
   }
   quad(flip = false): void {
@@ -75,8 +80,45 @@ class GeoBuilder {
       indices: this.vc <= 65535 ? Uint16Array.from(this.idx.subarray(0, this.ic)) : this.idx.slice(0, this.ic),
       ...(this.depth ? { waterDepths: this.depth.slice(0, this.vc) } : {}),
       ...(this.flow ? {waterFlows:this.flow.slice(0,this.vc*2)} : {}),
+      ...(this.fall ? {waterFalls:this.fall.slice(0,this.vc)} : {}),
     };
   }
+}
+
+const MIST_EMITTER_CAP = 14;
+export const MIST_EMITTER_STRIDE = 6;
+export function findMistEmitters(size: number, waterField: WaterField): Float32Array | undefined {
+  const P = size + 2;
+  const candidates: number[] = [];
+  for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) {
+    const i = (z + 1) * P + x + 1;
+    if (waterField.kinds[i] !== WaterKind.FALL) continue;
+    const vx = waterField.velocities[i * 2], vz = waterField.velocities[i * 2 + 1];
+    const speed = Math.hypot(vx, vz);
+    if (speed < .5) continue;
+    const dx = vx / speed, dz = vz / speed;
+    let best = -1, bi = -1;
+    for (const [ox, oz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const align = ox * dx + oz * dz;
+      if (align > best) { best = align; bi = (z + oz + 1) * P + x + ox + 1; }
+    }
+    if (best < .38 || waterField.kinds[bi] === WaterKind.FALL) continue;
+    if (!Number.isFinite(waterField.levels[bi])) continue;
+    candidates.push(i, bi);
+  }
+  if (!candidates.length) return undefined;
+  const count = candidates.length / 2;
+  const stride = Math.max(1, Math.ceil(count / MIST_EMITTER_CAP));
+  const out: number[] = [];
+  for (let n = 0; n < count; n += stride) {
+    const i = candidates[n * 2], bi = candidates[n * 2 + 1];
+    const x = (i % P) - 1, z = Math.floor(i / P) - 1;
+    const vx = waterField.velocities[i * 2], vz = waterField.velocities[i * 2 + 1];
+    const speed = Math.hypot(vx, vz) || 1;
+    out.push(x + .5 + vx / speed * .55, waterField.levels[bi] - WATER_OFFSET + .06, z + .5 + vz / speed * .55,
+      Math.min(2.2, Math.max(.7, .7 + Math.log1p(waterField.discharge[i]) * .22)), vx / speed, vz / speed);
+  }
+  return Float32Array.from(out);
 }
 
 type WaterVertex = { x: number; y: number; z: number; depth: number };
@@ -126,15 +168,16 @@ export function buildChunkMeshes(
   }
   const emitWater = (v: WaterVertex) => {
     const t = Math.min(1, Math.max(0, v.depth) / WATER_DEPTH_RANGE);
-    let vx=0,vz=0;
+    let vx=0,vz=0,fall=0;
     if(waterField)for(const [dx,dz] of [[-1,-1],[0,-1],[-1,0],[0,0]]){
       const i=(Math.floor(v.z)+dz+1)*P+Math.floor(v.x)+dx+1;
       vx+=waterField.velocities[i*2]*.25;vz+=waterField.velocities[i*2+1]*.25;
+      if(waterField.kinds[i]===WaterKind.FALL)fall=1;
     }
     water.vertex(v.x, v.y, v.z,
       WATER_SHALLOW[0] + (WATER_DEEP[0] - WATER_SHALLOW[0]) * t,
       WATER_SHALLOW[1] + (WATER_DEEP[1] - WATER_SHALLOW[1]) * t,
-      WATER_SHALLOW[2] + (WATER_DEEP[2] - WATER_SHALLOW[2]) * t, v.depth,vx,vz);
+      WATER_SHALLOW[2] + (WATER_DEEP[2] - WATER_SHALLOW[2]) * t, v.depth,vx,vz,fall);
   };
   for (let z = 0; z < S; z++) for (let x = 0; x < S; x++) {
     if (surfaces[z * S + x] === Block.AIR) continue;
@@ -182,5 +225,6 @@ export function buildChunkMeshes(
     }
     minimap[mi + 3] = 255;
   }
-  return { terrain: terrain.finish(), water: water.finish(), minimap };
+  const mist = waterField ? findMistEmitters(S, waterField) : undefined;
+  return { terrain: terrain.finish(), water: water.finish(), minimap, ...(mist ? { mist } : {}) };
 }

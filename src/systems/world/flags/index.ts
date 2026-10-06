@@ -31,15 +31,16 @@ export {
 export type { FlagShapeDef, MountInput, PoleShape } from './archetypes';
 
 export {
-  FLAG_DATA_VERSION, FLAG_DEFS, FLAG_EMBLEMS, FLAG_IDS, FLAG_PALETTES, FLAG_SHAPE_PALETTE,
+  FLAG_DEFS, FLAG_EMBLEMS, FLAG_IDS, FLAG_PALETTES, FLAG_SHAPE_PALETTE,
   FLAGPOLE_DEFS, FLAGPOLE_IDS, FLAGPOLE_KIND_PALETTE, Flag, Flagpole, applyEmblem,
-  assemblyMatrixOf, assemblyStatOf, buildFlagAssembly, buildFlagById, buildFlagpoleById,
+  assemblyMatrixOf, assemblySocketsOf, assemblyStatOf, buildFlagAssembly, buildFlagById, buildFlagpoleById,
   defaultMountOf, emblemsByTag, flagsByShape, flagsByTag, getEmblemDef, getFlagDef, getFlagpoleDef,
   mountsOf, poleStatOf, polesByKind, polesByTag, resolveFlagClothDef, resolveFlagPalette,
   resolveFlagpoleParams, statOf,
 } from './Flags';
+export { CONTENT_DATA_VERSION } from '../../../core/version';
 export type {
-  FlagAssembly, FlagAssemblyStat, FlagStat, FlagUnitDef, FlagpoleStat, FlagpoleUnitDef,
+  FlagAssembly, FlagAssemblyStat, FlagSocketDef, FlagStat, FlagUnitDef, FlagpoleStat, FlagpoleUnitDef,
 } from './Flags';
 
 export {

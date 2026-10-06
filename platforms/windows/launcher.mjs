@@ -5,12 +5,14 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createReadStream, existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readdir, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const APP_ID = 'qianlinchaguan-launcher';
-const VERSION = '1.0.0';
+/** 产品版本唯一真源：package.json */
+const APP_VERSION = createRequire(import.meta.url)('../../package.json').version;
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(HERE, '..', '..');
 const DIST_DIR = join(PROJECT_ROOT, 'dist');
@@ -85,7 +87,7 @@ function parseArgs(argv) {
 }
 
 function help() {
-  console.log(`茜林茶馆 · Windows 本地启动器 v${VERSION}
+  console.log(`茜林茶馆 · Windows 本地启动器 v${APP_VERSION}
 
 用法：node platforms/windows/launcher.mjs [选项]
 
@@ -277,7 +279,7 @@ function createLauncherServer(saveMiddleware, savesDirectory) {
     if (pathname === '/api/launcher') {
       // 供单实例探测与排障使用。
       send(response, 200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
-        JSON.stringify({ app: APP_ID, version: VERSION, pid: process.pid, root: PROJECT_ROOT, saves: savesDirectory }));
+        JSON.stringify({ app: APP_ID, version: APP_VERSION, pid: process.pid, root: PROJECT_ROOT, saves: savesDirectory }));
       return;
     }
     saveMiddleware(request, response, () => serveStatic(request, response));
@@ -394,7 +396,8 @@ async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
     const empty = await fetch(`${base}/api/saves`).then(r => r.json());
     check('GET /api/saves 初始为空', Array.isArray(empty.saves) && empty.saves.length === 0);
 
-    const { GENERATOR_VERSION, DEFAULT_CLIMATE_WEIGHTS, DEFAULT_GENERATION } = await import('../../src/systems/world/WorldSettings.ts');
+    const { GENERATOR_VERSION } = await import('../../src/core/version.ts');
+    const { DEFAULT_CLIMATE_WEIGHTS, DEFAULT_GENERATION } = await import('../../src/systems/world/WorldSettings.ts');
     const makeSave = (name) => ({ generatorVersion: GENERATOR_VERSION, seed: 20261004,
       climateWeights: DEFAULT_CLIMATE_WEIGHTS, generation: DEFAULT_GENERATION, calendarType: 'real',
       unixMs: Date.now(), utcOffsetMinutes: 480, worldName: name,

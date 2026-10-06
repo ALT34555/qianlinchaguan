@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import { CHUNK_SIZE } from '../../core/config';
+import { renderChunkOffsets } from '../../core/RenderDistance';
 import type { MeshData } from './ChunkMesher';
 import type { ChunkResultMessage } from './ChunkProtocol';
 import { ChunkWorkerPool } from './ChunkWorkerPool';
@@ -11,6 +12,7 @@ import { WorldLighting } from './WorldLighting';
 import { WaterMaterial, decodeSurfaceColors } from './WaterMaterial';
 import { waterHeightAt } from './WaterSurface';
 import type {WaterField} from './DynamicWater';
+import { WaterfallMist } from './WaterfallMist';
 
 export interface LoadedChunk {
   cx: number;
@@ -24,6 +26,9 @@ export interface LoadedChunk {
   minimap: ImageData;
   terrain: THREE.Mesh | null;
   water: THREE.Mesh | null;
+  decoration: THREE.Mesh | null;
+  mist: THREE.Points | null;
+  mistEmitters: Float32Array | null;
 }
 
 const chunkKey = (cx: number, cz: number) => `${cx},${cz}`;
@@ -40,6 +45,9 @@ export class World {
   private readonly group = new THREE.Group();
   private readonly terrainMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .95 });
   private readonly waterMaterial = new WaterMaterial();
+  private readonly decorationMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .95, side: THREE.DoubleSide });
+  private readonly mist = new WaterfallMist();
+  private mistEnabled = true;
   private readonly lighting: WorldLighting;
   /** 以距离排序的加载偏移表（圆形范围） */
   private offsets: [number, number][] = [];
@@ -51,6 +59,7 @@ export class World {
   constructor(scene: THREE.Scene, readonly seed: number, renderDistance: number, climateWeights: ClimateWeights, generation?: WorldGeneration) {
     this.generator = new WorldGenerator(seed, climateWeights, generation);
     this.terrainMaterial.onBeforeCompile = decodeSurfaceColors;
+    this.decorationMaterial.onBeforeCompile = decodeSurfaceColors;
     this.lighting = new WorldLighting(scene);
     this.pool = new ChunkWorkerPool(seed, climateWeights, this.generator.generation, (msg) => this.ready.push(msg));
     this.setRenderDistance(renderDistance);
@@ -60,19 +69,36 @@ export class World {
   updateLighting(dayRatio: number, season: number, camera: THREE.Vector3, time: number): THREE.Color {
     const state = this.lighting.update(dayRatio, season, camera);
     this.terrainMaterial.color.copy(this.lighting.tint);
+    this.decorationMaterial.color.copy(this.lighting.tint);
     this.waterMaterial.update(time, this.lighting, state.daylight, state.night);
+    this.mist.update(time, state.daylight);
     return this.lighting.fogColor;
+  }
+
+  setMistEnabled(on: boolean): void {
+    if (on === this.mistEnabled) return;
+    this.mistEnabled = on;
+    for (const chunk of this.chunks.values()) {
+      if (on && !chunk.mist && chunk.mistEmitters) {
+        chunk.mist = this.mist.build(chunk.mistEmitters, chunk.cx, chunk.cz, CHUNK_SIZE);
+        if (chunk.mist) {
+          chunk.mist.visible = this.inRange(chunk.cx, chunk.cz, 0);
+          this.group.add(chunk.mist);
+        }
+      } else if (!on && chunk.mist) {
+        this.mist.disposePoints(chunk.mist);
+        chunk.mist = null;
+      }
+    }
+  }
+
+  setMistProjection(fov: number, viewportHeight: number, pixelRatio: number): void {
+    this.mist.setProjection(fov, viewportHeight, pixelRatio);
   }
 
   setRenderDistance(rd: number): void {
     this.renderDistance = rd;
-    this.offsets = [];
-    for (let dz = -rd; dz <= rd; dz++) {
-      for (let dx = -rd; dx <= rd; dx++) {
-        if (dx * dx + dz * dz <= (rd + 0.5) * (rd + 0.5)) this.offsets.push([dx, dz]);
-      }
-    }
-    this.offsets.sort((a, b) => a[0] * a[0] + a[1] * a[1] - (b[0] * b[0] + b[1] * b[1]));
+    this.offsets = renderChunkOffsets(rd);
     this.centerCx = Number.NaN; // 强制重新评估卸载
   }
 
@@ -169,10 +195,19 @@ export class World {
 
   private unloadFar(): void {
     for (const [key, c] of this.chunks) {
+      this.updateChunkVisibility(c);
       if (this.inRange(c.cx, c.cz, 1)) continue;
       this.disposeChunk(c);
       this.chunks.delete(key);
     }
+  }
+
+  private updateChunkVisibility(chunk: LoadedChunk): void {
+    const visible = this.inRange(chunk.cx, chunk.cz, 0);
+    if (chunk.terrain) chunk.terrain.visible = visible;
+    if (chunk.water) chunk.water.visible = visible;
+    if (chunk.decoration) chunk.decoration.visible = visible;
+    if (chunk.mist) chunk.mist.visible = visible;
   }
 
   private buildMesh(data: MeshData, material: THREE.Material, cx: number, cz: number): THREE.Mesh {
@@ -181,6 +216,7 @@ export class World {
     geo.setAttribute('color', new THREE.BufferAttribute(data.colors, 3, true));
     if (data.waterDepths) geo.setAttribute('waterDepth', new THREE.BufferAttribute(data.waterDepths, 1));
     if (data.waterFlows) geo.setAttribute('waterFlow',new THREE.BufferAttribute(data.waterFlows,2));
+    if (data.waterFalls) geo.setAttribute('waterFall',new THREE.BufferAttribute(data.waterFalls,1));
     geo.setIndex(new THREE.BufferAttribute(data.indices, 1));
     geo.computeVertexNormals();
     geo.computeBoundingSphere();
@@ -208,21 +244,37 @@ export class World {
       minimap: new ImageData(msg.minimap, CHUNK_SIZE, CHUNK_SIZE),
       terrain: msg.terrain ? this.buildMesh(msg.terrain, this.terrainMaterial, msg.cx, msg.cz) : null,
       water: msg.water ? this.buildMesh(msg.water, this.waterMaterial, msg.cx, msg.cz) : null,
+      decoration: msg.decoration ? this.buildMesh(msg.decoration, this.decorationMaterial, msg.cx, msg.cz) : null,
+      mist: null,
+      mistEmitters: msg.mist ?? null,
     };
     if (chunk.terrain) this.group.add(chunk.terrain);
+    if (chunk.decoration) {
+      chunk.decoration.name = `decoration:${key}`;
+      this.group.add(chunk.decoration);
+    }
     if (chunk.water) {
       chunk.water.renderOrder = 1;
       this.group.add(chunk.water);
     }
+    if (this.mistEnabled && chunk.mistEmitters) {
+      chunk.mist = this.mist.build(chunk.mistEmitters, msg.cx, msg.cz, CHUNK_SIZE);
+      if (chunk.mist) this.group.add(chunk.mist);
+    }
     this.chunks.set(key, chunk);
+    this.updateChunkVisibility(chunk);
     for (const fn of this.listeners) fn(chunk);
   }
 
   private disposeChunk(c: LoadedChunk): void {
-    for (const m of [c.terrain, c.water]) {
+    for (const m of [c.terrain, c.water, c.decoration]) {
       if (!m) continue;
       this.group.remove(m);
       m.geometry.dispose();
+    }
+    if (c.mist) {
+      this.mist.disposePoints(c.mist);
+      c.mist = null;
     }
   }
 
@@ -232,6 +284,8 @@ export class World {
     this.pool.dispose();
     this.terrainMaterial.dispose();
     this.waterMaterial.dispose();
+    this.decorationMaterial.dispose();
+    this.mist.dispose();
     this.lighting.dispose();
     this.group.removeFromParent();
   }

@@ -3,7 +3,8 @@ import './ui/style.css';
 import './ui/start-screen.css';
 import './ui/menu.css';
 import './ui/simple.css';
-import { DEFAULT_RENDER_DISTANCE, DEFAULT_SEED } from './core/config';
+import { DEFAULT_SEED } from './core/config';
+import { MIN_RENDER_DISTANCE, MAX_RENDER_DISTANCE } from './core/RenderDistance';
 import { Game } from './core/Game';
 import { StartScreen, type StartOptions } from './ui/StartScreen';
 import { DEFAULT_CLIMATE_WEIGHTS, normalizeClimateWeights, normalizeGeneration } from './systems/world/WorldSettings';
@@ -15,7 +16,7 @@ import { initI18n, onLocaleChange, t } from './i18n';
 
 const params = new URLSearchParams(location.search);
 const rdRaw = Number(params.get('rd'));
-const renderDistance = Number.isFinite(rdRaw) && rdRaw > 0 ? Math.max(2, Math.min(16, Math.round(rdRaw))) : DEFAULT_RENDER_DISTANCE;
+const renderDistanceOverride = Number.isFinite(rdRaw) && rdRaw > 0 ? Math.max(MIN_RENDER_DISTANCE, Math.min(MAX_RENDER_DISTANCE, Math.round(rdRaw))) : undefined;
 const menuRoot = document.getElementById('world-menu')!;
 let started = false;
 // 延迟访问浏览器存储
@@ -37,6 +38,7 @@ onLocaleChange(() => {
 });
 
 let settings = loadSettings(storage);
+if (renderDistanceOverride !== undefined) settings = { ...settings, renderDistance: renderDistanceOverride };
 const saveStore = new FileSaveStore(new LocalSaveStore(storage), fetch, '/api/saves', params.get('saveLocation') ?? 'userdata/saves');
 
 function enterWorld(options: StartOptions): void {
@@ -46,7 +48,7 @@ function enterWorld(options: StartOptions): void {
     start: document.getElementById('start-screen')!,
     loading: document.getElementById('loading')!,
     waterTint: document.getElementById('water-tint')!,
-  }, { ...options, initialPlayer: options.save?.player, renderDistance, showOverlay: params.get('overlay') === '1',
+  }, { ...options, initialPlayer: options.save?.player, showOverlay: params.get('overlay') === '1',
     settings, saveStore, persistSettings: value => { settings = saveSettings(storage, value); } });
   started = true;
   menu.destroy();

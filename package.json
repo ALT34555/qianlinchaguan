@@ -1,6 +1,6 @@
 {
   "name": "qianlinchaguan",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "茜林茶馆：从种子生成世界的沙盒。舆图为 2D 世界地图，山川为 3D 世界。",
   "type": "module",

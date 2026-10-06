@@ -27,9 +27,9 @@ export interface RockGeometry {
   radius: number;
   /** 几何高度（含顶端伸出部分） */
   height: number;
-  /** 最低点（多数岩石会沉到 0 以下 */
+  /** 最低点（多数岩石会沉到 0 以下，贴地不悬空） */
   bottom: number;
-  /** 各材质槽的三角形区间 [start, count */
+  /** 各材质槽的三角形区间 [start, count) */
   groups: { mat: RockMaterial; start: number; count: number }[];
   vertexCount: number;
   triangleCount: number;
@@ -46,13 +46,13 @@ export interface CrustSpec {
   mat: RockMaterial;
   /** 覆盖率 0~1：朝上的面按此概率被覆盖 */
   amount: number;
-  /** 只覆盖法线 y 大于该值的面（0.42 ≈ 与水 */
+  /** 只覆盖法线 y 大于该值的面（0.42 ≈ 与水平面夹角 65° 以内） */
   slope: number;
   /** 判定用的盐值，让同一块石头的不同部位断开 */
   seed?: number;
 }
 
-/** 与植被 geometry.ts 完全一致的方向明 */
+/** 与植被 geometry.ts 完全一致的方向明暗阶梯 */
 const SHADE_STEPS = [0.58, 0.7, 0.84, 1.0];
 /** 与植被 geometry.ts 完全一致的太阳方向 */
 const SUN: readonly [number, number, number] = [0.42, 0.84, -0.34];
@@ -69,19 +69,19 @@ export function clamp01(v: number): number {
   return clamp(v, 0, 1);
 }
 
-/** 把颜色整体加深（0 = 不变 */
+/** 把颜色整体加深（0 = 不变，1 = 全黑） */
 export function deepen(c: RGB, depth: number): RGB {
   const k = clamp01(1 - depth);
   return [c[0] * k, c[1] * k, c[2] * k];
 }
 
-/** 把颜色整体提亮（0 = 不变 */
+/** 把颜色整体提亮（0 = 不变，1 = 全白） */
 export function lighten(c: RGB, amount: number): RGB {
   const k = clamp01(amount);
   return [c[0] + (255 - c[0]) * k, c[1] + (255 - c[1]) * k, c[2] + (255 - c[2]) * k];
 }
 
-/** 两个颜色按比例混合（t = 0 取 a */
+/** 两个颜色按比例混合（t = 0 取 a，t = 1 取 b） */
 export function mix(a: RGB, b: RGB, t: number): RGB {
   const k = clamp01(t);
   return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
@@ -186,13 +186,13 @@ export class RockBuilder {
     this.push([...a, ...b, ...c], color, faceNormal(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]), mat);
   }
 
-  /** 四边形（按 a-b-c-d 拆两个三角形 */
+  /** 四边形（按 a-b-c-d 拆两个三角形） */
   quad(a: V3, b: V3, c: V3, d: V3, color: RGB, mat: RockMaterial = this.currentMat): void {
     this.tri(a, b, c, color, mat);
     this.tri(a, c, d, color, mat);
   }
 
-  /** 把另一个构建器产出的几何整体合并进来（可选换材质 */
+  /** 把另一个构建器产出的几何整体合并进来（可选换材质） */
   bake(geo: PlantGeometry, opts: { mat?: RockMaterial; offset?: V3; scale?: number; tint?: RGB; tintMix?: number } = {}): void {
     const off = opts.offset ?? [0, 0, 0];
     const s = opts.scale ?? 1;
@@ -221,9 +221,7 @@ export class RockBuilder {
     if (y < this.minY) this.minY = y;
   }
 
-  // 
-  // 岩石专用原语
-  // 
+  // ---- 岩石专用原语 ----
 
   /** 逐面覆被判定 */
   private crustFace(
@@ -247,7 +245,7 @@ export class RockBuilder {
   shell(opts: {
     /** 环心位置 */
     center: V3;
-    /** 环在自身平面内的两个半径（允许椭圆 */
+    /** 环在自身平面内的两个半径（允许椭圆） */
     rx: number;
     rz: number;
     /** 壳厚 */
@@ -274,7 +272,7 @@ export class RockBuilder {
     cap?: boolean;
     /** 逐顶点半径倍率（按环上的顶点索引） */
     radiusScale?: readonly number[] | ((i: number) => number);
-    /** 逐顶点沿环面法线的位移倍数（0~1 */
+    /** 逐顶点沿环面法线的位移倍数（0~1） */
     wobble?: readonly number[] | ((i: number) => number);
     /** wobble 的幅度（相对壳厚），默认 0 */
     wobbleAmount?: number;
@@ -295,8 +293,7 @@ export class RockBuilder {
     const wob = opts.wobble;
     const wobAmp = (opts.wobbleAmount ?? 0) * thickness * 0.5;
 
-    // 环平面的正交基
-    // 取参考轴时避开与 up 平行的情形
+    // 环平面的正交基：取参考轴时避开与 up 平行的情形
     const [nx0, ny0, nz0] = normal;
     const nl = Math.hypot(nx0, ny0, nz0) || 1;
     const up: V3 = [nx0 / nl, ny0 / nl, nz0 / nl];
@@ -317,7 +314,6 @@ export class RockBuilder {
       const a = rotY + (i / n) * TAU;
       const ripple = typeof rs === 'function' ? rs(i) : (rs ? rs[i] ?? 1 : 1);
       const k = (jit > 0 ? 1 + (this.rand() * 2 - 1) * jit : 1) * ripple;
-      // 沿环面法线的位移
       const wv = typeof wob === 'function' ? wob(i) : (wob ? wob[i] ?? 0 : 0);
       const lift = wv * wobAmp;
       const cx = Math.cos(a) * rx * k;
@@ -328,9 +324,7 @@ export class RockBuilder {
       top.push([px + up[0] * (half + lift), py + up[1] * (half + lift), pz + up[2] * (half + lift)]);
       bot.push([px - up[0] * (half - lift), py - up[1] * (half - lift), pz - up[2] * (half - lift)]);
     }
-    // 侧带
-    // 这正是想要的
-    // 否则第 i 个侧面与第 i 个顶盖永远同时命中/
+    // 侧带：阈值乘 0.7，苔藓长在陡壁上但明显更少
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       const nrm = faceNormal(
@@ -504,7 +498,7 @@ export class RockBuilder {
     jitter?: number;
     rotY?: number;
     mat?: RockMaterial;
-    /** 覆被方案（blob 的顶盖曲率是天然朝上的 */
+    /** 覆被方案（blob 的顶盖曲率天然朝上） */
     crust?: CrustSpec;
     /** 覆被色 */
     crustColor?: RGB;
@@ -596,8 +590,7 @@ export class RockBuilder {
           normals[(v + i) * 3] = N[0];
           normals[(v + i) * 3 + 1] = N[1];
           normals[(v + i) * 3 + 2] = N[2];
-          // f.col 是**单个 RGB 三元组**（面的
-          // 否则只有第一个顶点有色、其余全黑。
+          // f.col 是单个面级的 RGB 三元组，要铺满该面的每个顶点
           colors[(v + i) * 3] = f.col[0];
           colors[(v + i) * 3 + 1] = f.col[1];
           colors[(v + i) * 3 + 2] = f.col[2];

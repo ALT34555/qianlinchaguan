@@ -115,6 +115,10 @@ export class Sky {
       fog: false,
       opacity: 0,
     });
+    starMaterial.onBeforeCompile = shader => {
+      shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>',
+        '#include <project_vertex>\n gl_Position.z = gl_Position.w;');
+    };
     this.stars = new THREE.Points(starGeometry, starMaterial);
     this.stars.renderOrder = -900;
     this.stars.frustumCulled = false;
@@ -146,6 +150,12 @@ export class Sky {
     }));
     this.moon.renderOrder = -880;
     this.group.add(this.moon);
+    for (const body of [this.sun, this.moon]) {
+      (body.material as THREE.MeshBasicMaterial).onBeforeCompile = shader => {
+        shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>',
+          '#include <project_vertex>\n gl_Position.z = gl_Position.w;');
+      };
+    }
 
     // 云层 (Clouds)
     const cloudTexture = makeCloudTexture();

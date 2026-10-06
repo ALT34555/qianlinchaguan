@@ -730,8 +730,8 @@ export class WorldCreator {
     const def = getChunkTypeDef(info.type);
     const code = formatChunkId(info.type);
     const climate = CLIMATES[info.climate];
-    const arrow = info.flow >= 0 ? FLOW_DIRECTIONS[info.flow].arrow : '—';
-    const flowText = info.flow >= 0 ? `${arrow} (${FLOW_DIRECTIONS[info.flow].dx}, ${FLOW_DIRECTIONS[info.flow].dz})` : t('detail.noFlow');
+    const arrow = info.displayFlow >= 0 ? FLOW_DIRECTIONS[info.displayFlow].arrow : '—';
+    const flowText = info.displayFlow >= 0 ? `${arrow} (${FLOW_DIRECTIONS[info.displayFlow].dx}, ${FLOW_DIRECTIONS[info.displayFlow].dz})` : t('detail.noFlow');
 
     if (badge) {
       badge.textContent = `(${info.cx}, ${info.cz})`;

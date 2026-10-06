@@ -5,6 +5,7 @@ import { basename, join, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { parseWorldSave, type WorldSave } from '../../src/systems/world/WorldSave.ts';
+import { SAVE_FORMAT_VERSION } from '../../src/core/version.ts';
 import type { LocalSave, SaveList } from '../../src/systems/world/LocalSaveStore.ts';
 
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -38,7 +39,7 @@ export class FileSaveService {
         const save = parseWorldSave(text);
         const data = JSON.parse(text) as { _localSave?: { version: number; createdAt: number; updatedAt: number } };
         const metadata = data._localSave;
-        if (metadata && (metadata.version !== 1 || !Number.isFinite(metadata.createdAt) || !Number.isFinite(metadata.updatedAt))) throw new Error('存档元数据无效');
+        if (metadata && (metadata.version !== SAVE_FORMAT_VERSION || !Number.isFinite(metadata.createdAt) || !Number.isFinite(metadata.updatedAt))) throw new Error('存档元数据无效');
         entries.push({ filename, item: { id: fileId(filename), name: save.worldName || basename(filename).replace(/\.json$/i, '').slice(0, 80),
           createdAt: metadata?.createdAt ?? stat.birthtimeMs, updatedAt: metadata?.updatedAt ?? stat.mtimeMs, save } });
       } catch { unreadable++; }
@@ -60,7 +61,7 @@ export class FileSaveService {
     try {
       const file = await open(temporary, 'wx');
       try {
-        await file.writeFile(JSON.stringify({ ...item.save, _localSave: { version: 1, createdAt: item.createdAt, updatedAt: item.updatedAt } }, null, 2), 'utf8');
+        await file.writeFile(JSON.stringify({ ...item.save, _localSave: { version: SAVE_FORMAT_VERSION, createdAt: item.createdAt, updatedAt: item.updatedAt } }, null, 2), 'utf8');
         await file.sync();
       } finally { await file.close(); }
       await rename(temporary, destination);

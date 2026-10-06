@@ -2,7 +2,7 @@
 import { FLOW_DIRECTIONS } from '../systems/world/WorldGenerator';
 import { CHUNK_SIZE } from '../core/config';
 import type { Player } from '../entities/Player';
-import { CHUNK_TYPES, formatChunkId, getChunkTypeDef } from '../systems/world/ChunkTypes';
+import { CHUNK_TYPES, formatChunkId, getChunkTypeDef, isRiverType } from '../systems/world/ChunkTypes';
 import type { LoadedChunk, World } from '../systems/world/World';
 import type { Game } from '../core/Game';
 import { chunkName, seasonName } from '../i18n/content';
@@ -239,6 +239,16 @@ export class DebugOverlay {
 
   private redrawBase(): void {
     const ctx = this.baseCtx;
+    // 一次性请求流向，避免常规查询也为 displayFlow 付邻近主河查询的代价
+    this.world.generator.displayFlowWanted = true;
+    try {
+      this.drawBase(ctx);
+    } finally {
+      this.world.generator.displayFlowWanted = false;
+    }
+  }
+
+  private drawBase(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = INK_BG;
     ctx.fillRect(0, 0, MAP_PX, MAP_PX);
 
@@ -275,12 +285,12 @@ export class DebugOverlay {
         ctx.textBaseline = 'middle';
         ctx.fillText(codeStr, ox + 9, oz + 10);
         const info = this.world.generator.getChunkInfo(cx, cz);
-        if (typeId === 5 && info.flow >= 0) {
+        if (isRiverType(typeId) && info.displayFlow >= 0) {
           ctx.font = `bold 22px ${CANVAS_FONT}`;
           ctx.textAlign = 'center';
           ctx.strokeStyle = '#164b73'; ctx.lineWidth = 3;
-          ctx.strokeText(FLOW_DIRECTIONS[info.flow].arrow, ox + 32, oz + 35);
-          ctx.fillText(FLOW_DIRECTIONS[info.flow].arrow, ox + 32, oz + 35);
+          ctx.strokeText(FLOW_DIRECTIONS[info.displayFlow].arrow, ox + 32, oz + 35);
+          ctx.fillText(FLOW_DIRECTIONS[info.displayFlow].arrow, ox + 32, oz + 35);
         }
       }
     }

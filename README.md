@@ -8,9 +8,9 @@
 *A procedural low-poly sandbox RPG world generator & explorer.*
 
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Three.js](https://img.shields.io/badge/Three.js-0.186-black?logo=three.js&logoColor=white)](https://threejs.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Electron](https://img.shields.io/badge/Electron-44.x-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
 
 [特性亮点](#-特性亮点) • [快速开始](#-快速开始) • [操作说明](#-操作说明) • [项目架构](#-项目架构) • [开源致谢](#-开源致谢)
@@ -37,6 +37,8 @@
 ### 🗺️ 舆图与山川双视角 (Atlas & World)
 - **舆图 (2D Atlas)**：二维宏观地图。支持无极平移缩放、高程与气候图层实时渲染、板块水系与大陆分布诊断。
 - **山川 (3D World)**：在舆图上双击或触控任意地块即可**空降进入三维世界**，支持地面漫步、疾跑、双击浮空与自由飞行。
+- **可调视距**：设置面板支持 2~16 区块渲染视距，雾效与相机裁剪面随视距实时同步。
+- **世界装饰**：低模岩石群与 49 物种植被按群系自然散布于三维世界，四季与生命阶段实时呈现。
 - **双向无缝联动**：随时通过 ESC 菜单在 2D 舆图与 3D 山川之间往返流转。
 
 ### 🏔️ 程序化地貌与统一流域水系 (Procedural Generation & Watershed)
@@ -44,6 +46,7 @@
 - **统一流域拓扑求解**：基于严格下降 D8 拓扑与实际汇水累加求解，消除局部凹陷死循环。
 - **宽深汇流与自然河网**：支持支流向干流汇聚、主槽深度与河宽随流量平滑增长；自然三段河弯与走廊约束，连通湖面与河槽带。
 - **入湖/入海自然过渡**：低缓河口渐宽延展、水下沉积浅滩与沙泥渐变，瀑布入水保留深潭。
+- **瀑布飞流与水雾**：落差水流带飞流水丝与落点粒子水雾，可在设置中开关粒子效果。
 - **自然陆地支持**：内置 Natural Earth 真实海岸距离场（`land.json`），可直接生成还原地球陆地轮廓的探索世界。
 
 ### 🌿 数据驱动低模植被 (Low-Poly Vegetation)
@@ -139,7 +142,7 @@ npm run build:windows
 qianlinchaguan/
 ├── content/                     # 【游戏内容区】策划与美术工作区（纯数据，与核心代码解耦）
 │   ├── assets/                  #   媒体与衍生资源
-│   │   ├── models/              #     植被与岩石生成清单 (manifest.json)
+│   │   ├── models/              #     植被、岩石与旗帜生成清单 (manifest.json)
 │   │   └── ui/fonts/            #     UI 字体资源（资源圆体等开源字库）
 │   ├── data/world/              #   世界配置数据（blocks.json, chunk_types.json）
 │   │   ├── flags/               #     低模旗帜与旗杆参数表
@@ -175,7 +178,7 @@ qianlinchaguan/
 
 - 渲染与数学库：[Three.js](https://github.com/mrdoob/three.js) (MIT)、[simplex-noise](https://github.com/jwagner/simplex-noise.js) (MIT)
 - 构建与运行时：[Vite](https://github.com/vitejs/vite) (MIT)、[TypeScript](https://github.com/microsoft/TypeScript) (Apache-2.0)、[Electron](https://github.com/electron/electron) (MIT)
-- 中文开源字体：[Resource Han Rounded (资源圆体)](https://github.com/CyanoHao/Resource-Han-Rounded) (SIL OFL 1.1)
+- 中文开源字体：[Resource Han Rounded (资源圆体)](https://github.com/CyanoHao/Resource-Han-Rounded) (SIL OFL 1.1)、[NanoOldSong (纳米老宋)](https://github.com/Hansha2011/NanoOldSong) (SIL OFL 1.1)
 - 地理空间数据：[Natural Earth Vector](https://github.com/nvkelso/natural-earth-vector) (Public Domain)
 - 天文算法参考：[astronomia](https://github.com/commenthol/astronomia) (MIT)、[NASA Eclipse Delat-T](https://eclipse.gsfc.nasa.gov/)
 
