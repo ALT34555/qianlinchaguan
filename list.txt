@@ -17,3 +17,11 @@ src\systems\calendar\ChineseCalendar.ts (置闰规则与"朔近午夜"特例参�
 src\systems\calendar\JulianDay.ts (ΔT 分段多项式，Espenak & Meeus / NASA 日食目录) - https://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html
 platforms\windows\launcher.mjs (Node.js 内置 http/fs/crypto，仅监听回环地址的本地存档服务) - https://github.com/nodejs/node
 platforms\windows\make-icon.py (Pillow 生成 qianlin.ico，仅生成图标时需要) - https://github.com/python-pillow/Pillow
+
+# ---- 程序化生成资源说明（纯代码与参数表生成，未引入外部模型与贴图）----
+content\assets\models\plants\ (低模植物): 49 物种全部几何由 src/systems/world/vegetation/ 程序化生成，
+  色板色值取自 content/data/world/plants/palettes.json，没有使用任何外部模型或贴图。
+content\assets\models\rocks\ (低模岩石): 9 个岩石单位的原型几何全部由 src/systems/world/rocks/ 程序化生成，
+  色板色值取自 content/data/world/rocks/palettes.json 与 blocks.json，没有使用任何外部模型或贴图。
+content\assets\models\flags\ (低模旗帜与旗杆): 7 种旗形、3 种杆型与 4 种挂载方式的几何
+  全部由 src/systems/world/flags/ 程序化生成，旗面波形与下垂为解析数学函数，没有使用任何外部模型或贴图。

@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"cao.luwei","archetype":"grassClump","climate":"subtropical","name":"芦苇","latin":"luwei","seed":603,"tags":["ground","riparian"],"params":{"height":2.2,"blades":8,"bloomCount":3,"spread":0.5},"palette":{"foliage":"palmFrond","foliageDark":"foliageDeep","bloom":"palmFrondDry"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"cao.luwei@seedling","state":"seedling"},
+    {"id":"cao.luwei@subadult","state":"subadult"},
+    {"id":"cao.luwei@flowering","state":"flowering"},
+    {"id":"cao.luwei@fruiting","state":"fruiting"},
+    {"id":"cao.luwei@withered","state":"withered"}
+  ]
+}

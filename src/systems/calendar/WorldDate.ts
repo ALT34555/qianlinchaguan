@@ -14,6 +14,6 @@ export function startDateUnixMs(mode: 'real' | 'yuan', date: StartDate, utcOffse
   if (![year, month, day].every(Number.isInteger) || year < 1 || year > 9999 || month < 1 || month > 12 || day < 1 ||
       day > (mode === 'yuan' ? 30 : daysInMonth(year, month))) throw new Error('起始日期无效，请检查年月日。');
   const jdn = mode === 'yuan' ? yuanCalendar.toJdn(year, month, day) : gregorianToJdn(year, month, day);
-  // 新世界从所选日期的早上八点开始；采用创建时的本地时区并写入存档。
+  // 新世界从所选日期的早上八点开始
   return unixMsFromDayTime(jdn, 8 / 24, utcOffsetMinutes);
 }

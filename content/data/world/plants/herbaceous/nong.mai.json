@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"nong.mai","archetype":"grassClump","climate":"temperate","name":"小麦","latin":"xiaomai","seed":702,"tags":["crop","staple","ground","farm"],"params":{"height":0.8,"blades":6,"bloomCount":2,"fruitCount":3,"spread":0.26},"palette":{"foliage":"cropGreen","foliageDark":"foliageDeep","bloom":"grainPale","fruit":"grain"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"nong.mai@seedling","state":"seedling"},
+    {"id":"nong.mai@subadult","state":"subadult"},
+    {"id":"nong.mai@flowering","state":"flowering"},
+    {"id":"nong.mai@fruiting","state":"fruiting"},
+    {"id":"nong.mai@withered","state":"withered"}
+  ]
+}

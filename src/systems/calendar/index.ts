@@ -1,19 +1,4 @@
-/**
- * 日历系统统一出口。
- *
- * 三套历法：
- *  - 公历 GregorianCalendar：民用历，含星期、ISO 周等派生信息，范围不限；
- *  - 农历 ChineseCalendar：天文推算的阴阳合历，含二十四节气、闰月、干支、生肖；
- *  - 元历 YuanCalendar：本项目原创的极简历法（24 小时/日、10 日/旬、3 旬/月、3 月/季、
- *    12 月/年 = 360 日，不设闰年与岁余、不作天文推算），详见 YuanCalendar.ts 的模块注释。
- *
- * 快速上手：
- *   import { CalendarSystem, CalendarClock, CalendarHud } from '../systems/calendar';
- *   const calendars = new CalendarSystem();
- *   const clock = new CalendarClock({ dayLengthSeconds: 1200 }); // 20 分钟一昼夜
- *   const hud = new CalendarHud(calendars, clock, { position: 'top-left', refreshIntervalMs: 250 });
- *   // 每帧：clock.advance(dt); hud.update();
- */
+/** 日历系统统一出口 */
 export type {
   CalendarKind,
   CalendarSnapshot,

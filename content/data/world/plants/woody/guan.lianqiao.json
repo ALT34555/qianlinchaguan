@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.lianqiao","archetype":"shrub","climate":"temperate","name":"连翘","latin":"lianqiao","seed":502,"tags":["shrub","flowering","ornamental","medicine"],"params":{"height":1.5,"canopy":1.15,"blobs":5,"petals":4,"bloomCount":6,"stems":4,"spread":0.6},"palette":{"foliage":"foliage","foliageDark":"canopy","bloom":"bloomGold"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.lianqiao@seedling","state":"seedling"},
+    {"id":"guan.lianqiao@subadult","state":"subadult"},
+    {"id":"guan.lianqiao@flowering","state":"flowering"},
+    {"id":"guan.lianqiao@fruiting","state":"fruiting"},
+    {"id":"guan.lianqiao@withered","state":"withered"}
+  ]
+}

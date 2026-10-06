@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.longnao","archetype":"broadleaf","climate":"tropical","name":"龙脑香巨木","latin":"longnaoxiang","seed":401,"tags":["tree","canopy","jungle","timber"],"params":{"height":26,"trunk":17,"trunkRadius":0.9,"limbCount":4,"canopy":7,"blobs":13,"branchAngle":0.55,"sides":6},"palette":{"foliage":"jungle","foliageDark":"jungleDark","canopy":"jungle"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.longnao@seedling","state":"seedling"},
+    {"id":"shu.longnao@subadult","state":"subadult"},
+    {"id":"shu.longnao@flowering","state":"flowering"},
+    {"id":"shu.longnao@fruiting","state":"fruiting"},
+    {"id":"shu.longnao@withered","state":"withered"}
+  ]
+}

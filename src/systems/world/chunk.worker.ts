@@ -1,6 +1,4 @@
-/**
- * 区块生成 Worker：生成高度图 + 构建网格，结果以 Transferable 方式回传主线程。
- */
+/** 区块生成 Worker */
 import { buildChunkMeshes, type MeshData } from './ChunkMesher';
 import type { ChunkResultMessage, WorkerRequest } from './ChunkProtocol';
 import { WorldGenerator } from './WorldGenerator';
@@ -12,6 +10,7 @@ function pushBuffers(mesh: MeshData | null, out: Transferable[]): void {
   if (!mesh) return;
   out.push(mesh.positions.buffer, mesh.colors.buffer, mesh.indices.buffer);
   if (mesh.waterDepths) out.push(mesh.waterDepths.buffer);
+  if (mesh.waterFlows) out.push(mesh.waterFlows.buffer);
 }
 
 ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
@@ -24,16 +23,20 @@ ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
     if (!generator) throw new Error('[chunk.worker] 未初始化');
     const t0 = performance.now();
     const chunk = generator.generateChunk(msg.cx, msg.cz);
-    const meshes = buildChunkMeshes(msg.cx, msg.cz, chunk.heights, chunk.surfaces, generator.seed, chunk.waterLevels, chunk.surfaceColors);
+    const meshes = buildChunkMeshes(msg.cx, msg.cz, chunk.heights, chunk.surfaces, generator.seed, chunk.waterLevels, chunk.surfaceColors,chunk.waterField);
 
     // 主线程只需要区块内部的高度（去掉外扩一圈）
     const S = Math.sqrt(chunk.surfaces.length);
     const P = S + 2;
     const inner = new Float32Array(S * S);
     const waterLevels = new Float32Array(S * S);
+    const kinds=new Uint8Array(S*S),velocities=new Float32Array(S*S*2),discharge=new Float32Array(S*S);
     for (let z = 0; z < S; z++) {
       inner.set(chunk.heights.subarray((z + 1) * P + 1, (z + 1) * P + 1 + S), z * S);
       waterLevels.set(chunk.waterLevels.subarray((z + 1) * P + 1, (z + 1) * P + 1 + S), z * S);
+      kinds.set(chunk.waterField.kinds.subarray((z+1)*P+1,(z+1)*P+1+S),z*S);
+      discharge.set(chunk.waterField.discharge.subarray((z+1)*P+1,(z+1)*P+1+S),z*S);
+      velocities.set(chunk.waterField.velocities.subarray(((z+1)*P+1)*2,((z+1)*P+1+S)*2),z*S*2);
     }
 
     const result: ChunkResultMessage = {
@@ -44,12 +47,13 @@ ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
       heights: inner,
       surfaces: chunk.surfaces,
       waterLevels,
+      waterField:{levels:waterLevels,kinds,velocities,discharge},
       terrain: meshes.terrain,
       water: meshes.water,
       minimap: meshes.minimap,
       elapsed: performance.now() - t0,
     };
-    const transfer: Transferable[] = [inner.buffer, waterLevels.buffer, chunk.surfaces.buffer, meshes.minimap.buffer];
+    const transfer: Transferable[] = [inner.buffer, waterLevels.buffer, kinds.buffer,velocities.buffer,discharge.buffer,chunk.surfaces.buffer, meshes.minimap.buffer];
     pushBuffers(meshes.terrain, transfer);
     pushBuffers(meshes.water, transfer);
     ctx.postMessage(result, transfer);

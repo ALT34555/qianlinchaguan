@@ -2,11 +2,7 @@
  * 确定性随机工具。
  */
 
-/**
- * mulberry32 伪随机数生成器（public domain，作者 Tommy Ettinger）。
- * https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
- * 返回 [0, 1) 均匀分布的随机数函数。
- */
+/** mulberry32 伪随机数生成器（publi */
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -17,7 +13,7 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-/** 二维整数坐标哈希 -> [0, 1)，用于逐方块的颜色抖动等无状态随机。 */
+/** 二维整数坐标哈希 -> [0, 1) */
 export function hash2(x: number, z: number, seed: number): number {
   let h = Math.imul(x | 0, 0x27d4eb2d) ^ Math.imul(z | 0, 0x165667b1) ^ Math.imul(seed | 0, 0x9e3779b1);
   h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);

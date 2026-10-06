@@ -1,11 +1,11 @@
-/** 所有非虚空地形共用的地表配方与混合器，不维护成对的特例。 */
+/** 所有非虚空地形共用的地表配方与混合器 */
 import { Block } from './Blocks';
 import { CHUNK_TYPES } from './ChunkTypes';
 
 export interface TerrainWeight { type: number; weight: number }
 export interface TerrainProfile {
   color: [number, number, number];
-  materials: number[];
+  materials: Map<number, number>;
   roughness: number;
   wetness: number;
 }
@@ -32,7 +32,7 @@ const RECIPES: Record<Family, Recipe> = {
   snowfield: { color: '#e2e8df', material: [[Block.SNOW, .95], [Block.GRAVEL, .05]], roughness: .6, wetness: .15 },
 };
 const FAMILIES: Record<number, Family> = {
-  1: 'plain', 2: 'coast', 3: 'hill', 4: 'dry', 5: 'river', 6: 'forest', 7: 'valley', 8: 'plateau', 9: 'rift', 10: 'river',
+  1: 'plain', 2: 'coast', 3: 'hill', 4: 'dry', 5: 'river', 6: 'forest', 7: 'valley', 8: 'plateau', 9: 'rift', 10: 'river', 11:'swamp',
   101: 'savanna', 102: 'coast', 103: 'hill', 104: 'desert', 105: 'swamp', 106: 'jungle', 107: 'valley', 108: 'plateau', 109: 'monsoon',
   201: 'plain', 202: 'coast', 203: 'hill', 204: 'shrub', 205: 'monsoon', 206: 'jungle', 207: 'valley', 208: 'plateau',
   301: 'plain', 302: 'coast', 303: 'hill', 304: 'shrub', 305: 'monsoon', 306: 'jungle', 307: 'valley', 308: 'plateau',
@@ -44,17 +44,16 @@ for (const def of CHUNK_TYPES.filter(d => d.generate)) {
   if (!recipe) throw new Error(`地形 ${def.code} 缺少混合配方`);
   const rgb = parseInt(recipe.color.slice(1), 16);
   const color: [number, number, number] = [rgb >> 16, (rgb >> 8) & 255, rgb & 255];
-  const materials = Array<number>(12).fill(0);
-  recipe.material.forEach(([id, amount]) => { materials[id] = amount; });
+  const materials = new Map<number, number>(recipe.material);
   const zone = Math.floor(def.id / 100);
-  // 色相微调而不是直接使用地图图例色；每个气候的山丘/高地/林地也可混合。
+  // 色相微调而不是直接使用地图图例色
   const tint = zone === 1 ? [5, 3, -7] : zone === 2 ? [-3, 5, -2] : zone === 3 ? [-4, -1, 6] : zone === 4 ? [8, 10, 17] : [0, 0, 0];
   color.forEach((v, i) => { color[i] = Math.max(0, Math.min(255, v + tint[i])); });
   TERRAIN_PROFILES.set(def.id, { color, materials, roughness: recipe.roughness, wetness: recipe.wetness });
 }
 
 export function mixTerrainProfiles(weights: readonly TerrainWeight[]): TerrainProfile {
-  const result: TerrainProfile = { color: [0, 0, 0], materials: Array<number>(12).fill(0), roughness: 0, wetness: 0 };
+  const result: TerrainProfile = { color: [0, 0, 0], materials: new Map(), roughness: 0, wetness: 0 };
   let sum = 0;
   for (const { type, weight } of weights) {
     if (!Number.isFinite(weight) || weight < 0) throw new Error('地形混合权重必须有限且非负');
@@ -63,20 +62,20 @@ export function mixTerrainProfiles(weights: readonly TerrainWeight[]): TerrainPr
     if (!profile) throw new Error(`不支持混合的地形 ${type}`);
     sum += weight;
     for (let i = 0; i < 3; i++) result.color[i] += profile.color[i] * weight;
-    for (let i = 0; i < 12; i++) result.materials[i] += profile.materials[i] * weight;
+    for (const [id, amount] of profile.materials) result.materials.set(id, (result.materials.get(id) ?? 0) + amount * weight);
     result.roughness += profile.roughness * weight; result.wetness += profile.wetness * weight;
   }
   if (sum <= 0) throw new Error('地形混合权重之和必须大于零');
   result.color = result.color.map(v => v / sum) as TerrainProfile['color'];
-  result.materials = result.materials.map(v => v / sum);
+  for (const [id, amount] of result.materials) result.materials.set(id, amount / sum);
   result.roughness /= sum; result.wetness /= sum;
   return result;
 }
 
-/** 连续叠加岩石、积雪、沉积物等环境层，材质标签不主导颜色切换。 */
+/** 连续叠加岩石、积雪、沉积物等环境层 */
 export function overlayTerrain(profile: TerrainProfile, amount: number, color: readonly number[], materials: [number, number][]): void {
   const t = Math.max(0, Math.min(1, amount));
   for (let i = 0; i < 3; i++) profile.color[i] += (color[i] - profile.color[i]) * t;
-  for (let i = 0; i < profile.materials.length; i++) profile.materials[i] *= 1 - t;
-  for (const [id, weight] of materials) profile.materials[id] += weight * t;
+  for (const [id, weight] of profile.materials) profile.materials.set(id, weight * (1 - t));
+  for (const [id, weight] of materials) profile.materials.set(id, (profile.materials.get(id) ?? 0) + weight * t);
 }

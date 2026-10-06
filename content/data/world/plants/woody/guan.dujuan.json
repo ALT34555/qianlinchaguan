@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.dujuan","archetype":"shrub","climate":"subtropical","name":"杜鹃","latin":"dujuan","seed":506,"tags":["shrub","flowering","ornamental"],"params":{"height":1.2,"canopy":0.95,"blobs":5,"bloomCount":8,"stems":3,"spread":0.6},"palette":{"foliage":"foliageDark","foliageDark":"foliageDeep","bloom":"bloomPink"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.dujuan@seedling","state":"seedling"},
+    {"id":"guan.dujuan@subadult","state":"subadult"},
+    {"id":"guan.dujuan@flowering","state":"flowering"},
+    {"id":"guan.dujuan@fruiting","state":"fruiting"},
+    {"id":"guan.dujuan@withered","state":"withered"}
+  ]
+}

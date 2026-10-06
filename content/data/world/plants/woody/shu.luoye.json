@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.luoye","archetype":"conifer","climate":"cold","name":"落叶松","latin":"luoyesong","seed":103,"tags":["tree","conifer","autumn_color","snow"],"params":{"height":16,"trunk":4.8,"canopy":2.8,"layers":6,"layerRadius":2.8,"snow":0.22,"snowOn":["canopy"]},"palette":{"foliage":"larch","foliageDark":"foliageDark"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.luoye@seedling","state":"seedling"},
+    {"id":"shu.luoye@subadult","state":"subadult"},
+    {"id":"shu.luoye@flowering","state":"flowering"},
+    {"id":"shu.luoye@fruiting","state":"fruiting"},
+    {"id":"shu.luoye@withered","state":"withered"}
+  ]
+}

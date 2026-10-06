@@ -1,7 +1,7 @@
 import { ACTIONS, actionLabel, defaultSettings, keyLabel, validateSettings, validBinding, type GameAction, type GameSettings } from '../core/GameSettings';
 import { availableLocales, getLocale, onLocaleChange, setLocale, t } from '../i18n';
 
-/** 开始界面与 ESC 菜单共用；应用前保留草稿，离开面板撤销待捕获按键。 */
+/** 开始界面与 ESC 菜单共用 */
 export class SettingsPanel {
   private events = new AbortController();
   private draft: GameSettings;
@@ -10,12 +10,12 @@ export class SettingsPanel {
   private readonly stopLocaleWatch: () => void;
   constructor(private readonly root: HTMLElement, current: GameSettings, private readonly apply: (value: GameSettings) => void, private readonly back: () => void) {
     this.draft = validateSettings(current);
-    // 语言一变就整块重绘：草稿保存在 this.draft 里，因此输入不会丢。
+    // 语言一变就整块重绘
     this.stopLocaleWatch = onLocaleChange(() => this.render());
     this.render();
   }
 
-  /** 重建面板 DOM 并重新绑定事件（构造与语言切换共用）。 */
+  /** 重建面板 DOM 并重新绑定事件（构造与语言切换 */
   private render(): void {
     this.events.abort();
     this.events = new AbortController();
@@ -45,7 +45,7 @@ export class SettingsPanel {
     }, { signal });
     this.root.querySelector('[data-apply]')!.addEventListener('click', () => this.submit(), { signal });
     this.root.querySelector<HTMLSelectElement>('[data-locale]')!.addEventListener('change', event => {
-      // setLocale 会触发 onLocaleChange，本面板由 render() 自行重绘。
+      // setLocale 会触发 onLocaleCh
       setLocale((event.currentTarget as HTMLSelectElement).value);
     }, { signal });
     this.root.querySelectorAll<HTMLButtonElement>('[data-bind]').forEach(button => button.addEventListener('click', () => {

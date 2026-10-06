@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"nong.sang","archetype":"broadleaf","climate":"temperate","name":"桑树","latin":"sangshu","seed":705,"tags":["tree","crop","cash_crop","fruit","orchard"],"params":{"height":6.5,"trunk":2.4,"trunkRadius":0.34,"limbCount":3,"canopy":3.1,"blobs":8,"bloomCount":4,"fruitCount":6},"palette":{"foliage":"mulberry","foliageDark":"foliageDeep","fruit":"fruit"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"nong.sang@seedling","state":"seedling"},
+    {"id":"nong.sang@subadult","state":"subadult"},
+    {"id":"nong.sang@flowering","state":"flowering"},
+    {"id":"nong.sang@fruiting","state":"fruiting"},
+    {"id":"nong.sang@withered","state":"withered"}
+  ]
+}

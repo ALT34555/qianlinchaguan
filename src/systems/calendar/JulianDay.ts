@@ -1,17 +1,9 @@
-/**
- * 儒略日序（JDN）与时间尺度换算工具。
- *
- * 说明：
- *  - 本项目内部统一用"整数日序 jdn"表示一天，jdn 等于该日正午的儒略日（JD）整数部分；
- *    因此某瞬间的儒略日 = jdn - 0.5 + frac。
- *  - 天文推算使用力学时 TT（儒略日记作 JDE），与民用时之间的差为 ΔT；
- *    ΔT 采用 Espenak & Meeus 的分段多项式（NASA 日食目录所用的同一套公式）。
- */
+/** 儒略日序（JDN）与时间尺度换算工具 */
 
 /** 1970-01-01（Unix 纪元）的儒略日序。 */
 export const UNIX_EPOCH_JDN = 2440588;
 
-/** J2000.0 历元：2000-01-01 12:00 TT。 */
+/** J2000.0 历元 */
 export const J2000 = 2451545.0;
 
 /** 一日的毫秒数。 */
@@ -34,7 +26,7 @@ export function daysInMonth(year: number, month: number): number {
   return 31;
 }
 
-/** 公历日期 -> 儒略日序。使用 Fliegel–Van Flandern 公式。 */
+/** 公历日期 -> 儒略日序 */
 export function gregorianToJdn(year: number, month: number, day: number): number {
   const a = Math.floor((14 - month) / 12);
   const y = year + 4800 - a;
@@ -87,12 +79,12 @@ export function norm180(deg: number): number {
   return r > 180 ? r - 360 : r;
 }
 
-/** 瞬间的儒略日（JD，UT 或 TT 视输入尺度而定）。 */
+/** 瞬间的儒略日（JD */
 export function julianDayOf(jdn: number, frac: number): number {
   return jdn - 0.5 + frac;
 }
 
-/** 由儒略日拆出整数日序与当日比例（frac 恒为 [0, 1)）。 */
+/** 由儒略日拆出整数日序与当日比例（frac 恒为 */
 export function dayTimeOfJulianDay(jd: number): { jdn: number; frac: number } {
   const shifted = jd + 0.5;
   const jdn = Math.floor(shifted);
@@ -114,7 +106,7 @@ export function unixMsFromDayTime(jdn: number, frac: number, utcOffsetMinutes = 
 /** 由当日比例拆出时 / 分 / 秒 / 毫秒。 */
 export function clockTimeOf(frac: number): { hour: number; minute: number; second: number; millisecond: number } {
   const f = ((frac % 1) + 1) % 1;
-  // 用四舍五入到毫秒，避免 frac = 13/24 这类情况下浮点下取整丢 1 毫秒而显示成 12:59:59.999
+  // 用四舍五入到毫秒
   const total = Math.min(Math.round(f * MS_PER_DAY), MS_PER_DAY - 1);
   const second = Math.floor(total / 1000);
   return {
@@ -125,11 +117,7 @@ export function clockTimeOf(frac: number): { hour: number; minute: number; secon
   };
 }
 
-/**
- * ΔT = TT - UT，单位秒。
- * 采用 Espenak & Meeus 为 NASA 日食目录给出的分段多项式。
- * @param decimalYear 以年为单位的小数年（如 2026.5）
- */
+/** 地球自转修正量DeltaT */
 export function deltaTSeconds(decimalYear: number): number {
   const y = decimalYear;
   if (y < -500) {
@@ -231,7 +219,7 @@ export function decimalYearOfJde(jde: number): number {
   return 2000 + (jde - J2000) / 365.25;
 }
 
-/** 力学时 JDE -> 世界时 JD（约等，忽略 UT1 与 UTC 之差）。 */
+/** 力学时 JDE -> 世界时 JD（约等 */
 export function jdeToJdUt(jde: number): number {
   return jde - deltaTSeconds(decimalYearOfJde(jde)) / 86400;
 }
@@ -252,7 +240,7 @@ export function civilJdnOfJde(jde: number, utcOffsetMinutes: number): number {
   return civilJdnOfJd(jdeToJdUt(jde), utcOffsetMinutes);
 }
 
-/** 弧度制三角函数的小工具（避免在热点循环里反复乘 PI/180）。 */
+/** 弧度制三角函数的小工具（避免在热点循环里反复乘 */
 export function sinDeg(deg: number): number {
   return Math.sin(deg * D2R);
 }

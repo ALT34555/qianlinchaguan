@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.mumian","archetype":"broadleaf","climate":"tropical","name":"木棉","latin":"mumian","seed":402,"tags":["tree","canopy","jungle","flowering"],"params":{"height":24,"trunk":19,"trunkRadius":1.15,"limbCount":4,"canopy":6.4,"blobs":11,"bloomCount":4,"bloomRadius":0.5},"palette":{"foliage":"jungle","foliageDark":"jungleDark","canopy":"jungle","bloom":"bloomRed"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.mumian@seedling","state":"seedling"},
+    {"id":"shu.mumian@subadult","state":"subadult"},
+    {"id":"shu.mumian@flowering","state":"flowering"},
+    {"id":"shu.mumian@fruiting","state":"fruiting"},
+    {"id":"shu.mumian@withered","state":"withered"}
+  ]
+}

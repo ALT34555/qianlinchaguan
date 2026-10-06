@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.cha","archetype":"broadleaf","climate":"subtropical","name":"茶树","latin":"chashu","seed":302,"tags":["tree","crop","cash_crop","flowering","fruit"],"params":{"height":2.6,"trunk":0.9,"trunkRadius":0.14,"limbCount":2,"canopy":1.5,"blobs":7,"bloomCount":6,"fruitCount":4},"palette":{"foliage":"tea","foliageDark":"foliageDeep","bloom":"bloomWhite"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.cha@seedling","state":"seedling"},
+    {"id":"shu.cha@subadult","state":"subadult"},
+    {"id":"shu.cha@flowering","state":"flowering"},
+    {"id":"shu.cha@fruiting","state":"fruiting"},
+    {"id":"shu.cha@withered","state":"withered"}
+  ]
+}

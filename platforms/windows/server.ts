@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve, sep, extname } from 'node:path';
 import { FileSaveService, fileSaveMiddleware } from '../saves/local-saves';
 
-/** Shared save implementation; an ephemeral loopback port belongs to this app. */
+/** 启动回环本地存档服务 */
 export async function startDesktopServer(root: string, directory: string) {
   const service = new FileSaveService(directory); await service.initialize();
   const saves = fileSaveMiddleware(service);

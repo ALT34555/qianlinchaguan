@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"hua.lan","archetype":"orchid","climate":"subtropical","name":"兰","latin":"lan","seed":802,"tags":["ornamental","flowering","ground","zhongguo_sijunzi"],"params":{"height":0.6,"frondLength":0.66,"blades":9,"bloomCount":5,"spread":0.22},"palette":{"foliage":"foliageDark","foliageDeep":"foliageDeep","bamboo":"bamboo","bloom":"orchidBloom"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"hua.lan@seedling","state":"seedling"},
+    {"id":"hua.lan@subadult","state":"subadult"},
+    {"id":"hua.lan@flowering","state":"flowering"},
+    {"id":"hua.lan@fruiting","state":"fruiting"},
+    {"id":"hua.lan@withered","state":"withered"}
+  ]
+}

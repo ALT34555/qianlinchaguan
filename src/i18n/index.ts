@@ -1,20 +1,4 @@
-/**
- * 多语言（i18n）核心。
- *
- * 三层结构，界面代码只依赖第一层：
- *   1. `t()` / `tp()`      —— 取文案（带插值、复数、缺键回退）
- *   2. `setLocale()` / `onLocaleChange()` —— 切换语言并通知界面重绘
- *   3. `registerLocale()` / `registerLocaleLoader()` —— 注册新语言的扩展点
- *
- * 新增一种语言的完整流程：
- *   a. 复制 `locales/zh-CN.ts` 为 `locales/xx.ts`，翻译其中的值；
- *   b. 在文件底部调用一次 `registerLocale({ code: 'xx', ... }, messages)`
- *      （或对大型语言包用 `registerLocaleLoader` 做按需加载）；
- *   c. 不需要改动任何界面代码 —— 语言切换器会自动列出它。
- *
- * 缺键时依次回退：当前语言 → 基准语言（zh-CN）→ 键名本身，
- * 因此"只翻译了一半"的语言包也能安全上线。
- */
+/** 多语言（i18n）核心 */
 import { zhCN } from './locales/zh-CN';
 import { en } from './locales/en';
 import type { LocaleCode, LocaleListener, LocaleLoader, LocaleMeta, MessageParams, Messages, StorageLike } from './types';
@@ -27,7 +11,7 @@ export const BASE_LOCALE: LocaleCode = 'zh-CN';
 /** 语言偏好的存储键。 */
 export const LOCALE_STORAGE_KEY = 'qianlin.locale.v1';
 
-/** URL 查询参数名，便于用 `?lang=en` 直接分享某个语言的链接。 */
+/** URL 查询参数名 */
 export const LOCALE_QUERY_KEY = 'lang';
 
 interface LocaleEntry {
@@ -57,7 +41,7 @@ function lookup(code: LocaleCode, key: string): string | undefined {
   return entries.get(code)?.messages?.[key];
 }
 
-/** `{name}` 形式的占位符替换；缺失参数保持原样，便于发现漏传。 */
+/** `{name}` 形式的占位符替换 */
 function interpolate(template: string, params?: MessageParams): string {
   if (!params) return template;
   return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
@@ -74,20 +58,16 @@ function pluralRulesFor(tag: string): Intl.PluralRules {
   return rules;
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 语言注册（扩展点）
-// ---------------------------------------------------------------------------
+// -----------
 
-/** 注册或覆盖一种语言。重复注册同一语言会替换其元信息与文案。 */
+/** 注册或覆盖一种语言 */
 export function registerLocale(meta: LocaleMeta, messages: Messages): void {
   entries.set(meta.code, { meta, messages });
 }
 
-/**
- * 注册"按需加载"的语言：元信息立即可见（会出现在语言切换器里），
- * 文案在首次切换过去时才真正下载。
- * 例：`registerLocaleLoader({ code: 'ja', label: '日本語' }, () => import('./locales/ja').then(m => m.ja))`
- */
+/** 注册"按需加载"的语言 */
 export function registerLocaleLoader(meta: LocaleMeta, loader: LocaleLoader): void {
   entries.set(meta.code, { meta, messages: null, loader });
 }
@@ -110,14 +90,11 @@ export function localeMeta(code: LocaleCode = current): LocaleMeta {
   return entries.get(code)?.meta ?? { code, label: code, htmlLang: code };
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 语言解析与切换
-// ---------------------------------------------------------------------------
+// -----------
 
-/**
- * 把任意用户输入（URL 参数、navigator.language、设置项）解析为已注册的语言。
- * 依次尝试：完全匹配 → 主语言完全匹配（'en'）→ 主语言前缀匹配（'en-GB'）→ 基准语言。
- */
+/** 把任意用户输入（URL 参数、navigator */
 export function resolveLocale(input: string | null | undefined): LocaleCode {
   const raw = normalize(String(input ?? ''));
   if (!raw) return BASE_LOCALE;
@@ -137,7 +114,7 @@ export function browserLocale(): LocaleCode {
   for (const candidate of candidates) {
     if (!candidate) continue;
     const resolved = resolveLocale(candidate);
-    // resolveLocale 在完全不认识时返回基准语言，这里需要区分"真命中"。
+    // resolveLocale 在完全不认识时返回基
     const base = normalize(candidate).split('-')[0];
     if (codes().some(code => normalize(code).split('-')[0] === base)) return resolved;
   }
@@ -149,12 +126,12 @@ export function getLocale(): LocaleCode {
   return current;
 }
 
-/** 语言代码写入 <html lang> 的值，供 Intl 与 CSS :lang() 使用。 */
+/** 语言代码写入 <html lang> 的值 */
 export function localeTag(code: LocaleCode = current): string {
   return localeMeta(code).htmlLang || code;
 }
 
-/** 切换语言；返回最终生效的语言代码。相同语言不重复触发通知。 */
+/** 切换语言 */
 export function setLocale(code: LocaleCode): LocaleCode {
   const next = resolveLocale(code);
   if (next === current) { applyDocumentLocale(); return current; }
@@ -200,23 +177,20 @@ function applyDocumentLocale(): void {
   root.setAttribute('data-locale', current);
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 初始化
-// ---------------------------------------------------------------------------
+// -----------
 
 export interface InitOptions {
   /** 文案存储；省略时尝试 localStorage。 */
   storage?: StorageLike | null;
   /** 优先级最高的语言偏好，通常来自 URL 参数。 */
   preferred?: string | null;
-  /** 关闭时忽略已保存的偏好与浏览器语言，直接使用基准语言。 */
+  /** 关闭时忽略已保存的偏好与浏览器语言 */
   autoDetect?: boolean;
 }
 
-/**
- * 初始化语言：URL 参数 → 已保存偏好 → 浏览器语言 → 基准语言。
- * 应在创建任何界面之前调用一次；重复调用是安全的。
- */
+/** 初始化语言 */
 export function initI18n(options: InitOptions = {}): LocaleCode {
   if (options.storage !== undefined) storage = options.storage;
   if (!storage) {
@@ -241,24 +215,17 @@ export function initI18n(options: InitOptions = {}): LocaleCode {
   return current;
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 取文案
-// ---------------------------------------------------------------------------
+// -----------
 
-/**
- * 取一条文案。
- * @param key 语言包中的键，如 'menu.createWorld'
- * @param params 插值参数，替换 `{name}` 形式的占位符
- */
+/** 取一条文案 */
 export function t(key: string, params?: MessageParams): string {
   const template = lookup(current, key) ?? lookup(BASE_LOCALE, key) ?? key;
   return interpolate(template, params);
 }
 
-/**
- * 取一条带复数的文案。
- * 依次尝试 `{key}.{category}`（由 Intl.PluralRules 判定）与 `{key}.other`。
- */
+/** 取一条带复数的文案 */
 export function tp(key: string, count: number, params?: MessageParams): string {
   const category = pluralRulesFor(localeTag()).select(count);
   const withCount: MessageParams = { count, ...params };
@@ -272,21 +239,13 @@ export function hasMessage(key: string): boolean {
   return lookup(current, key) !== undefined || lookup(BASE_LOCALE, key) !== undefined;
 }
 
-/** 当前语言下缺失的键（以基准语言为参照）。 */
+/** 当前语言下缺失的键（以基准语言为参照） */
 export function missingKeys(): string[] {
   const base = entries.get(BASE_LOCALE)?.messages ?? {};
   return Object.keys(base).filter(key => lookup(current, key) === undefined);
 }
 
-/**
- * 就地刷新 DOM 里标记过的文案，适合"不想整块重建"的界面（重建会丢状态）。
- *
- *   <button data-i18n="game.map.zoomIn"></button>
- *   <button data-i18n="atlas.zoomInTitle" data-i18n-attr="title"></button>
- *   <span data-i18n="game.date" data-i18n-params='{"year":2026}'></span>
- *
- * 只改文案、不动事件监听，因此可以在语言切换时安全调用。
- */
+/** 就地刷新 DOM 里标记过的文案 */
 export function applyDomI18n(root: ParentNode = document): void {
   root.querySelectorAll<HTMLElement>('[data-i18n]').forEach(element => {
     const key = element.dataset.i18n;
@@ -301,9 +260,9 @@ export function applyDomI18n(root: ParentNode = document): void {
   });
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 本地化格式化（数字 / 时间），随语言自动切换
-// ---------------------------------------------------------------------------
+// -----------
 
 /** 按当前语言格式化数字。 */
 export function formatNumber(value: number, digits = 0): string {
@@ -317,9 +276,9 @@ export function formatDateTime(ms: number): string {
   catch { return new Date(ms).toLocaleString(); }
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 内置语言包注册
-// ---------------------------------------------------------------------------
+// -----------
 
 registerLocale({ code: 'zh-CN', label: '简体中文', englishLabel: 'Simplified Chinese', htmlLang: 'zh-CN' }, zhCN);
 registerLocale({ code: 'en', label: 'English', englishLabel: 'English', htmlLang: 'en' }, en);

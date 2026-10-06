@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.xiangzhang","archetype":"broadleaf","climate":"subtropical","name":"香樟","latin":"xiangzhang","seed":301,"tags":["tree","canopy","timber"],"params":{"height":18,"trunk":9,"trunkRadius":0.72,"limbCount":3,"canopy":5.6,"blobs":10},"palette":{"foliage":"foliage","foliageDark":"foliageDeep","canopy":"canopy"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.xiangzhang@seedling","state":"seedling"},
+    {"id":"shu.xiangzhang@subadult","state":"subadult"},
+    {"id":"shu.xiangzhang@flowering","state":"flowering"},
+    {"id":"shu.xiangzhang@fruiting","state":"fruiting"},
+    {"id":"shu.xiangzhang@withered","state":"withered"}
+  ]
+}

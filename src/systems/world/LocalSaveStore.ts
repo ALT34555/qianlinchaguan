@@ -10,7 +10,7 @@ export interface SaveStore {
   put(save: WorldSave, name: string, id?: string): LocalSave | Promise<LocalSave>;
   import(text: string, name: string): LocalSave | Promise<LocalSave>;
 }
-/** 浏览器 LocalStorage 存档适配器，兼作旧浏览器存档迁移来源。 */
+/** 保留作为旧浏览器存档的迁移来源及内存测试适配器。 */
 export class LocalSaveStore implements SaveStore {
   readonly locationLabel = '浏览器本地存储';
   constructor(private readonly storage: StorageLike) {}

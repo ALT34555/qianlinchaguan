@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.masan","archetype":"conifer","climate":"subtropical","name":"马尾松","latin":"maweisong","seed":303,"tags":["tree","conifer","timber"],"params":{"height":16,"trunk":5.5,"canopy":4.6,"layers":6,"layerRadius":4.6},"palette":{"foliage":"coniferDark","foliageDark":"foliageDeep"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.masan@seedling","state":"seedling"},
+    {"id":"shu.masan@subadult","state":"subadult"},
+    {"id":"shu.masan@flowering","state":"flowering"},
+    {"id":"shu.masan@fruiting","state":"fruiting"},
+    {"id":"shu.masan@withered","state":"withered"}
+  ]
+}

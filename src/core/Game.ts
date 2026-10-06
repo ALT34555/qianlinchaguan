@@ -74,7 +74,7 @@ export class Game {
   private lastCalendarMs = -Infinity;
   private readonly fogNear: number;
   private readonly fogFar: number;
-  /** 暂停面板里"存档名称"的未提交内容，切换语言重绘时用来恢复。 */
+  /** 暂停面板存档名草稿 */
   private pauseNameDraft = '';
   private pauseMessage = '';
   private readonly stopLocaleWatch: () => void;
@@ -99,7 +99,7 @@ export class Game {
     this.fog = new THREE.Fog(SKY_COLOR.clone(), this.fogNear, this.fogFar); this.scene.fog = this.fog;
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, innerWidth / innerHeight, .1, distance * 1.5 + 512);
     this.camera.rotation.order = 'YXZ';
-    // 在创建 DOM 和监听器前检查 3D 支持，失败时仍可留在创建 / 读取页面改用 2D。
+    // 在创建 DOM 和监听器前检查 3D 支持
     if (this.settings.viewMode === '3d') this.ensure3D();
     this.bar = document.createElement('div'); this.bar.className = 'game-bar';
     this.bar.innerHTML = `<div class="game-identity"><strong></strong><span data-date></span></div><div class="game-tools"><span data-hint></span><button data-menu>${t('game.menu')}</button></div>`;
@@ -123,7 +123,7 @@ export class Game {
     window.addEventListener('resize', () => {
       this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.renderer?.setSize(innerWidth, innerHeight);
     });
-    // 语言切换后就地刷新界面文案，不重建场景、不丢视角与草稿。
+    // 语言切换后就地刷新界面文案
     this.stopLocaleWatch = onLocaleChange(() => this.applyLocale());
   }
 
@@ -137,20 +137,17 @@ export class Game {
     this.touch?.applyLocale();
     this.overlay?.applyLocale();
     this.overlay?.setKeyLabel(keyLabel(this.settings.keyBindings.debug));
-    // 舆图工具条用 data-i18n 标记，就地替换文案即可保留缩放与勾选状态。
+    // 舆图工具条用 data-i18n 标记
     applyDomI18n(this.mapRoot);
     if (this.menuPage === 'pause') this.showPause(this.pauseMessage);
   }
 
-  /**
-   * 窗口标题跟着视图走：茜林茶馆 · 舆图 / 茜林茶馆 · 山川。
-   * Electron 会用页面的 document.title 覆盖窗口标题，所以这里就是任务栏上看到的名字。
-   */
+  /** 窗口标题跟着视图走 */
   private updateDocumentTitle(): void {
     document.title = `${t('app.name')} · ${t(this.settings.viewMode === '2d' ? 'view.atlas' : 'view.world')}`;
   }
 
-  /** 顶栏显示的世界名（读档 / 改名后刷新），与窗口标题无关。 */
+  /** 顶栏显示的世界名（读档 / 改名后刷新） */
   private refreshWorldName(): void {
     const strong = this.bar.querySelector('strong');
     if (strong) strong.textContent = this.worldName;
@@ -187,8 +184,8 @@ export class Game {
     catch { this.showPause(t('game.pointerLockFailed')); }
   }
   private createMap(): void {
-    // 工具条文案用 data-i18n 标记：切换语言时只需重新套用，不必重建地图。
-    this.mapRoot.innerHTML = `<div class="game-map-tools"><div class="map-mode-label" data-i18n="game.map.modeLabel"></div><div class="map-buttons">${this.generator.generation.mode === 'planet' ? `<select data-planet-view aria-label="${t('game.map.viewAria')}"><option value="globe" data-i18n="atlas.view.globe"></option><option value="projection" data-i18n="atlas.view.projection"></option></select><button data-overview data-i18n="game.map.overview"></button>` : ''}<button data-enter data-i18n="game.map.enter3d"></button><button data-position data-i18n="game.map.position"></button><button data-zoom-in data-i18n="atlas.zoomInTitle" data-i18n-attr="aria-label">＋</button><button data-zoom-out data-i18n="atlas.zoomOutTitle" data-i18n-attr="aria-label">－</button><label><input data-info type="checkbox"><span data-i18n="game.map.chunkInfo"></span></label><label><input data-relief type="checkbox"><span data-i18n="game.map.relief"></span></label></div></div><div class="game-map-viewport"><canvas aria-label="${t('game.map.canvasAria')}"></canvas><div class="game-map-tip" data-i18n="game.map.tip"></div></div><footer class="game-map-detail" role="status" data-i18n="game.map.hint"></footer>`;
+    // 工具条文案用 data-i18n 标记
+    this.mapRoot.innerHTML = `<div class="game-map-tools"><div class="map-mode-label" data-i18n="game.map.modeLabel"></div><div class="map-buttons">${this.generator.generation.mode === 'planet' ? `<select data-planet-view aria-label="${t('game.map.viewAria')}"><option value="globe" data-i18n="atlas.view.globe"></option><option value="projection" data-i18n="atlas.view.projection"></option></select><button data-overview data-i18n="game.map.overview"></button>` : ''}<button data-enter data-i18n="game.map.enter3d"></button><button data-position data-i18n="game.map.position"></button><button data-zoom-in data-i18n="atlas.zoomInTitle" data-i18n-attr="aria-label">＋</button><button data-zoom-out data-i18n="atlas.zoomOutTitle" data-i18n-attr="aria-label">－</button><label><input data-info type="checkbox"><span data-i18n="game.map.chunkInfo"></span></label><label><input data-colors type="checkbox"><span data-i18n="atlas.toggleChunkColors"></span></label><label><input data-relief type="checkbox"><span data-i18n="game.map.relief"></span></label></div></div><div class="game-map-viewport"><canvas aria-label="${t('game.map.canvasAria')}"></canvas><div class="game-map-tip" data-i18n="game.map.tip"></div></div><footer class="game-map-detail" role="status" data-i18n="game.map.hint"></footer>`;
     applyDomI18n(this.mapRoot);
     this.atlas = new AtlasView({ canvas: this.mapRoot.querySelector('canvas')!, generator: this.generator,
       onChunkActivate: info => this.enter3D(info.cx, info.cz),
@@ -206,6 +203,8 @@ export class Game {
     on('[data-overview]', () => { this.atlas?.setPlanetView(view!.value as 'globe' | 'projection'); this.atlas?.showOverview(); });
     const info = this.mapRoot.querySelector<HTMLInputElement>('[data-info]')!;
     info.addEventListener('change', () => this.atlas?.setShowChunkInfo(info.checked));
+    const colors=this.mapRoot.querySelector<HTMLInputElement>('[data-colors]')!;
+    colors.addEventListener('change',()=>this.atlas?.setShowChunkColors(colors.checked));
     const relief = this.mapRoot.querySelector<HTMLInputElement>('[data-relief]')!;
     relief.addEventListener('change', () => this.atlas?.setShowProjection(relief.checked));
     if (this.options.initialPlayer) this.centerMapOnPlayer();
@@ -281,7 +280,7 @@ export class Game {
     this.ui.start.classList.remove('hidden');
     this.ui.start.innerHTML = `<section class="pause-panel"><h1>${t('game.pause.title')}</h1><p class="pause-description">${t('game.pause.description')}</p><label class="field-title" for="save-world-name">${t('game.saveName')}</label><input id="save-world-name" maxlength="80"><div class="pause-actions"><button class="primary" data-continue>${t('game.pause.continue')}</button><button class="secondary" data-save>${t('game.pause.save')}</button><button class="secondary" data-export>${t('game.pause.export')}</button><button class="secondary" data-settings>${t('game.pause.settings')}</button>${this.settings.viewMode === '3d' ? `<button class="secondary" data-map>${t('game.pause.map')}</button>` : ''}<button class="text-button" data-home>${t('game.pause.home')}</button></div><p class="menu-status" role="status" aria-live="polite"></p><small class="pause-note">${t('game.pause.note')}</small></section>`;
     const name = this.ui.start.querySelector<HTMLInputElement>('#save-world-name')!;
-    // 优先恢复用户已输入但未保存的名称，避免切换语言时把草稿冲掉。
+    // 优先恢复用户已输入但未保存的名称
     name.value = this.pauseNameDraft || this.worldName;
     name.addEventListener('input', () => { this.pauseNameDraft = name.value; });
     const status = this.ui.start.querySelector<HTMLElement>('.menu-status')!; status.textContent = message;
@@ -393,7 +392,7 @@ export class Game {
     }
     else { this.fog.near = this.fogNear; this.fog.far = this.fogFar; }
     this.sky?.setUnderwater(underwater);
-    // 雾色先更新，再让天空同步；Sky 的相位从正午算起，历法从午夜算起。
+    // 雾色先更新
     this.sky?.update((this.currentDayRatio + .5) % 1, this.camera.position, this.calendarClock.unixMs);
     this.ui.waterTint.classList.toggle('hidden', !underwater);
     this.overlay?.update(performance.now()); renderer.render(this.scene, this.camera);

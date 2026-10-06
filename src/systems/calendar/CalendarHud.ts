@@ -1,17 +1,4 @@
-/**
- * 日历 HUD：把公历 / 农历 / 元历（以及节气、干支）显示在屏幕上。
- *
- * 特点：
- *  - 自带样式并在首次创建时注入 <style>，不需要改动 src/ui/style.css；
- *  - 只依赖真实 DOM，不依赖 three.js，可独立挂在任意容器上；
- *  - 元素全部由代码创建（不使用 innerHTML）；
- *  - update() 成本很低，可每帧调用，也可用 refreshIntervalMs 让它自行定时刷新。
- *
- * 用法：
- *   const hud = new CalendarHud(calendars, clock, { position: 'top-left' });
- *   // 每帧：hud.update()   （或交给 refreshIntervalMs 自动刷新）
- *   // 关闭：hud.dispose()
- */
+/** 日历 HUD */
 import type { CalendarSystem, CalendarClock } from './CalendarSystem';
 import { t } from '../../i18n';
 
@@ -33,7 +20,7 @@ export interface CalendarHudOptions {
   showClock?: boolean;
   /** 是否注入内置样式，默认注入。 */
   injectStyles?: boolean;
-  /** 自动刷新毫秒数；省略则需手动调用 update()。 */
+  /** 自动刷新毫秒数 */
   refreshIntervalMs?: number;
 }
 
@@ -127,7 +114,7 @@ export class CalendarHud {
   private readonly timer: number | undefined;
   private readonly ownerDocument: Document;
   private readonly titleEl: HTMLDivElement;
-  /** 标题语言包键；由 options.title 显式指定时退化为字面量。 */
+  /** 标题语言包键 */
   private readonly titleText: string;
   private readonly titleKey: string | null;
   private visible = true;
@@ -203,7 +190,7 @@ export class CalendarHud {
     return { row, label: labelEl, value };
   }
 
-  /** 语言变更后刷新标题与行标签；数值文本交给 update()。 */
+  /** 语言变更后刷新标题与行标签 */
   applyLocale(): void {
     if (this.titleKey) this.titleEl.textContent = t(this.titleKey);
     else this.titleEl.textContent = this.titleText;
@@ -214,7 +201,7 @@ export class CalendarHud {
     this.update();
   }
 
-  /** 最近一次刷新得到的整体文本（多行）。 */
+  /** 最近一次刷新得到的整体文本（多行） */
   get text(): string {
     return this.lastText;
   }
@@ -250,7 +237,7 @@ export class CalendarHud {
     this.yuanRow.value.textContent = yuanText;
 
     const pad = (n: number) => String(n).padStart(2, '0');
-    // 注意：变量名不能叫 t，否则会遮蔽 i18n 的 t()。
+    // 注意
     const clockTime = gregorian.time;
     const clockText = t('hud.clock', { time: `${pad(clockTime.hour)}:${pad(clockTime.minute)}:${pad(clockTime.second)}`, xun: yuan.xunOfYear });
     if (this.clockEl) this.clockEl.textContent = clockText;

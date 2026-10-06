@@ -1,9 +1,10 @@
-/** 连续 low poly 地表、水面岸线和瀑布网格；在 Worker 中构建。 */
+/** 连续 low poly 地表、水面岸线和瀑布网格 */
 import { CHUNK_SIZE, SEA_LEVEL } from '../../core/config';
 import { BLOCK_RGB, Block } from './Blocks';
 import { PADDED_SIZE } from './WorldGenerator';
 import { TERRAIN_GRID, terrainDiagonal, terrainHeightAt } from './TerrainSurface';
-import { WATER_OFFSET, waterVertexLevel, isWaterCascade } from './WaterSurface';
+import { WATER_OFFSET, waterVertexLevel } from './WaterSurface';
+import type {WaterField} from './DynamicWater';
 
 export interface MeshData {
   positions: Int16Array | Float32Array;
@@ -12,6 +13,7 @@ export interface MeshData {
   indices: Uint16Array | Uint32Array;
   /** 水面至可见地表的距离，用于浅水透明度和岸边细浪。 */
   waterDepths?: Float32Array;
+  waterFlows?: Float32Array;
 }
 export interface ChunkMeshes {
   terrain: MeshData | null;
@@ -27,6 +29,7 @@ class GeoBuilder {
   private col: Uint8Array;
   private idx: Uint32Array;
   private depth: Float32Array | undefined;
+  private flow: Float32Array | undefined;
   private vc = 0;
   private ic = 0;
 
@@ -34,7 +37,7 @@ class GeoBuilder {
     this.pos = new Float32Array(capVerts * 3);
     this.col = new Uint8Array(capVerts * 3);
     this.idx = new Uint32Array(capVerts * 2);
-    if (withDepth) this.depth = new Float32Array(capVerts);
+    if (withDepth) {this.depth = new Float32Array(capVerts);this.flow=new Float32Array(capVerts*2);}
   }
   private grow(): void {
     const cap = this.pos.length / 3 * 2;
@@ -42,8 +45,9 @@ class GeoBuilder {
     const col = new Uint8Array(cap * 3); col.set(this.col); this.col = col;
     const idx = new Uint32Array(cap * 2); idx.set(this.idx); this.idx = idx;
     if (this.depth) { const depth = new Float32Array(cap); depth.set(this.depth); this.depth = depth; }
+    if (this.flow) {const flow=new Float32Array(cap*2);flow.set(this.flow);this.flow=flow;}
   }
-  vertex(x: number, y: number, z: number, r: number, g: number, b: number, depth = 0): void {
+  vertex(x: number, y: number, z: number, r: number, g: number, b: number, depth = 0,vx=0,vz=0): void {
     if (this.vc * 3 + 3 > this.pos.length) this.grow();
     const o = this.vc * 3;
     this.pos[o] = x; this.pos[o + 1] = y; this.pos[o + 2] = z;
@@ -51,6 +55,7 @@ class GeoBuilder {
     this.col[o + 1] = Math.max(0, Math.min(255, g));
     this.col[o + 2] = Math.max(0, Math.min(255, b));
     if (this.depth) this.depth[this.vc] = Math.max(0, depth);
+    if (this.flow) {this.flow[this.vc*2]=vx;this.flow[this.vc*2+1]=vz;}
     this.vc++;
   }
   quad(flip = false): void {
@@ -69,12 +74,13 @@ class GeoBuilder {
       positions: this.pos.slice(0, this.vc * 3), colors: this.col.slice(0, this.vc * 3),
       indices: this.vc <= 65535 ? Uint16Array.from(this.idx.subarray(0, this.ic)) : this.idx.slice(0, this.ic),
       ...(this.depth ? { waterDepths: this.depth.slice(0, this.vc) } : {}),
+      ...(this.flow ? {waterFlows:this.flow.slice(0,this.vc*2)} : {}),
     };
   }
 }
 
 type WaterVertex = { x: number; y: number; z: number; depth: number };
-/** 在与地表相同的三角形内按水深裁剪，岸线落在坡面上，不保留方格水边。 */
+/** 在与地表相同的三角形内按水深裁剪 */
 function clipShore(vertices: WaterVertex[]): WaterVertex[] {
   const out: WaterVertex[] = [];
   for (let i = 0; i < vertices.length; i++) {
@@ -90,8 +96,8 @@ function clipShore(vertices: WaterVertex[]): WaterVertex[] {
 }
 
 export function buildChunkMeshes(
-  cx: number, cz: number, heights: Int16Array | Float32Array, surfaces: Uint8Array, seed: number,
-  waterLevels?: Float32Array, surfaceColors?: Uint8Array,
+  cx: number, cz: number, heights: Int16Array | Float32Array, surfaces: Uint32Array | Uint16Array | Uint8Array, seed: number,
+  waterLevels?: Float32Array, surfaceColors?: Uint8Array,waterField?: WaterField,
 ): ChunkMeshes {
   const S = CHUNK_SIZE, P = PADDED_SIZE, ox = cx * S, oz = cz * S;
   const H = (x: number, z: number) => heights[(z + 1) * P + x + 1];
@@ -99,7 +105,7 @@ export function buildChunkMeshes(
   const terrain = new GeoBuilder((S / TERRAIN_GRID) ** 2 * 4);
   const water = new GeoBuilder(S * S * 4, true);
   const minimap = new Uint8ClampedArray(S * S * 4);
-  // 一次计算每个共享格角；外扩样本使相邻区块给出完全相同的边缘。
+  // 一次计算每个共享格角
   const V = S + 1;
   const vertexHeights = new Float32Array(V * V);
   const vertexLevels = new Float32Array(V * V);
@@ -120,10 +126,15 @@ export function buildChunkMeshes(
   }
   const emitWater = (v: WaterVertex) => {
     const t = Math.min(1, Math.max(0, v.depth) / WATER_DEPTH_RANGE);
+    let vx=0,vz=0;
+    if(waterField)for(const [dx,dz] of [[-1,-1],[0,-1],[-1,0],[0,0]]){
+      const i=(Math.floor(v.z)+dz+1)*P+Math.floor(v.x)+dx+1;
+      vx+=waterField.velocities[i*2]*.25;vz+=waterField.velocities[i*2+1]*.25;
+    }
     water.vertex(v.x, v.y, v.z,
       WATER_SHALLOW[0] + (WATER_DEEP[0] - WATER_SHALLOW[0]) * t,
       WATER_SHALLOW[1] + (WATER_DEEP[1] - WATER_SHALLOW[1]) * t,
-      WATER_SHALLOW[2] + (WATER_DEEP[2] - WATER_SHALLOW[2]) * t, v.depth);
+      WATER_SHALLOW[2] + (WATER_DEEP[2] - WATER_SHALLOW[2]) * t, v.depth,vx,vz);
   };
   for (let z = 0; z < S; z++) for (let x = 0; x < S; x++) {
     if (surfaces[z * S + x] === Block.AIR) continue;
@@ -139,16 +150,13 @@ export function buildChunkMeshes(
       terrain.quad(flip);
     }
 
-    const edges = [[1, 0, x + 1, z, x + 1, z + 1], [-1, 0, x, z + 1, x, z],
-      [0, 1, x + 1, z + 1, x, z + 1], [0, -1, x, z, x + 1, z]];
     const wet = Number.isFinite(level) && h < level;
-    const cascade = isWaterCascade(x, z, H, W);
-    // 干格也检查格角，保证连续坡面与海/湖面的交线覆盖到真实岸线。
+    // 干格也检查格角
     const finiteLevels = corners.map(i => vertexLevels[i]).filter(Number.isFinite);
     if (wet || finiteLevels.length) {
       const fallback = wet ? level - WATER_OFFSET : Math.min(...finiteLevels);
       const vertices = corners.map((i, j) => {
-        const y = cascade ? level - WATER_OFFSET : Number.isFinite(vertexLevels[i]) ? vertexLevels[i] : fallback;
+        const y = Number.isFinite(vertexLevels[i]) ? vertexLevels[i] : fallback;
         return { x: coordinates[j][0], y, z: coordinates[j][1], depth: y - vertexHeights[i] };
       });
       if (vertices.every(v => v.depth > 0)) { vertices.forEach(emitWater); water.quad(flip); }
@@ -161,14 +169,6 @@ export function buildChunkMeshes(
             emitWater(polygon[0]); emitWater(polygon[j]); emitWater(polygon[j + 1]); water.triangle();
           }
         }
-      }
-      if (wet) for (const [dx, dz, ax, az, bx, bz] of edges) {
-        const lower = W(x + dx, z + dz);
-        if (!Number.isFinite(lower) || H(x + dx, z + dz) >= lower || level - lower <= 2) continue;
-        for (const [px, py, pz] of [[ax, lower, az], [ax, level, az], [bx, level, bz], [bx, lower, bz]]) {
-          water.vertex(px, py - WATER_OFFSET, pz, 155, 205, 220, 4);
-        }
-        water.quad();
       }
     }
     const mi = (z * S + x) * 4;

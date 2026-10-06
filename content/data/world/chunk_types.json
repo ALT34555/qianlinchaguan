@@ -51,7 +51,7 @@
     "name": "河",
     "mapColor": "#3b82f6",
     "generate": true,
-    "description": "八方向下降汇水；汇流后河道加宽"
+    "description": "相邻支流下降汇集，干流随流量加宽加深；缓坡可分汊成河网，大河可覆盖整个区块并跨块延伸"
   },
   {
     "id": 6,
@@ -97,6 +97,15 @@
     "mapColor": "#70b7dc",
     "generate": true,
     "description": "大落差河段；上游水面沿陡坎落向下游，仍参与汇流"
+  },
+  {
+    "id": 11,
+    "code": "011",
+    "key": "wetland",
+    "name": "湿地",
+    "mapColor": "#608b78",
+    "generate": true,
+    "description": "大瀑布落点两岸及缓坡河湾；浅滩、泥炭岸与细支流共同塑造湿地"
   },
   {
     "id": 101,

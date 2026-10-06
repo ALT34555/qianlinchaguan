@@ -1,0 +1,871 @@
+{
+  "version": 1,
+  "note": "岩石单位索引（生成物，运行时不读）。重出：node 000base/tools/rock-index.mjs",
+  "generator": "src/systems/world/rocks/（Rocks.ts / archetypes.ts）",
+  "counts": {
+    "units": 9,
+    "chunks": 45,
+    "forms": 4
+  },
+  "forms": [
+    "outcrop",
+    "buried",
+    "stacked",
+    "crusted"
+  ],
+  "rocks": [
+    {
+      "id": "rock.boulder",
+      "name": "巨砾",
+      "latin": "juli",
+      "archetype": "boulder",
+      "family": "igneous",
+      "seed": 11,
+      "tags": [
+        "chunk:1",
+        "chunk:3",
+        "chunk:8",
+        "chunk:103",
+        "chunk:108",
+        "chunk:204",
+        "chunk:304",
+        "chunk:403",
+        "chunk:406",
+        "chunk:408",
+        "large",
+        "universal",
+        "dry",
+        "cold"
+      ],
+      "chunks": [
+        1,
+        3,
+        8,
+        103,
+        108,
+        204,
+        304,
+        403,
+        406,
+        408
+      ],
+      "chunkNames": [
+        "1 陆",
+        "3 山丘",
+        "8 高原",
+        "103 热带山丘",
+        "108 热带高地",
+        "204 亚热带灌木林",
+        "304 温带灌木林",
+        "403 寒带山丘",
+        "406 寒带雪山",
+        "408 寒带高地"
+      ],
+      "palette": {
+        "body": "#92958d",
+        "band": "#6e726b",
+        "cap": "#a8aba1",
+        "base": "#5f4632",
+        "crust": "#8f9a6b"
+      },
+      "height": 1.096,
+      "radius": 1.26,
+      "bottom": -0.317,
+      "triangles": 120
+    },
+    {
+      "id": "rock.block",
+      "name": "岩块",
+      "latin": "yankuai",
+      "archetype": "block",
+      "family": "igneous",
+      "seed": 23,
+      "tags": [
+        "chunk:4",
+        "chunk:9",
+        "chunk:10",
+        "chunk:104",
+        "chunk:402",
+        "chunk:409",
+        "hard",
+        "bedrock",
+        "cold",
+        "dry"
+      ],
+      "chunks": [
+        4,
+        9,
+        10,
+        104,
+        402,
+        409
+      ],
+      "chunkNames": [
+        "4 旱地",
+        "9 裂谷",
+        "10 落差水（瀑布）",
+        "104 沙漠",
+        "402 寒带海",
+        "409 冰封雪原"
+      ],
+      "palette": {
+        "body": "#5c6664",
+        "band": "#414a48",
+        "cap": "#747d7a",
+        "base": "#5f4632",
+        "crust": "#8f9a6b"
+      },
+      "height": 1.656,
+      "radius": 1.082,
+      "bottom": -0.195,
+      "triangles": 96
+    },
+    {
+      "id": "rock.ledge",
+      "name": "石台",
+      "latin": "shitai",
+      "archetype": "ledge",
+      "family": "sedimentary",
+      "seed": 37,
+      "tags": [
+        "chunk:8",
+        "chunk:108",
+        "chunk:203",
+        "chunk:208",
+        "chunk:308",
+        "large",
+        "wide",
+        "plateau",
+        "dry"
+      ],
+      "chunks": [
+        8,
+        108,
+        203,
+        208,
+        308
+      ],
+      "chunkNames": [
+        "8 高原",
+        "108 热带高地",
+        "203 亚热带山丘",
+        "208 亚热带高地",
+        "308 温带高地"
+      ],
+      "palette": {
+        "body": "#b89c78",
+        "band": "#93795a",
+        "cap": "#cbb28f",
+        "base": "#5f4632",
+        "crust": "#a89a64"
+      },
+      "height": 1.881,
+      "radius": 1.581,
+      "bottom": -0.382,
+      "triangles": 68
+    },
+    {
+      "id": "rock.slab",
+      "name": "板岩席",
+      "latin": "banyanxi",
+      "archetype": "slab",
+      "family": "metamorphic",
+      "seed": 53,
+      "tags": [
+        "chunk:303",
+        "chunk:308",
+        "chunk:403",
+        "chunk:408",
+        "flat",
+        "layered",
+        "cold",
+        "permeable"
+      ],
+      "chunks": [
+        303,
+        308,
+        403,
+        408
+      ],
+      "chunkNames": [
+        "303 温带山丘",
+        "308 温带高地",
+        "403 寒带山丘",
+        "408 寒带高地"
+      ],
+      "palette": {
+        "body": "#737f89",
+        "band": "#57626b",
+        "cap": "#8d99a2",
+        "base": "#5f4632",
+        "crust": "#5c7a44"
+      },
+      "height": 0.991,
+      "radius": 1.355,
+      "bottom": -0.218,
+      "triangles": 80
+    },
+    {
+      "id": "rock.shard",
+      "name": "碎岩",
+      "latin": "suiyan",
+      "archetype": "shard",
+      "family": "metamorphic",
+      "seed": 67,
+      "tags": [
+        "chunk:4",
+        "chunk:6",
+        "chunk:9",
+        "chunk:11",
+        "chunk:101",
+        "chunk:103",
+        "chunk:104",
+        "chunk:105",
+        "chunk:106",
+        "chunk:109",
+        "chunk:201",
+        "chunk:205",
+        "chunk:206",
+        "chunk:301",
+        "chunk:305",
+        "chunk:306",
+        "chunk:307",
+        "chunk:404",
+        "chunk:405",
+        "small",
+        "angular",
+        "universal",
+        "ground"
+      ],
+      "chunks": [
+        4,
+        6,
+        9,
+        11,
+        101,
+        103,
+        104,
+        105,
+        106,
+        109,
+        201,
+        205,
+        206,
+        301,
+        305,
+        306,
+        307,
+        404,
+        405
+      ],
+      "chunkNames": [
+        "4 旱地",
+        "6 林地",
+        "9 裂谷",
+        "11 湿地",
+        "101 热带草原",
+        "103 热带山丘",
+        "104 沙漠",
+        "105 沼泽",
+        "106 热带雨林",
+        "109 热带季风林",
+        "201 亚热带平原",
+        "205 亚热带季风林",
+        "206 亚热带丛林",
+        "301 温带平原",
+        "305 温带季风林",
+        "306 温带丛林",
+        "307 温带山谷",
+        "404 寒带灌木林",
+        "405 寒带季风林"
+      ],
+      "palette": {
+        "body": "#6b777a",
+        "band": "#515c5f",
+        "cap": "#8d99a2",
+        "base": "#5f4632",
+        "crust": "#a89a64"
+      },
+      "height": 0.649,
+      "radius": 1.04,
+      "bottom": -0.285,
+      "triangles": 56
+    },
+    {
+      "id": "rock.spire",
+      "name": "尖石",
+      "latin": "jianshi",
+      "archetype": "spire",
+      "family": "igneous",
+      "seed": 83,
+      "tags": [
+        "chunk:3",
+        "chunk:10",
+        "chunk:103",
+        "chunk:108",
+        "chunk:403",
+        "chunk:406",
+        "tall",
+        "hard",
+        "high",
+        "cold"
+      ],
+      "chunks": [
+        3,
+        10,
+        103,
+        108,
+        403,
+        406
+      ],
+      "chunkNames": [
+        "3 山丘",
+        "10 落差水（瀑布）",
+        "103 热带山丘",
+        "108 热带高地",
+        "403 寒带山丘",
+        "406 寒带雪山"
+      ],
+      "palette": {
+        "body": "#92958d",
+        "band": "#6e726b",
+        "cap": "#a8aba1",
+        "base": "#5f4632",
+        "crust": "#8f9a6b"
+      },
+      "height": 1.962,
+      "radius": 0.656,
+      "bottom": -0.162,
+      "triangles": 74
+    },
+    {
+      "id": "rock.stub",
+      "name": "石墩",
+      "latin": "shidun",
+      "archetype": "stub",
+      "family": "sedimentary",
+      "seed": 97,
+      "tags": [
+        "chunk:5",
+        "chunk:7",
+        "chunk:10",
+        "chunk:107",
+        "chunk:202",
+        "chunk:203",
+        "chunk:207",
+        "medium",
+        "wet",
+        "karst"
+      ],
+      "chunks": [
+        5,
+        7,
+        10,
+        107,
+        202,
+        203,
+        207
+      ],
+      "chunkNames": [
+        "5 河",
+        "7 谷地",
+        "10 落差水（瀑布）",
+        "107 热带山谷",
+        "202 亚热带海",
+        "203 亚热带山丘",
+        "207 亚热带山谷"
+      ],
+      "palette": {
+        "body": "#b5b19b",
+        "band": "#8f8c77",
+        "cap": "#c9c6b1",
+        "base": "#5f4632",
+        "crust": "#5c7a44"
+      },
+      "height": 0.937,
+      "radius": 0.634,
+      "bottom": -0.217,
+      "triangles": 46
+    },
+    {
+      "id": "rock.rubble",
+      "name": "碎石堆",
+      "latin": "suishidui",
+      "archetype": "rubble",
+      "family": "clastic",
+      "seed": 113,
+      "tags": [
+        "chunk:2",
+        "chunk:5",
+        "chunk:7",
+        "chunk:102",
+        "chunk:302",
+        "chunk:401",
+        "chunk:402",
+        "chunk:404",
+        "chunk:407",
+        "small",
+        "loose",
+        "dense",
+        "wet"
+      ],
+      "chunks": [
+        2,
+        5,
+        7,
+        102,
+        302,
+        401,
+        402,
+        404,
+        407
+      ],
+      "chunkNames": [
+        "2 静水",
+        "5 河",
+        "7 谷地",
+        "102 热带海",
+        "302 温带海",
+        "401 寒带平原",
+        "402 寒带海",
+        "404 寒带灌木林",
+        "407 寒带山谷"
+      ],
+      "palette": {
+        "body": "#8e938b",
+        "band": "#6f746d",
+        "cap": "#8b8682",
+        "base": "#5f4632",
+        "crust": "#a89a64"
+      },
+      "height": 0.461,
+      "radius": 1.527,
+      "bottom": -0.252,
+      "triangles": 96
+    },
+    {
+      "id": "rock.floe",
+      "name": "冰岩",
+      "latin": "bingyan",
+      "archetype": "floe",
+      "family": "ice",
+      "seed": 127,
+      "tags": [
+        "chunk:409",
+        "chunk:406",
+        "chunk:402",
+        "ice",
+        "cold",
+        "large",
+        "slippery"
+      ],
+      "chunks": [
+        409,
+        406,
+        402
+      ],
+      "chunkNames": [
+        "409 冰封雪原",
+        "406 寒带雪山",
+        "402 寒带海"
+      ],
+      "palette": {
+        "body": "#afc8cc",
+        "band": "#8ea9ae",
+        "cap": "#f3f7fa",
+        "base": "#8ea9ae",
+        "crust": "#eef4f9"
+      },
+      "height": 0.923,
+      "radius": 1.244,
+      "bottom": -0.308,
+      "triangles": 104
+    }
+  ],
+  "chunks": [
+    {
+      "id": 1,
+      "key": "land",
+      "name": "陆",
+      "rocks": [
+        "rock.boulder"
+      ]
+    },
+    {
+      "id": 2,
+      "key": "water",
+      "name": "静水",
+      "rocks": [
+        "rock.rubble"
+      ]
+    },
+    {
+      "id": 3,
+      "key": "hills",
+      "name": "山丘",
+      "rocks": [
+        "rock.boulder",
+        "rock.spire"
+      ]
+    },
+    {
+      "id": 4,
+      "key": "dryland",
+      "name": "旱地",
+      "rocks": [
+        "rock.block",
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 5,
+      "key": "river",
+      "name": "河",
+      "rocks": [
+        "rock.stub",
+        "rock.rubble"
+      ]
+    },
+    {
+      "id": 6,
+      "key": "forest",
+      "name": "林地",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 7,
+      "key": "valley",
+      "name": "谷地",
+      "rocks": [
+        "rock.stub",
+        "rock.rubble"
+      ]
+    },
+    {
+      "id": 8,
+      "key": "plateau",
+      "name": "高原",
+      "rocks": [
+        "rock.boulder",
+        "rock.ledge"
+      ]
+    },
+    {
+      "id": 9,
+      "key": "rift_valley",
+      "name": "裂谷",
+      "rocks": [
+        "rock.block",
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 10,
+      "key": "waterfall",
+      "name": "落差水（瀑布）",
+      "rocks": [
+        "rock.block",
+        "rock.spire",
+        "rock.stub"
+      ]
+    },
+    {
+      "id": 11,
+      "key": "wetland",
+      "name": "湿地",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 101,
+      "key": "tropical_savanna",
+      "name": "热带草原",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 102,
+      "key": "tropical_sea",
+      "name": "热带海",
+      "rocks": [
+        "rock.rubble"
+      ]
+    },
+    {
+      "id": 103,
+      "key": "tropical_hills",
+      "name": "热带山丘",
+      "rocks": [
+        "rock.boulder",
+        "rock.shard",
+        "rock.spire"
+      ]
+    },
+    {
+      "id": 104,
+      "key": "desert",
+      "name": "沙漠",
+      "rocks": [
+        "rock.block",
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 105,
+      "key": "swamp",
+      "name": "沼泽",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 106,
+      "key": "tropical_rainforest",
+      "name": "热带雨林",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 107,
+      "key": "tropical_valley",
+      "name": "热带山谷",
+      "rocks": [
+        "rock.stub"
+      ]
+    },
+    {
+      "id": 108,
+      "key": "tropical_highlands",
+      "name": "热带高地",
+      "rocks": [
+        "rock.boulder",
+        "rock.ledge",
+        "rock.spire"
+      ]
+    },
+    {
+      "id": 109,
+      "key": "tropical_monsoon_forest",
+      "name": "热带季风林",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 201,
+      "key": "subtropical_plains",
+      "name": "亚热带平原",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 202,
+      "key": "subtropical_sea",
+      "name": "亚热带海",
+      "rocks": [
+        "rock.stub"
+      ]
+    },
+    {
+      "id": 203,
+      "key": "subtropical_hills",
+      "name": "亚热带山丘",
+      "rocks": [
+        "rock.ledge",
+        "rock.stub"
+      ]
+    },
+    {
+      "id": 204,
+      "key": "subtropical_shrubland",
+      "name": "亚热带灌木林",
+      "rocks": [
+        "rock.boulder"
+      ]
+    },
+    {
+      "id": 205,
+      "key": "subtropical_monsoon_forest",
+      "name": "亚热带季风林",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 206,
+      "key": "subtropical_jungle",
+      "name": "亚热带丛林",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 207,
+      "key": "subtropical_valley",
+      "name": "亚热带山谷",
+      "rocks": [
+        "rock.stub"
+      ]
+    },
+    {
+      "id": 208,
+      "key": "subtropical_highlands",
+      "name": "亚热带高地",
+      "rocks": [
+        "rock.ledge"
+      ]
+    },
+    {
+      "id": 301,
+      "key": "temperate_plains",
+      "name": "温带平原",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 302,
+      "key": "temperate_sea",
+      "name": "温带海",
+      "rocks": [
+        "rock.rubble"
+      ]
+    },
+    {
+      "id": 303,
+      "key": "temperate_hills",
+      "name": "温带山丘",
+      "rocks": [
+        "rock.slab"
+      ]
+    },
+    {
+      "id": 304,
+      "key": "temperate_shrubland",
+      "name": "温带灌木林",
+      "rocks": [
+        "rock.boulder"
+      ]
+    },
+    {
+      "id": 305,
+      "key": "temperate_monsoon_forest",
+      "name": "温带季风林",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 306,
+      "key": "temperate_jungle",
+      "name": "温带丛林",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 307,
+      "key": "temperate_valley",
+      "name": "温带山谷",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 308,
+      "key": "temperate_highlands",
+      "name": "温带高地",
+      "rocks": [
+        "rock.ledge",
+        "rock.slab"
+      ]
+    },
+    {
+      "id": 401,
+      "key": "cold_plains",
+      "name": "寒带平原",
+      "rocks": [
+        "rock.rubble"
+      ]
+    },
+    {
+      "id": 402,
+      "key": "cold_sea",
+      "name": "寒带海",
+      "rocks": [
+        "rock.block",
+        "rock.rubble",
+        "rock.floe"
+      ]
+    },
+    {
+      "id": 403,
+      "key": "cold_hills",
+      "name": "寒带山丘",
+      "rocks": [
+        "rock.boulder",
+        "rock.slab",
+        "rock.spire"
+      ]
+    },
+    {
+      "id": 404,
+      "key": "cold_shrubland",
+      "name": "寒带灌木林",
+      "rocks": [
+        "rock.shard",
+        "rock.rubble"
+      ]
+    },
+    {
+      "id": 405,
+      "key": "cold_monsoon_forest",
+      "name": "寒带季风林",
+      "rocks": [
+        "rock.shard"
+      ]
+    },
+    {
+      "id": 406,
+      "key": "cold_snowy_mountains",
+      "name": "寒带雪山",
+      "rocks": [
+        "rock.boulder",
+        "rock.spire",
+        "rock.floe"
+      ]
+    },
+    {
+      "id": 407,
+      "key": "cold_valley",
+      "name": "寒带山谷",
+      "rocks": [
+        "rock.rubble"
+      ]
+    },
+    {
+      "id": 408,
+      "key": "cold_highlands",
+      "name": "寒带高地",
+      "rocks": [
+        "rock.boulder",
+        "rock.slab"
+      ]
+    },
+    {
+      "id": 409,
+      "key": "ice_snowfield",
+      "name": "冰封雪原",
+      "rocks": [
+        "rock.block",
+        "rock.floe"
+      ]
+    }
+  ]
+}

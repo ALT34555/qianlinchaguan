@@ -1,15 +1,10 @@
-/**
- * 植物原型库：每个原型是一个"参数 -> 低模几何"的纯函数。
- *
- * 约定：
- *   · 所有尺寸单位为**格**（1 格 = 1 个方块边长），原点在植物根部地面中心，+Y 向上；
- *   · 只使用确定性随机（调用方传入 mulberry32 序列），同种子必然复现同一株；
- *   · 颜色一律来自已解析的色板，原型不写死任何色值；
- *   · 参数表（content/data/world/plants/*.json）里的 params 会覆盖原型默认值。
- */
+/** 植物原型库 */
 import { mulberry32 } from '../../../core/math/Random';
 import { LowPolyBuilder, parseColor, type PlantGeometry } from './geometry';
-import { DEFAULT_BLOOM_COLOR, type ClimateZone, type PaletteKey, type PlantDef, type PlantParams, type SnowTarget } from './types';
+import {
+  DEFAULT_BLOOM_COLOR, type ClimateZone, type PaletteKey, type PlantDef, type PlantMaterial,
+  type PlantParams, type SnowTarget,
+} from './types';
 
 type RGB = [number, number, number];
 type V3 = [number, number, number];
@@ -25,17 +20,41 @@ function clamp(value: number, lo: number, hi: number): number {
   return value < lo ? lo : value > hi ? hi : value;
 }
 
-/**
- * 取色调（已按季节解析）。
- *
- * 花色单独走一条优先级链：**接口传入的花色 > 物种色板 bloom > 默认花色 #a8456b**，
- * 这样"开花版本"既能被外部统一指定颜色，又能保留各物种自带的固有花色。
- * 其余色板键缺失时回退到洋红，以便一眼看出参数表写错。
- */
+/** 枯叶键集合 */
+const WITHEBLE_KEYS: ReadonlySet<PaletteKey> = new Set<PaletteKey>([
+  'foliage', 'foliageDark', 'foliageDeep', 'canopy', 'conifer', 'coniferDark', 'coniferDeep',
+  'larch', 'jungle', 'jungleDark', 'jungleDeep', 'palmFrond', 'bamboo', 'bambooCulm',
+  'tea', 'mulberry', 'cropGreen', 'riceGreen', 'cropGold', 'sorghum',
+]);
+
+/** 叶色键 -> 干枯色键 */
+function witherKey(key: PaletteKey): PaletteKey {
+  switch (key) {
+    case 'foliageDark':
+    case 'foliageDeep':
+    case 'coniferDark':
+    case 'coniferDeep':
+    case 'jungleDark':
+    case 'jungleDeep':
+      return 'witheredDark';
+    case 'conifer':
+    case 'larch':
+      return 'witheredNeedle';
+    case 'cropGold':
+    case 'sorghum':
+      return 'withered';
+    default:
+      return 'withered';
+  }
+}
+
+/** 取色调（已按季节解析） */
 function tone(def: PlantDef, key: PaletteKey | undefined, scale = 1): RGB {
   let base: string | undefined;
   if (key === 'bloom') base = def.bloomColor ?? def.palette.bloom ?? DEFAULT_BLOOM_COLOR;
-  else base = key ? def.palette[key] : undefined;
+  else if (key && def.state === 'withered' && WITHEBLE_KEYS.has(key)) {
+    base = def.palette[witherKey(key)] ?? def.palette[key];
+  } else base = key ? def.palette[key] : undefined;
   const rgb = parseColor(base ?? '#ff00ff');
   return [clampByte(rgb[0] * scale), clampByte(rgb[1] * scale), clampByte(rgb[2] * scale)];
 }
@@ -44,7 +63,7 @@ function clampByte(v: number): number {
   return v < 0 ? 0 : v > 255 ? 255 : v;
 }
 
-/** 按半径向心收缩：让受光的外层叶片更亮、内层更暗，弥补低模没有环境光遮蔽 */
+/** 按半径向心收缩 */
 function deepen(c: RGB, depth: number): RGB {
   if (depth <= 0.01) return c;
   const outer = 1;
@@ -69,18 +88,22 @@ function snowColor(def: PlantDef): RGB {
   return tone(def, 'snow');
 }
 
-/**
- * 花朵数量：开花版本开启时，即使参数表没写 bloomCount 也按 fallback 绽放，
- * 写了更多则以参数表为准（不会减少物种本来就有的花量）。
- */
+/** 花朵数量 */
 function bloomCountFor(def: PlantDef, requested: number, fallback: number): number {
-  return def.bloom ? Math.max(requested, fallback) : requested;
+  if (!def.bloom) return 0;
+  return Math.max(requested, fallback);
 }
 
-/**
- * 在叶团上方铺一层薄雪盖：半球形薄壳（不封底）。
- * 只在冬季变体里出现，靠 material='snow' 走独立材质槽。
- */
+/** 果实数量 */
+function fruitCountFor(def: PlantDef, requested: number, fallback = 0): number {
+  if (!def.fruit) return 0;
+  const base = requested > 0 ? requested : fallback;
+  if (base <= 0) return 0;
+  const scale = scalar(def.params.fruitScale, 1);
+  return Math.max(1, Math.round(base * (Number.isFinite(scale) && scale > 0 ? scale : 1)));
+}
+
+/** 在叶团上方铺一层薄雪盖 */
 function snowCap(b: LowPolyBuilder, def: PlantDef, center: V3, r: number, yScale = 1): void {
   const thickness = scalar(def.params.snow, 0.18);
   const col = snowColor(def);
@@ -92,26 +115,176 @@ function snowCap(b: LowPolyBuilder, def: PlantDef, center: V3, r: number, yScale
   });
 }
 
-/** 花簇：几片薄薄的中心点状叶团，用 bloom 材质槽，春/秋可单独着色 */
-function bloomCluster(b: LowPolyBuilder, def: PlantDef, center: V3, r: number, count: number, rand: () => number): void {
+/** 花与叶的公共积木 */
+/** 默认花瓣数 */
+const DEFAULT_PETALS = 5;
+
+/** 花瓣数 */
+function petalCountOf(def: PlantDef): number {
+  return Math.round(clamp(scalar(def.params.petals, DEFAULT_PETALS), 2, 16));
+}
+
+/** 单瓣宽度比 */
+function petalWidthRatio(petals: number): number {
+  return clamp(1.0 - petals * 0.055, 0.24, 0.6);
+}
+
+/** 单朵花半径 */
+function flowerRadiusFor(def: PlantDef, fallback: number): number {
+  const explicit = def.params.bloomRadius;
+  if (typeof explicit === 'number' && Number.isFinite(explicit) && explicit > 0) return clamp(explicit, 0.03, 0.6);
+  return clamp(fallback, 0.04, 0.4);
+}
+
+/** 一朵花 */
+function flowerAt(b: LowPolyBuilder, def: PlantDef, center: V3, radius: number, rand: () => number): void {
+  const petals = petalCountOf(def);
   const col = tone(def, 'bloom');
+  const core = tone(def, 'pollen');
+  // 单瓣做得"短而宽"（宽 ≈ 1.5 倍长）
+  // 宽花瓣彼此搭接，整朵花才是一个有体量的花团。
+  const w = radius * 2.5 * petalWidthRatio(petals);
+  const phase = rand() * TAU;
+  for (let i = 0; i < petals; i++) {
+    const a = phase + (i / petals) * TAU;
+    const len = radius * (0.8 + rand() * 0.25);
+    // 花瓣上扬 17°~34° 并兜成浅碗
+    b.petal(
+      [center[0], center[1] + radius * 0.14, center[2]],
+      a,
+      len,
+      w * (0.85 + rand() * 0.3),
+      deepen(col, i % 2 === 0 ? 0.04 + rand() * 0.1 : 0.26 + rand() * 0.16),
+      { pitch: 0.3 + rand() * 0.3, cup: 0.32, mat: 'bloom', rand },
+    );
+  }
+  // 花心
+  b.dome([center[0], center[1] + radius * 0.3, center[2]], radius * 0.42, radius * 0.5, radius * 0.42, 4, core,
+    { jitter: 0.2, rand, mat: 'bloom', floor: false });
+}
+
+/** 花簇 */
+function bloomCluster(
+  b: LowPolyBuilder,
+  def: PlantDef,
+  center: V3,
+  r: number,
+  count: number,
+  rand: () => number,
+  opts: { size?: number; ySpan?: number } = {},
+): void {
+  const fr = flowerRadiusFor(def, opts.size ?? r * 0.09);
+  const ySpan = opts.ySpan ?? r * 0.55;
   for (let i = 0; i < count; i++) {
-    const a = rand() * TAU;
-    const rr = r * (0.2 + rand() * 0.55);
-    b.dome([center[0] + Math.cos(a) * rr, center[1] + (rand() - 0.5) * r * 0.4, center[2] + Math.sin(a) * rr],
-      r * 0.42, r * 0.34, r * 0.42, 4, col, { jitter: 0.25, rand, mat: 'bloom', floor: false });
+    const t = (i + 0.5) / count;
+    const a = i * GOLDEN + def.buildSeed * 0.0009 + rand() * 0.5;
+    // 径向 0.82~1.12 倍
+    const rad = r * (0.82 + 0.3 * rand()) * (0.92 + 0.16 * Math.sqrt(t));
+    const y = center[1] + (rand() * 2 - 1) * ySpan;
+    flowerAt(b, def, [center[0] + Math.cos(a) * rad, y, center[2] + Math.sin(a) * rad], fr, rand);
   }
 }
 
-/** 果实：小球一簇 */
-function fruitCluster(b: LowPolyBuilder, def: PlantDef, center: V3, r: number, count: number, rand: () => number): void {
-  const col = tone(def, 'fruit');
+/** 叶簇（**绿色花瓣**） */
+function leafSpray(
+  b: LowPolyBuilder,
+  def: PlantDef,
+  center: V3,
+  r: number,
+  count: number,
+  rand: () => number,
+  opts: { width?: number; pitch?: number; spreadY?: number; dry?: boolean; len?: number } = {},
+): void {
+  if (count <= 0) return;
+  const fol = tone(def, 'foliage');
+  const dark = tone(def, 'foliageDark', 1);
+  const dry = tone(def, 'witheredStem');
   for (let i = 0; i < count; i++) {
-    const a = rand() * TAU;
-    const rr = r * (0.25 + rand() * 0.7);
-    const y = center[1] - rand() * r * 0.8;
-    b.ico([center[0] + Math.cos(a) * rr, y, center[2] + Math.sin(a) * rr], r * 0.2, 4, col, { jitter: 0.15, rand, mat: 'fruit' });
+    const t = (i + 0.5) / count;
+    const a = i * GOLDEN + def.buildSeed * 0.0011 + rand() * 0.6;
+    const rad = r * (0.5 + 0.5 * Math.sqrt(t)) * (0.85 + rand() * 0.3);
+    const y = center[1] + r * (opts.spreadY ?? 0.22) * (1 - t) + (rand() - 0.5) * r * 0.55;
+    const len = r * (opts.len ?? 0.5) * (0.8 + rand() * 0.45);
+    b.petal(
+      [center[0] + Math.cos(a) * rad, y, center[2] + Math.sin(a) * rad],
+      a + (rand() - 0.5) * 0.5,
+      len,
+      len * (opts.width ?? 0.42),
+      opts.dry ? dry : (i % 2 ? fol : dark),
+      { pitch: opts.pitch ?? 0.1 + rand() * 0.3, cup: 0.4, rand },
+    );
   }
+}
+
+/** 会弯的窄叶 */
+function bentLeaf(
+  b: LowPolyBuilder,
+  start: V3,
+  bearing: number,
+  len: number,
+  wid: number,
+  rise: number,
+  drop: number,
+  col: RGB,
+  rand: () => number,
+  mat: PlantMaterial = 'solid',
+): void {
+  const dx = Math.cos(bearing), dz = Math.sin(bearing);
+  const mid: V3 = [start[0] + dx * len * 0.5, start[1] + rise, start[2] + dz * len * 0.5];
+  b.petal(start, bearing, len * 0.56, wid, col, { pitch: Math.atan2(rise, len * 0.5) + 0.14, cup: 0.34, mat, rand });
+  b.petal(mid, bearing, len * 0.56, wid * 0.72, col, { pitch: Math.atan2(rise - drop, len * 0.5) - 0.04, cup: 0.3, mat, rand });
+}
+
+/** 果实 */
+function fruitCluster(
+  b: LowPolyBuilder,
+  def: PlantDef,
+  center: V3,
+  r: number,
+  count: number,
+  rand: () => number,
+  opts: { size?: number } = {},
+): void {
+  const col = tone(def, 'fruit');
+  const explicit = def.params.fruitRadius;
+  const fr = typeof explicit === 'number' && explicit > 0
+    ? clamp(explicit, 0.02, 0.5)
+    : clamp(opts.size ?? r * 0.08, 0.035, 0.24);
+  for (let i = 0; i < count; i++) {
+    const t = (i + 0.5) / count;
+    const a = i * GOLDEN + def.buildSeed * 0.0013 + rand() * 0.5;
+    const rad = r * (0.8 + 0.35 * rand()) * (0.9 + 0.2 * Math.sqrt(t));
+    const y = center[1] - (0.15 + rand() * 0.6) * r * 0.5;
+    b.ico([center[0] + Math.cos(a) * rad, y, center[2] + Math.sin(a) * rad], fr, 5, col,
+      { jitter: 0.15, rand, mat: 'fruit', rings: 1 });
+  }
+}
+
+/** 单片花瓣的独立几何 */
+export interface PetalShapeSpec {
+  /** 花瓣颜色（#rrggbb），省略为默认花色 */
+  color?: string;
+  /** 花瓣长度（格），默认 0.16 */
+  length?: number;
+  /** 花瓣宽度（格），默认取长度的 0.55 */
+  width?: number;
+  /** 上扬角（弧度），默认 0.35 */
+  pitch?: number;
+  /** 兜状上凸量（相对宽度），默认 0.4 */
+  cup?: number;
+  /** 是否自带背面，默认 true */
+  doubleSided?: boolean;
+}
+
+export function buildPetalGeometry(spec: PetalShapeSpec = {}): PlantGeometry {
+  const len = scalar(spec.length, 0.16);
+  const b = new LowPolyBuilder();
+  b.petal([0, 0, 0], 0, len, scalar(spec.width, len * 0.55), parseColor(spec.color ?? DEFAULT_BLOOM_COLOR), {
+    pitch: scalar(spec.pitch, 0.35),
+    cup: scalar(spec.cup, 0.4),
+    both: spec.doubleSided !== false,
+  });
+  return b.build();
 }
 
 /** 枝干：从根部向上的一段细枝，末端收细 */
@@ -122,13 +295,13 @@ function limbTo(b: LowPolyBuilder, start: V3, dir: V3, length: number, radius: n
   return [start[0] + d[0] * length, start[1] + d[1] * length, start[2] + d[2] * length];
 }
 
-// ---------------------------------------------------------------------------
+// 
 // 针叶树：层叠的伞盖 + 尖锐树顶
 //
-// 针叶树是裸子植物，**不参与开花版本**：本函数不引用 bloom 色板键，
-// 也不调用 bloomCluster，因此 def.bloom 对它无效（这是刻意的，不是遗漏）。
-// 需要"有花"的针叶树观感时，请用落叶松/阔叶原型，不要在这里加花。
-// ---------------------------------------------------------------------------
+// 针叶树是裸子植物
+// 也不调用 bloomCluster
+// 需要"有花"的针叶树观感时
+// 
 function conifer(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -150,6 +323,8 @@ function conifer(b: LowPolyBuilder, def: PlantDef): void {
   b.prism([0, 0, 0], trunkR * 1.25, trunkR * 1.25, 0, trunk, sides, bark, { jitter: jitter * 0.4, rand });
   const topY = trunk + span;
   b.prism([lean * span * 0.4, trunk, lean * span * 0.2], trunkR * 0.8, trunkR * 0.8, 0, span * 0.7, sides, bark, { rand });
+  // 根盘
+  b.cone([0, 0, 0], trunkR * 1.9, trunkR * 1.9, trunk * 0.12, sides, bark, { rotY: 0.4, jitter: jitter * 0.5, rand, cap: true });
 
   for (let i = 1; i <= layers; i++) {
     const t = i / layers;
@@ -168,7 +343,7 @@ function conifer(b: LowPolyBuilder, def: PlantDef): void {
       snowCap(b, def, [lean * y * 0.5, y + lh * 0.34, 0], r * 1.02, 1.1);
     }
   }
-  // 树顶：1~2 根朝天细尖（并让雪线在冬态下顶到树尖）
+  // 树顶
   const spikeCount = Math.max(1, Math.round(scalar(p.spikeCount, 1)));
   for (let i = 0; i < spikeCount; i++) {
     const a = (i / spikeCount) * TAU + rand();
@@ -180,11 +355,32 @@ function conifer(b: LowPolyBuilder, def: PlantDef): void {
     });
   }
   if (wantsSnowOn(def, 'top')) snowCap(b, def, [0, topY - span * 0.04, 0], baseRadius * 0.5, 1.2);
+
+  // 花期 = 散粉期
+  // 只在树冠表面撒一层 pollen 色的微小花粉颗
+  // 后续做"花粉过敏"之类的玩法时
+  const pollenCount = bloomCountFor(def, 0, 20 + Math.round(layers * 8));
+  if (pollenCount > 0) pollenGrains(b, def, pollenCount, baseRadius, trunk, topY, rand);
 }
 
-// ---------------------------------------------------------------------------
+/** 花粉颗粒 */
+function pollenGrains(b: LowPolyBuilder, def: PlantDef, count: number, baseRadius: number, bottom: number, top: number, rand: () => number): void {
+  const col = tone(def, 'pollen');
+  const span = Math.max(0.4, top - bottom);
+  const grain = clamp(baseRadius * 0.035, 0.05, 0.09);
+  for (let i = 0; i < count; i++) {
+    const t = Math.pow(rand(), 0.65); // 偏上半部：顶芽与上部枝叶散粉最多
+    const y = bottom + span * t;
+    // 松塔形冠幅
+    const r = baseRadius * (0.92 - t * 0.72) * (0.55 + rand() * 0.45);
+    const a = rand() * TAU;
+    b.ico([Math.cos(a) * r, y, Math.sin(a) * r], grain * (0.8 + rand() * 0.45), 3, col, { mat: 'bloom' });
+  }
+}
+
+// 
 // 阔叶树：直立主干 + 数条上扬主枝 + 团簇树冠
-// ---------------------------------------------------------------------------
+// 
 function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -208,7 +404,7 @@ function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
   b.prism([lean * trunk * 0.25, trunk * 0.12, 0], trunkR, trunkR, 0, trunk - trunk * 0.12, sides, bark, { jitter, rand });
   const crown: V3 = [lean * trunk * 0.25, trunk, 0];
 
-  // 主枝：绕主干均匀分布并向上扬起，末端成为树冠最外层叶团
+  // 主枝
   const limbTips: V3[] = [];
   for (let i = 0; i < limbs; i++) {
     const a = (i / limbs) * TAU + rand() * 0.6;
@@ -218,9 +414,11 @@ function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
     limbTips.push(limbTo(b, [crown[0], y, 0], dir, limbLength * (0.8 + rand() * 0.3), trunkR * 0.5, barkLight));
   }
 
-  // 树冠叶团：主团 + 沿黄金角散布的外层团（低模"云朵状"轮廓）
+  // 树冠叶团
+  // 主团多一圈纬线（rings:1）
+  // 外围小团保持单圈，省下的面数留给花瓣花与叶片。
   const mainR = canopy;
-  b.dome([crown[0], cy, 0], mainR, canopyH * 0.62, mainR, sides, tone(def, 'foliage'), { jitter, rand });
+  b.dome([crown[0], cy, 0], mainR, canopyH * 0.62, mainR, sides, tone(def, 'foliage'), { jitter, rand, rings: 1 });
   for (let i = 0; i < blobs; i++) {
     const t = (i + 0.5) / blobs;
     const a = i * GOLDEN + def.buildSeed * 0.0007;
@@ -238,19 +436,26 @@ function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
     const r = mainR * (0.34 + rand() * 0.18);
     b.dome(tip, r, r * 0.8, r, sides, tone(def, 'canopy'), { jitter: jitter * 1.3, rand });
   }
+  // 冠面碎叶
+  leafSpray(b, def, [crown[0], cy, 0], mainR * 1.02, Math.round(scalar(p.leafPetals, blobs + 4)), rand,
+    { width: 0.4, pitch: 0.14, spreadY: 0.5 });
 
+  // 花与果都挂在冠面外缘：藏在叶团里等于没开花没结果
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 6);
-  if (bloomCount > 0) bloomCluster(b, def, [crown[0], cy + canopyH * 0.2, 0], mainR * 0.9, bloomCount, rand);
-  const fruitCount = Math.round(scalar(p.fruitCount, 0));
-  if (fruitCount > 0) fruitCluster(b, def, [crown[0], cy, 0], mainR * 0.85, fruitCount, rand);
+  if (bloomCount > 0) {
+    bloomCluster(b, def, [crown[0], cy + canopyH * 0.1, 0], mainR * 1.32, bloomCount, rand,
+      { size: mainR * 0.12, ySpan: canopyH * 0.5 });
+  }
+  const fruitCount = fruitCountFor(def, Math.round(scalar(p.fruitCount, 0)), 3);
+  if (fruitCount > 0) fruitCluster(b, def, [crown[0], cy - canopyH * 0.16, 0], mainR * 1.0, fruitCount, rand, { size: mainR * 0.08 });
   if (wantsSnowOn(def, 'ground')) {
     b.dome([0, 0.02, 0], trunkR * 2.6, trunkR * 0.22, trunkR * 2.6, 6, snowColor(def), { floor: false, jitter: 0.3, rand, mat: 'snow' });
   }
 }
 
-// ---------------------------------------------------------------------------
+// 
 // 棕榈：微弯树干 + 放射状下垂叶片
-// ---------------------------------------------------------------------------
+// 
 function palm(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -296,13 +501,13 @@ function palm(b: LowPolyBuilder, def: PlantDef): void {
     const r0 = Math.max(0.06, trunkR * 0.34);
     for (let i = 0; i < segments; i++) {
       const t = (i + 1) / segments;
-      // 抬升 -> 转平 -> 下垂：droop 越大，叶尖垂得越低
+      // 抬升 -> 转平 -> 下垂
       const lift = Math.sin((i / segments) * Math.PI * 0.55) * 0.55;
       const sag = -droop * Math.pow(t, 1.7) * 2.1;
       const ny = py + (lift + sag) * segLen * 0.62;
       const nx = px + dx * segLen * 0.98;
       const nz = pz + dz * segLen * 0.98;
-      // 每节一片"叶瓣"：两片沿叶轴展开的四边形拼成 V 形截面
+      // 每节一片"叶瓣"
       const w = r0 * (1 - t * 0.55) * 2.6;
       const col = deepen(i % 2 ? leaf : leafDark, 0.25 * t);
       const sideX = -dz;
@@ -325,6 +530,11 @@ function palm(b: LowPolyBuilder, def: PlantDef): void {
       );
       px = nx; py = ny; pz = nz;
     }
+    // 叶尖分叉
+    for (const s of [1, -1]) {
+      b.petal([px, py, pz], a + s * 0.34, segLen * 0.8, segLen * 0.24, deepen(leaf, 0.25),
+        { pitch: -0.3 - droop * 0.35, cup: 0.3, rand });
+    }
     if (wantsSnowOn(def, 'canopy') && f % 2 === 0) {
       snowCap(b, def, [crown[0] + dx * frondLength * 0.25, crown[1] + trunkR * 2.1, crown[2] + dz * frondLength * 0.25], frondLength * 0.2, 0.7);
     }
@@ -333,16 +543,17 @@ function palm(b: LowPolyBuilder, def: PlantDef): void {
   // 花：棕榈是单子叶开花植物，花序从冠基叶鞘间抽出
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 5);
   if (bloomCount > 0) {
-    bloomCluster(b, def, [crown[0], crown[1] + trunkR * 1.2, crown[2]], frondLength * 0.34, bloomCount, rand);
+    bloomCluster(b, def, [crown[0], crown[1] + trunkR * 1.2, crown[2]], frondLength * 0.4, bloomCount, rand,
+      { size: frondLength * 0.06, ySpan: trunkR * 1.6 });
   }
 
-  const fruitCount = Math.round(scalar(p.fruitCount, 0));
+  const fruitCount = fruitCountFor(def, Math.round(scalar(p.fruitCount, 0)), 3);
   if (fruitCount > 0) {
     const col = tone(def, 'fruit');
     for (let i = 0; i < fruitCount; i++) {
       const a = (i / fruitCount) * TAU + rand();
       b.ico([crown[0] + Math.cos(a) * trunkR * 1.5, crown[1] + trunkR * 0.4, crown[2] + Math.sin(a) * trunkR * 1.5],
-        trunkR * 0.55, 5, col, { jitter: 0.12, rand, mat: 'fruit' });
+        trunkR * 0.55, 5, col, { jitter: 0.12, rand, mat: 'fruit', rings: 1 });
     }
   }
   if (wantsSnowOn(def, 'ground')) {
@@ -350,9 +561,9 @@ function palm(b: LowPolyBuilder, def: PlantDef): void {
   }
 }
 
-// ---------------------------------------------------------------------------
+// 
 // 金合欢：分叉树干 + 扁平伞状树冠
-// ---------------------------------------------------------------------------
+// 
 function acacia(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -386,19 +597,25 @@ function acacia(b: LowPolyBuilder, def: PlantDef): void {
   // 中央伞盖：让顶部而不是"秃心"
   const topR = canopy * 0.6;
   b.dome([0, trunk + topR * 0.2, 0], topR, topR * 0.32, topR, sides, fol, { jitter: jitter * 1.3, rand });
+  // 伞面碎叶
+  leafSpray(b, def, [0, trunk + topR * 0.35, 0], canopy, Math.round(scalar(p.leafPetals, Math.round(limbCount * 3))), rand,
+    { width: 0.34, pitch: 0.06, spreadY: 0.25, len: 0.42 });
 
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 5);
-  if (bloomCount > 0) bloomCluster(b, def, [0, trunk + topR * 0.7, 0], canopy * 0.8, bloomCount, rand);
-  const fruitCount = Math.round(scalar(p.fruitCount, 0));
-  if (fruitCount > 0) fruitCluster(b, def, [0, trunk, 0], canopy * 0.7, fruitCount, rand);
+  if (bloomCount > 0) {
+    bloomCluster(b, def, [0, trunk + topR * 0.7, 0], canopy * 1.15, bloomCount, rand,
+      { size: canopy * 0.12, ySpan: canopy * 0.32 });
+  }
+  const fruitCount = fruitCountFor(def, Math.round(scalar(p.fruitCount, 0)), 3);
+  if (fruitCount > 0) fruitCluster(b, def, [0, trunk, 0], canopy * 0.7, fruitCount, rand, { size: canopy * 0.09 });
   if (wantsSnowOn(def, 'ground')) {
     b.dome([0, 0.02, 0], trunkR * 2.4, trunkR * 0.2, trunkR * 2.4, 6, snowColor(def), { floor: false, jitter: 0.3, rand, mat: 'snow' });
   }
 }
 
-// ---------------------------------------------------------------------------
+// 
 // 猴面包树：膨大主干 + 稀疏团冠
-// ---------------------------------------------------------------------------
+// 
 function baobab(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -429,17 +646,23 @@ function baobab(b: LowPolyBuilder, def: PlantDef): void {
     b.dome(tip, r, r * 0.68, r, sides, i % 2 ? fol : folDark, { jitter: jitter * 1.4, rand });
     if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [tip[0], tip[1] + r * 0.25, tip[2]], r * 0.8, 0.9);
   }
-  // 花：猴面包树的花大而多，开在冠层外围
+  // 冠面碎叶：稀疏团冠本来就"透"，补几片叶子撑出层次
+  leafSpray(b, def, [0, trunk + canopy * 0.2, 0], canopy, Math.round(scalar(p.leafPetals, limbs + 2)), rand,
+    { width: 0.42, pitch: 0.12, spreadY: 0.4, len: 0.55 });
+  // 花
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 4);
-  if (bloomCount > 0) bloomCluster(b, def, [0, trunk + canopy * 0.35, 0], canopy * 0.85, bloomCount, rand);
+  if (bloomCount > 0) {
+    bloomCluster(b, def, [0, trunk + canopy * 0.35, 0], canopy * 1.15, bloomCount, rand,
+      { size: canopy * 0.13, ySpan: canopy * 0.5 });
+  }
 
-  const fruitCount = Math.round(scalar(p.fruitCount, 0));
-  if (fruitCount > 0) fruitCluster(b, def, [0, trunk - trunkR, 0], trunkR, fruitCount, rand);
+  const fruitCount = fruitCountFor(def, Math.round(scalar(p.fruitCount, 0)), 3);
+  if (fruitCount > 0) fruitCluster(b, def, [0, trunk - trunkR, 0], trunkR, fruitCount, rand, { size: trunkR * 0.5 });
 }
 
-// ---------------------------------------------------------------------------
+// 
 // 灌木：多茎丛生 + 圆团叶簇
-// ---------------------------------------------------------------------------
+// 
 function shrub(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -468,23 +691,31 @@ function shrub(b: LowPolyBuilder, def: PlantDef): void {
     const y = height * (i === 0 ? 0.62 : 0.34 + rand() * 0.5);
     const r = canopy * (i === 0 ? 0.62 : 0.34 + rand() * 0.24);
     const c = deepen(i % 2 ? fol : folDark, i / blobs);
-    b.dome([Math.cos(a) * rad, y, Math.sin(a) * rad], r, r * 0.84, r, sides, c, { jitter, rand });
+    // 主叶团加一圈纬线
+    b.dome([Math.cos(a) * rad, y, Math.sin(a) * rad], r, r * 0.84, r, sides, c, { jitter, rand, rings: i === 0 ? 1 : 0 });
     if (wantsSnowOn(def, 'canopy') && i < blobs * 0.75) {
       snowCap(b, def, [Math.cos(a) * rad, y + r * 0.3, Math.sin(a) * rad], r * 0.95);
     }
   }
+  // 冠面碎叶 + 花
+  leafSpray(b, def, [0, height * 0.66, 0], canopy * 1.02, Math.round(scalar(p.leafPetals, blobs + 3)), rand,
+    { width: 0.44, pitch: 0.1, spreadY: 0.45, len: 0.5 });
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 5);
-  if (bloomCount > 0) bloomCluster(b, def, [0, height * 0.72, 0], canopy * 0.95, bloomCount, rand);
-  const fruitCount = Math.round(scalar(p.fruitCount, 0));
-  if (fruitCount > 0) fruitCluster(b, def, [0, height * 0.62, 0], canopy * 0.85, fruitCount, rand);
+  if (bloomCount > 0) {
+    // 半径只到冠幅（不要再往外）
+    bloomCluster(b, def, [0, height * 0.7, 0], canopy * 1.0, bloomCount, rand,
+      { size: canopy * 0.16, ySpan: height * 0.26 });
+  }
+  const fruitCount = fruitCountFor(def, Math.round(scalar(p.fruitCount, 0)), 3);
+  if (fruitCount > 0) fruitCluster(b, def, [0, height * 0.62, 0], canopy * 0.95, fruitCount, rand, { size: canopy * 0.12 });
   if (wantsSnowOn(def, 'ground')) {
     b.dome([0, 0.02, 0], canopy * 1.5, 0.16, canopy * 1.5, 6, snowColor(def), { floor: false, jitter: 0.35, rand, mat: 'snow' });
   }
 }
 
-// ---------------------------------------------------------------------------
+// 
 // 多肉灌木：肥厚叶片 + 顶生花
-// ---------------------------------------------------------------------------
+// 
 function succulent(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -516,13 +747,17 @@ function succulent(b: LowPolyBuilder, def: PlantDef): void {
   // 中央花茎
   b.prism([0, height * 0.5, 0], spread * 0.08, spread * 0.08, 0, height * 0.36, 3, leafDark, { rand });
   const bloomCount = bloomCountFor(def, Math.max(1, Math.round(scalar(p.bloomCount, 3))), 4);
-  bloomCluster(b, def, [0, height * 0.9, 0], spread * 0.5, bloomCount, rand);
+  // 莲 / 多肉的花就开在叶心顶上
+  bloomCluster(b, def, [0, height * 0.9, 0], spread * 0.6, bloomCount, rand, { size: spread * 0.5, ySpan: height * 0.14 });
+  // 果：莲蓬 / 多肉蒴果，结实时从叶心顶出
+  const fruitCount = fruitCountFor(def, Math.round(scalar(p.fruitCount, 0)), 3);
+  if (fruitCount > 0) fruitCluster(b, def, [0, height * 0.72, 0], spread * 0.55, fruitCount, rand, { size: spread * 0.35 });
   if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [0, height * 0.78, 0], spread * 0.7, 0.6);
 }
 
-// ---------------------------------------------------------------------------
+// 
 // 荆棘丛：多枝下弯 + 刺 + 稀疏小叶
-// ---------------------------------------------------------------------------
+// 
 function bramble(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -555,16 +790,22 @@ function bramble(b: LowPolyBuilder, def: PlantDef): void {
     const r = spread * (0.18 + rand() * 0.14);
     b.dome([Math.cos(a) * rad, y, Math.sin(a) * rad], r, r * 0.8, r, sides, i % 2 ? fol : folDark, { jitter: 0.3, rand });
   }
+  // 悬钩子 / 旱棘丛的叶本来就只有几片
+  leafSpray(b, def, [0, height * 0.55, 0], spread * 0.8, Math.round(scalar(p.leafPetals, blobs + 5)), rand,
+    { width: 0.4, pitch: 0.12, spreadY: 0.4, len: 0.45 });
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 5);
-  if (bloomCount > 0) bloomCluster(b, def, [0, height * 0.6, 0], spread * 0.8, bloomCount, rand);
-  const fruitCount = Math.round(scalar(p.fruitCount, 0));
-  if (fruitCount > 0) fruitCluster(b, def, [0, height * 0.5, 0], spread * 0.8, fruitCount, rand);
+  if (bloomCount > 0) {
+    bloomCluster(b, def, [0, height * 0.6, 0], spread * 0.95, bloomCount, rand,
+      { size: spread * 0.18, ySpan: height * 0.3 });
+  }
+  const fruitCount = fruitCountFor(def, Math.round(scalar(p.fruitCount, 0)), 3);
+  if (fruitCount > 0) fruitCluster(b, def, [0, height * 0.5, 0], spread * 0.9, fruitCount, rand, { size: spread * 0.1 });
   if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [0, height * 0.72, 0], spread * 0.75, 0.7);
 }
 
-// ---------------------------------------------------------------------------
+// 
 // 草丛 / 蕨类：交叉面片
-// ---------------------------------------------------------------------------
+// 
 function grassClump(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -573,25 +814,49 @@ function grassClump(b: LowPolyBuilder, def: PlantDef): void {
   const spread = scalar(p.spread, height * 0.5);
   const fol = tone(def, 'foliage');
   const folDark = tone(def, 'foliageDark', 1);
+  const tips: V3[] = [];
 
   for (let i = 0; i < blades; i++) {
     const a = (i / blades) * TAU + rand() * 0.8;
     const rad = spread * (0.15 + rand() * 0.8);
     const h = height * (0.55 + rand() * 0.65);
-    b.crossQuad([Math.cos(a) * rad, 0, Math.sin(a) * rad], spread * (0.42 + rand() * 0.3), h, i % 2 ? fol : folDark, {
+    const bx = Math.cos(a) * rad;
+    const bz = Math.sin(a) * rad;
+    b.crossQuad([bx, 0, bz], spread * (0.42 + rand() * 0.3), h, i % 2 ? fol : folDark, {
       rotY: a, bend: (rand() - 0.5) * spread * 0.7,
     });
+    tips.push([bx + (rand() - 0.5) * spread * 0.7, h, bz + (rand() - 0.5) * spread * 0.7]);
   }
   if (wantsSnowOn(def, 'ground') || wantsSnowOn(def, 'canopy')) {
     b.dome([0, 0.02, 0], spread * 1.1, height * 0.24, spread * 1.1, 5, snowColor(def), { floor: false, jitter: 0.4, rand, mat: 'snow' });
   }
+  // 谷类作物的穗
+  const grainCount = fruitCountFor(def, Math.round(scalar(p.fruitCount, 0)), 3);
+  if (grainCount > 0) {
+    const col = tone(def, 'fruit');
+    for (let i = 0; i < grainCount; i++) {
+      const tip = tips[Math.floor(rand() * tips.length)];
+      const r = Math.max(0.02, spread * 0.16);
+      b.ico([tip[0], tip[1] + r * 0.6, tip[2]], [r, r * 2.6, r], 4, col, { jitter: 0.16, rand, mat: 'fruit', rings: 2 });
+      // 芒
+      // 用窄花瓣画
+      for (const s of [1, -1]) {
+        b.petal([tip[0], tip[1] + r * 2.0, tip[2]], (s > 0 ? 0.5 : Math.PI - 0.5) + (rand() - 0.5) * 0.6,
+          r * 3.2, r * 0.26, col, { pitch: 0.95, cup: 0.1, mat: 'fruit', rand });
+      }
+    }
+  }
+  // 花期
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 3);
-  if (bloomCount > 0) bloomCluster(b, def, [0, height * 0.8, 0], spread * 0.6, bloomCount, rand);
+  if (bloomCount > 0) {
+    bloomCluster(b, def, [0, height * 0.82, 0], spread * 0.85, bloomCount, rand,
+      { size: spread * 0.22, ySpan: height * 0.22 });
+  }
 }
 
-// ---------------------------------------------------------------------------
-// 幼苗 / 树苗：细干 + 小团叶（用于补植与近景细节）
-// ---------------------------------------------------------------------------
+// 
+// 幼苗 / 树苗
+// 
 function sapling(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -609,12 +874,321 @@ function sapling(b: LowPolyBuilder, def: PlantDef): void {
     b.dome([Math.cos(a) * rad, trunk + leafR * (i === 0 ? 0.55 : 0.2 + rand() * 0.5), Math.sin(a) * rad],
       leafR * (i === 0 ? 1 : 0.7), leafR * 0.9, leafR * (i === 0 ? 1 : 0.7), 4, fol, { jitter: 0.22, rand });
   }
+  // 细长叶
+  leafSpray(b, def, [0, trunk + leafR * 0.5, 0], leafR * 1.15, Math.round(scalar(p.leafPetals, lobes * 3)), rand,
+    { width: 0.24, pitch: 0.18, spreadY: 0.5, len: 0.85 });
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 3);
-  if (bloomCount > 0) bloomCluster(b, def, [0, trunk + leafR, 0], leafR * 0.7, bloomCount, rand);
+  if (bloomCount > 0) {
+    bloomCluster(b, def, [0, trunk + leafR, 0], leafR * 1.0, bloomCount, rand,
+      { size: leafR * 0.16, ySpan: leafR * 0.5 });
+  }
   if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [0, trunk + leafR * 0.6, 0], leafR * 0.9, 0.8);
 }
 
-/** 原型注册表：JSON 的 archetype 字段必须是这里的键 */
+// 
+// 幼苗
+//
+// 与 sapling 的区别
+// sprout 是**状态形态**
+// 因此它必须对乔木 / 灌木 / 草丛 / 兰花都
+// 
+function sprout(b: LowPolyBuilder, def: PlantDef): void {
+  if (def.params.stateForm === 'orchid') {
+    orchid(b, def);
+    return;
+  }
+  const p = def.params;
+  const rand = mulberry32(def.buildSeed);
+  // 幼苗必须比成株矮
+  // 雪线地衣这类"贴地成株"的参数 0.24 倍后仍
+  const speciesH = scalar(p.height, 0.5);
+  const height = Math.min(scalar(p.height, 0.5), Math.max(0.08, speciesH * 0.42));
+  const trunk = Math.min(scalar(p.trunk, height * 0.52), height * 0.62);
+  const stem = tone(def, 'barkLight');
+  const fol = tone(def, 'foliage');
+  const folDark = tone(def, 'foliageDark', 1);
+  const leafR = Math.min(scalar(p.canopy, height * 0.3), height * 0.4);
+
+  // 主茎
+  const stemR = Math.max(0.012, height * 0.05);
+  b.prism([0, 0, 0], stemR * 1.3, stemR * 1.3, 0, trunk * 0.5, 4, stem, { rand, jitter: 0.1 });
+  b.prism([0, trunk * 0.46, 0], stemR, stemR, 0, trunk * 0.56, 4, stem, { rand, jitter: 0.12 });
+  // 子叶
+  for (let i = 0; i < 2; i++) {
+    const a = i * Math.PI + rand() * 0.5;
+    b.petal([Math.cos(a) * leafR * 0.3, trunk * 0.5, Math.sin(a) * leafR * 0.3], a, leafR * (0.95 + rand() * 0.3),
+      leafR * 0.75, i ? fol : folDark, { pitch: -0.06 + rand() * 0.2, cup: 0.35, rand });
+  }
+  // 真叶
+  for (let i = 0; i < 4; i++) {
+    const a = i * GOLDEN + def.buildSeed * 0.0017 + rand() * 0.4;
+    const len = leafR * (0.7 + rand() * 0.4);
+    b.petal([Math.cos(a) * leafR * 0.22, trunk * (0.62 + i * 0.06), Math.sin(a) * leafR * 0.22], a, len, len * 0.52,
+      i % 2 ? fol : folDark, { pitch: 0.12 + rand() * 0.3, cup: 0.4, rand });
+  }
+  // 顶芽：一枚小圆顶 + 两片嫩叶，读起来是"还在长"
+  b.dome([0, trunk + leafR * 0.3, 0], leafR * 0.5, leafR * 0.62, leafR * 0.5, 5, folDark, { jitter: 0.22, rand });
+  for (let i = 0; i < 2 + Math.min(2, Math.round(scalar(p.blobs, 2))); i++) {
+    const a = i * GOLDEN + rand();
+    const len = leafR * (0.55 + rand() * 0.35);
+    b.petal([0, trunk + leafR * (0.42 + rand() * 0.2), 0], a, len, len * 0.55, i % 2 ? fol : folDark,
+      { pitch: 0.45 + rand() * 0.3, cup: 0.42, rand });
+  }
+  if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [0, trunk + leafR * 0.5, 0], leafR * 0.8, 0.7);
+}
+
+// 
+// 干枯
+//
+// 枯木刻意不引用 bloom / fruit 两个
+// 颜色只走 withered* 与物种色板
+// 
+function withered(b: LowPolyBuilder, def: PlantDef): void {
+  const p = def.params;
+  const rand = mulberry32(def.buildSeed);
+  const height = scalar(p.height, 4);
+  const trunk = Math.max(0.25, scalar(p.trunk, height * 0.42) * 0.42);
+  const trunkR = Math.max(0.06, scalar(p.trunkRadius, Math.max(0.18, height * 0.035)));
+  const wood = tone(def, 'witheredDark');
+  const stem = tone(def, 'withered');
+  const dryLeaf = tone(def, 'witheredStem');
+  const sides = Math.round(clamp(scalar(p.sides, 5), 3, 8));
+  const jitter = scalar(p.jitter, 0.2);
+  const limbs = Math.max(3, Math.round(scalar(p.limbCount, 4)) + 1);
+  const lean = scalar(p.lean, 0.06);
+
+  // 断头主干：两截，顶端收口（不再往上长）
+  b.prism([0, 0, 0], trunkR * 1.4, trunkR * 1.4, 0, trunk * 0.3, sides, wood, { jitter: jitter * 0.5, rand });
+  b.prism([lean * trunk * 0.2, trunk * 0.22, 0], trunkR * 1.05, trunkR * 1.05, 0, trunk * 0.62, sides, stem, { jitter, rand });
+
+  // 歪枝
+  for (let i = 0; i < limbs; i++) {
+    const a = (i / limbs) * TAU + rand() * 0.8;
+    const up = 0.28 + rand() * 0.75;
+    const dir: V3 = [Math.cos(a) * Math.cos(up), Math.sin(up), Math.sin(a) * Math.cos(up)];
+    const y = trunk * (0.3 + rand() * 0.5);
+    const len = height * (0.2 + rand() * 0.24);
+    const tip = limbTo(b, [lean * trunk * 0.2, y, 0], dir, len, trunkR * (0.34 + rand() * 0.24), stem);
+    if (rand() < 0.65) {
+      const a2 = a + (rand() - 0.5) * 1.4;
+      const up2 = up * (0.6 + rand() * 0.7);
+      const dir2: V3 = [Math.cos(a2) * Math.cos(up2), Math.sin(up2), Math.sin(a2) * Math.cos(up2)];
+      limbTo(b, tip, dir2, len * (0.35 + rand() * 0.3), trunkR * 0.22, wood);
+    }
+  }
+  // 零星枯叶
+  // 用花瓣片（叶）而不是小圆团
+  const clumps = Math.max(2, Math.min(5, Math.round(scalar(p.blobs, 3) * 0.5)));
+  for (let i = 0; i < clumps; i++) {
+    const a = i * GOLDEN + def.buildSeed * 0.0017;
+    const rad = height * (0.12 + rand() * 0.22);
+    const len = height * 0.085 * (0.8 + rand() * 0.5);
+    b.petal([Math.cos(a) * rad, trunk * (0.6 + rand() * 0.6), Math.sin(a) * rad],
+      a + (rand() - 0.5) * 0.8, len, len * 0.5, deepen(dryLeaf, rand() * 0.3),
+      { pitch: -0.25 + rand() * 0.4, cup: 0.5, rand });
+  }
+}
+
+// 
+// 花树（梅）
+//
+// 只有开花才好看
+// 花量由 params.bloomCount 决定
+// 
+function blossomTree(b: LowPolyBuilder, def: PlantDef): void {
+  const p = def.params;
+  const rand = mulberry32(def.buildSeed);
+  const height = scalar(p.height, 3.4);
+  const trunk = scalar(p.trunk, height * 0.34);
+  const trunkR = Math.max(0.06, scalar(p.trunkRadius, Math.max(0.1, height * 0.05)));
+  const wood = tone(def, 'barkDark');
+  const barkLight = tone(def, 'barkLight', 1);
+  const leaf = tone(def, 'foliage');
+  const sides = Math.round(clamp(scalar(p.sides, 5), 3, 8));
+  const limbs = Math.max(3, Math.round(scalar(p.limbCount, 5)));
+
+  // 虬曲主干：两段折向，制造"老梅"的折枝感
+  const bend = scalar(p.lean, 0.18);
+  b.prism([0, 0, 0], trunkR * 1.5, trunkR * 1.5, 0, trunk * 0.55, sides, wood, { jitter: 0.16, rand });
+  b.prism([bend * trunk * 0.3, trunk * 0.5, 0], trunkR * 0.9, trunkR * 0.9, 0, trunk * 0.55, sides, barkLight,
+    { jitter: 0.2, rand });
+
+  const tips: V3[] = [];
+  for (let i = 0; i < limbs; i++) {
+    const a = (i / limbs) * TAU + rand() * 0.7;
+    const up = 0.35 + rand() * 0.6;
+    const dir: V3 = [Math.cos(a) * Math.cos(up), Math.sin(up), Math.sin(a) * Math.cos(up)];
+    const y = trunk * (0.45 + rand() * 0.45);
+    const tip = limbTo(b, [bend * trunk * 0.3, y, 0], dir, height * (0.3 + rand() * 0.22), trunkR * 0.42, barkLight);
+    tips.push(tip);
+    // 二级枝：梅花讲究"疏影横斜"
+    if (rand() < 0.6) {
+      const a2 = a + (rand() - 0.5) * 1.6;
+      const dir2: V3 = [Math.cos(a2) * Math.cos(up), Math.sin(up) * 1.1, Math.sin(a2) * Math.cos(up)];
+      tips.push(limbTo(b, tip, dir2, height * (0.1 + rand() * 0.1), trunkR * 0.24, wood));
+    }
+  }
+  // 疏叶
+  for (const [i, tip] of tips.entries()) {
+    const r = height * (i % 2 ? 0.11 : 0.14);
+    for (let k = 0; k < 3; k++) {
+      const a = rand() * TAU;
+      b.petal([tip[0], tip[1] - r * 0.2, tip[2]], a, r * (0.8 + rand() * 0.5), r * 0.45,
+        i % 2 ? leaf : tone(def, 'foliageDark', 1), { pitch: -0.05 + rand() * 0.3, cup: 0.4, rand });
+    }
+  }
+  // 团花
+  //
+  // 尺寸约束
+  // 再大就从"花"变成"枝头挂球"
+  const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 5);
+  const bloomR = clamp(scalar(p.bloomRadius, height * 0.05), 0.03, 0.4);
+  if (bloomCount > 0) {
+    const perTip = Math.max(2, Math.round(bloomCount / Math.max(1, tips.length)));
+    for (const tip of tips) {
+      for (let k = 0; k < perTip; k++) {
+        const a = rand() * TAU;
+        const rr = bloomR * (0.5 + rand() * 0.9);
+        flowerAt(b, def, [tip[0] + Math.cos(a) * rr, tip[1] + bloomR * (0.4 + rand() * 0.8), tip[2] + Math.sin(a) * rr],
+          bloomR * (0.85 + rand() * 0.35), rand);
+      }
+    }
+    // 主干上部再补几朵，避免"只有枝头有花、树心是空的"
+    bloomCluster(b, def, [bend * trunk * 0.3, trunk + height * 0.1, 0], height * 0.16,
+      Math.max(3, Math.round(bloomCount * 0.5)), rand, { size: bloomR, ySpan: height * 0.16 });
+  }
+  if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [0, trunk + height * 0.3, 0], height * 0.24, 0.8);
+}
+
+// 
+// 竹：多秆丛生 + **外凸竹节** + 秆顶窄叶
+//
+// 竹节是竹最认得出来的特征
+// 每一节的节环比秆**更粗**（1.36 倍秆径）
+// 而不是贴一圈深色薄片（那是"画上去的节"
+// 
+function bamboo(b: LowPolyBuilder, def: PlantDef): void {
+  const p = def.params;
+  const rand = mulberry32(def.buildSeed);
+  const height = scalar(p.height, 6);
+  // 一丛的秆数
+  const culms = Math.max(2, Math.round(scalar(p.culms, 4)));
+  const culmR = Math.max(0.04, scalar(p.trunkRadius, height * 0.022));
+  const spread = scalar(p.spread, height * 0.16);
+  const nodeStep = Math.max(0.35, scalar(p.nodeStep, height * 0.18));
+  const blades = Math.max(3, Math.round(scalar(p.blades, 12)));
+  const leafLen = scalar(p.frondLength, height * 0.16);
+  const stem = tone(def, 'bambooCulm');
+  const node = deepen(stem, 0.3);
+  const leaf = tone(def, 'bamboo');
+  const leafDark = tone(def, 'foliageDeep', 1);
+  const sides = Math.round(clamp(scalar(p.sides, 5), 3, 6));
+  const jitter = scalar(p.jitter, 0.1);
+
+  const tops: V3[] = [];
+  for (let c = 0; c < culms; c++) {
+    const a = (c / culms) * TAU + rand() * 0.9;
+    const rad = spread * (0.25 + rand() * 0.75);
+    const x0 = Math.cos(a) * rad;
+    const z0 = Math.sin(a) * rad;
+    const h = height * (0.62 + rand() * 0.4);
+    const lean = scalar(p.lean, 0.08) * (rand() - 0.5) * 2;
+    const nodes = Math.max(3, Math.round(h / nodeStep));
+    const nodeH = h / nodes;
+    const r = culmR * (0.85 + rand() * 0.4);
+    for (let i = 0; i < nodes; i++) {
+      const t = i / nodes;
+      const y = i * nodeH;
+      const nx = x0 + lean * y * 0.35 * (0.4 + t);
+      const rr = r * (1 - t * 0.2);
+      // 节间：比节环细，两段之间留出节的位置
+      b.prism([nx, y, z0], rr, rr, 0, nodeH * 0.86, sides, stem, { jitter: jitter * 0.4, rand });
+      // 竹节
+      // 一节只加一个环
+      // 而外凸本身已经足够读出节 —— 低模里"几何真的
+      b.cone([nx, y + nodeH * 0.84, z0], rr * 1.36, rr * 1.36, nodeH * 0.24, sides, node,
+        { radiusRatio: 0.8, jitter: 0.05, rand });
+    }
+    const topX = x0 + lean * h * 0.35 * 1.4;
+    tops.push([topX, h, z0]);
+  }
+  // 竹叶：只长在秆顶，细长小叶，先扬后垂。
+  // 长度必须跟秆高拉开量级（约 4%~8% 株高）
+  // 沿秆顶三档高度错开挂叶
+  for (let i = 0; i < blades; i++) {
+    const top = tops[Math.floor(rand() * tops.length)];
+    const a = rand() * TAU;
+    const len = leafLen * (0.45 + rand() * 0.35);
+    const col = i % 2 ? leaf : leafDark;
+    const drop = leafLen * (0.05 + (i % 3) * 0.5) + rand() * leafLen * 0.2;
+    bentLeaf(b, [top[0], top[1] - drop, top[2]], a, len, leafLen * 0.15, len * 0.24, len * (0.5 + rand() * 0.4), col, rand);
+  }
+  // 地下走茎的笋尖：让竹林根部不空
+  for (let i = 0; i < 2; i++) {
+    const a = rand() * TAU;
+    const rad = spread * (0.3 + rand() * 0.5);
+    b.cone([Math.cos(a) * rad, 0, Math.sin(a) * rad], culmR * 0.9, culmR * 0.9, height * 0.07, 4, stem,
+      { jitter: 0.2, rand, cap: true });
+  }
+  // 竹花
+  // 花量刻意不随开花态的"花量兜底 7 簇"放大 —
+  if (def.bloom) {
+    // 竹花：三枚鳞被（petals: 3），稀疏几朵
+    const sparse = Math.max(1, Math.round(scalar(p.bloomCount, 2)));
+    for (let i = 0; i < sparse; i++) {
+      const top = tops[Math.floor(rand() * tops.length)];
+      const a = rand() * TAU;
+      const rr = leafLen * (0.3 + rand() * 0.5);
+      flowerAt(b, def, [top[0] + Math.cos(a) * rr, top[1] + leafLen * 0.3, top[2] + Math.sin(a) * rr], leafLen * 0.24, rand);
+    }
+  }
+  if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [0, height * 0.72, 0], spread * 0.9, 0.6);
+}
+
+// 
+// 兰：基生窄叶扇形丛 + 一根弓形花葶 + 疏落小花
+// 
+function orchid(b: LowPolyBuilder, def: PlantDef): void {
+  const p = def.params;
+  const rand = mulberry32(def.buildSeed);
+  const height = scalar(p.height, 0.6);
+  const blades = Math.max(5, Math.round(scalar(p.blades, 9)));
+  const leafLen = scalar(p.frondLength, height * 1.1);
+  const spread = scalar(p.spread, height * 0.3);
+  const leaf = tone(def, 'foliage');
+  const leafDark = tone(def, 'foliageDeep', 1);
+  const stem = tone(def, 'bamboo');
+
+  // 基生叶
+  for (let i = 0; i < blades; i++) {
+    const a = (i / blades) * TAU + rand() * 0.5;
+    const len = leafLen * (0.7 + rand() * 0.5);
+    const arc = height * (0.3 + rand() * 0.45);
+    const col = i % 2 ? leaf : leafDark;
+    bentLeaf(b, [0, 0, 0], a, len, leafLen * 0.1, arc, arc * 0.75, col, rand);
+  }
+  // 花葶：一根细茎从叶心抽出，顶端弓起
+  const stemH = height * (0.9 + rand() * 0.3);
+  const bendA = rand() * TAU;
+  const bx = Math.cos(bendA) * spread * 0.3;
+  const bz = Math.sin(bendA) * spread * 0.3;
+  b.prism([0, 0, 0], height * 0.026, height * 0.026, 0, stemH * 0.72, 3, stem, { rand, jitter: 0.1 });
+  b.limb([0, stemH * 0.7, 0], [Math.cos(bendA) * 0.42, 0.9, Math.sin(bendA) * 0.42], stemH * 0.34, height * 0.022,
+    stem, { sides: 3, rand });
+  // 花
+  // 只在 def.bloom 为真时开
+  const bloomCount = bloomCountFor(def, Math.max(1, Math.round(scalar(p.bloomCount, 5))), 4);
+  for (let i = 0; i < bloomCount; i++) {
+    const t = i / Math.max(1, bloomCount - 1);
+    const a = i * GOLDEN + rand();
+    const px = bx + Math.cos(a) * spread * (0.35 + t * 0.5);
+    const pz = bz + Math.sin(a) * spread * (0.35 + t * 0.5);
+    const py = stemH * (0.82 + t * 0.22);
+    flowerAt(b, def, [px, py, pz], height * 0.11 * (1 - t * 0.25), rand);
+  }
+}
+
+/** 原型注册表 */
 export const ARCHETYPES: Record<string, (b: LowPolyBuilder, def: PlantDef) => void> = {
   conifer,
   broadleaf,
@@ -626,25 +1200,42 @@ export const ARCHETYPES: Record<string, (b: LowPolyBuilder, def: PlantDef) => vo
   bramble,
   grassClump,
   sapling,
+  blossomTree,
+  bamboo,
+  orchid,
+  sprout,
+  withered,
 };
 
 export type ArchetypeName = keyof typeof ARCHETYPES;
 
-/** 每个原型的必备默认参数：与生长带默认值叠加，参数表只写差异 */
+/** 每个原型的必备默认参数 */
 export const ARCHETYPE_DEFAULTS: Record<string, Partial<PlantParams>> = {
-  conifer: { height: 12, trunk: 2.6, canopy: 3.1, layers: 5, sides: 5, jitter: 0.14, layerStep: 0.82, spikeCount: 1 },
-  broadleaf: { height: 10, trunk: 4.6, canopy: 3.6, blobs: 7, sides: 5, jitter: 0.18, limbCount: 3, branchAngle: 0.75, canopyRatio: 0.42 },
-  palm: { height: 11, trunk: 9.4, canopy: 4.6, fronds: 9, frondLength: 4.6, droop: 0.55, segments: 7, sides: 5, lean: 0.16 },
-  acacia: { height: 8, trunk: 4.1, canopy: 4, limbCount: 4, sides: 5, jitter: 0.16, branchAngle: 0.62 },
+  // sides 从 5 提到 6
+  // 是这套低模里最便宜的一次精度提升（每个棱柱多 3
+  conifer: { height: 12, trunk: 2.6, canopy: 3.1, layers: 5, sides: 6, jitter: 0.14, layerStep: 0.82, spikeCount: 1 },
+  broadleaf: { height: 10, trunk: 4.6, canopy: 3.6, blobs: 7, sides: 6, jitter: 0.18, limbCount: 3, branchAngle: 0.75, canopyRatio: 0.42 },
+  palm: { height: 11, trunk: 9.4, canopy: 4.6, fronds: 9, frondLength: 4.6, droop: 0.55, segments: 7, sides: 6, lean: 0.16 },
+  acacia: { height: 8, trunk: 4.1, canopy: 4, limbCount: 4, sides: 6, jitter: 0.16, branchAngle: 0.62 },
   baobab: { height: 9, trunk: 5, trunkRadius: 1.17, canopy: 3, limbCount: 6, sides: 6, jitter: 0.2, branchAngle: 0.85 },
-  shrub: { height: 1.6, canopy: 0.9, blobs: 4, sides: 5, jitter: 0.22, stems: 3, aspect: 1.15 },
+  shrub: { height: 1.6, canopy: 0.9, blobs: 4, sides: 6, jitter: 0.22, stems: 3, aspect: 1.15 },
   succulent: { height: 1.2, layers: 3, blobs: 5, spread: 0.6, bloomCount: 3 },
-  bramble: { height: 1.25, stems: 6, blobs: 4, spread: 1.1, sides: 4, jitter: 0.3, thorns: 1, bloomCount: 0 },
-  grassClump: { height: 0.72, blades: 7, spread: 0.36 },
+  bramble: { height: 1.25, stems: 6, blobs: 4, spread: 1.1, sides: 5, jitter: 0.3, thorns: 1, bloomCount: 0 },
+  // 草类与作物的"花"是颖花：两枚稃片 = 2 片花瓣
+  grassClump: { height: 0.72, blades: 7, spread: 0.36, petals: 2 },
   sapling: { height: 1.1, trunk: 0.55, canopy: 0.3, blobs: 3 },
+  // ---- 状态形态与专类形态 ----
+  // sprout / withered 的默认值只是
+  // 正常路径下它们的尺寸由 STATE_DEFAUL
+  sprout: { height: 0.5, trunk: 0.26, canopy: 0.16, blobs: 2, sides: 4, jitter: 0.16 },
+  withered: { height: 4.5, trunk: 1.9, trunkRadius: 0.2, limbCount: 5, sides: 4, jitter: 0.24, blobs: 4 },
+  blossomTree: { height: 3.4, trunk: 1.2, trunkRadius: 0.16, limbCount: 5, blobs: 4, sides: 5, jitter: 0.22, lean: 0.18, petals: 5 },
+  // 一丛 4 秆（原 5）
+  bamboo: { height: 6, culms: 4, trunkRadius: 0.12, spread: 1, nodeStep: 1.1, blades: 14, frondLength: 1, sides: 5, jitter: 0.1, lean: 0.08, petals: 3 },
+  orchid: { height: 0.6, blades: 9, frondLength: 0.66, spread: 0.2, bloomCount: 5, sides: 5, petals: 6 },
 };
 
-/** 生长带默认参数：同一原型在不同气候下的默认尺寸/形态 */
+/** 生长带默认参数 */
 export const CLIMATE_DEFAULTS: Record<ClimateZone, Partial<PlantParams>> = {
   tropical: { height: 13, canopy: 4.4, droop: 0.6, layers: 6, blobs: 9 },
   subtropical: { height: 11.5, canopy: 3.9, layers: 5, blobs: 8 },
@@ -660,10 +1251,7 @@ export const GLOBAL_DEFAULTS: Partial<PlantParams> = {
   sizeScale: 1,
 };
 
-/**
- * 生成一株植物的低模几何。
- * 尺寸由 PlantDef.params 决定（注册表已完成 全局 -> 生长带 -> 原型 -> 物种 的四层合并）。
- */
+/** 生成一株植物的低模几何 */
 export function buildPlant(def: PlantDef): PlantGeometry {
   const fn = ARCHETYPES[def.archetype];
   if (!fn) throw new Error(`[Vegetation] 未知原型: ${def.archetype}（植物 ${def.id}）`);

@@ -1,6 +1,4 @@
 {
-  "_note": "植被色板。每个键是一条色阶，default 为兜底色，四季可各自覆盖。参数表里的 color / palette 只能引用这里的键；键名拼错会在加载时直接抛错。bloom 是开花版本的默认花色（#a8456b），物种可用 palette 覆盖成 bloomWarm 等自带花色，接口也可在生成时逐次覆盖。",
-  "version": 1,
   "bark": {
     "bark": {
       "default": "#6b4f3a",
@@ -24,6 +22,9 @@
       "autumn": "#b8a284",
       "winter": "#a99a86"
     },
+    "barkWarm": {
+      "default": "#7d5c3d"
+    },
     "soil": {
       "default": "#5f4632"
     },
@@ -36,6 +37,19 @@
     },
     "thorn": {
       "default": "#8b7a4f"
+    },
+    "withered": {
+      "default": "#8f7548",
+      "spring": "#8a7044",
+      "summer": "#94804e",
+      "autumn": "#8b6f42",
+      "winter": "#7c6440"
+    },
+    "witheredDark": {
+      "default": "#6a5232"
+    },
+    "witheredStem": {
+      "default": "#a08e6a"
     }
   },
   "greenery": {
@@ -74,6 +88,13 @@
       "autumn": "#2e4d2e",
       "winter": "#264430"
     },
+    "coniferDeep": {
+      "default": "#24402a",
+      "spring": "#2c4c30",
+      "summer": "#24402a",
+      "autumn": "#274428",
+      "winter": "#1f3a28"
+    },
     "larch": {
       "default": "#5d8a44",
       "spring": "#7cb050",
@@ -95,6 +116,20 @@
       "autumn": "#5f6b2a",
       "winter": "#465432"
     },
+    "jungleDeep": {
+      "default": "#224a20",
+      "spring": "#2b5626",
+      "summer": "#224a20",
+      "autumn": "#4a5522",
+      "winter": "#364229"
+    },
+    "foliageDeep": {
+      "default": "#3b5c2a",
+      "spring": "#4a7333",
+      "summer": "#3b5c2a",
+      "autumn": "#7d5a24",
+      "winter": "#484832"
+    },
     "palmFrond": {
       "default": "#4f8b3a",
       "spring": "#5a9b42",
@@ -105,14 +140,114 @@
     "palmFrondDry": {
       "default": "#8f8746"
     },
+    "bamboo": {
+      "default": "#6d9640",
+      "spring": "#83ad4e",
+      "summer": "#6d9640",
+      "autumn": "#7e9a42",
+      "winter": "#5f7f3c"
+    },
+    "bambooCulm": {
+      "default": "#a9a15f",
+      "spring": "#b5ad6c",
+      "winter": "#9a9257"
+    },
+    "tea": {
+      "default": "#41682f",
+      "spring": "#578c3a",
+      "summer": "#41682f",
+      "autumn": "#3f6a2f",
+      "winter": "#4c5c38"
+    },
+    "mulberry": {
+      "default": "#4f7c33",
+      "spring": "#67a244",
+      "summer": "#4f7c33",
+      "autumn": "#9c7d2c",
+      "winter": "#5a5538"
+    },
+    "cropGreen": {
+      "default": "#6fa03c",
+      "spring": "#84bb4c",
+      "summer": "#6fa03c",
+      "autumn": "#a8a339",
+      "winter": "#7d7a45"
+    },
+    "riceGreen": {
+      "default": "#5c9636",
+      "spring": "#76b348",
+      "summer": "#5c9636",
+      "autumn": "#c2a83c",
+      "winter": "#7b7a45"
+    },
+    "cropGold": {
+      "default": "#d8b348",
+      "spring": "#cbd055",
+      "summer": "#c9c04a",
+      "autumn": "#dcae3e",
+      "winter": "#b2a253"
+    },
+    "cropGoldDark": {
+      "default": "#ac8630",
+      "autumn": "#b08029"
+    },
+    "sorghum": {
+      "default": "#a8503a",
+      "autumn": "#b4573a"
+    },
+    "grassDry": {
+      "default": "#b6a35e",
+      "autumn": "#c9ac57",
+      "winter": "#9d9364"
+    },
     "bloom": {
       "default": "#a8456b"
+    },
+    "bloomWhite": {
+      "default": "#f4f1e6",
+      "spring": "#f8f6ee"
+    },
+    "bloomPink": {
+      "default": "#e08aa6",
+      "spring": "#ec9cb4"
+    },
+    "bloomRed": {
+      "default": "#c2453f",
+      "spring": "#d0524a"
+    },
+    "bloomGold": {
+      "default": "#e8b83f",
+      "spring": "#f2c955",
+      "autumn": "#ddaa33"
     },
     "bloomWarm": {
       "default": "#e8a33d",
       "spring": "#f2b451",
       "summer": "#e8a33d",
       "autumn": "#d98f2f"
+    },
+    "plumBloom": {
+      "default": "#e7a8bd",
+      "spring": "#f0b8cb",
+      "winter": "#df9cb4"
+    },
+    "pollen": {
+      "default": "#f7e8aa",
+      "spring": "#f9eeb8",
+      "summer": "#f7e8aa"
+    },
+    "orchidBloom": {
+      "default": "#c9b06a",
+      "spring": "#d7c078"
+    },
+    "chrysBloom": {
+      "default": "#e6c352",
+      "autumn": "#e0b845"
+    },
+    "lotusBloom": {
+      "default": "#e9a0b4",
+      "spring": "#f0b0c4",
+      "summer": "#e9a0b4"
     },
     "fruit": {
       "default": "#b5392f",
@@ -126,6 +261,30 @@
       "spring": "#e6bd55",
       "summer": "#d9a83a",
       "autumn": "#cf9430"
+    },
+    "fruitPale": {
+      "default": "#e8e0c0",
+      "autumn": "#ded4ae"
+    },
+    "grain": {
+      "default": "#d5b45e",
+      "spring": "#c9cc5c",
+      "summer": "#c7bd52",
+      "autumn": "#d9ae45",
+      "winter": "#b0a25a"
+    },
+    "grainPale": {
+      "default": "#e6d9a8",
+      "autumn": "#e0cf95"
+    },
+    "beanPod": {
+      "default": "#a9b451",
+      "autumn": "#b8a94a"
+    },
+    "witheredNeedle": {
+      "default": "#8a7f52",
+      "autumn": "#8f7f4c",
+      "winter": "#7a714b"
     }
   }
 }

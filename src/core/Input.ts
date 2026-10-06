@@ -1,10 +1,8 @@
-/**
- * 键盘 / 鼠标输入。按 KeyboardEvent.code 记录按键状态，并提供"按下"事件回调。
- */
+/** 键盘 / 鼠标输入 */
 
 import { actionCodes, defaultSettings, type GameAction, type GameSettings } from './GameSettings';
 
-/** 需要阻止浏览器默认行为的按键（页面滚动、F12 开发者工具等） */
+/** 需要阻止浏览器默认行为的按键（页面滚动、F12 */
 const PREVENT_DEFAULT = new Set([
   'ArrowUp',
   'ArrowDown',

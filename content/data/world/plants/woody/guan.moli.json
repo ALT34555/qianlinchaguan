@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.moli","archetype":"shrub","climate":"subtropical","name":"茉莉","latin":"moli","seed":505,"tags":["shrub","flowering","ornamental","fragrant"],"params":{"height":1.1,"canopy":0.8,"blobs":4,"bloomCount":7,"stems":4,"spread":0.5},"palette":{"foliage":"foliage","foliageDark":"foliageDeep","bloom":"bloomWhite"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.moli@seedling","state":"seedling"},
+    {"id":"guan.moli@subadult","state":"subadult"},
+    {"id":"guan.moli@flowering","state":"flowering"},
+    {"id":"guan.moli@fruiting","state":"fruiting"},
+    {"id":"guan.moli@withered","state":"withered"}
+  ]
+}

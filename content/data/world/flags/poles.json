@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "poles": [
+    {
+      "id": "pole.ground.gaogan",
+      "name": "落地高杆",
+      "latin": "gaogan",
+      "kind": "ground",
+      "params": {
+        "height": 5.2,
+        "radius": 0.085,
+        "tipRatio": 0.74,
+        "segments": 3,
+        "joints": 2,
+        "base": { "style": "step", "height": 0.34 },
+        "finial": { "style": "ball", "size": 1 },
+        "collar": { "style": "band", "size": 1 }
+      },
+      "palette": { "pole": "oakWood", "metal": "bronze", "stone": "granite" },
+      "tags": ["outdoor", "square"]
+    },
+    {
+      "id": "pole.ground.miaogan",
+      "name": "庙杆",
+      "latin": "miaogan",
+      "kind": "ground",
+      "params": {
+        "height": 4.2,
+        "radius": 0.1,
+        "tipRatio": 0.68,
+        "segments": 3,
+        "joints": 2,
+        "base": { "style": "stone", "radius": 0.42, "height": 0.42, "sides": 6 },
+        "finial": { "style": "spear", "size": 0.9 },
+        "arm": { "length": 1.25, "rise": 0.16, "radius": 0.068, "sides": 6, "tipKnob": 1.6, "brace": 0.85 },
+        "collar": { "style": "band", "size": 1.1 }
+      },
+      "palette": { "pole": "lacquer", "metal": "brass", "stone": "sandstone" },
+      "tags": ["outdoor", "temple"]
+    },
+    {
+      "id": "pole.horizontal.big",
+      "name": "壁挂横杆",
+      "latin": "bigua",
+      "kind": "horizontal",
+      "params": {
+        "height": 3.2,
+        "radius": 0.07,
+        "tipRatio": 0.84,
+        "segments": 1,
+        "joints": 0,
+        "plate": { "style": "plate", "width": 0.44, "height": 0.62, "depth": 0.09 },
+        "arm": { "length": 2.4, "rise": 0, "radius": 0.062, "sides": 6, "tipKnob": 1.75 },
+        "finial": { "style": "none" },
+        "collar": { "style": "band", "size": 1 }
+      },
+      "palette": { "pole": "iron", "metal": "iron", "stone": "granite", "cord": "hemp" },
+      "tags": ["wall", "indoor"]
+    },
+    {
+      "id": "pole.horizontal.xiecheng",
+      "name": "斜撑横杆",
+      "latin": "xiecheng",
+      "kind": "horizontal",
+      "params": {
+        "height": 2.9,
+        "radius": 0.062,
+        "tipRatio": 0.86,
+        "segments": 1,
+        "joints": 0,
+        "plate": { "style": "bracket", "width": 0.38, "height": 0.56, "depth": 0.08 },
+        "arm": { "length": 1.9, "rise": 0.1, "radius": 0.056, "sides": 6, "tipKnob": 1.6 },
+        "base": { "style": "none" },
+        "finial": { "style": "none" },
+        "collar": { "style": "ring", "size": 0.9 }
+      },
+      "palette": { "pole": "ashWood", "metal": "iron", "cord": "hemp" },
+      "tags": ["wall", "shop"]
+    },
+    {
+      "id": "pole.stick.mugun",
+      "name": "素木棍",
+      "latin": "mugun",
+      "kind": "stick",
+      "params": {
+        "height": 1.9,
+        "radius": 0.042,
+        "sides": 5,
+        "tipRatio": 0.95,
+        "segments": 1,
+        "joints": 0,
+        "base": { "style": "none" },
+        "finial": { "style": "knob", "size": 1 },
+        "collar": { "style": "ring", "size": 0.8 }
+      },
+      "palette": { "pole": "bamboo", "metal": "brass", "cord": "hemp" },
+      "tags": ["hand", "plain"]
+    },
+    {
+      "id": "pole.stick.fangun",
+      "name": "幡棍",
+      "latin": "fangun",
+      "kind": "stick",
+      "params": {
+        "height": 2.1,
+        "radius": 0.045,
+        "sides": 5,
+        "tipRatio": 0.95,
+        "segments": 1,
+        "joints": 0,
+        "base": { "style": "none" },
+        "finial": { "style": "knob", "size": 0.9 },
+        "arm": { "length": 0.95, "rise": 0, "radius": 0.03, "sides": 4, "tipKnob": 1.3 },
+        "collar": { "style": "ring", "size": 0.7 },
+        "cord": 0.55
+      },
+      "palette": { "pole": "ebony", "metal": "brass", "cord": "hemp" },
+      "tags": ["hand", "temple"]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"cao.shamo","archetype":"succulent","climate":"tropical","name":"荒漠多肉","latin":"shamoduorou","seed":605,"tags":["shrub","arid","succulent"],"params":{"height":1.3,"layers":3,"blobs":6,"bloomCount":1,"spread":0.62,"thorns":1},"palette":{"foliage":"foliageDark","foliageDark":"foliage","bloom":"bloomGold"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"cao.shamo@seedling","state":"seedling"},
+    {"id":"cao.shamo@subadult","state":"subadult"},
+    {"id":"cao.shamo@flowering","state":"flowering"},
+    {"id":"cao.shamo@fruiting","state":"fruiting"},
+    {"id":"cao.shamo@withered","state":"withered"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.xuangouzi","archetype":"bramble","climate":"temperate","name":"悬钩子","latin":"xuangouzi","seed":508,"tags":["shrub","berry","thorny","fruit"],"params":{"height":1.35,"blobs":5,"fruitCount":4,"stems":7,"spread":1.15,"thorns":1},"palette":{"foliage":"foliage","foliageDark":"foliageDark","canopy":"canopy","fruit":"fruit"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.xuangouzi@seedling","state":"seedling"},
+    {"id":"guan.xuangouzi@subadult","state":"subadult"},
+    {"id":"guan.xuangouzi@flowering","state":"flowering"},
+    {"id":"guan.xuangouzi@fruiting","state":"fruiting"},
+    {"id":"guan.xuangouzi@withered","state":"withered"}
+  ]
+}

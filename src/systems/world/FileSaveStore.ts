@@ -7,7 +7,10 @@ export class FileSaveStore implements SaveStore {
   private readonly request: typeof fetch;
   constructor(private readonly legacy?: LocalSaveStore, request: typeof fetch = fetch,
     private readonly endpoint = '/api/saves', readonly locationLabel = 'userdata/saves') {
-    // fetch 需以无接收者方式调用，避免浏览器 WebIDL 品牌检查触发 Illegal invocation
+    // fetch 必须以"无接收者"的方式调用
+    // 浏览器会拿本实例当接收者做 WebIDL 品牌检查
+    // TypeError: Failed to exe
+    // 该异常会被下面的 catch 吞成"无法连接本地
     this.request = (...args: Parameters<typeof fetch>) => request(...args);
   }
 
@@ -18,6 +21,8 @@ export class FileSaveStore implements SaveStore {
         headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
     } catch (error) {
+      // 附上真实原因
+      // 曾导致一个 fetch 调用错误被长期误判为本地
       const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
       throw new Error(`无法连接本地存档服务，请通过本地启动器打开游戏，或先导出存档文件备份。（原因：${reason}）`);
     }

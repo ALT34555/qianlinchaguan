@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"cao.yangmao","archetype":"grassClump","climate":"temperate","name":"羊茅草","latin":"yangmaocao","seed":601,"tags":["ground"],"params":{"height":0.52,"blades":7,"bloomCount":0,"spread":0.3},"palette":{"foliage":"foliage","foliageDark":"foliageDark","bloom":"grassDry"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"cao.yangmao@seedling","state":"seedling"},
+    {"id":"cao.yangmao@subadult","state":"subadult"},
+    {"id":"cao.yangmao@flowering","state":"flowering"},
+    {"id":"cao.yangmao@fruiting","state":"fruiting"},
+    {"id":"cao.yangmao@withered","state":"withered"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.lengshan","archetype":"conifer","climate":"cold","name":"冷杉","latin":"lengshan","seed":102,"tags":["tree","conifer","timber","snow"],"params":{"height":18,"trunk":3.1,"canopy":3.3,"layers":6,"layerRadius":3.3,"snow":0.3,"snowOn":["canopy","top"]},"palette":{"foliage":"coniferDark","foliageDark":"coniferDeep"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.lengshan@seedling","state":"seedling"},
+    {"id":"shu.lengshan@subadult","state":"subadult"},
+    {"id":"shu.lengshan@flowering","state":"flowering"},
+    {"id":"shu.lengshan@fruiting","state":"fruiting"},
+    {"id":"shu.lengshan@withered","state":"withered"}
+  ]
+}

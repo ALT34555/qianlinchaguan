@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.hongpi","archetype":"conifer","climate":"temperate","name":"红皮松","latin":"hongpisong","seed":202,"tags":["tree","conifer","timber"],"params":{"height":17,"trunk":8.5,"canopy":3.9,"layers":5,"layerRadius":3.9},"palette":{"foliage":"conifer","foliageDark":"foliageDeep"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.hongpi@seedling","state":"seedling"},
+    {"id":"shu.hongpi@subadult","state":"subadult"},
+    {"id":"shu.hongpi@flowering","state":"flowering"},
+    {"id":"shu.hongpi@fruiting","state":"fruiting"},
+    {"id":"shu.hongpi@withered","state":"withered"}
+  ]
+}

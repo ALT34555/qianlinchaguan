@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { WorldLighting } from './WorldLighting';
 
-/** 生成器的 Uint8 RGB 为 sRGB；光照计算在线性空间中进行。 */
+/** 生成器的 Uint8 RGB 为 sRGB */
 export function decodeSurfaceColors(shader: { fragmentShader: string }): void {
   shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `
     #if defined(USE_COLOR)
@@ -10,7 +10,7 @@ export function decodeSurfaceColors(shader: { fragmentShader: string }): void {
   `);
 }
 
-/** 原创程序水面：世界坐标波纹、深度透明、岸浪及天空/日月反射，不需要外部贴图。 */
+/** 原创程序水面 */
 export class WaterMaterial extends THREE.MeshStandardMaterial {
   private readonly waterUniforms = {
     uWaterTime: { value: 0 }, uWaterDaylight: { value: 1 }, uWaterNight: { value: 0 },
@@ -26,6 +26,8 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
       Object.assign(shader.uniforms, this.waterUniforms);
       shader.vertexShader = `
         attribute float waterDepth;
+        attribute vec2 waterFlow;
+        varying vec2 vWaterFlow;
         varying float vWaterDepth;
         varying vec3 vWaterWorld;
       ` + shader.vertexShader;
@@ -33,6 +35,7 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         #include <worldpos_vertex>
         vWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
         vWaterDepth = waterDepth;
+        vWaterFlow = waterFlow;
       `);
       shader.fragmentShader = `
         uniform float uWaterTime;
@@ -43,6 +46,7 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         uniform vec3 uWaterSun;
         uniform vec3 uWaterMoon;
         varying float vWaterDepth;
+        varying vec2 vWaterFlow;
         varying vec3 vWaterWorld;
       ` + shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `
@@ -50,7 +54,7 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         vec3 waterBaseNormal = inverseTransformDirection(normal, viewMatrix);
         float waterTop = smoothstep(0.45, 0.9, abs(waterBaseNormal.y));
         // 法线波动而不位移几何，岸线、碰撞和相邻区块始终吻合。
-        vec2 wp = vWaterWorld.xz;
+        vec2 wp = vWaterWorld.xz - vWaterFlow * uWaterTime;
         float w1 = dot(wp, vec2(0.72, 0.43)) - uWaterTime * 0.85;
         float w2 = dot(wp, vec2(-0.38, 1.12)) + uWaterTime * 0.62;
         float w3 = dot(wp, vec2(1.63, -0.82)) - uWaterTime * 1.14;
@@ -75,16 +79,21 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         float shore = (1.0 - smoothstep(0.08, 0.7, vWaterDepth)) * smoothstep(0.0, 0.08, vWaterDepth);
         float shoreWave = smoothstep(0.55, 0.95, sin(vWaterDepth * 18.0 - uWaterTime * 1.4 + sin(w1) * 0.6));
         outgoingLight += vec3(0.4, 0.48, 0.45) * shore * shoreWave * (0.08 + 0.32 * uWaterDaylight) * waterTop;
+        // 真正陡落的面产生沿高度下落的水丝与白沫；缓坡水面不加竖向纹理。
+        float falling=(1.0-waterTop)*smoothstep(1.2,4.0,length(vWaterFlow));
+        float streak=smoothstep(0.1,0.85,sin(dot(vWaterWorld.xz,vec2(2.3,1.7))+vWaterWorld.y*.6+uWaterTime*7.0));
+        outgoingLight=mix(outgoingLight,vec3(.63,.78,.8)*(0.25+uWaterDaylight*.65),falling*(.35+streak*.45));
         diffuseColor.a = clamp(0.18 + 0.58 * (1.0 - exp(-vWaterDepth * 0.32)) + reflectionWeight * 0.25, 0.18, 0.9);
+        diffuseColor.a=max(diffuseColor.a,falling*.85);
         #include <opaque_fragment>
       `);
     };
   }
 
-  override customProgramCacheKey(): string { return 'qianlin-water-v1'; }
+  override customProgramCacheKey(): string { return 'qianlin-water-v3-falls'; }
 
   update(time: number, lighting: WorldLighting, daylight: number, night: number): void {
-    // 周期远大于一次游玩；使用真实秒数，暂停历法不会把水纹冻结或加速。
+    // 周期远大于一次游玩
     this.waterUniforms.uWaterTime.value = time;
     this.waterUniforms.uWaterDaylight.value = daylight;
     this.waterUniforms.uWaterNight.value = night;

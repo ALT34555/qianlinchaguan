@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"cao.dixue","archetype":"succulent","climate":"cold","name":"雪线地衣","latin":"dixuediyi","seed":604,"tags":["ground","tundra","snow"],"params":{"height":0.5,"layers":2,"blobs":4,"bloomCount":0,"flowerless":true,"fruitless":true,"snow":0.1,"snowOn":["top"],"spread":0.45},"palette":{"foliage":"foliageDark","foliageDark":"canopy"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"cao.dixue@seedling","state":"seedling"},
+    {"id":"cao.dixue@subadult","state":"subadult"},
+    {"id":"cao.dixue@flowering","state":"flowering"},
+    {"id":"cao.dixue@fruiting","state":"fruiting"},
+    {"id":"cao.dixue@withered","state":"withered"}
+  ]
+}

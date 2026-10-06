@@ -1,16 +1,8 @@
-/**
- * 植被散布：纯粹的"某个方块该长什么"判定，不依赖 three、不接触场景图。
- *
- * 之所以单独成文件：世界接入（区块加载时撒树）下一步再做，届时主线程与 Worker
- * 两侧都要用同一套判定；这里保持无副作用，谁都能调用。
- *
- * 输入是相邻两个区块的地表数据（主线程侧的 LoadedChunk 就有），
- * 只需继续向外读 1 格即可覆盖最高 3 格冠幅的跨界遮挡判断。
- */
+/** 植被散布 */
 import { hash2 } from '../../../core/math/Random';
 import { CHUNK_SIZE, SEA_LEVEL } from '../../../core/config';
-import { Block } from '../Blocks';
-import { PLANT_IDS, getPlantVariant } from './Plants';
+import { Block, blockBase } from '../Blocks';
+import { getPlantVariant, scatterablePlants } from './Plants';
 import type { ClimateZone } from './types';
 
 /** 每个方块都重复调用的相邻查询函数 */
@@ -29,60 +21,32 @@ export interface PlantPlacement {
   z: number;
   /** 地表顶面高度，植物基点在此 */
   y: number;
-  /** 植物 id，交给 buildPlantById 取几何 */
+  /** 植物 id */
   plant: string;
-  /** 0~1 的方位随机，接入时用于绕 Y 轴旋转与轻微缩放 */
+  /** 0~1 的方位随机 */
   yaw: number;
   /** 0.85~1.2 的尺寸抖动 */
   size: number;
 }
 
-/**
- * 生长带 -> 候选物种。
- * 用 id 前缀做气候筛选，避免手写四份物种清单（参数表里已声明 climate）。
- */
-const CLIMATE_OF_PREFIX: readonly [string, ClimateZone][] = [
-  ['tree.trop.', 'tropical'],
-  ['tree.sub.', 'subtropical'],
-  ['tree.temp.', 'temperate'],
-  ['tree.cold.', 'cold'],
-  ['shrub.trop.', 'tropical'],
-  ['shrub.sub.', 'subtropical'],
-  ['shrub.temp.', 'temperate'],
-  ['shrub.cold.', 'cold'],
-  ['sprout.', 'temperate'],
-];
-
-function climateOf(id: string): ClimateZone | undefined {
-  for (const [prefix, climate] of CLIMATE_OF_PREFIX) if (id.startsWith(prefix)) return climate;
-  return undefined;
-}
-
-/** 按生长带分组的候选物种缓存 */
+/** 生长带 -> 候选物种缓存 */
 const candidatesByClimate = new Map<ClimateZone, string[]>();
 function candidatesFor(climate: ClimateZone): string[] {
   let list = candidatesByClimate.get(climate);
   if (!list) {
-    list = PLANT_IDS.filter((id) => climateOf(id) === climate);
+    list = scatterablePlants(climate).map((v) => v.id);
     candidatesByClimate.set(climate, list);
   }
   return list;
 }
 
-/**
- * 判断某方块能否长植物。
- * 规则（与地表的体素语义一致）：
- *   1. 该列必须在水面之上（有水就不是陆地）；
- *   2. 必须是草方块 / 林地腐殖土 / 旱地土 / 沙（沙地只长耐旱物种，由标签控制）；
- *   3. 不能是陡坡（四邻高差超过阈值时视为裸岩）；
- *   4. 邻居必须已加载，避免区块边缘出现"半株树"或悬空树。
- */
+/** 判断某方块能否长植物 */
 export function canHostPlant(q: SurfaceQuery, x: number, z: number, maxSlope = 3): boolean {
   const h = q.height(x, z);
   if (!Number.isFinite(h)) return false;
   const wl = q.waterLevel(x, z);
   if (Number.isFinite(wl) && h < wl) return false;
-  const s = q.surface(x, z);
+  const s = blockBase(q.surface(x, z));
   if (s !== Block.GRASS && s !== Block.FOREST_SOIL && s !== Block.DRY_DIRT && s !== Block.SAND) return false;
   let maxDelta = 0;
   for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
@@ -94,12 +58,7 @@ export function canHostPlant(q: SurfaceQuery, x: number, z: number, maxSlope = 3
   return maxDelta <= maxSlope;
 }
 
-/**
- * 单位区块的植被散布。
- *
- * 候选密度（0~1）：0.35 约等于每 3 个方块一株，林地里会自然连成冠层；
- * 单体物种（大乔木）靠区域噪声成簇，避免整片均匀铺满。
- */
+/** 单位区块的植被散布 */
 export function scatterPlants(
   cx: number,
   cz: number,
@@ -126,7 +85,7 @@ export function scatterPlants(
       const id = candidates[idx];
       const variant = getPlantVariant(id);
       // 沙地只长带 'arid' 标签的物种，其余地块不限
-      if (q.surface(x, z) === Block.SAND && !(variant?.tags ?? []).includes('arid')) continue;
+      if (blockBase(q.surface(x, z)) === Block.SAND && !(variant?.tags ?? []).includes('arid')) continue;
       out.push({
         x,
         z,
@@ -140,10 +99,10 @@ export function scatterPlants(
   return out;
 }
 
-/** 便捷构造：从区块高度/表层数组生成查询函数（含四周一圈邻居） */
+/** 便捷构造 */
 export function chunkQuery(
   heights: Int16Array | Float32Array,
-  surfaces: Uint8Array,
+  surfaces: Uint32Array | Uint16Array | Uint8Array,
   waterLevels: Float32Array,
   paddedSize: number,
   originX: number,

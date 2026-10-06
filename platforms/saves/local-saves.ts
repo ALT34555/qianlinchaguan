@@ -1,9 +1,5 @@
 /// <reference types="node" />
-/**
- * Node 本地存档适配层：
- * 用于 dev / preview 服务及 Windows 本地启动器，
- * 浏览器通过 /api/saves 接口与本地文件系统交互。
- */
+/** Node 本地存档服务实现 */
 import { mkdir, readdir, readFile, lstat, open, rename, unlink } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -13,8 +9,7 @@ import type { LocalSave, SaveList } from '../../src/systems/world/LocalSaveStore
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const VALID_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
-/** 注意：本文件会被 platforms/windows/launcher.mjs 直接以 Node 类型擦除方式加载，
- *  因此这里不使用"构造函数参数属性"（parameter property）等需要真正转译的 TS 语法。 */
+/** Node类型擦除兼容错误类 */
 class SaveError extends Error {
   readonly status: number;
   constructor(message: string, status = 400) { super(message); this.status = status; }
@@ -97,7 +92,7 @@ export class FileSaveService {
       const { entries } = await this.scan();
       const existing = entries.find(entry => entry.item.id === id);
       if (existing) return { item: existing.item, created: false };
-      // 迁移目标存在但已损坏时保留原文件，不能用旧浏览器数据悄悄覆盖。
+      // 目标损坏时保留原文件防覆盖
       const filename = `${id}.json`;
       try { await lstat(join(this.directory, filename)); throw new SaveError('已有迁移存档无法读取，原文件已保留。'); }
       catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }

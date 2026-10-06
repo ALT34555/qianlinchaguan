@@ -1,0 +1,4360 @@
+{
+  "version": 1,
+  "generator": "src/systems/world/rocks/（Rocks.ts / archetypes.ts / geometry.ts）",
+  "note": "统计量由当前参数表与生成器实时算出。⚠️ 各处 glb 路径是**导出目标路径，目前尚未生成**。字段语义、形态档规则与区块配色办法见 .fordev_docs/rocks.md。重出本文件：node 000base/tools/rock-manifest.mjs",
+  "units": [
+    {
+      "id": "rock.boulder",
+      "name": "巨砾",
+      "latin": "juli",
+      "archetype": "boulder",
+      "family": "igneous",
+      "seed": 11,
+      "tags": [
+        "chunk:1",
+        "chunk:3",
+        "chunk:8",
+        "chunk:103",
+        "chunk:108",
+        "chunk:204",
+        "chunk:304",
+        "chunk:403",
+        "chunk:406",
+        "chunk:408",
+        "large",
+        "universal",
+        "dry",
+        "cold"
+      ],
+      "chunks": [
+        1,
+        3,
+        8,
+        103,
+        108,
+        204,
+        304,
+        403,
+        406,
+        408
+      ],
+      "chunkPalette": {
+        "1": {
+          "body": "#92958d",
+          "band": "#6e726b",
+          "cap": "#a8aba1",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "3": {
+          "body": "#92958d",
+          "band": "#6e726b",
+          "cap": "#a8aba1",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "8": {
+          "body": "#5c6664",
+          "band": "#414a48",
+          "cap": "#747d7a",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "103": {
+          "body": "#92958d",
+          "band": "#6e726b",
+          "cap": "#a8aba1",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "108": {
+          "body": "#5c6664",
+          "band": "#414a48",
+          "cap": "#747d7a",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "204": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "304": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "403": {
+          "body": "#92958d",
+          "band": "#6e726b",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#eef4f9"
+        },
+        "406": {
+          "body": "#92958d",
+          "band": "#6e726b",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#eef4f9"
+        },
+        "408": {
+          "body": "#737f89",
+          "band": "#57626b",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#eef4f9"
+        }
+      },
+      "geometries": {
+        "outcrop": {
+          "spring": {
+            "height": 1.096,
+            "radius": 1.26,
+            "bottom": -0.317,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:115 moss:5",
+            "coverRatio": 0.042,
+            "glb": "singles/rock.boulder__outcrop__spring.glb"
+          },
+          "summer": {
+            "height": 1.096,
+            "radius": 1.26,
+            "bottom": -0.317,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:115 moss:5",
+            "coverRatio": 0.042,
+            "glb": "singles/rock.boulder__outcrop__summer.glb"
+          },
+          "autumn": {
+            "height": 1.096,
+            "radius": 1.26,
+            "bottom": -0.317,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:100 moss:20",
+            "coverRatio": 0.167,
+            "glb": "singles/rock.boulder__outcrop__autumn.glb"
+          },
+          "winter": {
+            "height": 1.096,
+            "radius": 1.26,
+            "bottom": -0.317,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:100 moss:20",
+            "coverRatio": 0.167,
+            "glb": "singles/rock.boulder__outcrop__winter.glb"
+          }
+        },
+        "buried": {
+          "spring": {
+            "height": 0.549,
+            "radius": 1.219,
+            "bottom": -0.423,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__buried__spring.glb"
+          },
+          "summer": {
+            "height": 0.549,
+            "radius": 1.219,
+            "bottom": -0.423,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__buried__summer.glb"
+          },
+          "autumn": {
+            "height": 0.549,
+            "radius": 1.219,
+            "bottom": -0.423,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__buried__autumn.glb"
+          },
+          "winter": {
+            "height": 0.549,
+            "radius": 1.219,
+            "bottom": -0.423,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__buried__winter.glb"
+          }
+        },
+        "stacked": {
+          "spring": {
+            "height": 1.096,
+            "radius": 1.26,
+            "bottom": -0.317,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__stacked__spring.glb"
+          },
+          "summer": {
+            "height": 1.096,
+            "radius": 1.26,
+            "bottom": -0.317,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__stacked__summer.glb"
+          },
+          "autumn": {
+            "height": 1.096,
+            "radius": 1.26,
+            "bottom": -0.317,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__stacked__autumn.glb"
+          },
+          "winter": {
+            "height": 1.096,
+            "radius": 1.26,
+            "bottom": -0.317,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__stacked__winter.glb"
+          }
+        },
+        "crusted": {
+          "spring": {
+            "height": 1.03,
+            "radius": 1.184,
+            "bottom": -0.298,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__crusted__spring.glb"
+          },
+          "summer": {
+            "height": 1.03,
+            "radius": 1.184,
+            "bottom": -0.298,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__crusted__summer.glb"
+          },
+          "autumn": {
+            "height": 1.03,
+            "radius": 1.184,
+            "bottom": -0.298,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__crusted__autumn.glb"
+          },
+          "winter": {
+            "height": 1.03,
+            "radius": 1.184,
+            "bottom": -0.298,
+            "triangles": 120,
+            "vertices": 360,
+            "materials": "solid:95 moss:25",
+            "coverRatio": 0.208,
+            "glb": "singles/rock.boulder__crusted__winter.glb"
+          }
+        }
+      }
+    },
+    {
+      "id": "rock.block",
+      "name": "岩块",
+      "latin": "yankuai",
+      "archetype": "block",
+      "family": "igneous",
+      "seed": 23,
+      "tags": [
+        "chunk:4",
+        "chunk:9",
+        "chunk:10",
+        "chunk:104",
+        "chunk:402",
+        "chunk:409",
+        "hard",
+        "bedrock",
+        "cold",
+        "dry"
+      ],
+      "chunks": [
+        4,
+        9,
+        10,
+        104,
+        402,
+        409
+      ],
+      "chunkPalette": {
+        "4": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "9": {
+          "body": "#b89c78",
+          "band": "#93795a",
+          "cap": "#cbb28f",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "10": {
+          "body": "#a6a69b",
+          "band": "#84847a",
+          "cap": "#bcbcb2",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "104": {
+          "body": "#d2ccad",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "402": {
+          "body": "#afc8cc",
+          "band": "#8ea9ae",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#eef4f9"
+        },
+        "409": {
+          "body": "#afc8cc",
+          "band": "#8ea9ae",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#eef4f9"
+        }
+      },
+      "geometries": {
+        "outcrop": {
+          "spring": {
+            "height": 1.656,
+            "radius": 1.082,
+            "bottom": -0.195,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:91 moss:5",
+            "coverRatio": 0.052,
+            "glb": "singles/rock.block__outcrop__spring.glb"
+          },
+          "summer": {
+            "height": 1.656,
+            "radius": 1.082,
+            "bottom": -0.195,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:91 moss:5",
+            "coverRatio": 0.052,
+            "glb": "singles/rock.block__outcrop__summer.glb"
+          },
+          "autumn": {
+            "height": 1.656,
+            "radius": 1.082,
+            "bottom": -0.195,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__outcrop__autumn.glb"
+          },
+          "winter": {
+            "height": 1.656,
+            "radius": 1.082,
+            "bottom": -0.195,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__outcrop__winter.glb"
+          }
+        },
+        "buried": {
+          "spring": {
+            "height": 1.125,
+            "radius": 1.044,
+            "bottom": -0.405,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__buried__spring.glb"
+          },
+          "summer": {
+            "height": 1.125,
+            "radius": 1.044,
+            "bottom": -0.405,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__buried__summer.glb"
+          },
+          "autumn": {
+            "height": 1.125,
+            "radius": 1.044,
+            "bottom": -0.405,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__buried__autumn.glb"
+          },
+          "winter": {
+            "height": 1.125,
+            "radius": 1.044,
+            "bottom": -0.405,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__buried__winter.glb"
+          }
+        },
+        "stacked": {
+          "spring": {
+            "height": 1.939,
+            "radius": 1.082,
+            "bottom": -0.195,
+            "triangles": 112,
+            "vertices": 336,
+            "materials": "solid:90 moss:22",
+            "coverRatio": 0.196,
+            "glb": "singles/rock.block__stacked__spring.glb"
+          },
+          "summer": {
+            "height": 1.939,
+            "radius": 1.082,
+            "bottom": -0.195,
+            "triangles": 112,
+            "vertices": 336,
+            "materials": "solid:90 moss:22",
+            "coverRatio": 0.196,
+            "glb": "singles/rock.block__stacked__summer.glb"
+          },
+          "autumn": {
+            "height": 1.939,
+            "radius": 1.082,
+            "bottom": -0.195,
+            "triangles": 112,
+            "vertices": 336,
+            "materials": "solid:90 moss:22",
+            "coverRatio": 0.196,
+            "glb": "singles/rock.block__stacked__autumn.glb"
+          },
+          "winter": {
+            "height": 1.939,
+            "radius": 1.082,
+            "bottom": -0.195,
+            "triangles": 112,
+            "vertices": 336,
+            "materials": "solid:90 moss:22",
+            "coverRatio": 0.196,
+            "glb": "singles/rock.block__stacked__winter.glb"
+          }
+        },
+        "crusted": {
+          "spring": {
+            "height": 1.556,
+            "radius": 1.017,
+            "bottom": -0.184,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__crusted__spring.glb"
+          },
+          "summer": {
+            "height": 1.556,
+            "radius": 1.017,
+            "bottom": -0.184,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__crusted__summer.glb"
+          },
+          "autumn": {
+            "height": 1.556,
+            "radius": 1.017,
+            "bottom": -0.184,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__crusted__autumn.glb"
+          },
+          "winter": {
+            "height": 1.556,
+            "radius": 1.017,
+            "bottom": -0.184,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.block__crusted__winter.glb"
+          }
+        }
+      }
+    },
+    {
+      "id": "rock.ledge",
+      "name": "石台",
+      "latin": "shitai",
+      "archetype": "ledge",
+      "family": "sedimentary",
+      "seed": 37,
+      "tags": [
+        "chunk:8",
+        "chunk:108",
+        "chunk:203",
+        "chunk:208",
+        "chunk:308",
+        "large",
+        "wide",
+        "plateau",
+        "dry"
+      ],
+      "chunks": [
+        8,
+        108,
+        203,
+        208,
+        308
+      ],
+      "chunkPalette": {
+        "8": {
+          "body": "#5c6664",
+          "band": "#414a48",
+          "cap": "#747d7a",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "108": {
+          "body": "#5c6664",
+          "band": "#414a48",
+          "cap": "#747d7a",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "203": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "208": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "308": {
+          "body": "#a6a69b",
+          "band": "#93795a",
+          "cap": "#bcbcb2",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        }
+      },
+      "geometries": {
+        "outcrop": {
+          "spring": {
+            "height": 1.881,
+            "radius": 1.581,
+            "bottom": -0.382,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:68",
+            "coverRatio": 0,
+            "glb": "singles/rock.ledge__outcrop__spring.glb"
+          },
+          "summer": {
+            "height": 1.881,
+            "radius": 1.581,
+            "bottom": -0.382,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:68",
+            "coverRatio": 0,
+            "glb": "singles/rock.ledge__outcrop__summer.glb"
+          },
+          "autumn": {
+            "height": 1.881,
+            "radius": 1.581,
+            "bottom": -0.382,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:64 moss:4",
+            "coverRatio": 0.059,
+            "glb": "singles/rock.ledge__outcrop__autumn.glb"
+          },
+          "winter": {
+            "height": 1.881,
+            "radius": 1.581,
+            "bottom": -0.382,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:60 moss:8",
+            "coverRatio": 0.118,
+            "glb": "singles/rock.ledge__outcrop__winter.glb"
+          }
+        },
+        "buried": {
+          "spring": {
+            "height": 1.547,
+            "radius": 1.526,
+            "bottom": -0.412,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:59 moss:9",
+            "coverRatio": 0.132,
+            "glb": "singles/rock.ledge__buried__spring.glb"
+          },
+          "summer": {
+            "height": 1.547,
+            "radius": 1.526,
+            "bottom": -0.412,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:59 moss:9",
+            "coverRatio": 0.132,
+            "glb": "singles/rock.ledge__buried__summer.glb"
+          },
+          "autumn": {
+            "height": 1.547,
+            "radius": 1.526,
+            "bottom": -0.412,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:59 moss:9",
+            "coverRatio": 0.132,
+            "glb": "singles/rock.ledge__buried__autumn.glb"
+          },
+          "winter": {
+            "height": 1.547,
+            "radius": 1.526,
+            "bottom": -0.412,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:59 moss:9",
+            "coverRatio": 0.132,
+            "glb": "singles/rock.ledge__buried__winter.glb"
+          }
+        },
+        "stacked": {
+          "spring": {
+            "height": 2.294,
+            "radius": 1.619,
+            "bottom": -0.382,
+            "triangles": 88,
+            "vertices": 264,
+            "materials": "solid:75 moss:13",
+            "coverRatio": 0.148,
+            "glb": "singles/rock.ledge__stacked__spring.glb"
+          },
+          "summer": {
+            "height": 2.294,
+            "radius": 1.619,
+            "bottom": -0.382,
+            "triangles": 88,
+            "vertices": 264,
+            "materials": "solid:75 moss:13",
+            "coverRatio": 0.148,
+            "glb": "singles/rock.ledge__stacked__summer.glb"
+          },
+          "autumn": {
+            "height": 2.294,
+            "radius": 1.619,
+            "bottom": -0.382,
+            "triangles": 88,
+            "vertices": 264,
+            "materials": "solid:75 moss:13",
+            "coverRatio": 0.148,
+            "glb": "singles/rock.ledge__stacked__autumn.glb"
+          },
+          "winter": {
+            "height": 2.294,
+            "radius": 1.619,
+            "bottom": -0.382,
+            "triangles": 88,
+            "vertices": 264,
+            "materials": "solid:75 moss:13",
+            "coverRatio": 0.148,
+            "glb": "singles/rock.ledge__stacked__winter.glb"
+          }
+        },
+        "crusted": {
+          "spring": {
+            "height": 1.768,
+            "radius": 1.486,
+            "bottom": -0.359,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:59 moss:9",
+            "coverRatio": 0.132,
+            "glb": "singles/rock.ledge__crusted__spring.glb"
+          },
+          "summer": {
+            "height": 1.768,
+            "radius": 1.486,
+            "bottom": -0.359,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:59 moss:9",
+            "coverRatio": 0.132,
+            "glb": "singles/rock.ledge__crusted__summer.glb"
+          },
+          "autumn": {
+            "height": 1.768,
+            "radius": 1.486,
+            "bottom": -0.359,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:59 moss:9",
+            "coverRatio": 0.132,
+            "glb": "singles/rock.ledge__crusted__autumn.glb"
+          },
+          "winter": {
+            "height": 1.768,
+            "radius": 1.486,
+            "bottom": -0.359,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:59 moss:9",
+            "coverRatio": 0.132,
+            "glb": "singles/rock.ledge__crusted__winter.glb"
+          }
+        }
+      }
+    },
+    {
+      "id": "rock.slab",
+      "name": "板岩席",
+      "latin": "banyanxi",
+      "archetype": "slab",
+      "family": "metamorphic",
+      "seed": 53,
+      "tags": [
+        "chunk:303",
+        "chunk:308",
+        "chunk:403",
+        "chunk:408",
+        "flat",
+        "layered",
+        "cold",
+        "permeable"
+      ],
+      "chunks": [
+        303,
+        308,
+        403,
+        408
+      ],
+      "chunkPalette": {
+        "303": {
+          "body": "#737f89",
+          "band": "#57626b",
+          "cap": "#8d99a2",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "308": {
+          "body": "#737f89",
+          "band": "#57626b",
+          "cap": "#8d99a2",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "403": {
+          "body": "#737f89",
+          "band": "#57626b",
+          "cap": "#8d99a2",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "408": {
+          "body": "#737f89",
+          "band": "#57626b",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#eef4f9"
+        }
+      },
+      "geometries": {
+        "outcrop": {
+          "spring": {
+            "height": 0.991,
+            "radius": 1.355,
+            "bottom": -0.218,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:68 moss:12",
+            "coverRatio": 0.15,
+            "glb": "singles/rock.slab__outcrop__spring.glb"
+          },
+          "summer": {
+            "height": 0.991,
+            "radius": 1.355,
+            "bottom": -0.218,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:68 moss:12",
+            "coverRatio": 0.15,
+            "glb": "singles/rock.slab__outcrop__summer.glb"
+          },
+          "autumn": {
+            "height": 0.991,
+            "radius": 1.355,
+            "bottom": -0.218,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__outcrop__autumn.glb"
+          },
+          "winter": {
+            "height": 0.991,
+            "radius": 1.355,
+            "bottom": -0.218,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__outcrop__winter.glb"
+          }
+        },
+        "buried": {
+          "spring": {
+            "height": 0.969,
+            "radius": 1.311,
+            "bottom": -0.201,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__buried__spring.glb"
+          },
+          "summer": {
+            "height": 0.969,
+            "radius": 1.311,
+            "bottom": -0.201,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__buried__summer.glb"
+          },
+          "autumn": {
+            "height": 0.969,
+            "radius": 1.311,
+            "bottom": -0.201,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__buried__autumn.glb"
+          },
+          "winter": {
+            "height": 0.969,
+            "radius": 1.311,
+            "bottom": -0.201,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__buried__winter.glb"
+          }
+        },
+        "stacked": {
+          "spring": {
+            "height": 1.323,
+            "radius": 1.355,
+            "bottom": -0.218,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.slab__stacked__spring.glb"
+          },
+          "summer": {
+            "height": 1.323,
+            "radius": 1.355,
+            "bottom": -0.218,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.slab__stacked__summer.glb"
+          },
+          "autumn": {
+            "height": 1.323,
+            "radius": 1.355,
+            "bottom": -0.218,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.slab__stacked__autumn.glb"
+          },
+          "winter": {
+            "height": 1.323,
+            "radius": 1.355,
+            "bottom": -0.218,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:77 moss:19",
+            "coverRatio": 0.198,
+            "glb": "singles/rock.slab__stacked__winter.glb"
+          }
+        },
+        "crusted": {
+          "spring": {
+            "height": 0.931,
+            "radius": 1.273,
+            "bottom": -0.205,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__crusted__spring.glb"
+          },
+          "summer": {
+            "height": 0.931,
+            "radius": 1.273,
+            "bottom": -0.205,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__crusted__summer.glb"
+          },
+          "autumn": {
+            "height": 0.931,
+            "radius": 1.273,
+            "bottom": -0.205,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__crusted__autumn.glb"
+          },
+          "winter": {
+            "height": 0.931,
+            "radius": 1.273,
+            "bottom": -0.205,
+            "triangles": 80,
+            "vertices": 240,
+            "materials": "solid:64 moss:16",
+            "coverRatio": 0.2,
+            "glb": "singles/rock.slab__crusted__winter.glb"
+          }
+        }
+      }
+    },
+    {
+      "id": "rock.shard",
+      "name": "碎岩",
+      "latin": "suiyan",
+      "archetype": "shard",
+      "family": "metamorphic",
+      "seed": 67,
+      "tags": [
+        "chunk:4",
+        "chunk:6",
+        "chunk:9",
+        "chunk:11",
+        "chunk:101",
+        "chunk:103",
+        "chunk:104",
+        "chunk:105",
+        "chunk:106",
+        "chunk:109",
+        "chunk:201",
+        "chunk:205",
+        "chunk:206",
+        "chunk:301",
+        "chunk:305",
+        "chunk:306",
+        "chunk:307",
+        "chunk:404",
+        "chunk:405",
+        "small",
+        "angular",
+        "universal",
+        "ground"
+      ],
+      "chunks": [
+        4,
+        6,
+        9,
+        11,
+        101,
+        103,
+        104,
+        105,
+        106,
+        109,
+        201,
+        205,
+        206,
+        301,
+        305,
+        306,
+        307,
+        404,
+        405
+      ],
+      "chunkPalette": {
+        "4": {
+          "body": "#b89c78",
+          "band": "#93795a",
+          "cap": "#cbb28f",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "6": {
+          "body": "#a6a69b",
+          "band": "#6e726b",
+          "cap": "#bcbcb2",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "9": {
+          "body": "#988a72",
+          "band": "#786c58",
+          "cap": "#cbb28f",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "11": {
+          "body": "#7f7f7f",
+          "band": "#6e726b",
+          "cap": "#bcbcb2",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "101": {
+          "body": "#b89c78",
+          "band": "#93795a",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "103": {
+          "body": "#988a72",
+          "band": "#786c58",
+          "cap": "#cbb28f",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "104": {
+          "body": "#d2ccad",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "105": {
+          "body": "#8b8682",
+          "band": "#6b6764",
+          "cap": "#8e938b",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "106": {
+          "body": "#988a72",
+          "band": "#786c58",
+          "cap": "#cbb28f",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "109": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "201": {
+          "body": "#8e938b",
+          "band": "#6f746d",
+          "cap": "#8b8682",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "205": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#cbb28f",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "206": {
+          "body": "#a6a69b",
+          "band": "#6e726b",
+          "cap": "#bcbcb2",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "301": {
+          "body": "#8e938b",
+          "band": "#6f746d",
+          "cap": "#8b8682",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "305": {
+          "body": "#7f7f7f",
+          "band": "#6e726b",
+          "cap": "#bcbcb2",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "306": {
+          "body": "#7f7f7f",
+          "band": "#6e726b",
+          "cap": "#bcbcb2",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "307": {
+          "body": "#8b8682",
+          "band": "#6b6764",
+          "cap": "#cbb28f",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "404": {
+          "body": "#a1a79b",
+          "band": "#6b6764",
+          "cap": "#8e938b",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "405": {
+          "body": "#a6a69b",
+          "band": "#6e726b",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#eef4f9"
+        }
+      },
+      "geometries": {
+        "outcrop": {
+          "spring": {
+            "height": 0.649,
+            "radius": 1.04,
+            "bottom": -0.285,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:48 moss:8",
+            "coverRatio": 0.143,
+            "glb": "singles/rock.shard__outcrop__spring.glb"
+          },
+          "summer": {
+            "height": 0.649,
+            "radius": 1.04,
+            "bottom": -0.285,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:48 moss:8",
+            "coverRatio": 0.143,
+            "glb": "singles/rock.shard__outcrop__summer.glb"
+          },
+          "autumn": {
+            "height": 0.649,
+            "radius": 1.04,
+            "bottom": -0.285,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:44 moss:12",
+            "coverRatio": 0.214,
+            "glb": "singles/rock.shard__outcrop__autumn.glb"
+          },
+          "winter": {
+            "height": 0.649,
+            "radius": 1.04,
+            "bottom": -0.285,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:42 moss:14",
+            "coverRatio": 0.25,
+            "glb": "singles/rock.shard__outcrop__winter.glb"
+          }
+        },
+        "buried": {
+          "spring": {
+            "height": 0.564,
+            "radius": 0.993,
+            "bottom": -0.234,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:42 moss:14",
+            "coverRatio": 0.25,
+            "glb": "singles/rock.shard__buried__spring.glb"
+          },
+          "summer": {
+            "height": 0.564,
+            "radius": 0.993,
+            "bottom": -0.234,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:42 moss:14",
+            "coverRatio": 0.25,
+            "glb": "singles/rock.shard__buried__summer.glb"
+          },
+          "autumn": {
+            "height": 0.564,
+            "radius": 0.993,
+            "bottom": -0.234,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:42 moss:14",
+            "coverRatio": 0.25,
+            "glb": "singles/rock.shard__buried__autumn.glb"
+          },
+          "winter": {
+            "height": 0.564,
+            "radius": 0.993,
+            "bottom": -0.234,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:42 moss:14",
+            "coverRatio": 0.25,
+            "glb": "singles/rock.shard__buried__winter.glb"
+          }
+        },
+        "stacked": {
+          "spring": {
+            "height": 0.953,
+            "radius": 1.096,
+            "bottom": -0.285,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:52 moss:16",
+            "coverRatio": 0.235,
+            "glb": "singles/rock.shard__stacked__spring.glb"
+          },
+          "summer": {
+            "height": 0.953,
+            "radius": 1.096,
+            "bottom": -0.285,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:52 moss:16",
+            "coverRatio": 0.235,
+            "glb": "singles/rock.shard__stacked__summer.glb"
+          },
+          "autumn": {
+            "height": 0.953,
+            "radius": 1.096,
+            "bottom": -0.285,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:52 moss:16",
+            "coverRatio": 0.235,
+            "glb": "singles/rock.shard__stacked__autumn.glb"
+          },
+          "winter": {
+            "height": 0.953,
+            "radius": 1.096,
+            "bottom": -0.285,
+            "triangles": 68,
+            "vertices": 204,
+            "materials": "solid:52 moss:16",
+            "coverRatio": 0.235,
+            "glb": "singles/rock.shard__stacked__winter.glb"
+          }
+        },
+        "crusted": {
+          "spring": {
+            "height": 0.61,
+            "radius": 0.977,
+            "bottom": -0.268,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:38 moss:18",
+            "coverRatio": 0.321,
+            "glb": "singles/rock.shard__crusted__spring.glb"
+          },
+          "summer": {
+            "height": 0.61,
+            "radius": 0.977,
+            "bottom": -0.268,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:38 moss:18",
+            "coverRatio": 0.321,
+            "glb": "singles/rock.shard__crusted__summer.glb"
+          },
+          "autumn": {
+            "height": 0.61,
+            "radius": 0.977,
+            "bottom": -0.268,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:38 moss:18",
+            "coverRatio": 0.321,
+            "glb": "singles/rock.shard__crusted__autumn.glb"
+          },
+          "winter": {
+            "height": 0.61,
+            "radius": 0.977,
+            "bottom": -0.268,
+            "triangles": 56,
+            "vertices": 168,
+            "materials": "solid:38 moss:18",
+            "coverRatio": 0.321,
+            "glb": "singles/rock.shard__crusted__winter.glb"
+          }
+        }
+      }
+    },
+    {
+      "id": "rock.spire",
+      "name": "尖石",
+      "latin": "jianshi",
+      "archetype": "spire",
+      "family": "igneous",
+      "seed": 83,
+      "tags": [
+        "chunk:3",
+        "chunk:10",
+        "chunk:103",
+        "chunk:108",
+        "chunk:403",
+        "chunk:406",
+        "tall",
+        "hard",
+        "high",
+        "cold"
+      ],
+      "chunks": [
+        3,
+        10,
+        103,
+        108,
+        403,
+        406
+      ],
+      "chunkPalette": {
+        "3": {
+          "body": "#92958d",
+          "band": "#6e726b",
+          "cap": "#a8aba1",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "10": {
+          "body": "#a6a69b",
+          "band": "#84847a",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "103": {
+          "body": "#5c6664",
+          "band": "#414a48",
+          "cap": "#747d7a",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "108": {
+          "body": "#5c6664",
+          "band": "#414a48",
+          "cap": "#747d7a",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "403": {
+          "body": "#92958d",
+          "band": "#6e726b",
+          "cap": "#a8aba1",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "406": {
+          "body": "#92958d",
+          "band": "#6e726b",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#eef4f9"
+        }
+      },
+      "geometries": {
+        "outcrop": {
+          "spring": {
+            "height": 1.962,
+            "radius": 0.656,
+            "bottom": -0.162,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:72 moss:2",
+            "coverRatio": 0.027,
+            "glb": "singles/rock.spire__outcrop__spring.glb"
+          },
+          "summer": {
+            "height": 1.962,
+            "radius": 0.656,
+            "bottom": -0.162,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:72 moss:2",
+            "coverRatio": 0.027,
+            "glb": "singles/rock.spire__outcrop__summer.glb"
+          },
+          "autumn": {
+            "height": 1.962,
+            "radius": 0.656,
+            "bottom": -0.162,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:66 moss:8",
+            "coverRatio": 0.108,
+            "glb": "singles/rock.spire__outcrop__autumn.glb"
+          },
+          "winter": {
+            "height": 1.962,
+            "radius": 0.656,
+            "bottom": -0.162,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:66 moss:8",
+            "coverRatio": 0.108,
+            "glb": "singles/rock.spire__outcrop__winter.glb"
+          }
+        },
+        "buried": {
+          "spring": {
+            "height": 1.211,
+            "radius": 0.622,
+            "bottom": -0.53,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:63 moss:11",
+            "coverRatio": 0.149,
+            "glb": "singles/rock.spire__buried__spring.glb"
+          },
+          "summer": {
+            "height": 1.211,
+            "radius": 0.622,
+            "bottom": -0.53,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:63 moss:11",
+            "coverRatio": 0.149,
+            "glb": "singles/rock.spire__buried__summer.glb"
+          },
+          "autumn": {
+            "height": 1.211,
+            "radius": 0.622,
+            "bottom": -0.53,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:63 moss:11",
+            "coverRatio": 0.149,
+            "glb": "singles/rock.spire__buried__autumn.glb"
+          },
+          "winter": {
+            "height": 1.211,
+            "radius": 0.622,
+            "bottom": -0.53,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:63 moss:11",
+            "coverRatio": 0.149,
+            "glb": "singles/rock.spire__buried__winter.glb"
+          }
+        },
+        "stacked": {
+          "spring": {
+            "height": 2.225,
+            "radius": 0.656,
+            "bottom": -0.162,
+            "triangles": 86,
+            "vertices": 258,
+            "materials": "solid:73 moss:13",
+            "coverRatio": 0.151,
+            "glb": "singles/rock.spire__stacked__spring.glb"
+          },
+          "summer": {
+            "height": 2.225,
+            "radius": 0.656,
+            "bottom": -0.162,
+            "triangles": 86,
+            "vertices": 258,
+            "materials": "solid:73 moss:13",
+            "coverRatio": 0.151,
+            "glb": "singles/rock.spire__stacked__summer.glb"
+          },
+          "autumn": {
+            "height": 2.225,
+            "radius": 0.656,
+            "bottom": -0.162,
+            "triangles": 86,
+            "vertices": 258,
+            "materials": "solid:73 moss:13",
+            "coverRatio": 0.151,
+            "glb": "singles/rock.spire__stacked__autumn.glb"
+          },
+          "winter": {
+            "height": 2.225,
+            "radius": 0.656,
+            "bottom": -0.162,
+            "triangles": 86,
+            "vertices": 258,
+            "materials": "solid:73 moss:13",
+            "coverRatio": 0.151,
+            "glb": "singles/rock.spire__stacked__winter.glb"
+          }
+        },
+        "crusted": {
+          "spring": {
+            "height": 1.844,
+            "radius": 0.616,
+            "bottom": -0.152,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:61 moss:13",
+            "coverRatio": 0.176,
+            "glb": "singles/rock.spire__crusted__spring.glb"
+          },
+          "summer": {
+            "height": 1.844,
+            "radius": 0.616,
+            "bottom": -0.152,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:61 moss:13",
+            "coverRatio": 0.176,
+            "glb": "singles/rock.spire__crusted__summer.glb"
+          },
+          "autumn": {
+            "height": 1.844,
+            "radius": 0.616,
+            "bottom": -0.152,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:61 moss:13",
+            "coverRatio": 0.176,
+            "glb": "singles/rock.spire__crusted__autumn.glb"
+          },
+          "winter": {
+            "height": 1.844,
+            "radius": 0.616,
+            "bottom": -0.152,
+            "triangles": 74,
+            "vertices": 222,
+            "materials": "solid:61 moss:13",
+            "coverRatio": 0.176,
+            "glb": "singles/rock.spire__crusted__winter.glb"
+          }
+        }
+      }
+    },
+    {
+      "id": "rock.stub",
+      "name": "石墩",
+      "latin": "shidun",
+      "archetype": "stub",
+      "family": "sedimentary",
+      "seed": 97,
+      "tags": [
+        "chunk:5",
+        "chunk:7",
+        "chunk:10",
+        "chunk:107",
+        "chunk:202",
+        "chunk:203",
+        "chunk:207",
+        "medium",
+        "wet",
+        "karst"
+      ],
+      "chunks": [
+        5,
+        7,
+        10,
+        107,
+        202,
+        203,
+        207
+      ],
+      "chunkPalette": {
+        "5": {
+          "body": "#8b8682",
+          "band": "#6b6764",
+          "cap": "#8e938b",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "7": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "10": {
+          "body": "#c7b892",
+          "band": "#a2946f",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "107": {
+          "body": "#988a72",
+          "band": "#786c58",
+          "cap": "#cbb28f",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "202": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#d2ccad",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "203": {
+          "body": "#b5b19b",
+          "band": "#8f8c77",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "207": {
+          "body": "#c7b892",
+          "band": "#a2946f",
+          "cap": "#c9c6b1",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        }
+      },
+      "geometries": {
+        "outcrop": {
+          "spring": {
+            "height": 0.937,
+            "radius": 0.634,
+            "bottom": -0.217,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:46",
+            "coverRatio": 0,
+            "glb": "singles/rock.stub__outcrop__spring.glb"
+          },
+          "summer": {
+            "height": 0.937,
+            "radius": 0.634,
+            "bottom": -0.217,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:46",
+            "coverRatio": 0,
+            "glb": "singles/rock.stub__outcrop__summer.glb"
+          },
+          "autumn": {
+            "height": 0.937,
+            "radius": 0.634,
+            "bottom": -0.217,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:44 moss:2",
+            "coverRatio": 0.043,
+            "glb": "singles/rock.stub__outcrop__autumn.glb"
+          },
+          "winter": {
+            "height": 0.937,
+            "radius": 0.634,
+            "bottom": -0.217,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:42 moss:4",
+            "coverRatio": 0.087,
+            "glb": "singles/rock.stub__outcrop__winter.glb"
+          }
+        },
+        "buried": {
+          "spring": {
+            "height": 0.654,
+            "radius": 0.613,
+            "bottom": -0.293,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:40 moss:6",
+            "coverRatio": 0.13,
+            "glb": "singles/rock.stub__buried__spring.glb"
+          },
+          "summer": {
+            "height": 0.654,
+            "radius": 0.613,
+            "bottom": -0.293,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:40 moss:6",
+            "coverRatio": 0.13,
+            "glb": "singles/rock.stub__buried__summer.glb"
+          },
+          "autumn": {
+            "height": 0.654,
+            "radius": 0.613,
+            "bottom": -0.293,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:40 moss:6",
+            "coverRatio": 0.13,
+            "glb": "singles/rock.stub__buried__autumn.glb"
+          },
+          "winter": {
+            "height": 0.654,
+            "radius": 0.613,
+            "bottom": -0.293,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:40 moss:6",
+            "coverRatio": 0.13,
+            "glb": "singles/rock.stub__buried__winter.glb"
+          }
+        },
+        "stacked": {
+          "spring": {
+            "height": 1.256,
+            "radius": 0.88,
+            "bottom": -0.217,
+            "triangles": 62,
+            "vertices": 186,
+            "materials": "solid:53 moss:9",
+            "coverRatio": 0.145,
+            "glb": "singles/rock.stub__stacked__spring.glb"
+          },
+          "summer": {
+            "height": 1.256,
+            "radius": 0.88,
+            "bottom": -0.217,
+            "triangles": 62,
+            "vertices": 186,
+            "materials": "solid:53 moss:9",
+            "coverRatio": 0.145,
+            "glb": "singles/rock.stub__stacked__summer.glb"
+          },
+          "autumn": {
+            "height": 1.256,
+            "radius": 0.88,
+            "bottom": -0.217,
+            "triangles": 62,
+            "vertices": 186,
+            "materials": "solid:53 moss:9",
+            "coverRatio": 0.145,
+            "glb": "singles/rock.stub__stacked__autumn.glb"
+          },
+          "winter": {
+            "height": 1.256,
+            "radius": 0.88,
+            "bottom": -0.217,
+            "triangles": 62,
+            "vertices": 186,
+            "materials": "solid:53 moss:9",
+            "coverRatio": 0.145,
+            "glb": "singles/rock.stub__stacked__winter.glb"
+          }
+        },
+        "crusted": {
+          "spring": {
+            "height": 0.881,
+            "radius": 0.596,
+            "bottom": -0.204,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:39 moss:7",
+            "coverRatio": 0.152,
+            "glb": "singles/rock.stub__crusted__spring.glb"
+          },
+          "summer": {
+            "height": 0.881,
+            "radius": 0.596,
+            "bottom": -0.204,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:39 moss:7",
+            "coverRatio": 0.152,
+            "glb": "singles/rock.stub__crusted__summer.glb"
+          },
+          "autumn": {
+            "height": 0.881,
+            "radius": 0.596,
+            "bottom": -0.204,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:39 moss:7",
+            "coverRatio": 0.152,
+            "glb": "singles/rock.stub__crusted__autumn.glb"
+          },
+          "winter": {
+            "height": 0.881,
+            "radius": 0.596,
+            "bottom": -0.204,
+            "triangles": 46,
+            "vertices": 138,
+            "materials": "solid:39 moss:7",
+            "coverRatio": 0.152,
+            "glb": "singles/rock.stub__crusted__winter.glb"
+          }
+        }
+      }
+    },
+    {
+      "id": "rock.rubble",
+      "name": "碎石堆",
+      "latin": "suishidui",
+      "archetype": "rubble",
+      "family": "clastic",
+      "seed": 113,
+      "tags": [
+        "chunk:2",
+        "chunk:5",
+        "chunk:7",
+        "chunk:102",
+        "chunk:302",
+        "chunk:401",
+        "chunk:402",
+        "chunk:404",
+        "chunk:407",
+        "small",
+        "loose",
+        "dense",
+        "wet"
+      ],
+      "chunks": [
+        2,
+        5,
+        7,
+        102,
+        302,
+        401,
+        402,
+        404,
+        407
+      ],
+      "chunkPalette": {
+        "2": {
+          "body": "#8b8682",
+          "band": "#6b6764",
+          "cap": "#d2ccad",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "5": {
+          "body": "#8b8682",
+          "band": "#6b6764",
+          "cap": "#8e938b",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "7": {
+          "body": "#8e938b",
+          "band": "#6f746d",
+          "cap": "#8b8682",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        },
+        "102": {
+          "body": "#8b8682",
+          "band": "#6b6764",
+          "cap": "#d2ccad",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "302": {
+          "body": "#8b8682",
+          "band": "#6b6764",
+          "cap": "#8b8682",
+          "base": "#5f4632",
+          "crust": "#a89a64"
+        },
+        "401": {
+          "body": "#a1a79b",
+          "band": "#6b6764",
+          "cap": "#8e938b",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "402": {
+          "body": "#a1a79b",
+          "band": "#6b6764",
+          "cap": "#f3f7fa",
+          "base": "#5f4632",
+          "crust": "#eef4f9"
+        },
+        "404": {
+          "body": "#a1a79b",
+          "band": "#6b6764",
+          "cap": "#8e938b",
+          "base": "#5f4632",
+          "crust": "#8f9a6b"
+        },
+        "407": {
+          "body": "#a1a79b",
+          "band": "#6b6764",
+          "cap": "#8e938b",
+          "base": "#5f4632",
+          "crust": "#5c7a44"
+        }
+      },
+      "geometries": {
+        "outcrop": {
+          "spring": {
+            "height": 0.461,
+            "radius": 1.527,
+            "bottom": -0.252,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:96",
+            "coverRatio": 0,
+            "glb": "singles/rock.rubble__outcrop__spring.glb"
+          },
+          "summer": {
+            "height": 0.461,
+            "radius": 1.527,
+            "bottom": -0.252,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:96",
+            "coverRatio": 0,
+            "glb": "singles/rock.rubble__outcrop__summer.glb"
+          },
+          "autumn": {
+            "height": 0.461,
+            "radius": 1.527,
+            "bottom": -0.252,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:90 moss:6",
+            "coverRatio": 0.063,
+            "glb": "singles/rock.rubble__outcrop__autumn.glb"
+          },
+          "winter": {
+            "height": 0.461,
+            "radius": 1.527,
+            "bottom": -0.252,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:84 moss:12",
+            "coverRatio": 0.125,
+            "glb": "singles/rock.rubble__outcrop__winter.glb"
+          }
+        },
+        "buried": {
+          "spring": {
+            "height": 0.446,
+            "radius": 1.477,
+            "bottom": -0.244,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:84 moss:12",
+            "coverRatio": 0.125,
+            "glb": "singles/rock.rubble__buried__spring.glb"
+          },
+          "summer": {
+            "height": 0.446,
+            "radius": 1.477,
+            "bottom": -0.244,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:84 moss:12",
+            "coverRatio": 0.125,
+            "glb": "singles/rock.rubble__buried__summer.glb"
+          },
+          "autumn": {
+            "height": 0.446,
+            "radius": 1.477,
+            "bottom": -0.244,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:84 moss:12",
+            "coverRatio": 0.125,
+            "glb": "singles/rock.rubble__buried__autumn.glb"
+          },
+          "winter": {
+            "height": 0.446,
+            "radius": 1.477,
+            "bottom": -0.244,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:84 moss:12",
+            "coverRatio": 0.125,
+            "glb": "singles/rock.rubble__buried__winter.glb"
+          }
+        },
+        "stacked": {
+          "spring": {
+            "height": 0.657,
+            "radius": 1.527,
+            "bottom": -0.252,
+            "triangles": 108,
+            "vertices": 324,
+            "materials": "solid:94 moss:14",
+            "coverRatio": 0.13,
+            "glb": "singles/rock.rubble__stacked__spring.glb"
+          },
+          "summer": {
+            "height": 0.657,
+            "radius": 1.527,
+            "bottom": -0.252,
+            "triangles": 108,
+            "vertices": 324,
+            "materials": "solid:94 moss:14",
+            "coverRatio": 0.13,
+            "glb": "singles/rock.rubble__stacked__summer.glb"
+          },
+          "autumn": {
+            "height": 0.657,
+            "radius": 1.527,
+            "bottom": -0.252,
+            "triangles": 108,
+            "vertices": 324,
+            "materials": "solid:94 moss:14",
+            "coverRatio": 0.13,
+            "glb": "singles/rock.rubble__stacked__autumn.glb"
+          },
+          "winter": {
+            "height": 0.657,
+            "radius": 1.527,
+            "bottom": -0.252,
+            "triangles": 108,
+            "vertices": 324,
+            "materials": "solid:94 moss:14",
+            "coverRatio": 0.13,
+            "glb": "singles/rock.rubble__stacked__winter.glb"
+          }
+        },
+        "crusted": {
+          "spring": {
+            "height": 0.433,
+            "radius": 1.435,
+            "bottom": -0.237,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:84 moss:12",
+            "coverRatio": 0.125,
+            "glb": "singles/rock.rubble__crusted__spring.glb"
+          },
+          "summer": {
+            "height": 0.433,
+            "radius": 1.435,
+            "bottom": -0.237,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:84 moss:12",
+            "coverRatio": 0.125,
+            "glb": "singles/rock.rubble__crusted__summer.glb"
+          },
+          "autumn": {
+            "height": 0.433,
+            "radius": 1.435,
+            "bottom": -0.237,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:84 moss:12",
+            "coverRatio": 0.125,
+            "glb": "singles/rock.rubble__crusted__autumn.glb"
+          },
+          "winter": {
+            "height": 0.433,
+            "radius": 1.435,
+            "bottom": -0.237,
+            "triangles": 96,
+            "vertices": 288,
+            "materials": "solid:84 moss:12",
+            "coverRatio": 0.125,
+            "glb": "singles/rock.rubble__crusted__winter.glb"
+          }
+        }
+      }
+    },
+    {
+      "id": "rock.floe",
+      "name": "冰岩",
+      "latin": "bingyan",
+      "archetype": "floe",
+      "family": "ice",
+      "seed": 127,
+      "tags": [
+        "chunk:409",
+        "chunk:406",
+        "chunk:402",
+        "ice",
+        "cold",
+        "large",
+        "slippery"
+      ],
+      "chunks": [
+        409,
+        406,
+        402
+      ],
+      "chunkPalette": {
+        "402": {
+          "body": "#afc8cc",
+          "band": "#8ea9ae",
+          "cap": "#f3f7fa",
+          "base": "#8ea9ae",
+          "crust": "#eef4f9"
+        },
+        "406": {
+          "body": "#afc8cc",
+          "band": "#8ea9ae",
+          "cap": "#f3f7fa",
+          "base": "#8ea9ae",
+          "crust": "#eef4f9"
+        },
+        "409": {
+          "body": "#afc8cc",
+          "band": "#8ea9ae",
+          "cap": "#f3f7fa",
+          "base": "#8ea9ae",
+          "crust": "#eef4f9"
+        }
+      },
+      "geometries": {
+        "outcrop": {
+          "spring": {
+            "height": 0.923,
+            "radius": 1.244,
+            "bottom": -0.308,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:72 ice:32",
+            "coverRatio": 0.308,
+            "glb": "singles/rock.floe__outcrop__spring.glb"
+          },
+          "summer": {
+            "height": 0.923,
+            "radius": 1.244,
+            "bottom": -0.308,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:72 ice:32",
+            "coverRatio": 0.308,
+            "glb": "singles/rock.floe__outcrop__summer.glb"
+          },
+          "autumn": {
+            "height": 0.923,
+            "radius": 1.244,
+            "bottom": -0.308,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:66 snow:6 ice:32",
+            "coverRatio": 0.365,
+            "glb": "singles/rock.floe__outcrop__autumn.glb"
+          },
+          "winter": {
+            "height": 0.923,
+            "radius": 1.244,
+            "bottom": -0.308,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:60 snow:12 ice:32",
+            "coverRatio": 0.423,
+            "glb": "singles/rock.floe__outcrop__winter.glb"
+          }
+        },
+        "buried": {
+          "spring": {
+            "height": 0.782,
+            "radius": 1.203,
+            "bottom": -0.297,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:57 snow:15 ice:32",
+            "coverRatio": 0.452,
+            "glb": "singles/rock.floe__buried__spring.glb"
+          },
+          "summer": {
+            "height": 0.782,
+            "radius": 1.203,
+            "bottom": -0.297,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:57 snow:15 ice:32",
+            "coverRatio": 0.452,
+            "glb": "singles/rock.floe__buried__summer.glb"
+          },
+          "autumn": {
+            "height": 0.782,
+            "radius": 1.203,
+            "bottom": -0.297,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:57 snow:15 ice:32",
+            "coverRatio": 0.452,
+            "glb": "singles/rock.floe__buried__autumn.glb"
+          },
+          "winter": {
+            "height": 0.782,
+            "radius": 1.203,
+            "bottom": -0.297,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:57 snow:15 ice:32",
+            "coverRatio": 0.452,
+            "glb": "singles/rock.floe__buried__winter.glb"
+          }
+        },
+        "stacked": {
+          "spring": {
+            "height": 1.277,
+            "radius": 1.255,
+            "bottom": -0.308,
+            "triangles": 124,
+            "vertices": 372,
+            "materials": "solid:73 snow:19 ice:32",
+            "coverRatio": 0.411,
+            "glb": "singles/rock.floe__stacked__spring.glb"
+          },
+          "summer": {
+            "height": 1.277,
+            "radius": 1.255,
+            "bottom": -0.308,
+            "triangles": 124,
+            "vertices": 372,
+            "materials": "solid:73 snow:19 ice:32",
+            "coverRatio": 0.411,
+            "glb": "singles/rock.floe__stacked__summer.glb"
+          },
+          "autumn": {
+            "height": 1.277,
+            "radius": 1.255,
+            "bottom": -0.308,
+            "triangles": 124,
+            "vertices": 372,
+            "materials": "solid:73 snow:19 ice:32",
+            "coverRatio": 0.411,
+            "glb": "singles/rock.floe__stacked__autumn.glb"
+          },
+          "winter": {
+            "height": 1.277,
+            "radius": 1.255,
+            "bottom": -0.308,
+            "triangles": 124,
+            "vertices": 372,
+            "materials": "solid:73 snow:19 ice:32",
+            "coverRatio": 0.411,
+            "glb": "singles/rock.floe__stacked__winter.glb"
+          }
+        },
+        "crusted": {
+          "spring": {
+            "height": 0.867,
+            "radius": 1.169,
+            "bottom": -0.29,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:57 snow:15 ice:32",
+            "coverRatio": 0.452,
+            "glb": "singles/rock.floe__crusted__spring.glb"
+          },
+          "summer": {
+            "height": 0.867,
+            "radius": 1.169,
+            "bottom": -0.29,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:57 snow:15 ice:32",
+            "coverRatio": 0.452,
+            "glb": "singles/rock.floe__crusted__summer.glb"
+          },
+          "autumn": {
+            "height": 0.867,
+            "radius": 1.169,
+            "bottom": -0.29,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:57 snow:15 ice:32",
+            "coverRatio": 0.452,
+            "glb": "singles/rock.floe__crusted__autumn.glb"
+          },
+          "winter": {
+            "height": 0.867,
+            "radius": 1.169,
+            "bottom": -0.29,
+            "triangles": 104,
+            "vertices": 312,
+            "materials": "solid:57 snow:15 ice:32",
+            "coverRatio": 0.452,
+            "glb": "singles/rock.floe__crusted__winter.glb"
+          }
+        }
+      }
+    }
+  ],
+  "up": "Y",
+  "seasons": [
+    "spring",
+    "summer",
+    "autumn",
+    "winter"
+  ],
+  "materials": [
+    "solid",
+    "moss",
+    "snow",
+    "ice"
+  ],
+  "forms": [
+    {
+      "code": 0,
+      "form": "outcrop",
+      "note": "露头：完整露出地表，正常尺寸"
+    },
+    {
+      "code": 1,
+      "form": "buried",
+      "note": "半埋：横向放大、竖向压低、下沉加深"
+    },
+    {
+      "code": 2,
+      "form": "stacked",
+      "note": "叠置：顶面再加一块小石（组合）"
+    },
+    {
+      "code": 3,
+      "form": "crusted",
+      "note": "覆被：朝上的面按 0.85 覆盖率换成苔藓 / 积雪 / 冰"
+    }
+  ],
+  "families": {
+    "igneous": {
+      "body": "granite",
+      "band": "graniteDark",
+      "cap": "granitePale",
+      "base": "soil",
+      "crust": "lichen"
+    },
+    "sedimentary": {
+      "body": "sandstone",
+      "band": "sandstoneDark",
+      "cap": "sandstonePale",
+      "base": "soil",
+      "crust": "dryGrass"
+    },
+    "metamorphic": {
+      "body": "slate",
+      "band": "slateDark",
+      "cap": "slatePale",
+      "base": "soil",
+      "crust": "moss"
+    },
+    "clastic": {
+      "body": "gravel",
+      "band": "gravelDark",
+      "cap": "scree",
+      "base": "soil",
+      "crust": "dryGrass"
+    },
+    "ice": {
+      "body": "ice",
+      "band": "iceDark",
+      "cap": "snow",
+      "base": "iceDark",
+      "crust": "snowCap"
+    }
+  },
+  "counts": {
+    "units": 9,
+    "geometries": 144,
+    "chunks": 45,
+    "trianglesTotal": 12336,
+    "trianglesAverage": 86,
+    "trianglesMax": 124,
+    "trianglesMaxAt": "rock.floe/stacked/spring",
+    "trianglesMin": 46,
+    "trianglesMinAt": "rock.stub/outcrop/spring"
+  },
+  "chunks": [
+    {
+      "id": 1,
+      "key": "land",
+      "name": "陆",
+      "mapColor": "#62a03c",
+      "dedicatedBlocks": [
+        {
+          "key": "land_01",
+          "name": "草甸表土",
+          "color": "#82975e",
+          "category": "soil"
+        },
+        {
+          "key": "land_02",
+          "name": "田野壤土",
+          "color": "#a49470",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#92958d",
+            "band": "#6e726b",
+            "cap": "#a8aba1",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 1.096,
+          "triangles": 120
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "key": "water",
+      "name": "静水",
+      "mapColor": "#2f66c9",
+      "dedicatedBlocks": [
+        {
+          "key": "water_01",
+          "name": "贝屑砂",
+          "color": "#d2c7a1",
+          "category": "sediment"
+        },
+        {
+          "key": "water_02",
+          "name": "滨岸淤泥",
+          "color": "#8f927c",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.rubble",
+          "name": "碎石堆",
+          "family": "clastic",
+          "palette": {
+            "body": "#8b8682",
+            "band": "#6b6764",
+            "cap": "#d2ccad",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.461,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "key": "hills",
+      "name": "山丘",
+      "mapColor": "#8a8a8a",
+      "dedicatedBlocks": [
+        {
+          "key": "hills_01",
+          "name": "风化花岗岩",
+          "color": "#97998a",
+          "category": "rock"
+        },
+        {
+          "key": "hills_02",
+          "name": "山麓石英砾",
+          "color": "#aba796",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#92958d",
+            "band": "#6e726b",
+            "cap": "#a8aba1",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 1.096,
+          "triangles": 120
+        },
+        {
+          "id": "rock.spire",
+          "name": "尖石",
+          "family": "igneous",
+          "palette": {
+            "body": "#92958d",
+            "band": "#6e726b",
+            "cap": "#a8aba1",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 1.962,
+          "triangles": 74
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "key": "dryland",
+      "name": "旱地",
+      "mapColor": "#c9a066",
+      "dedicatedBlocks": [
+        {
+          "key": "dryland_01",
+          "name": "赭色旱土",
+          "color": "#b39a6c",
+          "category": "soil"
+        },
+        {
+          "key": "dryland_02",
+          "name": "钙结硬壳",
+          "color": "#c3b08a",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.block",
+          "name": "岩块",
+          "family": "igneous",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 1.656,
+          "triangles": 96
+        },
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#b89c78",
+            "band": "#93795a",
+            "cap": "#cbb28f",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "key": "river",
+      "name": "河",
+      "mapColor": "#3b82f6",
+      "dedicatedBlocks": [
+        {
+          "key": "river_01",
+          "name": "河床圆砾",
+          "color": "#9a9f91",
+          "category": "sediment"
+        },
+        {
+          "key": "river_02",
+          "name": "堤岸粉砂",
+          "color": "#a7a27e",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.stub",
+          "name": "石墩",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#8b8682",
+            "band": "#6b6764",
+            "cap": "#8e938b",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.937,
+          "triangles": 46
+        },
+        {
+          "id": "rock.rubble",
+          "name": "碎石堆",
+          "family": "clastic",
+          "palette": {
+            "body": "#8b8682",
+            "band": "#6b6764",
+            "cap": "#8e938b",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.461,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "key": "forest",
+      "name": "林地",
+      "mapColor": "#228b22",
+      "dedicatedBlocks": [
+        {
+          "key": "forest_01",
+          "name": "落叶腐殖土",
+          "color": "#66754d",
+          "category": "soil"
+        },
+        {
+          "key": "forest_02",
+          "name": "林下苔土",
+          "color": "#677e53",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#a6a69b",
+            "band": "#6e726b",
+            "cap": "#bcbcb2",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "key": "valley",
+      "name": "谷地",
+      "mapColor": "#556b2f",
+      "dedicatedBlocks": [
+        {
+          "key": "valley_01",
+          "name": "谷底黏壤",
+          "color": "#9c9777",
+          "category": "soil"
+        },
+        {
+          "key": "valley_02",
+          "name": "坡积细砾",
+          "color": "#929882",
+          "category": "sediment"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.stub",
+          "name": "石墩",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.937,
+          "triangles": 46
+        },
+        {
+          "id": "rock.rubble",
+          "name": "碎石堆",
+          "family": "clastic",
+          "palette": {
+            "body": "#8e938b",
+            "band": "#6f746d",
+            "cap": "#8b8682",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.461,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "key": "plateau",
+      "name": "高原",
+      "mapColor": "#cd853f",
+      "dedicatedBlocks": [
+        {
+          "key": "plateau_01",
+          "name": "高原风积土",
+          "color": "#b4a781",
+          "category": "soil"
+        },
+        {
+          "key": "plateau_02",
+          "name": "台地玄武碎岩",
+          "color": "#787e70",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#5c6664",
+            "band": "#414a48",
+            "cap": "#747d7a",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 1.096,
+          "triangles": 120
+        },
+        {
+          "id": "rock.ledge",
+          "name": "石台",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#5c6664",
+            "band": "#414a48",
+            "cap": "#747d7a",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 1.881,
+          "triangles": 68
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "key": "rift_valley",
+      "name": "裂谷",
+      "mapColor": "#8b4513",
+      "dedicatedBlocks": [
+        {
+          "key": "rift_valley_01",
+          "name": "断层角砾",
+          "color": "#978878",
+          "category": "rock"
+        },
+        {
+          "key": "rift_valley_02",
+          "name": "铁染裂隙岩",
+          "color": "#a88c72",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.block",
+          "name": "岩块",
+          "family": "igneous",
+          "palette": {
+            "body": "#b89c78",
+            "band": "#93795a",
+            "cap": "#cbb28f",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 1.656,
+          "triangles": 96
+        },
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#988a72",
+            "band": "#786c58",
+            "cap": "#cbb28f",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "key": "waterfall",
+      "name": "落差水（瀑布）",
+      "mapColor": "#70b7dc",
+      "dedicatedBlocks": [
+        {
+          "key": "waterfall_01",
+          "name": "磨蚀基岩",
+          "color": "#8d9993",
+          "category": "rock"
+        },
+        {
+          "key": "waterfall_02",
+          "name": "湿润钙华",
+          "color": "#b8baa7",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.block",
+          "name": "岩块",
+          "family": "igneous",
+          "palette": {
+            "body": "#a6a69b",
+            "band": "#84847a",
+            "cap": "#bcbcb2",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 1.656,
+          "triangles": 96
+        },
+        {
+          "id": "rock.spire",
+          "name": "尖石",
+          "family": "igneous",
+          "palette": {
+            "body": "#a6a69b",
+            "band": "#84847a",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 1.962,
+          "triangles": 74
+        },
+        {
+          "id": "rock.stub",
+          "name": "石墩",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#c7b892",
+            "band": "#a2946f",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.937,
+          "triangles": 46
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "key": "wetland",
+      "name": "湿地",
+      "mapColor": "#608b78",
+      "dedicatedBlocks": [
+        {
+          "key": "wetland_01",
+          "name": "湿地泥炭",
+          "color": "#63765a",
+          "category": "soil"
+        },
+        {
+          "key": "wetland_02",
+          "name": "水浸粉黏土",
+          "color": "#839482",
+          "category": "soil"
+        },
+        {
+          "key": "wetland_03",
+          "name": "滩地细砾",
+          "color": "#9aaa91",
+          "category": "sediment"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#7f7f7f",
+            "band": "#6e726b",
+            "cap": "#bcbcb2",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "key": "tropical_savanna",
+      "name": "热带草原",
+      "mapColor": "#d2b48c",
+      "dedicatedBlocks": [
+        {
+          "key": "tropical_savanna_01",
+          "name": "草原铁铝土",
+          "color": "#a59160",
+          "category": "soil"
+        },
+        {
+          "key": "tropical_savanna_02",
+          "name": "热带草甸土",
+          "color": "#95a15a",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#b89c78",
+            "band": "#93795a",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "key": "tropical_sea",
+      "name": "热带海",
+      "mapColor": "#00ced1",
+      "dedicatedBlocks": [
+        {
+          "key": "tropical_sea_01",
+          "name": "珊瑚砂",
+          "color": "#dbd1a7",
+          "category": "sediment"
+        },
+        {
+          "key": "tropical_sea_02",
+          "name": "热带潮滩泥",
+          "color": "#8d997a",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.rubble",
+          "name": "碎石堆",
+          "family": "clastic",
+          "palette": {
+            "body": "#8b8682",
+            "band": "#6b6764",
+            "cap": "#d2ccad",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.461,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "key": "tropical_hills",
+      "name": "热带山丘",
+      "mapColor": "#6b8e23",
+      "dedicatedBlocks": [
+        {
+          "key": "tropical_hills_01",
+          "name": "热带砾岩",
+          "color": "#a99271",
+          "category": "rock"
+        },
+        {
+          "key": "tropical_hills_02",
+          "name": "红土风化层",
+          "color": "#ac7657",
+          "category": "soil"
+        },
+        {
+          "key": "tropical_hills_03",
+          "name": "风化玄武岩",
+          "color": "#747a63",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#92958d",
+            "band": "#6e726b",
+            "cap": "#a8aba1",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 1.096,
+          "triangles": 120
+        },
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#988a72",
+            "band": "#786c58",
+            "cap": "#cbb28f",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        },
+        {
+          "id": "rock.spire",
+          "name": "尖石",
+          "family": "igneous",
+          "palette": {
+            "body": "#5c6664",
+            "band": "#414a48",
+            "cap": "#747d7a",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 1.962,
+          "triangles": 74
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "key": "desert",
+      "name": "沙漠",
+      "mapColor": "#edc9af",
+      "dedicatedBlocks": [
+        {
+          "key": "desert_01",
+          "name": "沙丘赤砂",
+          "color": "#d0ae7c",
+          "category": "sediment"
+        },
+        {
+          "key": "desert_02",
+          "name": "石膏结壳",
+          "color": "#d4c9a7",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.block",
+          "name": "岩块",
+          "family": "igneous",
+          "palette": {
+            "body": "#d2ccad",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 1.656,
+          "triangles": 96
+        },
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#d2ccad",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "key": "swamp",
+      "name": "沼泽",
+      "mapColor": "#2f4f4f",
+      "dedicatedBlocks": [
+        {
+          "key": "swamp_01",
+          "name": "沼泽泥炭",
+          "color": "#686e4b",
+          "category": "soil"
+        },
+        {
+          "key": "swamp_02",
+          "name": "水浸黏土",
+          "color": "#869277",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#8b8682",
+            "band": "#6b6764",
+            "cap": "#8e938b",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "key": "tropical_rainforest",
+      "name": "热带雨林",
+      "mapColor": "#006400",
+      "dedicatedBlocks": [
+        {
+          "key": "tropical_rainforest_01",
+          "name": "雨林腐殖土",
+          "color": "#586f48",
+          "category": "soil"
+        },
+        {
+          "key": "tropical_rainforest_02",
+          "name": "雨林红黏土",
+          "color": "#966e4f",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#988a72",
+            "band": "#786c58",
+            "cap": "#cbb28f",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "key": "tropical_valley",
+      "name": "热带山谷",
+      "mapColor": "#3cb371",
+      "dedicatedBlocks": [
+        {
+          "key": "tropical_valley_01",
+          "name": "热带河漫壤",
+          "color": "#9ca36c",
+          "category": "soil"
+        },
+        {
+          "key": "tropical_valley_02",
+          "name": "谷地粉砂",
+          "color": "#aba279",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.stub",
+          "name": "石墩",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#988a72",
+            "band": "#786c58",
+            "cap": "#cbb28f",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.937,
+          "triangles": 46
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "key": "tropical_highlands",
+      "name": "热带高地",
+      "mapColor": "#8fbc8f",
+      "dedicatedBlocks": [
+        {
+          "key": "tropical_highlands_01",
+          "name": "铁铝台地土",
+          "color": "#a48962",
+          "category": "soil"
+        },
+        {
+          "key": "tropical_highlands_02",
+          "name": "熔岩台地岩",
+          "color": "#707b68",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#5c6664",
+            "band": "#414a48",
+            "cap": "#747d7a",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 1.096,
+          "triangles": 120
+        },
+        {
+          "id": "rock.ledge",
+          "name": "石台",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#5c6664",
+            "band": "#414a48",
+            "cap": "#747d7a",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 1.881,
+          "triangles": 68
+        },
+        {
+          "id": "rock.spire",
+          "name": "尖石",
+          "family": "igneous",
+          "palette": {
+            "body": "#5c6664",
+            "band": "#414a48",
+            "cap": "#747d7a",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 1.962,
+          "triangles": 74
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "key": "tropical_monsoon_forest",
+      "name": "热带季风林",
+      "mapColor": "#2e8b57",
+      "dedicatedBlocks": [
+        {
+          "key": "tropical_monsoon_forest_01",
+          "name": "季风林红壤",
+          "color": "#9c8255",
+          "category": "soil"
+        },
+        {
+          "key": "tropical_monsoon_forest_02",
+          "name": "季风落叶土",
+          "color": "#718451",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 201,
+      "key": "subtropical_plains",
+      "name": "亚热带平原",
+      "mapColor": "#9acd32",
+      "dedicatedBlocks": [
+        {
+          "key": "subtropical_plains_01",
+          "name": "暖地草甸土",
+          "color": "#819359",
+          "category": "soil"
+        },
+        {
+          "key": "subtropical_plains_02",
+          "name": "暖地沃壤",
+          "color": "#a29469",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#8e938b",
+            "band": "#6f746d",
+            "cap": "#8b8682",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 202,
+      "key": "subtropical_sea",
+      "name": "亚热带海",
+      "mapColor": "#4682b4",
+      "dedicatedBlocks": [
+        {
+          "key": "subtropical_sea_01",
+          "name": "暖海细砂",
+          "color": "#d1c69a",
+          "category": "sediment"
+        },
+        {
+          "key": "subtropical_sea_02",
+          "name": "河口细泥",
+          "color": "#99977d",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.stub",
+          "name": "石墩",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#d2ccad",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.937,
+          "triangles": 46
+        }
+      ]
+    },
+    {
+      "id": 203,
+      "key": "subtropical_hills",
+      "name": "亚热带山丘",
+      "mapColor": "#556b2f",
+      "dedicatedBlocks": [
+        {
+          "key": "subtropical_hills_01",
+          "name": "喀斯特灰岩",
+          "color": "#a8b095",
+          "category": "rock"
+        },
+        {
+          "key": "subtropical_hills_02",
+          "name": "山麓红壤",
+          "color": "#a38765",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.ledge",
+          "name": "石台",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 1.881,
+          "triangles": 68
+        },
+        {
+          "id": "rock.stub",
+          "name": "石墩",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.937,
+          "triangles": 46
+        }
+      ]
+    },
+    {
+      "id": 204,
+      "key": "subtropical_shrubland",
+      "name": "亚热带灌木林",
+      "mapColor": "#bdb76b",
+      "dedicatedBlocks": [
+        {
+          "key": "subtropical_shrubland_01",
+          "name": "灌丛砂质土",
+          "color": "#afa277",
+          "category": "soil"
+        },
+        {
+          "key": "subtropical_shrubland_02",
+          "name": "风化白云岩",
+          "color": "#b5b59b",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 1.096,
+          "triangles": 120
+        }
+      ]
+    },
+    {
+      "id": 205,
+      "key": "subtropical_monsoon_forest",
+      "name": "亚热带季风林",
+      "mapColor": "#32cd32",
+      "dedicatedBlocks": [
+        {
+          "key": "subtropical_monsoon_forest_01",
+          "name": "季风铁染黏土",
+          "color": "#9b9673",
+          "category": "soil"
+        },
+        {
+          "key": "subtropical_monsoon_forest_02",
+          "name": "暖林腐殖土",
+          "color": "#748457",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#cbb28f",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 206,
+      "key": "subtropical_jungle",
+      "name": "亚热带丛林",
+      "mapColor": "#228b22",
+      "dedicatedBlocks": [
+        {
+          "key": "subtropical_jungle_01",
+          "name": "酸性林地土",
+          "color": "#62764e",
+          "category": "soil"
+        },
+        {
+          "key": "subtropical_jungle_02",
+          "name": "蕨类腐殖土",
+          "color": "#667c51",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#a6a69b",
+            "band": "#6e726b",
+            "cap": "#bcbcb2",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 207,
+      "key": "subtropical_valley",
+      "name": "亚热带山谷",
+      "mapColor": "#66cdaa",
+      "dedicatedBlocks": [
+        {
+          "key": "subtropical_valley_01",
+          "name": "暖谷冲积壤",
+          "color": "#a3a67c",
+          "category": "soil"
+        },
+        {
+          "key": "subtropical_valley_02",
+          "name": "泉积钙华",
+          "color": "#bebda2",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.stub",
+          "name": "石墩",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#c7b892",
+            "band": "#a2946f",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.937,
+          "triangles": 46
+        }
+      ]
+    },
+    {
+      "id": 208,
+      "key": "subtropical_highlands",
+      "name": "亚热带高地",
+      "mapColor": "#8b008b",
+      "dedicatedBlocks": [
+        {
+          "key": "subtropical_highlands_01",
+          "name": "暖地台地灰岩",
+          "color": "#aaaf99",
+          "category": "rock"
+        },
+        {
+          "key": "subtropical_highlands_02",
+          "name": "台地风化砂岩",
+          "color": "#aca27f",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.ledge",
+          "name": "石台",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 1.881,
+          "triangles": 68
+        }
+      ]
+    },
+    {
+      "id": 301,
+      "key": "temperate_plains",
+      "name": "温带平原",
+      "mapColor": "#7cfc00",
+      "dedicatedBlocks": [
+        {
+          "key": "temperate_plains_01",
+          "name": "温带草壤",
+          "color": "#82965f",
+          "category": "soil"
+        },
+        {
+          "key": "temperate_plains_02",
+          "name": "棕色沃壤",
+          "color": "#9b9170",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#8e938b",
+            "band": "#6f746d",
+            "cap": "#8b8682",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 302,
+      "key": "temperate_sea",
+      "name": "温带海",
+      "mapColor": "#4169e1",
+      "dedicatedBlocks": [
+        {
+          "key": "temperate_sea_01",
+          "name": "温海浅砂",
+          "color": "#c6c6aa",
+          "category": "sediment"
+        },
+        {
+          "key": "temperate_sea_02",
+          "name": "潮汐黏土",
+          "color": "#90988a",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.rubble",
+          "name": "碎石堆",
+          "family": "clastic",
+          "palette": {
+            "body": "#8b8682",
+            "band": "#6b6764",
+            "cap": "#8b8682",
+            "base": "#5f4632",
+            "crust": "#a89a64"
+          },
+          "height": 0.461,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "id": 303,
+      "key": "temperate_hills",
+      "name": "温带山丘",
+      "mapColor": "#808000",
+      "dedicatedBlocks": [
+        {
+          "key": "temperate_hills_01",
+          "name": "片理板岩",
+          "color": "#818c89",
+          "category": "rock"
+        },
+        {
+          "key": "temperate_hills_02",
+          "name": "山地棕色砂岩",
+          "color": "#a39883",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.slab",
+          "name": "板岩席",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#737f89",
+            "band": "#57626b",
+            "cap": "#8d99a2",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.991,
+          "triangles": 80
+        }
+      ]
+    },
+    {
+      "id": 304,
+      "key": "temperate_shrubland",
+      "name": "温带灌木林",
+      "mapColor": "#b8860b",
+      "dedicatedBlocks": [
+        {
+          "key": "temperate_shrubland_01",
+          "name": "风积黄土",
+          "color": "#b6a781",
+          "category": "soil"
+        },
+        {
+          "key": "temperate_shrubland_02",
+          "name": "钙质旱土",
+          "color": "#b6b18c",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#b5b19b",
+            "band": "#8f8c77",
+            "cap": "#c9c6b1",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 1.096,
+          "triangles": 120
+        }
+      ]
+    },
+    {
+      "id": 305,
+      "key": "temperate_monsoon_forest",
+      "name": "温带季风林",
+      "mapColor": "#00fa9a",
+      "dedicatedBlocks": [
+        {
+          "key": "temperate_monsoon_forest_01",
+          "name": "棕色林土",
+          "color": "#78815f",
+          "category": "soil"
+        },
+        {
+          "key": "temperate_monsoon_forest_02",
+          "name": "季风粉黏土",
+          "color": "#9d9a7c",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#7f7f7f",
+            "band": "#6e726b",
+            "cap": "#bcbcb2",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 306,
+      "key": "temperate_jungle",
+      "name": "温带丛林",
+      "mapColor": "#00ff7f",
+      "dedicatedBlocks": [
+        {
+          "key": "temperate_jungle_01",
+          "name": "深色腐殖土",
+          "color": "#606e50",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#7f7f7f",
+            "band": "#6e726b",
+            "cap": "#bcbcb2",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 307,
+      "key": "temperate_valley",
+      "name": "温带山谷",
+      "mapColor": "#20b2aa",
+      "dedicatedBlocks": [
+        {
+          "key": "temperate_valley_01",
+          "name": "河漫细土",
+          "color": "#a1a384",
+          "category": "soil"
+        },
+        {
+          "key": "temperate_valley_02",
+          "name": "磨圆石英砂",
+          "color": "#c1c4a5",
+          "category": "sediment"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#8b8682",
+            "band": "#6b6764",
+            "cap": "#cbb28f",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 308,
+      "key": "temperate_highlands",
+      "name": "温带高地",
+      "mapColor": "#cd5c5c",
+      "dedicatedBlocks": [
+        {
+          "key": "temperate_highlands_01",
+          "name": "高地黄土",
+          "color": "#b5b296",
+          "category": "soil"
+        },
+        {
+          "key": "temperate_highlands_02",
+          "name": "高地层状板岩",
+          "color": "#90978d",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.ledge",
+          "name": "石台",
+          "family": "sedimentary",
+          "palette": {
+            "body": "#a6a69b",
+            "band": "#93795a",
+            "cap": "#bcbcb2",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 1.881,
+          "triangles": 68
+        },
+        {
+          "id": "rock.slab",
+          "name": "板岩席",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#737f89",
+            "band": "#57626b",
+            "cap": "#8d99a2",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 0.991,
+          "triangles": 80
+        }
+      ]
+    },
+    {
+      "id": 401,
+      "key": "cold_plains",
+      "name": "寒带平原",
+      "mapColor": "#e0ffff",
+      "dedicatedBlocks": [
+        {
+          "key": "cold_plains_01",
+          "name": "苔原草皮",
+          "color": "#88957c",
+          "category": "soil"
+        },
+        {
+          "key": "cold_plains_02",
+          "name": "冻融碎屑",
+          "color": "#aaa99b",
+          "category": "sediment"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.rubble",
+          "name": "碎石堆",
+          "family": "clastic",
+          "palette": {
+            "body": "#a1a79b",
+            "band": "#6b6764",
+            "cap": "#8e938b",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 0.461,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "id": 402,
+      "key": "cold_sea",
+      "name": "寒带海",
+      "mapColor": "#5f9ea0",
+      "dedicatedBlocks": [
+        {
+          "key": "cold_sea_01",
+          "name": "冰水砂",
+          "color": "#c0c9be",
+          "category": "sediment"
+        },
+        {
+          "key": "cold_sea_02",
+          "name": "滨海蓝冰",
+          "color": "#b4cdd0",
+          "category": "ice"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.block",
+          "name": "岩块",
+          "family": "igneous",
+          "palette": {
+            "body": "#afc8cc",
+            "band": "#8ea9ae",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#eef4f9"
+          },
+          "height": 1.656,
+          "triangles": 96
+        },
+        {
+          "id": "rock.rubble",
+          "name": "碎石堆",
+          "family": "clastic",
+          "palette": {
+            "body": "#a1a79b",
+            "band": "#6b6764",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#eef4f9"
+          },
+          "height": 0.461,
+          "triangles": 96
+        },
+        {
+          "id": "rock.floe",
+          "name": "冰岩",
+          "family": "ice",
+          "palette": {
+            "body": "#afc8cc",
+            "band": "#8ea9ae",
+            "cap": "#f3f7fa",
+            "base": "#8ea9ae",
+            "crust": "#eef4f9"
+          },
+          "height": 0.923,
+          "triangles": 104
+        }
+      ]
+    },
+    {
+      "id": 403,
+      "key": "cold_hills",
+      "name": "寒带山丘",
+      "mapColor": "#a9a9a9",
+      "dedicatedBlocks": [
+        {
+          "key": "cold_hills_01",
+          "name": "冻裂花岗岩",
+          "color": "#a5aeaa",
+          "category": "rock"
+        },
+        {
+          "key": "cold_hills_02",
+          "name": "寒山片岩",
+          "color": "#8e9b9e",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#92958d",
+            "band": "#6e726b",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#eef4f9"
+          },
+          "height": 1.096,
+          "triangles": 120
+        },
+        {
+          "id": "rock.slab",
+          "name": "板岩席",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#737f89",
+            "band": "#57626b",
+            "cap": "#8d99a2",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 0.991,
+          "triangles": 80
+        },
+        {
+          "id": "rock.spire",
+          "name": "尖石",
+          "family": "igneous",
+          "palette": {
+            "body": "#92958d",
+            "band": "#6e726b",
+            "cap": "#a8aba1",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 1.962,
+          "triangles": 74
+        }
+      ]
+    },
+    {
+      "id": 404,
+      "key": "cold_shrubland",
+      "name": "寒带灌木林",
+      "mapColor": "#d3d3d3",
+      "dedicatedBlocks": [
+        {
+          "key": "cold_shrubland_01",
+          "name": "冻土粉砂",
+          "color": "#b1b09b",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#a1a79b",
+            "band": "#6b6764",
+            "cap": "#8e938b",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 0.649,
+          "triangles": 56
+        },
+        {
+          "id": "rock.rubble",
+          "name": "碎石堆",
+          "family": "clastic",
+          "palette": {
+            "body": "#a1a79b",
+            "band": "#6b6764",
+            "cap": "#8e938b",
+            "base": "#5f4632",
+            "crust": "#8f9a6b"
+          },
+          "height": 0.461,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "id": 405,
+      "key": "cold_monsoon_forest",
+      "name": "寒带季风林",
+      "mapColor": "#b0c4de",
+      "dedicatedBlocks": [
+        {
+          "key": "cold_monsoon_forest_01",
+          "name": "针叶灰化土",
+          "color": "#949b83",
+          "category": "soil"
+        },
+        {
+          "key": "cold_monsoon_forest_02",
+          "name": "寒林腐殖土",
+          "color": "#7e8e73",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.shard",
+          "name": "碎岩",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#a6a69b",
+            "band": "#6e726b",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#eef4f9"
+          },
+          "height": 0.649,
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "id": 406,
+      "key": "cold_snowy_mountains",
+      "name": "寒带雪山",
+      "mapColor": "#ffffff",
+      "dedicatedBlocks": [
+        {
+          "key": "cold_snowy_mountains_01",
+          "name": "山巅粒雪",
+          "color": "#e2e8df",
+          "category": "ice"
+        },
+        {
+          "key": "cold_snowy_mountains_02",
+          "name": "雪峰冻裂岩",
+          "color": "#b7c0bc",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#92958d",
+            "band": "#6e726b",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#eef4f9"
+          },
+          "height": 1.096,
+          "triangles": 120
+        },
+        {
+          "id": "rock.spire",
+          "name": "尖石",
+          "family": "igneous",
+          "palette": {
+            "body": "#92958d",
+            "band": "#6e726b",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#eef4f9"
+          },
+          "height": 1.962,
+          "triangles": 74
+        },
+        {
+          "id": "rock.floe",
+          "name": "冰岩",
+          "family": "ice",
+          "palette": {
+            "body": "#afc8cc",
+            "band": "#8ea9ae",
+            "cap": "#f3f7fa",
+            "base": "#8ea9ae",
+            "crust": "#eef4f9"
+          },
+          "height": 0.923,
+          "triangles": 104
+        }
+      ]
+    },
+    {
+      "id": 407,
+      "key": "cold_valley",
+      "name": "寒带山谷",
+      "mapColor": "#afeeee",
+      "dedicatedBlocks": [
+        {
+          "key": "cold_valley_01",
+          "name": "冰碛谷土",
+          "color": "#a5afa0",
+          "category": "sediment"
+        },
+        {
+          "key": "cold_valley_02",
+          "name": "寒谷泥炭",
+          "color": "#84927c",
+          "category": "soil"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.rubble",
+          "name": "碎石堆",
+          "family": "clastic",
+          "palette": {
+            "body": "#a1a79b",
+            "band": "#6b6764",
+            "cap": "#8e938b",
+            "base": "#5f4632",
+            "crust": "#5c7a44"
+          },
+          "height": 0.461,
+          "triangles": 96
+        }
+      ]
+    },
+    {
+      "id": 408,
+      "key": "cold_highlands",
+      "name": "寒带高地",
+      "mapColor": "#778899",
+      "dedicatedBlocks": [
+        {
+          "key": "cold_highlands_01",
+          "name": "冻土台地层",
+          "color": "#bdc0ad",
+          "category": "soil"
+        },
+        {
+          "key": "cold_highlands_02",
+          "name": "冻原板岩",
+          "color": "#a0aaa4",
+          "category": "rock"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.boulder",
+          "name": "巨砾",
+          "family": "igneous",
+          "palette": {
+            "body": "#737f89",
+            "band": "#57626b",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#eef4f9"
+          },
+          "height": 1.096,
+          "triangles": 120
+        },
+        {
+          "id": "rock.slab",
+          "name": "板岩席",
+          "family": "metamorphic",
+          "palette": {
+            "body": "#737f89",
+            "band": "#57626b",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#eef4f9"
+          },
+          "height": 0.991,
+          "triangles": 80
+        }
+      ]
+    },
+    {
+      "id": 409,
+      "key": "ice_snowfield",
+      "name": "冰封雪原",
+      "mapColor": "#f0ffff",
+      "dedicatedBlocks": [
+        {
+          "key": "ice_snowfield_01",
+          "name": "压实粒雪",
+          "color": "#e6eae0",
+          "category": "ice"
+        },
+        {
+          "key": "ice_snowfield_02",
+          "name": "薄冰壳",
+          "color": "#c4d5d4",
+          "category": "ice"
+        }
+      ],
+      "rocks": [
+        {
+          "id": "rock.block",
+          "name": "岩块",
+          "family": "igneous",
+          "palette": {
+            "body": "#afc8cc",
+            "band": "#8ea9ae",
+            "cap": "#f3f7fa",
+            "base": "#5f4632",
+            "crust": "#eef4f9"
+          },
+          "height": 1.656,
+          "triangles": 96
+        },
+        {
+          "id": "rock.floe",
+          "name": "冰岩",
+          "family": "ice",
+          "palette": {
+            "body": "#afc8cc",
+            "band": "#8ea9ae",
+            "cap": "#f3f7fa",
+            "base": "#8ea9ae",
+            "crust": "#eef4f9"
+          },
+          "height": 0.923,
+          "triangles": 104
+        }
+      ]
+    }
+  ]
+}

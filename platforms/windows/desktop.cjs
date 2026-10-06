@@ -26,7 +26,7 @@ else {
       } catch (error) { event.returnValue = String(error); }
     });
     const options = { width: 1100, height: 760, minWidth: 640, minHeight: 480, icon: path.join(root, 'platforms/windows/qianlin.ico'), backgroundColor: '#172a20', webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } };
-    // 启动器用纸色打底（与 launcher.css 同色，避免加载瞬间闪一下深色）；
+    // 启动器用纸色打底（与 launcher.css
     // 游戏窗口保持深色，用来衬托天空与地形。
     launcher = new BrowserWindow({ ...options, title: '茜林茶馆', backgroundColor: '#e5d3aa', webPreferences: { ...options.webPreferences, preload: path.join(root, 'platforms/windows/preload.cjs') } });
     const launcherURL = pathToFileURL(path.join(root, 'platforms/windows/launcher.html')).href;

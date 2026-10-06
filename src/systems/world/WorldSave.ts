@@ -20,14 +20,15 @@ export function parseWorldSave(text: string): WorldSave {
     try { return JSON.parse(text); }
     catch { throw new Error('存档不是有效的 JSON 文件。'); }
   })();
-  if (!data || data.generatorVersion !== GENERATOR_VERSION) {
+  // 保留旧参数与观察位置。
+  if (!data || ![GENERATOR_VERSION,14,15,16,17,18,19,20,21].includes(data.generatorVersion)) {
     throw new Error('此存档使用旧版或不支持的生成算法。请使用其中的种子新建世界；新版地形无法还原旧版位置。');
   }
   if (!Number.isInteger(data.seed) || data.seed < 0 || data.seed > 0xffffffff) throw new Error('存档种子无效。');
   if (data.calendarType !== undefined && data.calendarType !== 'real' && data.calendarType !== 'yuan') throw new Error('存档中的历法无效。');
   const climateWeights = normalizeClimateWeights(data.climateWeights);
+  if (!data.generation) throw new Error('存档缺少地形生成规则。');
   const generation = normalizeGeneration(data.generation);
-  if (data.generatorVersion === GENERATOR_VERSION && !data.generation) throw new Error('存档缺少地形生成规则。');
   const p = data.player;
   if (data.unixMs !== undefined && (typeof data.unixMs !== 'number' || !Number.isFinite(data.unixMs) || Math.abs(data.unixMs) > 8640000000000000)) throw new Error('存档中的日期无效。');
   if (data.utcOffsetMinutes !== undefined && (!Number.isInteger(data.utcOffsetMinutes) || Math.abs(data.utcOffsetMinutes) > 840)) throw new Error('存档中的时区无效。');

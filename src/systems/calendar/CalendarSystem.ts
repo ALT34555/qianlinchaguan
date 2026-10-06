@@ -1,15 +1,4 @@
-/**
- * 日历系统门面：把公历 / 农历 / 元历三套历法绑在同一个时刻上，
- * 并提供"游戏时间 -> 历法日期"的时钟，供 HUD、存档、日志统一取用。
- *
- * 典型用法：
- *   const calendars = new CalendarSystem();
- *   const clock = new CalendarClock({ epochUnixMs: Date.now(), dayLengthSeconds: 1200 });
- *   // 每帧
- *   clock.advance(dt);
- *   const snap = calendars.snapshotFromUnixMs(clock.unixMs);
- *   console.log(calendars.formatLine(snap));
- */
+/** 日历系统门面 */
 import { dayTimeFromUnixMs, unixMsFromDayTime } from './JulianDay';
 import { GregorianCalendar } from './GregorianCalendar';
 import { ChineseCalendar } from './ChineseCalendar';
@@ -18,9 +7,9 @@ import type { CalendarSnapshot, DayTime, CalendarMode, ShichenInfo, SeasonInfo }
 
 /** 日历系统配置。 */
 export interface CalendarSystemOptions {
-  /** 公历与元历使用的民用时区偏移（分钟），默认东八区 480，与农历一致。 */
+  /** 公历与元历使用的民用时区偏移（分钟） */
   utcOffsetMinutes?: number;
-  /** 历法模式：'real' 真实历法 或 'yuan' 简化历法。 */
+  /** 历法模式 */
   mode?: CalendarMode;
 }
 
@@ -70,18 +59,18 @@ export class CalendarSystem {
 
   /** 计算时辰信息。 */
   calculateShichen(dayTime: DayTime): ShichenInfo {
-    // 0.0 -> 00:00 (子正), 0.5 -> 12:00 (午正)
+    // 0.0 -> 00:00 (子正), 0.5
     // 1 hour = 1/24 of a day.
-    // 23:00 - 01:00 is Zi (index 0).
-    // offset by 1 hour (1/24) to make 00:00 fall in the middle of Zi.
+    // 23:00 - 01:00 is Zi (ind
+    // offset by 1 hour (1/24)
     const fracShifted = (dayTime.frac + 1 / 24) % 1;
     const shichenIndex = Math.floor(fracShifted * 12);
     const hourWithinShichen = (fracShifted * 12) % 1; // 0 to 1 (2 hours)
     
-    // half: 0 to 0.5 is Chu (初), 0.5 to 1.0 is Zheng (正)
+    // half: 0 to 0.5 is Chu (初
     const half = hourWithinShichen < 0.5 ? '初' : '正';
-    // 1 shichen = 2 hours = 8 ke. 1 hour = 4 ke.
-    // Ke index within the half: 0 to 3
+    // 1 shichen = 2 hours = 8
+    // Ke index within the half
     const ke = Math.floor((hourWithinShichen % 0.5) * 8);
 
     const name = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'][shichenIndex] + '时';
@@ -119,16 +108,16 @@ export class CalendarSystem {
         solarLongitude
       };
     } else {
-      // Real mode (use Chinese calendar terms: LiChun, LiXia, LiQiu, LiDong)
-      // 315=LiChun, 45=LiXia, 135=LiQiu, 225=LiDong
+      // Real mode (use Chinese c
+      // 315=LiChun, 45=LiXia, 13
       const gregorianYear = snap.gregorian.year;
-      // Get all terms for this year and previous year just in case
+      // Get all terms for this y
       let terms = [
         ...this.chinese.solarTermsOfYear(gregorianYear - 1),
         ...this.chinese.solarTermsOfYear(gregorianYear),
         ...this.chinese.solarTermsOfYear(gregorianYear + 1)
       ];
-      // filter out only the season starts
+      // filter out only the seas
       const seasonStarts = terms.filter(t => t.longitude === 315 || t.longitude === 45 || t.longitude === 135 || t.longitude === 225);
       
       let currentSeasonStart = seasonStarts[0];
@@ -152,8 +141,8 @@ export class CalendarSystem {
       const dayOfSeason = snap.instant.jdn - startJdn + 1;
       const progress = (dayOfSeason - 1 + snap.instant.frac) / daysInSeason;
       
-      // Calculate true solar longitude based on interpolation between solar terms (or just simplified)
-      // For a better estimation, find the last term and next term
+      // Calculate true solar lon
+      // For a better estimation,
       let lastTerm = terms[0];
       let nextTerm = terms[1];
       for (let i = 0; i < terms.length - 1; i++) {
@@ -182,7 +171,7 @@ export class CalendarSystem {
     }
   }
 
-  /** 单行摘要，如「公历 2026-02-17 星期二 ｜ 农历 丙午年正月初一 ｜ 元历27年 孟春月上旬 初一」。 */
+  /** 单行摘要 */
   formatLine(snapshot: CalendarSnapshot): string {
     const g = this.gregorian.format(snapshot.gregorian, 'iso');
     const c = this.chinese.format(snapshot.chinese, 'full');
@@ -208,18 +197,15 @@ export class CalendarSystem {
 
 /** 日历时钟配置。 */
 export interface CalendarClockOptions {
-  /** 游戏内起始时刻（Unix 毫秒）。默认取当前系统时刻。 */
+  /** 游戏内起始时刻（Unix 毫秒） */
   epochUnixMs?: number;
-  /** 游戏内一昼夜对应的现实秒数：86400 表示与现实同速，1200 表示 20 分钟一天。 */
+  /** 游戏内一昼夜对应的现实秒数 */
   dayLengthSeconds?: number;
   /** 是否暂停。 */
   paused?: boolean;
 }
 
-/**
- * 把现实经过的时间映射为游戏内时刻。
- * 时钟不依赖 three.js，也不读取任何全局状态。
- */
+/** 把现实经过的时间映射为游戏内时刻 */
 export class CalendarClock {
   private epochUnixMsValue: number;
   private gameSeconds = 0;

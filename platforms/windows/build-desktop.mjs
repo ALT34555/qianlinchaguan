@@ -6,13 +6,11 @@ catch { await import('electron/install.js'); }
 await build({ configFile: false, publicDir: false, build: { ssr: 'platforms/windows/server.ts', outDir: 'platforms/windows/runtime', rollupOptions: { output: { entryFileNames: 'server.mjs' } } } });
 if (process.argv.includes('--package')) {
   const { packager } = await import('@electron/packager');
-  const stage = resolve('.temp/windows-stage');
+  const stage = resolve('../../902temp/windows-stage');
   await mkdir(stage, { recursive: true });
   for (const source of ['dist', 'platforms/windows/runtime']) await cp(source, resolve(stage, source), { recursive: true });
   for (const file of ['desktop.cjs', 'preload.cjs', 'game-preload.cjs', 'launcher.html', 'launcher.css', 'launcher-ui.js', 'qianlin.ico']) await cp(`platforms/windows/${file}`, resolve(stage, 'platforms/windows', file));
-  // 启动器以 file:// 直接加载，字体不能像游戏那样交给 Vite 打包成 /assets/<hash>.ttf，
-  // 因此按 launcher.css 里写的同一相对路径把字体一并带入 stage：
-  //   <stage>/platforms/windows/launcher.css  →  ../../content/assets/ui/fonts/
+  // 拷贝字体资源到目标目录
   await mkdir(resolve(stage, 'content/assets/ui'), { recursive: true });
   await cp('content/assets/ui/fonts', resolve(stage, 'content/assets/ui/fonts'), { recursive: true });
   const source = JSON.parse(await readFile('package.json', 'utf8'));

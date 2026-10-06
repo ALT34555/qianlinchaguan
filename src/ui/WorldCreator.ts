@@ -89,8 +89,9 @@ export class WorldCreator {
   private generationSettings(): WorldGeneration {
     const number = (id: string) => this.input(id).value.trim() ? Number(this.input(id).value) : NaN;
     const landRatio = number('land-ratio');
-    if (this.el<HTMLSelectElement>('generation-mode').value === 'plane') return normalizeGeneration({...DEFAULT_GENERATION, landRatio});
-    return normalizeGeneration({ mode: 'planet', landRatio,
+    const precipitation = number('precipitation');
+    if (this.el<HTMLSelectElement>('generation-mode').value === 'plane') return normalizeGeneration({...DEFAULT_GENERATION, landRatio, precipitation});
+    return normalizeGeneration({ mode: 'planet', landRatio, precipitation,
       planet: { map: this.el<HTMLSelectElement>('generation-mode').value === 'earth' ? 'earth' : 'procedural', poleTemperature: number('pole-temperature'),
         equatorTemperature: number('equator-temperature'), monsoonDirection: number('monsoon-direction'), equatorChunks: number('equator-chunks'),
         tectonicActivity: number('tectonic-activity') } });
@@ -104,6 +105,7 @@ export class WorldCreator {
     this.input('equator-chunks').value = String(generation.planet.equatorChunks);
     this.input('tectonic-activity').value = String(generation.planet.tectonicActivity ?? 5);
     this.input('land-ratio').value = String(generation.landRatio ?? .5);
+    this.input('precipitation').value = String(generation.precipitation ?? .5);
     this.updateGenerationFields();
   }
 
@@ -158,6 +160,12 @@ export class WorldCreator {
             <small>${t('creator.landRatio.hint')}</small>
             <input id="land-ratio" aria-label="${t('creator.landRatio')}" type="range" min="0" max="1" step="0.1" value="0.5">
             <span class="coverage-labels"><span>${t('creator.landRatio.water')}</span><span>${t('creator.landRatio.balanced')}</span><span>${t('creator.landRatio.land')}</span></span>
+          </label>
+          <label class="coverage-setting tectonic-setting">
+            <span class="tectonic-heading">${t('creator.precipitation')} <output id="precipitation-value" for="precipitation">0.5 · ${t('creator.precipitation.balanced')}</output></span>
+            <small>${t('creator.precipitation.hint')}</small>
+            <input id="precipitation" aria-label="${t('creator.precipitation')}" type="range" min="0" max="1" step="0.1" value="0.5">
+            <span class="coverage-labels"><span>${t('creator.precipitation.none')}</span><span>${t('creator.precipitation.balanced')}</span><span>${t('creator.precipitation.rich')}</span></span>
           </label>
           <div id="planet-settings" class="planet-settings hidden">
             <div class="planet-fields">
@@ -302,6 +310,10 @@ export class WorldCreator {
 
                   <!-- 控制项 2：显示/隐藏具体投影 -->
                   <label class="ctrl-toggle-row">
+                    <span class="toggle-text"><strong>${t('atlas.toggleChunkColors')}</strong><small>${t('atlas.toggleChunkColors.hint')}</small></span>
+                    <input type="checkbox" id="toggle-chunk-colors" class="switch-input"><span class="switch-slider"></span>
+                  </label>
+                  <label class="ctrl-toggle-row">
                     <span class="toggle-text">
                       <strong>${t('atlas.toggleProjection')}</strong>
                       <small>${t('atlas.toggleProjection.hint')}</small>
@@ -393,7 +405,7 @@ export class WorldCreator {
   }
 
   private generateChunkFilterOptions(): string {
-    // 分组区间与气候带一一对应：基础地形 / 热带 / 亚热带 / 温带 / 寒带。
+    // 分组区间与气候带一一对应
     const groups: { label: string; min: number; max: number }[] = [
       { label: t('atlas.chunkGroup.base'), min: 1, max: 10 },
       { label: climateName(0), min: 101, max: 109 },
@@ -437,6 +449,10 @@ export class WorldCreator {
   private updateWeights(): void {
     this.el('tectonic-value').textContent = this.input('tectonic-activity').value;
     const ratio = Number(this.input('land-ratio').value);
+    const precipitation = Number(this.input('precipitation').value);
+    const precipitationLabel = precipitation === 0 ? t('creator.precipitation.none') : precipitation === 1 ? t('creator.precipitation.rich')
+      : precipitation === .5 ? t('creator.precipitation.balanced') : precipitation === .8 ? t('creator.precipitation.wet') : '';
+    this.el('precipitation-value').textContent = `${precipitation.toFixed(1)}${precipitationLabel ? ` · ${precipitationLabel}` : ''}`;
     this.el('land-ratio-value').textContent = this.el<HTMLSelectElement>('generation-mode').value === 'earth' ? t('creator.landRatio.earth')
       : ratio === 0 ? t('creator.landRatio.water') : ratio === 1 ? t('creator.landRatio.land')
       : ratio === .5 ? t('creator.landRatio.balanced') : t('creator.landRatio.percent', {value: Math.round(ratio * 100)});
@@ -545,6 +561,8 @@ export class WorldCreator {
 
     // 2. 显示/隐藏具体投影
     const toggleProj = this.el<HTMLInputElement>('toggle-projection');
+    const toggleColors=this.el<HTMLInputElement>('toggle-chunk-colors');
+    toggleColors.onchange=()=>this.atlasView?.setShowChunkColors(toggleColors.checked);
     toggleProj.onchange = () => {
       if (this.atlasView) {
         this.atlasView.setShowProjection(toggleProj.checked);
@@ -692,6 +710,7 @@ export class WorldCreator {
         this.atlasView.setGenerator(this.generator);
       }
       this.atlasView.setShowChunkInfo(this.input('toggle-chunk-info').checked);
+      this.atlasView.setShowChunkColors(this.input('toggle-chunk-colors').checked);
       this.atlasView.setShowProjection(this.input('toggle-projection').checked);
       this.atlasView.setShowClimate(this.input('toggle-climate-mode').checked);
       if (options.generation.mode === 'planet') {
@@ -758,6 +777,10 @@ export class WorldCreator {
             <span class="detail-label">${t('detail.riverWidth')}</span>
             <span class="detail-val">${t('detail.riverWidthValue', { value: info.riverWidth.toFixed(0) })}</span>
           </div>
+          ${info.riverDepth > 0 ? `<div class="detail-item">
+            <span class="detail-label">${t('detail.riverDepth')}</span>
+            <span class="detail-val">${t('detail.riverWidthValue', { value: info.riverDepth.toFixed(1) })}</span>
+          </div>` : ''}
         ` : ''}
       </div>
 

@@ -1,21 +1,4 @@
-/**
- * 农历（中国传统阴阳合历）。
- *
- * 采用明清以来通行的编历规则（时宪历规则，也是现行农历的基础）：
- *  1. 朔（日月黄经相同）所在的那一（东八区）日为初一，两次朔之间为一月，长 29 或 30 日；
- *  2. 含冬至的那个月固定为十一月；
- *  3. 从今年十一月到明年十一月之间若有 13 个月，则把其中第一个不含中气的月定为闰月，
- *     闰月沿用前一个月的月名；
- *  4. 含冬至的月（十一月）一定含中气，因此闰月不会出现在十一月之前。
- *
- * 与官方历书的差异说明：
- *  - 日界固定取东八区（UTC+8）；1928 年以前官方使用北京地方时，本实现不回溯该历史差异；
- *  - 朔与中气由天文级数推算，当朔或节气时刻极接近午夜时，月首可能相差一日。
- *    这与官方历书对未来年份给出的"可能相差一日"提示属同一类情况
- *    （如 2057 年 9 月的那次朔落在 28 日 23:59，官方历书标注可能相差一日）。
- *
- * 可靠范围：约 1900—2100 年误差极小；放宽到 1600—2200 年仍可用于游戏展示。
- */
+/** 农历编历算法（时宪历规则） */
 import {
   civilJdnOfJde as civilJdnOfJdeIn,
   gregorianToJdn,
@@ -76,7 +59,7 @@ interface SuiTable {
   zhengyueIndex: number;
 }
 
-/** 二十四节气的太阳视黄经（小寒起，每 15° 一个）。 */
+/** 二十四节气的太阳视黄经（小寒起 */
 function termLongitude(index: number): number {
   return norm360(285 + 15 * index);
 }
@@ -103,10 +86,7 @@ export class ChineseCalendar {
     return k;
   }
 
-  /**
-   * 取"岁"表：以公历 solsticeYear 年冬至所在的月（十一月）为第一个月，
-   * 到次年十一月为止。该岁的正月即公历 solsticeYear + 1 年的春节。
-   */
+  /** 取"岁"表 */
   getSui(solsticeYear: number): SuiTable {
     const cached = this.suiCache.get(solsticeYear);
     if (cached) return cached;
@@ -116,7 +96,7 @@ export class ChineseCalendar {
   }
 
   private buildSui(solsticeYear: number): SuiTable {
-    // 十一月：含冬至之月 = 冬至日之前（含）的最后一次朔所在月
+    // 十一月
     const wsJdn = this.civilJdnOfJde(winterSolsticeJde(solsticeYear));
     const startK = this.lunationIndexBefore(wsJdn);
     // 次年十一月作为排他上界
@@ -140,14 +120,14 @@ export class ChineseCalendar {
 
     for (const m of months) m.hasMajorTerm = this.containsMajorTerm(m);
 
-    // 13 个月 => 置闰：第一个不含中气的月为闰月（十一月必含冬至，不会入选）
+    // 13 个月 => 置闰
     if (months.length !== 12 && months.length !== 13) {
       throw new Error(`农历岁表月数异常（冬至年 ${solsticeYear} 共 ${months.length} 个月）。`);
     }
     let leapIndex = -1;
     if (months.length === 13) {
       leapIndex = months.findIndex((m, i) => i > 0 && !m.hasMajorTerm);
-      // 13 个月里必然存在不含中气的月，否则说明天文级数或日界换算出了问题
+      // 13 个月里必然存在不含中气的月
       if (leapIndex < 0) {
         throw new Error(`农历置闰失败：冬至年 ${solsticeYear} 的 13 个月中找不到无中气之月。`);
       }
@@ -175,7 +155,7 @@ export class ChineseCalendar {
     return { solsticeYear, months, zhengyueIndex };
   }
 
-  /** 判断某月是否含中气（中气的东八区日序落在本月的日期之内）。 */
+  /** 判断某月是否含中气（中气的东八区日序落在本月的日 */
   private containsMajorTerm(m: LunarMonth): boolean {
     // 本月初一 00:00（东八区）对应的力学时
     const startJde = jdUtToJde(m.startJdn - 0.5 - CHINESE_UTC_OFFSET_MINUTES / 1440);
@@ -184,15 +164,15 @@ export class ChineseCalendar {
     return zqJdn >= m.startJdn && zqJdn < m.endJdn;
   }
 
-  /** 在岁表中查找包含某日序的月份，并给出该月所属的农历年。 */
+  /** 在岁表中查找包含某日序的月份 */
   private findMonth(jdn: number): { month: LunarMonth; lunarYear: number } | undefined {
     const g = gregorianYearOf(jdn);
-    // 公历 g 年的日子只可能落在"冬至 g-1"或"冬至 g"起始的两个岁表里
+    // // 岁表区间定位
     for (const solsticeYear of [g - 1, g]) {
       const sui = this.getSui(solsticeYear);
       const index = sui.months.findIndex((m) => jdn >= m.startJdn && jdn < m.endJdn);
       if (index < 0) continue;
-      // 正月之前的月（十一、十二月）属于本岁起点那一年，正月及以后属于次年
+      // 正月之前的月（十一、十二月）属于本岁起点那一年
       const lunarYear = index < sui.zhengyueIndex ? solsticeYear : solsticeYear + 1;
       return { month: sui.months[index]!, lunarYear };
     }
@@ -210,7 +190,7 @@ export class ChineseCalendar {
     return jdnToGregorian(this.springFestivalJdn(lunarYear));
   }
 
-  /** 某农历年正月初一的公历日期字符串（YYYY-MM-DD）。 */
+  /** 某农历年正月初一的公历日期字符串（YYYY-MM */
   springFestivalText(lunarYear: number): string {
     const { year, month, day } = this.springFestival(lunarYear);
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -249,21 +229,15 @@ export class ChineseCalendar {
     return this.fromJdn(jdn);
   }
 
-  /**
-   * 月柱干支（以节气为界的"月建"，如立春之后为寅月）。
-   *
-   * 采用日级约定：交节当日即算进入新的月建（与常见万年历的日级显示一致）。
-   * 若需要按交节时刻精确到瞬间，可用 solarTermsOfYear() 取到交节的 jdn 与 frac。
-   * 月干由年干按五虎遁推得，年柱以立春为界。
-   */
+  /** 月柱干支（以节气为界的"月建" */
   monthGanZhiOf(jdn: number): string {
     const g = gregorianYearOf(jdn);
-    // 汇总相邻三年的"节"（不含中气），取不晚于目标日的最后一个
+    // 汇总相邻三年的"节"（不含中气）
     const jie: { jdn: number; offset: number }[] = [];
     for (const year of [g - 1, g, g + 1]) {
       for (const term of this.solarTermsOfYear(year)) {
         if (term.isMajor) continue;
-        // 节的视黄经为 285° + 30°k，立春（315°）对应寅月
+        // 节的视黄经为 285° + 30°k
         const offset = (((Math.round((term.longitude - 315) / 30) % 12) + 12) % 12);
         jie.push({ jdn: term.jdn, offset });
       }
@@ -273,7 +247,7 @@ export class ChineseCalendar {
     for (const item of jie) {
       if (item.jdn <= jdn) offset = item.offset;
     }
-    // 年柱以立春（当年第 3 个节气）为界，与月建的日级约定保持一致
+    // 年柱以立春（当年第 3 个节气）为界
     const liChunJdn = this.solarTermsOfYear(g)[2]!.jdn;
     const yearForStem = jdn >= liChunJdn ? g : g - 1;
     const yearStem = (((yearForStem - 4) % 10) + 10) % 10;

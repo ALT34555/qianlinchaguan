@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.zhizi","archetype":"shrub","climate":"subtropical","name":"栀子","latin":"zhizi","seed":504,"tags":["shrub","flowering","ornamental","fragrant"],"params":{"height":1.4,"canopy":1,"blobs":5,"bloomCount":6,"stems":3,"spread":0.55},"palette":{"foliage":"foliageDark","foliageDark":"foliageDeep","bloom":"bloomWhite"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.zhizi@seedling","state":"seedling"},
+    {"id":"guan.zhizi@subadult","state":"subadult"},
+    {"id":"guan.zhizi@flowering","state":"flowering"},
+    {"id":"guan.zhizi@fruiting","state":"fruiting"},
+    {"id":"guan.zhizi@withered","state":"withered"}
+  ]
+}

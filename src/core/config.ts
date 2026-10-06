@@ -1,11 +1,9 @@
-/**
- * 世界常量（主线程与 Worker 共用，不得依赖 DOM）。
- */
+/** 世界核心常量定义 */
 
-/** 区块边长（方块），区块为 CHUNK_SIZE x CHUNK_SIZE 的柱状区域 */
+/** 区块边长（方块柱状体） */
 export const CHUNK_SIZE = 64;
 
-/** 海平面：水面位于 y = SEA_LEVEL 处 */
+/** 基准海平面高度 */
 export const SEA_LEVEL = 0;
 
 /** 世界高度下限 / 上限 */

@@ -1,22 +1,8 @@
-/**
- * English (en) language pack.
- *
- * Mirrors the keys of the base pack (`zh-CN`). Any key omitted here
- * automatically falls back to the Chinese base pack, so partial
- * translations are safe to ship.
- *
- * Naming convention (must match `zh-CN` key for key):
- *   茜林茶馆 Qianlin Teahouse — the project
- *   舆图     Atlas            — the 2D world map   (view.atlas)
- *   山川     World            — the 3D world       (view.world)
- *
- * The UI carries no decorative text (no English kickers, no slogans);
- * wherever something needs a word, it says what it is and how to use it.
- */
+/** English language pack */
 import type { Messages } from '../types';
 
 export const en: Messages = {
-  // ---- App and world naming ----
+  // App and world names
   'app.name': 'Qianlin Teahouse',
   'view.atlas': 'Atlas',
   'view.world': 'World',
@@ -28,7 +14,7 @@ export const en: Messages = {
   'menu.read': 'Load World',
   'menu.settings': 'Settings',
 
-  // ---- Create world: mode choice ----
+  // World creation modes
   'create.title': 'Create World',
   'create.back': '← Back to start',
   'create.intro': 'Choose a landscape, then set the seed, climate and starting date.',
@@ -42,7 +28,7 @@ export const en: Messages = {
   'create.earth.desc': 'Contours and mountain ranges close to the real Earth',
   'create.earth.note': 'Built-in Earth map',
 
-  // ---- World creator ----
+  // World creator UI
   'creator.back': '← Back to options',
   'creator.enterWorld': 'Enter World',
   'creator.title': 'Create World',
@@ -71,6 +57,12 @@ export const en: Messages = {
   'creator.equatorChunks.hint': 'chunks / ring',
   'creator.tectonicActivity': 'Tectonic activity',
   'creator.landRatio': 'Land coverage',
+  'creator.precipitation': 'Precipitation',
+  'creator.precipitation.hint': 'Default: 0.5 balanced; step 0.1. Rainfall, climate and terrain shape river distribution.',
+  'creator.precipitation.none': 'No rivers',
+  'creator.precipitation.balanced': 'Balanced',
+  'creator.precipitation.wet': 'Abundant',
+  'creator.precipitation.rich': 'Rich river network',
   'creator.landRatio.hint': 'Recommended: 0.5 balanced; step 0.1. Planet drift changes the final land distribution.',
   'creator.landRatio.water': 'All water',
   'creator.landRatio.land': 'All land',
@@ -108,7 +100,7 @@ export const en: Messages = {
   'creator.mapReady': 'Seed {seed} · the atlas is ready; drag to pan and use the wheel to zoom.',
   'creator.unnamedWorld': 'Unnamed World',
 
-  // ---- Atlas: panel, layers and filters ----
+  // Atlas controls & filters
   'atlas.panelAria': 'Atlas panel',
   'atlas.previewTitle': 'Atlas preview',
   'atlas.previewText': 'Set a seed and climate mix, then open the atlas below.<br>Drag, zoom, control layers, and highlight specific chunks with red outlines.',
@@ -163,7 +155,7 @@ export const en: Messages = {
   'atlas.filter.forest': 'Woodland / jungle / monsoon forest',
   'atlas.chunkGroup.base': 'Base terrain',
 
-  // ---- Chunk details ----
+  // Chunk details UI
   'detail.coord': 'Chunk coords',
   'detail.elevation': 'Base elevation',
   'detail.temperature': 'Local temperature',
@@ -171,6 +163,7 @@ export const en: Messages = {
   'detail.flow': 'River flow',
   'detail.discharge': 'Upstream discharge',
   'detail.riverWidth': 'Channel width',
+  'detail.riverDepth': 'Main channel depth',
   'detail.meters': '{value} m',
   'detail.riverWidthValue': 'about {value} tiles',
   'detail.noFlow': 'No flow (still water or high ground)',
@@ -247,7 +240,7 @@ export const en: Messages = {
   'settings.status.pending': 'Finish or cancel the rebinding in progress.',
   'settings.status.failed': 'Could not save the settings.',
 
-  // ---- Settings validation errors ----
+  // Settings validation
   'error.fov': 'Field of view must be between 30° and 120°.',
   'error.timeSpeed': 'Time speed must be between 0 and 86400.',
   'error.viewMode': 'Choose 2D or 3D mode.',
@@ -256,7 +249,7 @@ export const en: Messages = {
   'error.climateParam': 'The climate proportions in the link were invalid; the balanced mix was restored.',
   'error.generationParam': 'The planet parameters in the link were invalid; a flat world was restored.',
 
-  // ---- Action and key names ----
+  // Action and key labels
   'action.forward': 'Forward',
   'action.back': 'Back',
   'action.left': 'Left',
@@ -275,7 +268,7 @@ export const en: Messages = {
   'key.ArrowLeft': '←',
   'key.ArrowRight': '→',
 
-  // ---- In-game HUD and pause menu ----
+  // In-game HUD & pause
   'game.menu': 'ESC · Menu',
   'game.hint.2d': 'Exploring the atlas',
   'game.hint.3d': 'Click the view to enter the world',
@@ -301,7 +294,7 @@ export const en: Messages = {
   'game.renderFailed': 'Could not start 3D rendering. Stay in the atlas, or check your graphics driver and retry.',
   'game.start3dFailed': 'Could not enter the world.',
 
-  // ---- In-game atlas ----
+  // In-game atlas UI
   'game.map.modeLabel': 'Atlas',
   'game.map.viewAria': 'Overview mode',
   'game.map.overview': 'Global overview',
@@ -348,14 +341,14 @@ export const en: Messages = {
   'hud.line.chinese': 'Lunisolar {value}',
   'hud.line.solarTerm': 'Solar term {value}',
 
-  // ---- Climate band names ----
+  // Climate band names
   'climate.0': 'Tropical',
   'climate.1': 'Subtropical',
   'climate.2': 'Normal',
   'climate.3': 'Temperate',
   'climate.4': 'Cold',
 
-  // ---- Content: chunk type names (keyed by chunk_types.json `key`) ----
+  // Content chunk names
   'chunk.void.name': 'Void',
   'chunk.void.desc': 'Placeholder; never generated',
   'chunk.land.name': 'Land',
@@ -367,9 +360,11 @@ export const en: Messages = {
   'chunk.dryland.name': 'Dryland',
   'chunk.dryland.desc': 'Arid plain',
   'chunk.river.name': 'River',
-  'chunk.river.desc': 'Eight-direction downhill flow; channels widen after confluence',
+  'chunk.river.desc': 'Downhill tributaries merge into wider, deeper rivers; gentle reaches can branch and rejoin, and large rivers span multiple chunks',
   'chunk.waterfall.name': 'Waterfall',
-  'chunk.waterfall.desc': 'A steep river reach dropping to its downstream channel; contributes to confluence',
+  'chunk.waterfall.desc': 'A 16–256 block waterfall; drops of 64 or more form wetlands around its lower banks',
+  'chunk.wetland.name': 'Wetland',
+  'chunk.wetland.desc': 'Shallows, peat banks and small tributaries around large waterfall landings and gentle river bends',
   'chunk.forest.name': 'Woodland',
   'chunk.forest.desc': 'Forest',
   'chunk.valley.name': 'Valley',
@@ -446,4 +441,9 @@ export const en: Messages = {
   'chunk.cold_highlands.desc': 'Cold highlands; base elevation follows the regional relief',
   'chunk.ice_snowfield.name': 'Ice Snowfield',
   'chunk.ice_snowfield.desc': 'Ice snowfield',
+  'atlas.toggleChunkColors': 'Show chunk colors',
+  'atlas.toggleChunkColors.hint': 'Use geology classification colors; turn off to zoom into the actual surface',
+  'atlas.surface.loading': 'Drawing the surface…',
+  'atlas.surface.detail': 'Surface details · scroll to zoom in',
+  'atlas.surface.average': 'Average surface color · zoom in for details',
 };

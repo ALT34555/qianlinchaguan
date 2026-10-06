@@ -1,6 +1,4 @@
-/**
- * 世界 / 区块管理（主线程）：按玩家位置加载、卸载区块，并把 Worker 产出的网格挂进场景。
- */
+/** 世界 / 区块管理（主线程） */
 import * as THREE from 'three';
 import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import { CHUNK_SIZE } from '../../core/config';
@@ -12,6 +10,7 @@ import { terrainHeightAt, terrainGroundUnder } from './TerrainSurface';
 import { WorldLighting } from './WorldLighting';
 import { WaterMaterial, decodeSurfaceColors } from './WaterMaterial';
 import { waterHeightAt } from './WaterSurface';
+import type {WaterField} from './DynamicWater';
 
 export interface LoadedChunk {
   cx: number;
@@ -19,8 +18,9 @@ export interface LoadedChunk {
   type: number;
   /** 区块内高度图 64x64 */
   heights: Float32Array;
-  surfaces: Uint8Array;
+  surfaces: Uint32Array;
   waterLevels: Float32Array;
+  waterField: WaterField;
   minimap: ImageData;
   terrain: THREE.Mesh | null;
   water: THREE.Mesh | null;
@@ -180,6 +180,7 @@ export class World {
     geo.setAttribute('position', new THREE.BufferAttribute(data.positions, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(data.colors, 3, true));
     if (data.waterDepths) geo.setAttribute('waterDepth', new THREE.BufferAttribute(data.waterDepths, 1));
+    if (data.waterFlows) geo.setAttribute('waterFlow',new THREE.BufferAttribute(data.waterFlows,2));
     geo.setIndex(new THREE.BufferAttribute(data.indices, 1));
     geo.computeVertexNormals();
     geo.computeBoundingSphere();
@@ -203,6 +204,7 @@ export class World {
       heights: msg.heights,
       surfaces: msg.surfaces,
       waterLevels: msg.waterLevels,
+      waterField:msg.waterField,
       minimap: new ImageData(msg.minimap, CHUNK_SIZE, CHUNK_SIZE),
       terrain: msg.terrain ? this.buildMesh(msg.terrain, this.terrainMaterial, msg.cx, msg.cz) : null,
       water: msg.water ? this.buildMesh(msg.water, this.waterMaterial, msg.cx, msg.cz) : null,

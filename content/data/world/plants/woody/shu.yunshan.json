@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.yunshan","archetype":"conifer","climate":"cold","name":"云杉","latin":"yunshan","seed":101,"tags":["tree","conifer","timber","snow"],"params":{"height":15,"trunk":2.5,"canopy":2.6,"layers":7,"layerRadius":2.6,"snow":0.26,"snowOn":["canopy","top"]},"palette":{"foliage":"conifer","foliageDark":"coniferDeep"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.yunshan@seedling","state":"seedling"},
+    {"id":"shu.yunshan@subadult","state":"subadult"},
+    {"id":"shu.yunshan@flowering","state":"flowering"},
+    {"id":"shu.yunshan@fruiting","state":"fruiting"},
+    {"id":"shu.yunshan@withered","state":"withered"}
+  ]
+}

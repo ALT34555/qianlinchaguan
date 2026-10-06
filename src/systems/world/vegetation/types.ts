@@ -1,46 +1,107 @@
-/**
- * 植被（植物）系统数据模型。
- *
- * 分层与工程既有风格一致，坚持"数据驱动 + 代码解耦"：
- *   1. 参数表  content/data/world/plants/*.json —— 策划/美术工作区，不含代码；
- *   2. 原型    archetypes.ts —— 每个原型是一个纯函数，参数 -> 低模几何；
- *   3. 注册表  Plants.ts —— 校验参数表 id 与代码常量一致，并对外提供查询；
- *   4. 几何    geometry.ts —— 低模面构建与合并（只产出 position/normal/color，无贴图）。
- *
- * 颜色一律走"色板键 + 四季色阶"（palettes.json），原型只声明语义
- * （bark / foliage / bloom / fruit / snow），这样同一套原型能跨气候带与季节复用。
- */
+/** 植被（植物）系统数据模型 */
 
 /** 生长带（气候 + 地貌），决定默认尺寸与默认色板 */
 export type ClimateZone = 'tropical' | 'subtropical' | 'temperate' | 'cold';
 
 export const CLIMATE_ZONES: readonly ClimateZone[] = ['tropical', 'subtropical', 'temperate', 'cold'];
 
-/** 四季：春 夏 秋 冬（与日历系统 season 0..3 一致） */
+/** 四季 */
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 
 export const SEASONS: readonly Season[] = ['spring', 'summer', 'autumn', 'winter'];
 
+/** 植物状态 */
+export type PlantState = 'planted' | 'normal' | 'seedling' | 'subadult' | 'flowering' | 'fruiting' | 'withered';
+
+/** 状态编号 */
+export const PLANT_STATES: readonly PlantState[] = ['planted', 'normal', 'seedling', 'subadult', 'flowering', 'fruiting', 'withered'];
+
+/** 状态 -> 编号（0~6） */
+export const PLANT_STATE_CODES: Readonly<Record<PlantState, number>> = Object.freeze(
+  Object.fromEntries(PLANT_STATES.map((s, i) => [s, i])) as Record<PlantState, number>,
+);
+
+/** 编号 -> 状态 */
+export function plantStateOfCode(code: number): PlantState {
+  return PLANT_STATES[code] ?? 'normal';
+}
+
+/** 有模型的六态（不含 0 种植） */
+export const PLANT_MODELED_STATES: readonly PlantState[] = PLANT_STATES.filter((s) => s !== 'planted');
+
+/** 状态的种子物候档位 */
+export type StateForm = 'sprout' | 'withered' | 'orchid';
+
+export const STATE_FORMS: readonly StateForm[] = ['sprout', 'withered', 'orchid'];
+
 /** 色板键：参数表只能引用这些键，避免拼写漂移 */
 export type PaletteKey =
+  // ---- 树干 / 土壤 / 雪 / 刺 ----
   | 'bark'
   | 'barkLight'
+  | 'barkDark'
+  | 'barkPale'
+  | 'barkWarm'
+  | 'soil'
+  | 'snow'
+  | 'thorn'
+  // ---- 干枯专用色阶 ----
+  | 'withered'
+  | 'witheredDark'
+  | 'witheredStem'
+  | 'witheredNeedle'
+  // ---- 叶色 ----
   | 'foliage'
   | 'foliageDark'
+  | 'foliageDeep'
   | 'canopy'
+  | 'conifer'
+  | 'coniferDark'
+  | 'coniferDeep'
+  | 'larch'
+  | 'jungle'
+  | 'jungleDark'
+  | 'jungleDeep'
   | 'palmFrond'
+  | 'palmFrondDry'
+  | 'grassDry'
+  // ---- 专类叶色（竹 / 茶 / 桑 / 农作
+  | 'bamboo'
+  | 'bambooCulm'
+  | 'tea'
+  | 'mulberry'
+  | 'cropGreen'
+  | 'riceGreen'
+  | 'cropGold'
+  | 'cropGoldDark'
+  | 'sorghum'
+  // ---- 花色 ----
   | 'bloom'
+  | 'bloomWhite'
+  | 'bloomPink'
+  | 'bloomRed'
+  | 'bloomGold'
+  | 'bloomWarm'
+  | 'plumBloom'
+  | 'orchidBloom'
+  | 'chrysBloom'
+  | 'lotusBloom'
+  /** 花粉颗粒色（针叶树花期用 */
+  | 'pollen'
+  // ---- 果实 / 谷粒 ----
   | 'fruit'
-  | 'snow'
-  | 'soil'
-  | 'thorn';
+  | 'fruitYellow'
+  | 'fruitPale'
+  | 'grain'
+  | 'grainPale'
+  | 'beanPod';
 
-/** 几何材质槽：导出 glTF 时为同一槽聚成一个 primitive */
+/** 几何材质槽 */
 export type PlantMaterial = 'solid' | 'snow' | 'bloom' | 'fruit';
 
 export const PLANT_MATERIALS: readonly PlantMaterial[] = ['solid', 'snow', 'bloom', 'fruit'];
 
-/** 花朵默认色：未指定开花色、且该物种色板没有 bloom 时使用 */
+/** 花朵默认色 */
 export const DEFAULT_BLOOM_COLOR = '#a8456b';
 
 /** 低模形状类型 */
@@ -49,44 +110,47 @@ export type ShapeType =
   | 'cone'
   /** 棱柱（树干、枝干、石块） */
   | 'prism'
-  /** 方块（棕榈树冠基座、支撑物） */
+  /** 方块（棕榈树冠基座、竹节、支撑物） */
   | 'box'
-  /** 点 + 一圈等分顶点构成的穹顶（灌木），floor 可封底 */
+  /** 点 + 一圈等分顶点构成的穹顶（灌木） */
   | 'dome'
-  /** 完整低面球（浆果、叶团、椰子），rings 为纬线层数 */
+  /** 完整低面球（浆果、叶团、椰子） */
   | 'ico'
-  /** 交叉面片（草丛、蕨叶、幼苗），法线统一朝上以避免交叉面全黑 */
-  | 'crossQuad';
+  /** 交叉面片（草丛、蕨叶、幼苗） */
+  | 'crossQuad'
+  /** 单花瓣薄片（花朵的最小元素 */
+  | 'petal';
 
 export interface ShapeSpec {
   type: ShapeType;
   /** 相对植物基点的三轴半径/长度，单位：格（方块边长） */
   size: [number, number, number];
-  /** 相对基点的中心位置，单位：格；省略时按形状类型取默认（柱体取 size.y/2） */
+  /** 相对基点的中心位置 */
   pos?: [number, number, number];
   color: PaletteKey;
   material?: PlantMaterial;
   /** 绕 Y 轴旋转（弧度） */
   rotY?: number;
-  /** 朝 X / Z 方向的倾斜（弧度）：正值使顶端偏向 +X / +Z */
+  /** 朝 X / Z 方向的倾斜（弧度） */
   tiltX?: number;
   tiltZ?: number;
   /** 棱柱 / 棱锥 / 球的径向分段数，低模默认 5 */
   sides?: number;
   /** ico 的纬线层数，默认 1（上下各一层） */
   rings?: number;
-  /** 半径抖动 0~1，制造不规则的低模轮廓，默认 0.12 */
+  /** 半径抖动 0~1 */
   jitter?: number;
-  /** 附着的径向方向（弧度，0 指向 +X，逆时针为 +Z），用于叶团、花序定位 */
+  /** 附着的径向方向（弧度 */
   bearing?: number;
-  /** 是否参与随机形变（叶片/草丛打散用），默认 true */
+  /** petal 花瓣的上扬角（弧度） */
+  pitch?: number;
+  /** petal 花瓣中部上凸量（相对宽度） */
+  cup?: number;
+  /** 是否参与随机形变（叶片/草丛打散用） */
   variant?: boolean;
 }
 
-/**
- * 原型参数：JSON 里的 params 全部按此名字取值，全部可省略（缺省即默认值）。
- * 新增原型时，只需在 archetypes.ts 里读需要的字段。
- */
+/** 原型参数 */
 export interface PlantParams {
   // ---- 通用 ----
   /** 整体高度，单位：格 */
@@ -111,43 +175,59 @@ export interface PlantParams {
   canopyRatio?: number;
   /** 叶团 / 伞盖层数 */
   layers?: number;
-  /** 第一层伞盖的半径，单位：格（默认等于 canopy） */
+  /** 第一层伞盖的半径 */
   layerRadius?: number;
-  /** 层与层之间的垂直重叠系数，>1 表示更密实，默认 0.82 */
+  /** 层与层之间的垂直重叠系数 */
   layerStep?: number;
   /** 叶团数量 */
   blobs?: number;
 
-  // ---- 针叶 / 棕榈 / 特殊形态 ----
+  // ---- 针叶 / 棕榈 / 竹 / 特殊形态
   /** 棕榈叶片数 */
   fronds?: number;
   /** 棕榈叶片长度，单位：格 */
   frondLength?: number;
   /** 棕榈叶下垂量，0~1 */
   droop?: number;
-  /** 叶片分节数（棕榈） */
+  /** 叶片分节数（棕榈 / 竹叶） */
   segments?: number;
   /** 尖顶数量（针叶树顶部的针尖） */
   spikeCount?: number;
   /** 枝条上扬角（弧度），针叶树 / 金合欢用 */
   branchAngle?: number;
+  /** 竹类秆数（bamboo 原型） */
+  culms?: number;
+  /** 竹节间距，单位：格（bamboo 原型） */
+  nodeStep?: number;
+  /** 状态形态 */
+  stateForm?: StateForm;
 
   // ---- 花 / 果 / 雪 ----
-  /** 花簇数量 */
+  /** 花簇数量（每簇 = 一朵花瓣花 */
   bloomCount?: number;
   /** 花簇半径，单位：格 */
   bloomRadius?: number;
+  /** 每朵花的**花瓣数**（4 = 四瓣花 */
+  petals?: number;
+  /** 额外铺在树冠 / 幼苗上的**绿色花瓣叶片**数 */
+  leafPetals?: number;
   /** 果实数量 */
   fruitCount?: number;
   /** 果实半径，单位：格 */
   fruitRadius?: number;
+  /** 果实大小倍率（结实时放大果实），默认 1 */
+  fruitScale?: number;
+  /** 本物种**天生没有开花形态**（雪线地衣、蕨这类 */
+  flowerless?: boolean;
+  /** 本物种天生没有结实形态（同上 */
+  fruitless?: boolean;
   /** 积雪厚度（0 = 不积雪），单位：格 */
   snow?: number;
-  /** 积雪盖在哪些部位：canopy / top / ground，默认 ['canopy'] */
+  /** 积雪盖在哪些部位 */
   snowOn?: SnowTarget[];
 
   // ---- 灌木 / 草丛 ----
-  /** 草丛交叉面片数（crossQuad 专用） */
+  /** 草丛交叉面片数 / 窄叶片数（grassClum */
   blades?: number;
   /** 茎干数量（多茎灌木） */
   stems?: number;
@@ -171,25 +251,59 @@ export interface PlantParams {
 
 export type SnowTarget = 'canopy' | 'top' | 'ground';
 
+/** 状态派生 */
+export interface PlantStateDef {
+  /** 中文名（界面 / 文档用），如 '开花' */
+  label: string;
+  /** 英文名（导出文件名 / id 后缀用） */
+  latin: string;
+  /** 状态编号 0~6 */
+  code?: number;
+  /** 只做接口、不做模型的状态（目前只有 0 种植） */
+  modeless?: boolean;
+  /** modeless 状态的呈现回退目标 */
+  fallback?: PlantState;
+  /** 强制切换的原型（干枯 -> withered、幼 */
+  archetype?: string;
+  /** 写入 params.stateForm 的形态档位 */
+  stateForm?: StateForm;
+  /** 花开关 */
+  bloomMode?: 'none' | 'force' | 'species';
+  /** 果开关 */
+  fruitMode?: 'none' | 'force' | 'species';
+  /** 参数覆盖（在物种参数之上叠加） */
+  paramPatch?: PlantParams;
+  /** 数值型尺寸参数统一乘算（尺寸、叶团、枝干等） */
+  paramScale?: number;
+  /** 色板补充（并入该状态的色表键集合） */
+  palettePatch?: Record<string, PaletteKey>;
+}
+
+export type PlantStateTable = Record<PlantState, PlantStateDef>;
+
 /** 参数表里的一株植物 */
 export interface PlantVariantDef {
   id: string;
-  /** 原型名，必须是 archetypes.ts 注册表中的键 */
+  /** 原型名 */
   archetype: string;
   climate: ClimateZone;
   /** 中文名（界面 / 文档用） */
   name: string;
-  /** 英文名（导出文件名 / 多语言用） */
+  /** 拉丁名（导出文件名 / 多语言用） */
   latin?: string;
-  /** 同原型下区分形态的编号，默认 0；需保证同一原型 + 编号的随机形态稳定 */
+  /** 同原型下区分形态的编号 */
   seed?: number;
   params?: PlantParams;
-  /** 逐物种色板覆盖；键支持 'foliage.spring' 形式定点覆盖季节色 */
+  /** 逐物种色板覆盖 */
   palette?: Record<string, PaletteKey>;
   /** 覆盖生长带默认尺寸（乘算） */
   scale?: number;
   tags?: string[];
-  /** 参数表文件名（注册表自动回填） */
+  /** 本条记录代表哪一段生命周期 */
+  state?: PlantState;
+  /** 该物种支持的状态清单 */
+  states?: PlantState[];
+  /** 参数表文件名（注册表自动回填，便于报错定位） */
   source?: string;
 }
 
@@ -210,39 +324,34 @@ export interface PaletteEntry {
 
 export interface PaletteFile {
   version?: number;
-  /** 树干、土壤、雪、刺等非叶色板 */
+  /** 树干、土壤、雪、刺、干枯等非叶色板 */
   bark?: Record<string, PaletteEntry>;
   /** 叶、花、果色板 */
   greenery?: Record<string, PaletteEntry>;
 }
 
-/** 按 key 解析后的实际颜色表：paletteKey -> '#rrggbb' */
+/** 按 key 解析后的实际颜色表 */
 export type ResolvedPalette = Partial<Record<PaletteKey, string>>;
 
 /** 生成所需的全部输入（原型函数只认这个） */
 export interface PlantBuildOptions {
   seed: number;
   season: Season;
-  /** 整体缩放（1 = 参数表原始尺寸，1 格 ≈ 1 方块） */
+  /** 整体缩放（1 = 参数表原始尺寸 */
   scale?: number;
-  /**
-   * 开花版本：开启后**非针叶**植物会绽放花簇。
-   * 针叶树（裸子植物）不参与开花，开关对它们无效。
-   */
+  /** 开花版本 */
   bloom?: boolean;
-  /** 花朵颜色（#rrggbb）；不传时依次回退到色板 bloom、#a8456b */
+  /** 花朵颜色（#rrggbb） */
   bloomColor?: string;
+  /** 生命周期状态；'normal'（默认）表示成熟健株 */
+  state?: PlantState;
 }
 
-/**
- * 开花版本的开关与花色接口。
- *
- * 生成时按 `buildPlantById(id, season, { bloom: true, bloomColor })` 使用；
- * 花色优先级：`bloomColor` > 物种色板 `palette.bloom` > 默认 #a8456b。
- * 针叶树（裸子植物）不参与开花，开关对它们无效。
- */
+/** 生成接口 */
 export interface PlantBloomOptions {
-  /** 是否生成开花版本 */
+  /** 生命周期状态；缺省视为 'normal' */
+  state?: PlantState;
+  /** 是否生成开花版本（等价于 state: 'flo */
   bloom?: boolean;
   /** 花朵颜色（#rrggbb），不传时按上述优先级回退 */
   bloomColor?: string;
@@ -258,15 +367,16 @@ export interface PlantDef {
   tags: readonly string[];
   params: PlantParams;
   palette: ResolvedPalette;
-  /** 该变体的确定性种子（字符串哈希 + seed 混合），供原型内部抖动使用 */
+  /** 该变体的确定性种子（字符串哈希 + seed 混 */
   buildSeed: number;
-  /**
-   * 当前季节是否允许积雪：参数表写了 snow 且季节为秋冬时才铺雪。
-   * 这样同一份参数表在春/夏不会出现"夏天还顶着雪帽子"的冷带树。
-   */
+  /** 本次生成的生命周期状态 */
+  state: PlantState;
+  /** 当前季节是否允许积雪 */
   snow: boolean;
-  /** 本次生成是否为"开花版本"（针叶树恒为 false） */
+  /** 本次生成是否为"开花版本"（针叶树恒为 fals */
   bloom: boolean;
-  /** 花朵颜色覆盖（#rrggbb）；未设置时回退到色板 bloom / 默认花色 */
+  /** 花朵颜色覆盖（#rrggbb） */
   bloomColor?: string;
+  /** 本次生成是否结果（由状态或物种参数决定） */
+  fruit: boolean;
 }

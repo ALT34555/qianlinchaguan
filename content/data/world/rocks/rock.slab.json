@@ -1,0 +1,54 @@
+{
+  "rocks": [
+    {
+      "id": "rock.slab",
+      "archetype": "slab",
+      "name": "板岩席",
+      "latin": "banyanxi",
+      "family": "metamorphic",
+      "seed": 53,
+      "palette": {
+        "body": "slate",
+        "band": "slateDark",
+        "cap": "slatePale",
+        "base": "soil",
+        "crust": "moss"
+      },
+      "chunkPalette": {
+        "303": {
+          "body": "slate",
+          "band": "slateDark",
+          "cap": "slatePale"
+        },
+        "308": {
+          "body": "slate",
+          "band": "slateDark",
+          "cap": "slatePale",
+          "crust": "lichen"
+        },
+        "403": {
+          "body": "slate",
+          "band": "slateDark",
+          "cap": "slatePale",
+          "crust": "lichen"
+        },
+        "408": {
+          "body": "slate",
+          "band": "slateDark",
+          "cap": "snow",
+          "crust": "snowCap"
+        }
+      },
+      "tags": [
+        "chunk:303",
+        "chunk:308",
+        "chunk:403",
+        "chunk:408",
+        "flat",
+        "layered",
+        "cold",
+        "permeable"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "stone": {
+    "stone": { "default": "#7f7f7f" },
+    "bedrock": { "default": "#353535" },
+    "soil": { "default": "#5f4632" },
+
+    "granite": { "default": "#92958d" },
+    "graniteDark": { "default": "#6e726b" },
+    "granitePale": { "default": "#a8aba1" },
+
+    "basalt": { "default": "#5c6664" },
+    "basaltDark": { "default": "#414a48" },
+    "basaltPale": { "default": "#747d7a" },
+
+    "limestone": { "default": "#b5b19b" },
+    "limestoneDark": { "default": "#8f8c77" },
+    "limestonePale": { "default": "#c9c6b1" },
+
+    "sandstone": { "default": "#b89c78" },
+    "sandstoneDark": { "default": "#93795a" },
+    "sandstonePale": { "default": "#cbb28f" },
+
+    "conglomerate": { "default": "#988a72" },
+    "conglomerateDark": { "default": "#786c58" },
+    "chalk": { "default": "#d2ccad" },
+    "travertine": { "default": "#c7b892" },
+    "travertineDark": { "default": "#a2946f" },
+
+    "slate": { "default": "#737f89" },
+    "slateDark": { "default": "#57626b" },
+    "slatePale": { "default": "#8d99a2" },
+
+    "shale": { "default": "#6b777a" },
+    "shaleDark": { "default": "#515c5f" },
+
+    "quartzite": { "default": "#a6a69b" },
+    "quartziteDark": { "default": "#84847a" },
+    "quartzitePale": { "default": "#bcbcb2" },
+
+    "gravel": { "default": "#8b8682" },
+    "gravelDark": { "default": "#6b6764" },
+    "scree": { "default": "#8e938b" },
+    "screeDark": { "default": "#6f746d" },
+    "glacialTill": { "default": "#a1a79b" },
+
+    "ice": { "default": "#afc8cc" },
+    "iceDark": { "default": "#8ea9ae" },
+    "snow": { "default": "#f3f7fa" }
+  },
+  "cover": {
+    "moss": { "default": "#5c7a44" },
+    "lichen": { "default": "#8f9a6b" },
+    "dryGrass": { "default": "#a89a64" },
+    "snowCap": {
+      "default": "#eef4f9",
+      "autumn": "#e6eef5",
+      "winter": "#f4f8fc"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.chuizhi","archetype":"broadleaf","climate":"cold","name":"垂枝桦","latin":"chuizhihua","seed":104,"tags":["tree","pioneer","snow"],"params":{"height":9.5,"trunk":5.8,"trunkRadius":0.3,"limbCount":2,"canopy":2.5,"blobs":5,"branchAngle":0.95,"snow":0.18,"snowOn":["canopy","ground"]},"palette":{"bark":"barkPale","barkLight":"barkPale","foliage":"foliage","foliageDark":"foliageDeep","canopy":"canopy"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.chuizhi@seedling","state":"seedling"},
+    {"id":"shu.chuizhi@subadult","state":"subadult"},
+    {"id":"shu.chuizhi@flowering","state":"flowering"},
+    {"id":"shu.chuizhi@fruiting","state":"fruiting"},
+    {"id":"shu.chuizhi@withered","state":"withered"}
+  ]
+}

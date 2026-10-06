@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.baigan","archetype":"broadleaf","climate":"temperate","name":"白干桦","latin":"baiganhua","seed":206,"tags":["tree","pioneer"],"params":{"height":13,"trunk":9,"trunkRadius":0.34,"limbCount":2,"canopy":3.1,"blobs":7,"branchAngle":0.95},"palette":{"bark":"barkPale","barkLight":"barkPale","foliage":"foliage","foliageDark":"foliageDeep","canopy":"canopy"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.baigan@seedling","state":"seedling"},
+    {"id":"shu.baigan@subadult","state":"subadult"},
+    {"id":"shu.baigan@flowering","state":"flowering"},
+    {"id":"shu.baigan@fruiting","state":"fruiting"},
+    {"id":"shu.baigan@withered","state":"withered"}
+  ]
+}

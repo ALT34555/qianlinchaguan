@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "cloth": {
+    "vermilion": { "default": "#b03a2e", "note": "朱红：旗帜主色" },
+    "crimson": { "default": "#8c1f24", "note": "绛红：旗帜主色 / 镶边" },
+    "azure": { "default": "#2f5f96", "note": "靛青：旗帜主色" },
+    "indigo": { "default": "#29344d", "note": "深靛：旗帜主色" },
+    "gold": { "default": "#c9a227", "note": "赭金：旗帜主色 / 镶边" },
+    "jade": { "default": "#2f6f52", "note": "竹青：旗帜主色" },
+    "purple": { "default": "#5b3a72", "note": "紫：幡旗主色" },
+    "ochre": { "default": "#a9761f", "note": "土黄：旗帜主色" },
+    "ivory": { "default": "#e6ded0", "note": "牙白：旗帜主色 / 图案底色" },
+    "white": { "default": "#f2f0ea", "note": "素白：镶边" },
+    "silver": { "default": "#c6c9cc", "note": "银灰：镶边" },
+    "charcoal": { "default": "#2f2c29", "note": "墨黑：镶边" }
+  },
+  "hardware": {
+    "oakWood": { "default": "#8a6a45", "note": "橡木：落地杆杆身" },
+    "ashWood": { "default": "#b59a76", "note": "白蜡木：横杆杆身" },
+    "bamboo": { "default": "#c2b06a", "note": "竹：棍子旗杆杆身" },
+    "lacquer": { "default": "#7c2320", "note": "红漆：庙杆杆身" },
+    "ebony": { "default": "#35302c", "note": "乌木：幡棍杆身" },
+    "iron": { "default": "#4a4f55", "note": "铁：横杆与法兰" },
+    "bronze": { "default": "#a5843f", "note": "青铜：顶饰 / 套环" },
+    "brass": { "default": "#b08a3e", "note": "黄铜：顶饰 / 套环" },
+    "granite": { "default": "#8b8b8b", "note": "花岗岩：底座" },
+    "sandstone": { "default": "#b9a37f", "note": "砂岩：底座" },
+    "marble": { "default": "#d9d6cd", "note": "汉白玉：底座" },
+    "hemp": { "default": "#b7a583", "note": "麻绳：旗绳 / 吊索" }
+  }
+}

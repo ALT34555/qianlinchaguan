@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"cao.jue","archetype":"grassClump","climate":"temperate","name":"蕨","latin":"jue","seed":602,"tags":["ground","understory"],"params":{"height":0.95,"blades":6,"bloomCount":0,"flowerless":true,"fruitless":true,"spread":0.6},"palette":{"foliage":"foliageDark","foliageDark":"foliageDeep","bloom":"grassDry"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"cao.jue@seedling","state":"seedling"},
+    {"id":"cao.jue@subadult","state":"subadult"},
+    {"id":"cao.jue@flowering","state":"flowering"},
+    {"id":"cao.jue@fruiting","state":"fruiting"},
+    {"id":"cao.jue@withered","state":"withered"}
+  ]
+}

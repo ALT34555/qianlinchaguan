@@ -1,17 +1,7 @@
-/**
- * 低多边形几何构建器（植物专用）。
- *
- * 设计要点：
- *   1. **不依赖 three**：只产出 position / normal / color / index 四个数组。
- *      → 可以在 Web Worker 里生成整片森林的植被网格，主线程只负责上传 GPU；
- *      → 也让导出脚本（Node 环境）可以直接复用同一份几何，产物与游戏内 100% 一致。
- *   2. **纯色低模**：所有颜色写进顶点色，方向明暗直接烘焙进顶点色，
- *      因此渲染只需要一个材质（与 ChunkMesher 的纯色风格一致，无需贴图与光源）。
- *   3. **可复现**：抖动全部来自调用方传入的确定性随机序列，同一种子必然得到同一棵树。
- */
+/** 低多边形几何构建器（植物专用） */
 import { PLANT_MATERIALS, type PlantMaterial, type ShapeSpec, type ShapeType } from './types';
 
-/** 单个多边形面：顶点坐标、顶点色（0~255）、法线、材质槽 */
+/** 单个多边形面 */
 export interface Face {
   pos: number[];
   col: number[];
@@ -19,7 +9,7 @@ export interface Face {
   mat: PlantMaterial;
 }
 
-/** 单株植物的低模几何：positions / normals / colors 为同长扁平数组，indices 为三角形索引 */
+/** 单株植物的低模几何 */
 export interface PlantGeometry {
   positions: Float32Array;
   normals: Float32Array;
@@ -29,9 +19,9 @@ export interface PlantGeometry {
   radius: number;
   /** 几何高度（含枝顶） */
   height: number;
-  /** 各材质槽的三角形区间 [start, count]（索引为单位，非三角形数） */
+  /** 各材质槽的三角形区间 [start, count */
   groups: { mat: PlantMaterial; start: number; count: number }[];
-  /** 顶点数与三角形数统计 */
+  /** 顶点数 / 三角形数，便于诊断与文档统计 */
   vertexCount: number;
   triangleCount: number;
 }
@@ -39,7 +29,7 @@ export interface PlantGeometry {
 /** 方向明暗阶梯：预烘焙光照，避免运行时开销 */
 const SHADE_STEPS = [0.58, 0.7, 0.84, 1.0];
 
-/** 太阳方向（标准化为整数权重即可）：偏上方、略偏 +X/-Z */
+/** 太阳方向（标准化为整数权重即可） */
 const SUN: readonly [number, number, number] = [0.42, 0.84, -0.34];
 
 const TAU = Math.PI * 2;
@@ -51,10 +41,7 @@ export function parseColor(hex: string, fallback: readonly [number, number, numb
   return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
 }
 
-/**
- * 方向明暗：把法线量化成 4 档，得到"上亮、侧中、下暗"的纯色立体感。
- * 与体素世界的烘焙方式保持一致，避免低模在纯色材质下糊成一团。
- */
+/** 方向明暗 */
 function shadeOf(nx: number, ny: number, nz: number): number {
   const d = nx * SUN[0] + ny * SUN[1] + nz * SUN[2];
   const t = (d + 1) / 2;
@@ -105,7 +92,7 @@ export class LowPolyBuilder {
     this.push([...a, ...b, ...c], col, LowPolyBuilder.normal(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]), mat);
   }
 
-  /** 四边形：按 a-b-c-d 顺序拆成两个三角形，要求平面且凸 */
+  /** 四边形 */
   quad(
     a: readonly [number, number, number], b: readonly [number, number, number],
     c: readonly [number, number, number], d: readonly [number, number, number],
@@ -116,10 +103,7 @@ export class LowPolyBuilder {
     this.push([...a, ...c, ...d], col, n, mat);
   }
 
-  /**
-   * 棱柱：底面多边形（逆时针）向上挤出，带上下封盖与四边形侧面。
-   * bottom / top 为逐顶点的 y 坐标，允许锥形收口。
-   */
+  /** 棱柱 */
   prism(
     center: [number, number, number],
     rx: number, rz: number,
@@ -143,7 +127,7 @@ export class LowPolyBuilder {
       bot.push([x, cy + bottom, z]);
       topRing.push([x, cy + top, z]);
     }
-    // 侧面：外法线朝外，绕序为 bot[i] -> bot[i+1] -> top[i+1] -> top[i]
+    // 侧面
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       this.quad(bot[i], bot[j], topRing[j], topRing[i], color, opts.mat);
@@ -159,10 +143,7 @@ export class LowPolyBuilder {
     }
   }
 
-  /**
-   * 椎体：底面多边形收到一点。radiusRatio 为顶端相对半径（0 = 尖顶，>0 = 平头）。
-   * 底部默认不封盖（针叶层叠伞盖、棕榈树干收口都用不到底面）。
-   */
+  /** 椎体 */
   cone(
     base: [number, number, number],
     rx: number, rz: number,
@@ -200,46 +181,57 @@ export class LowPolyBuilder {
     if (opts.cap) for (let i = 1; i < n - 1; i++) this.triangle(ring[0], ring[i], ring[i + 1], color, opts.mat);
   }
 
-  /**
-   * 低面圆顶 / 叶团：一圈等分顶点 + 顶点，floor=true 时封底。
-   * 用于阔叶树冠、灌木、浆果，是"低模球"最省面的做法（6 边 = 6 + 6 三角形）。
-   */
+  /** 低面圆顶 / 叶团 */
   dome(
     center: [number, number, number],
     rx: number, ry: number, rz: number,
     sides: number,
     color: [number, number, number],
-    opts: { rotY?: number; jitter?: number; rand?: () => number; floor?: boolean; mat?: PlantMaterial; squash?: number } = {},
+    opts: { rotY?: number; jitter?: number; rand?: () => number; floor?: boolean; mat?: PlantMaterial; squash?: number; rings?: number } = {},
   ): void {
     const n = Math.max(3, Math.round(sides));
     const rot = opts.rotY ?? 0;
     const jit = opts.jitter ?? 0;
     const rand = opts.rand ?? (() => 0.5);
+    const rings = Math.max(0, Math.round(opts.rings ?? 0));
     const [cx, cy, cz] = center;
-    const ring: [number, number, number][] = [];
-    for (let i = 0; i < n; i++) {
-      const a = rot + (i / n) * TAU;
-      const k = jit > 0 ? 1 + (rand() * 2 - 1) * jit : 1;
-      ring.push([cx + Math.cos(a) * rx * k, cy, cz + Math.sin(a) * rz * k]);
-    }
+    const ring = (rScale: number, y: number): [number, number, number][] => {
+      const out: [number, number, number][] = [];
+      for (let i = 0; i < n; i++) {
+        const a = rot + (i / n) * TAU;
+        const k = jit > 0 ? 1 + (rand() * 2 - 1) * jit : 1;
+        out.push([cx + Math.cos(a) * rx * rScale * k, y, cz + Math.sin(a) * rz * rScale * k]);
+      }
+      return out;
+    };
+    const equator = ring(1, cy);
     const apex: [number, number, number] = [cx, cy + ry, cz];
+    // 从赤道往上逐圈收小，最后一圈再扇到顶点
+    let prev = equator;
+    for (let l = 1; l <= rings; l++) {
+      const phi = (l / (rings + 1)) * (Math.PI / 2);
+      const cur = ring(Math.cos(phi), cy + ry * Math.sin(phi));
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        this.quad(prev[i], prev[j], cur[j], cur[i], color, opts.mat);
+      }
+      prev = cur;
+    }
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
-      this.triangle(ring[i], ring[j], apex, color, opts.mat);
+      this.triangle(prev[i], prev[j], apex, color, opts.mat);
     }
     // 底面（可选）：灌木贴地、叶团朝下的那半边
     if (opts.floor !== false) {
       const belly: [number, number, number] = [cx, cy - ry * (opts.squash ?? 1), cz];
       for (let i = 0; i < n; i++) {
         const j = (i + 1) % n;
-        this.triangle(ring[i], belly, ring[j], color, opts.mat);
+        this.triangle(equator[i], belly, equator[j], color, opts.mat);
       }
     }
   }
 
-  /**
-   * 低面球：上下各一层盖 + 中间一圈，rings 增加纬线层数（果实/大雪团用 2 层）。
-   */
+  /** 低面球 */
   ico(
     center: [number, number, number],
     radius: number | [number, number, number],
@@ -315,10 +307,7 @@ export class LowPolyBuilder {
     for (const f of faces) this.quad(f[0], f[1], f[2], f[3], color, opts.mat);
   }
 
-  /**
-   * 交叉面片：两片十字相交的单面四边形（草丛、蕨叶、幼苗）。
-   * 法线强制朝上，否则背光面会黑成一片，草丛在纯色低模下像剪影。
-   */
+  /** 交叉面片 */
   crossQuad(
     base: [number, number, number],
     width: number, height: number,
@@ -341,7 +330,37 @@ export class LowPolyBuilder {
     }
   }
 
-  /** 细枝条：从 start 沿方向 direction（已被调用方归一化）生长，向末端收细 */
+  /** 花瓣 */
+  petal(
+    center: [number, number, number],
+    bearing: number,
+    length: number,
+    width: number,
+    color: [number, number, number],
+    opts: { pitch?: number; cup?: number; mat?: PlantMaterial; both?: boolean; jitter?: number; rand?: () => number } = {},
+  ): void {
+    const [cx, cy, cz] = center;
+    const jit = opts.jitter ?? 0;
+    const rand = opts.rand ?? (() => 0.5);
+    const pitch = opts.pitch ?? 0.3;
+    const cup = opts.cup ?? 0.3;
+    const len = length * (jit > 0 ? 1 + (rand() * 2 - 1) * jit : 1);
+    const wid = width * (jit > 0 ? 1 + (rand() * 2 - 1) * jit : 1);
+    const dx = Math.cos(bearing), dz = Math.sin(bearing);
+    const sx = -dz, sz = dx;
+    const lift = Math.sin(pitch) * len;
+    const midY = cy + lift * 0.52 + wid * cup * 0.5;
+    const midX = cx + dx * len * 0.52;
+    const midZ = cz + dz * len * 0.52;
+    const base: [number, number, number] = [cx, cy, cz];
+    const tip: [number, number, number] = [cx + dx * len, cy + lift, cz + dz * len];
+    const left: [number, number, number] = [midX - sx * wid * 0.5, midY, midZ - sz * wid * 0.5];
+    const right: [number, number, number] = [midX + sx * wid * 0.5, midY, midZ + sz * wid * 0.5];
+    this.quad(base, right, tip, left, color, opts.mat);
+    if (opts.both) this.quad(base, left, tip, right, color, opts.mat);
+  }
+
+  /** 细枝条 */
   limb(
     start: [number, number, number],
     dir: [number, number, number],
@@ -402,15 +421,15 @@ export class LowPolyBuilder {
     let idx = 0;
     let maxR = 0;
     let maxY = 0;
-    // 以 PLANT_MATERIALS 的顺序输出，保证导出结果稳定可比对
+    // 以 PLANT_MATERIALS 的顺序输出
     for (const mat of PLANT_MATERIALS) {
       const start = idx;
       for (const f of this.faces) {
         if (f.mat !== mat) continue;
         const n = f.pos.length / 3;
         positions.set(f.pos, v * 3);
-        // 面法线：低模不需要平滑法线，平面法线正好符合"棱角分明"的观感。
-        // 注意必须在这里补齐 —— 法线缺省为全 0 时，外部工具（Blender / three.js）
+        // 面法线
+        // 注意必须在这里补齐 —— 法线缺省为全 0 时
         // 会按零向量处理，整株模型会黑掉。
         const N = LowPolyBuilder.normal(
           f.pos[0], f.pos[1], f.pos[2],
@@ -422,8 +441,8 @@ export class LowPolyBuilder {
           normals[(v + i) * 3 + 1] = N[1];
           normals[(v + i) * 3 + 2] = N[2];
         }
-        // f.col 是**单个 RGB 三元组**（面的统一顶点色），不是每顶点数组，
-        // 因此必须为这个面的每个顶点重复写出一次，否则只有第一个顶点有色、其余全黑。
+        // f.col 是**单个 RGB 三元组**（面的
+        // 因此必须为这个面的每个顶点重复写出一次
         for (let i = 0; i < n; i++) {
           colors[(v + i) * 3] = f.col[0];
           colors[(v + i) * 3 + 1] = f.col[1];
@@ -459,10 +478,10 @@ function clampByte(v: number): number {
   return r < 0 ? 0 : r > 255 ? 255 : r;
 }
 
-/** 形状枚举 -> 构建器方法名（参数表校验与文档生成共用） */
-export const SHAPE_TYPES: readonly ShapeType[] = ['cone', 'prism', 'box', 'dome', 'ico', 'crossQuad'];
+/** 形状枚举 -> 构建器方法名（参数表校验与文档生 */
+export const SHAPE_TYPES: readonly ShapeType[] = ['cone', 'prism', 'box', 'dome', 'ico', 'crossQuad', 'petal'];
 
-/** 供导出脚本把 ShapeSpec 转成实际几何：材质槽缺失时按 solid 处理 */
+/** 供导出脚本把 ShapeSpec 转成实际几何 */
 export function shapeMaterial(spec: ShapeSpec): PlantMaterial {
   return spec.material ?? 'solid';
 }

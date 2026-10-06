@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.yezi","archetype":"palm","climate":"tropical","name":"椰子棕榈","latin":"yezizonglv","seed":403,"tags":["tree","palm","coast","fruit"],"params":{"height":12.5,"trunk":11,"lean":0.22,"limbCount":0,"fronds":11,"frondLength":5.2,"droop":0.6,"fruitCount":4},"palette":{"bark":"barkWarm","barkLight":"barkLight","palmFrond":"palmFrond","foliageDark":"foliageDark","fruit":"fruitYellow"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.yezi@seedling","state":"seedling"},
+    {"id":"shu.yezi@subadult","state":"subadult"},
+    {"id":"shu.yezi@flowering","state":"flowering"},
+    {"id":"shu.yezi@fruiting","state":"fruiting"},
+    {"id":"shu.yezi@withered","state":"withered"}
+  ]
+}

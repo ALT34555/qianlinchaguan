@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.yinxing","archetype":"broadleaf","climate":"temperate","name":"银杏","latin":"yinxing","seed":204,"tags":["tree","ornamental","autumn_color","fruit"],"params":{"height":13.5,"trunk":8,"trunkRadius":0.5,"limbCount":3,"canopy":3.4,"blobs":8,"branchAngle":0.7,"fruitCount":3},"palette":{"foliage":"foliage","foliageDark":"foliageDark","canopy":"canopy","fruit":"fruitPale"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.yinxing@seedling","state":"seedling"},
+    {"id":"shu.yinxing@subadult","state":"subadult"},
+    {"id":"shu.yinxing@flowering","state":"flowering"},
+    {"id":"shu.yinxing@fruiting","state":"fruiting"},
+    {"id":"shu.yinxing@withered","state":"withered"}
+  ]
+}

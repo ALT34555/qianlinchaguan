@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shui.lian","archetype":"succulent","climate":"subtropical","name":"莲","latin":"lian","seed":608,"tags":["water","wet","flowering"],"params":{"height":1.1,"layers":2,"blobs":4,"petals":8,"bloomCount":2,"fruitCount":3,"spread":0.55},"palette":{"foliage":"canopy","foliageDark":"jungleDark","bloom":"lotusBloom","fruit":"grain"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shui.lian@seedling","state":"seedling"},
+    {"id":"shui.lian@subadult","state":"subadult"},
+    {"id":"shui.lian@flowering","state":"flowering"},
+    {"id":"shui.lian@fruiting","state":"fruiting"},
+    {"id":"shui.lian@withered","state":"withered"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.paotong","archetype":"broadleaf","climate":"subtropical","name":"泡桐","latin":"paotong","seed":305,"tags":["tree","flowering","timber"],"params":{"height":15,"trunk":9.5,"trunkRadius":0.62,"limbCount":3,"canopy":4.4,"blobs":8,"branchAngle":0.9,"bloomCount":5},"palette":{"foliage":"foliage","foliageDark":"foliageDark","canopy":"canopy","bloom":"bloomPink"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.paotong@seedling","state":"seedling"},
+    {"id":"shu.paotong@subadult","state":"subadult"},
+    {"id":"shu.paotong@flowering","state":"flowering"},
+    {"id":"shu.paotong@fruiting","state":"fruiting"},
+    {"id":"shu.paotong@withered","state":"withered"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"nong.da","archetype":"shrub","climate":"temperate","name":"大豆","latin":"dadou","seed":704,"tags":["crop","oil_crop","farm","fruit"],"params":{"height":0.85,"canopy":0.55,"blobs":5,"bloomCount":4,"fruitCount":5,"stems":2,"spread":0.35},"palette":{"foliage":"cropGreen","foliageDark":"foliageDeep","bloom":"bloomWhite","fruit":"beanPod"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"nong.da@seedling","state":"seedling"},
+    {"id":"nong.da@subadult","state":"subadult"},
+    {"id":"nong.da@flowering","state":"flowering"},
+    {"id":"nong.da@fruiting","state":"fruiting"},
+    {"id":"nong.da@withered","state":"withered"}
+  ]
+}

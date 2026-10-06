@@ -3,6 +3,7 @@
  */
 import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import type { MeshData } from './ChunkMesher';
+import type {WaterField} from './DynamicWater';
 
 export type WorkerRequest =
   | { kind: 'init'; seed: number; climateWeights: ClimateWeights; generation: WorldGeneration }
@@ -14,8 +15,9 @@ export interface ChunkResultMessage {
   cz: number;
   type: number;
   heights: Float32Array;
-  surfaces: Uint8Array;
+  surfaces: Uint32Array;
   waterLevels: Float32Array;
+  waterField: WaterField;
   terrain: MeshData | null;
   water: MeshData | null;
   minimap: Uint8ClampedArray<ArrayBuffer>;

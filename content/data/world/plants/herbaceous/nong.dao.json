@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"nong.dao","archetype":"grassClump","climate":"subtropical","name":"水稻","latin":"shuidao","seed":701,"tags":["crop","staple","ground","farm","wet"],"params":{"height":0.85,"blades":8,"bloomCount":3,"fruitCount":3,"spread":0.3},"palette":{"foliage":"riceGreen","foliageDark":"foliageDeep","bloom":"grainPale","fruit":"grain"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"nong.dao@seedling","state":"seedling"},
+    {"id":"nong.dao@subadult","state":"subadult"},
+    {"id":"nong.dao@flowering","state":"flowering"},
+    {"id":"nong.dao@fruiting","state":"fruiting"},
+    {"id":"nong.dao@withered","state":"withered"}
+  ]
+}

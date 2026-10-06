@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.fusang","archetype":"shrub","climate":"tropical","name":"扶桑","latin":"fusang","seed":507,"tags":["shrub","flowering","ornamental"],"params":{"height":2.1,"canopy":1.25,"blobs":5,"bloomCount":7,"stems":3,"spread":0.7},"palette":{"foliage":"jungle","foliageDark":"jungleDark","canopy":"jungle","bloom":"bloomRed"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.fusang@seedling","state":"seedling"},
+    {"id":"guan.fusang@subadult","state":"subadult"},
+    {"id":"guan.fusang@flowering","state":"flowering"},
+    {"id":"guan.fusang@fruiting","state":"fruiting"},
+    {"id":"guan.fusang@withered","state":"withered"}
+  ]
+}

@@ -2,7 +2,7 @@ import type { Input } from '../core/Input';
 import { actionLabel, type GameAction } from '../core/GameSettings';
 import { t } from '../i18n';
 
-/** Each finger owns a held action; cancellation, focus loss and menus release it. */
+/** 触控手指事件绑定 */
 export class TouchControls {
   private readonly root = document.createElement('div');
   private readonly held = new Map<number, GameAction>();
@@ -35,8 +35,8 @@ export class TouchControls {
     });
     canvas.style.touchAction = 'none';
     canvas.addEventListener('pointerdown', event => {
-      // 显示虚拟按键时不会申请鼠标锁定（按键要留着自己可点），所以鼠标也要能像手指一样
-      // 按住场景拖动转视角；鼠标已被锁定时位移由 Input 的 mousemove 负责，这里不再重复累计。
+      // 显示虚拟按键时不会申请鼠标锁定（按键要留着自己可
+      // 按住场景拖动转视角
       if (this.root.classList.contains('hidden') || this.look || this.input.pointerLocked) return;
       canvas.setPointerCapture(event.pointerId); this.look = { id: event.pointerId, x: event.clientX, y: event.clientY };
     });
@@ -48,11 +48,11 @@ export class TouchControls {
     const end = (event: PointerEvent) => { if (this.look?.id === event.pointerId) this.look = null; };
     canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
     canvas.addEventListener('lostpointercapture', end);
-    // 鼠标锁定接手视角后，丢掉正在进行的拖拽，避免两套位移叠加。
+    // 鼠标锁定接手视角后
     document.addEventListener('pointerlockchange', () => { if (this.input.pointerLocked) this.look = null; });
     window.addEventListener('blur', () => this.clear());
   }
-  /** 方向键是符号，不需要翻译；文字按钮与无障碍名随语言更新。 */
+  /** 方向键是符号 */
   applyLocale(): void {
     this.moveButtons.forEach(button => {
       const action = button.dataset.action as GameAction;

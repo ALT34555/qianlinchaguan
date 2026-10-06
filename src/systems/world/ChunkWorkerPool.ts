@@ -1,6 +1,4 @@
-/**
- * 区块 Worker 池：把生成任务分发给多个 Worker，限制每个 Worker 的并发数。
- */
+/** 区块 Worker 池 */
 import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import type { ChunkResultMessage, WorkerRequest } from './ChunkProtocol';
 
@@ -31,7 +29,7 @@ export class ChunkWorkerPool {
     return free;
   }
 
-  /** 提交任务，若所有 Worker 都已满载则返回 false。 */
+  /** 提交任务 */
   request(cx: number, cz: number): boolean {
     let best = -1;
     for (let i = 0; i < this.workers.length; i++) {

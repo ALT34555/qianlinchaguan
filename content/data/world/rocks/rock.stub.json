@@ -1,0 +1,74 @@
+{
+  "rocks": [
+    {
+      "id": "rock.stub",
+      "archetype": "stub",
+      "name": "石墩",
+      "latin": "shidun",
+      "family": "sedimentary",
+      "seed": 97,
+      "palette": {
+        "body": "limestone",
+        "band": "limestoneDark",
+        "cap": "limestonePale",
+        "base": "soil",
+        "crust": "moss"
+      },
+      "chunkPalette": {
+        "5": {
+          "body": "gravel",
+          "band": "gravelDark",
+          "cap": "scree"
+        },
+        "7": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "limestonePale",
+          "crust": "moss"
+        },
+        "10": {
+          "body": "travertine",
+          "band": "travertineDark",
+          "cap": "limestonePale",
+          "crust": "moss"
+        },
+        "107": {
+          "body": "conglomerate",
+          "band": "conglomerateDark",
+          "cap": "sandstonePale",
+          "crust": "moss"
+        },
+        "202": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "chalk",
+          "crust": "moss"
+        },
+        "203": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "limestonePale",
+          "crust": "moss"
+        },
+        "207": {
+          "body": "travertine",
+          "band": "travertineDark",
+          "cap": "limestonePale",
+          "crust": "moss"
+        }
+      },
+      "tags": [
+        "chunk:5",
+        "chunk:7",
+        "chunk:10",
+        "chunk:107",
+        "chunk:202",
+        "chunk:203",
+        "chunk:207",
+        "medium",
+        "wet",
+        "karst"
+      ]
+    }
+  ]
+}

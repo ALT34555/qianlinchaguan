@@ -19,7 +19,7 @@ const multiply = (a: number[], b: number[]) => Array.from({length: 9}, (_, i) =>
   return a[row] * b[col] + a[row + 1] * b[col + 3] + a[row + 2] * b[col + 6];
 });
 
-/** 原始大陆先划成有限的大块与沿岸碎块，再让整块沿球面漂移。 */
+/** 原始大陆先划成有限的大块与沿岸碎块 */
 export class ContinentFragments {
   private readonly fragments: Fragment[] = [];
   private readonly opening: number;
@@ -38,7 +38,7 @@ export class ContinentFragments {
       const outward = direction(angle);
       const center = axis.map((x, i) => x * Math.cos(radius) + outward[i] * Math.sin(radius)) as Vector;
       const rotation = unit(cross(axis, direction(angle + (rng() - .5) * .6)));
-      // Rodrigues 逆旋转：查询漂移后的位置时，回到原始大陆寻找对应整块。
+      // Rodrigues 逆旋转
       const inverse = multiply(rotationMatrix(center, (rng() - .5) * 1.1 * spread),
         rotationMatrix(rotation, -drift * spread));
       this.fragments.push({center, bias, inverse, boundaries: [], chip});
@@ -79,10 +79,10 @@ export class ContinentFragments {
       const source: Vector = [m[0]*world[0] + m[1]*world[1] + m[2]*world[2],
         m[3]*world[0] + m[4]*world[1] + m[5]*world[2], m[6]*world[0] + m[7]*world[1] + m[8]*world[2]];
       let distance = density(source);
-      // 沿岸碎块有独立尺寸上限，避免把大陆外沿整条切成细长的环带。
+      // 沿岸碎块有独立尺寸上限
       if (fragment.chip) distance = Math.min(distance, (dot(source, fragment.center) - Math.cos(.2)) * 4.3);
       if (distance <= coast) continue;
-      // 所有陆块共用原始坐标中的弯曲场，裂纹彼此吻合；两尺度扰动产生湾口和凸角。
+      // 所有陆块共用原始坐标中的弯曲场
       const bend = (offset: number) => this.field(source, 2.4, offset) + this.field(source, 5.2, offset + 61) * .23;
       const warped = unit([source[0] + bend(23) * this.warp,
         source[1] + bend(-31) * this.warp,

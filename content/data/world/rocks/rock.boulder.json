@@ -1,0 +1,97 @@
+{
+  "rocks": [
+    {
+      "id": "rock.boulder",
+      "archetype": "boulder",
+      "name": "巨砾",
+      "latin": "juli",
+      "family": "igneous",
+      "seed": 11,
+      "palette": {
+        "body": "granite",
+        "band": "graniteDark",
+        "cap": "granitePale",
+        "base": "soil",
+        "crust": "lichen"
+      },
+      "chunkPalette": {
+        "1": {
+          "body": "granite",
+          "band": "graniteDark",
+          "cap": "granitePale",
+          "crust": "lichen"
+        },
+        "3": {
+          "body": "granite",
+          "band": "graniteDark",
+          "cap": "granitePale",
+          "crust": "lichen"
+        },
+        "8": {
+          "body": "basalt",
+          "band": "basaltDark",
+          "cap": "basaltPale",
+          "crust": "lichen"
+        },
+        "103": {
+          "body": "granite",
+          "band": "graniteDark",
+          "cap": "granitePale",
+          "crust": "moss"
+        },
+        "108": {
+          "body": "basalt",
+          "band": "basaltDark",
+          "cap": "basaltPale",
+          "crust": "moss"
+        },
+        "204": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "limestonePale",
+          "crust": "moss"
+        },
+        "304": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "limestonePale",
+          "crust": "lichen"
+        },
+        "403": {
+          "body": "granite",
+          "band": "graniteDark",
+          "cap": "snow",
+          "crust": "snowCap"
+        },
+        "406": {
+          "body": "granite",
+          "band": "graniteDark",
+          "cap": "snow",
+          "crust": "snowCap"
+        },
+        "408": {
+          "body": "slate",
+          "band": "slateDark",
+          "cap": "snow",
+          "crust": "snowCap"
+        }
+      },
+      "tags": [
+        "chunk:1",
+        "chunk:3",
+        "chunk:8",
+        "chunk:103",
+        "chunk:108",
+        "chunk:204",
+        "chunk:304",
+        "chunk:403",
+        "chunk:406",
+        "chunk:408",
+        "large",
+        "universal",
+        "dry",
+        "cold"
+      ]
+    }
+  ]
+}

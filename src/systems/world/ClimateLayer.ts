@@ -24,10 +24,16 @@ export class ClimateLayer {
     const cycle = ((latitude % 128) + 128) % 128;
     const position = Math.min(1 - Number.EPSILON, 1 - Math.abs(cycle - 64) / 64);
     let cumulative = 0, index = 0;
+    let fraction = .5;
     for (let i = 0; i < this.weights.length; i++) {
+      const start = cumulative;
       cumulative += this.weights[i];
-      if (this.weights[i] > 0 && position < cumulative) { index = i; break; }
+      if (this.weights[i] > 0 && position < cumulative) {
+        index = i; fraction = (position - start) / this.weights[i]; break;
+      }
     }
-    return {index, temperature: 38 - 58 * position};
+    // 调整气候权重只改变带宽
+    const limits = [38, 26, 18, 10, 0, -25];
+    return {index, temperature: limits[index] + (limits[index + 1] - limits[index]) * fraction};
   }
 }

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export const CAMERA_LIGHT_RADIUS = 8;
 const smooth = (a: number, b: number, x: number) => THREE.MathUtils.smoothstep(x, a, b);
 
-/** 民用时间从午夜开始，与 Sky 的日月轨迹保持一致。 */
+/** 民用时间从午夜开始 */
 export function daylightAt(dayRatio: number): { sunHeight: number; daylight: number; dusk: number; night: number } {
   const sunHeight = -Math.cos(dayRatio * Math.PI * 2);
   const daylight = smooth(-.12, .3, sunHeight);
@@ -19,7 +19,7 @@ const FOG_DAY = new THREE.Color(0xa9d3ff);
 const FOG_DUSK = new THREE.Color(0xc88f82);
 const ZENITH_DAY = new THREE.Color(0x3d78d2);
 
-/** 全局太阳/月光与相机弱补光；不使用阴影贴图，避免区块加载时阴影跳动。 */
+/** 全局太阳/月光与相机弱补光 */
 export class WorldLighting {
   readonly fogColor = new THREE.Color();
   readonly zenithColor = new THREE.Color();

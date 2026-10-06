@@ -1,36 +1,5 @@
 #!/usr/bin/env node
-/**
- * 茜林茶馆 · Windows 本地启动器（服务端）
- * ============================================================================
- * 作用：在本机 127.0.0.1 上起一个只监听回环地址的 HTTP 服务，
- *   1) 把生产构建产物 dist\ 作为静态站点提供（含 ES module Worker 的正确 MIME）；
- *   2) 挂载 platforms/saves/local-saves.ts 的 FileSaveService，提供 /api/saves 存档接口，
- *      存档以独立 JSON 文件写入 userdata\saves —— 这就是"本地保存"；
- *   3) 用默认浏览器打开游戏页面。
- *
- * 为什么需要它：src/main.ts 固定使用 FileSaveStore（前端只能通过 HTTP 写文件），
- *   FileSaveStore 的报错原文就是"请通过本地启动器打开游戏"。
- *   直接用 file:// 打开 dist\index.html 会因缺少 /api/saves 而无法本地存档。
- *
- * 设计约束：
- *   - 只监听回环地址，不接受局域网访问；存档接口自身还会校验 remoteAddress 与 Origin。
- *   - 不复制存档逻辑：直接复用被 vite dev / vite preview 使用的同一份 FileSaveService，
- *     保证"开发服务器 / 预览服务器 / 启动器"三者的存档行为完全一致。
- *   - 因此本文件通过 Node 的类型擦除（type stripping）直接 import .ts，
- *     需要 Node >= 22.6（>= 22.18 无需任何参数）。低版本会自动加 --experimental-strip-types 重跑。
- *
- * 用法：
- *   node platforms/windows/launcher.mjs [选项]
- *     --port <n>     首选端口（默认 17873；被占用时自动顺延，仍失败则交给系统分配）
- *     --host <addr>  监听地址（默认 127.0.0.1，不建议改）
- *     --saves <dir>  存档目录（默认 <工程根>\userdata\saves）
- *     --no-open      不自动打开浏览器
- *     --build        启动前强制重新构建
- *     --no-build     完全跳过构建检查（直接提供现有 dist\）
- *     --check        自检：起服务、跑一轮存档接口往返、打印结果后退出（用临时目录，不碰真实存档）
- *     --help         显示帮助
- * ============================================================================
- */
+/** Windows本地启动服务与静态代理 */
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createReadStream, existsSync } from 'node:fs';
@@ -49,13 +18,13 @@ const DEFAULT_PORT = 17873;
 const DEFAULT_HOST = '127.0.0.1';
 const IS_WINDOWS = process.platform === 'win32';
 
-// ---------------------------------------------------------------------------
-// 0. Node 版本守卫：类型擦除（type stripping）需要 Node >= 22.6
-// ---------------------------------------------------------------------------
+// -----------
+// 0. Node 版本守卫
+// -----------
 const [NODE_MAJOR, NODE_MINOR] = process.versions.node.split('.').map(Number);
 
 function stripMode() {
-  // 'native' = 默认已开启；'flag' = 需要 --experimental-strip-types；'none' = 不支持
+  // 版本特性支持档位
   if (NODE_MAJOR > 23) return 'native';
   if (NODE_MAJOR === 23) return NODE_MINOR >= 6 ? 'native' : 'flag';
   if (NODE_MAJOR === 22) return NODE_MINOR >= 18 ? 'native' : NODE_MINOR >= 6 ? 'flag' : 'none';
@@ -76,9 +45,9 @@ if (STRIP === 'flag' && !process.execArgv.includes('--experimental-strip-types')
   process.exit(result.status ?? 1);
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 1. 命令行参数
-// ---------------------------------------------------------------------------
+// -----------
 function fail(message) {
   console.error(`\n${message}\n`);
   process.exit(1);
@@ -134,9 +103,9 @@ function help() {
       直接双击 file:// 打开 dist\\index.html 无法本地存档，必须经由本启动器。`);
 }
 
-// ---------------------------------------------------------------------------
-// 2. 构建产物检查（源码比 dist 新时自动重建，避免启动到旧版本）
-// ---------------------------------------------------------------------------
+// -----------
+// 2. 检查并按需构建
+// -----------
 const WATCHED = ['src', 'content', 'index.html', 'vite.config.ts', 'tsconfig.json', 'package.json'];
 
 async function newestMtime(target) {
@@ -154,7 +123,7 @@ async function newestMtime(target) {
 
 function runBuild() {
   console.log('正在构建（npm run build）…\n');
-  // Windows 上 .cmd 包装脚本必须走 shell，否则 Node 会以 EINVAL 拒绝执行。
+  // Windows 上 .cmd 包装脚本必须走 s
   const result = spawnSync('npm run build', { cwd: PROJECT_ROOT, stdio: 'inherit', shell: true });
   return result.status === 0;
 }
@@ -184,9 +153,9 @@ async function ensureBuild(options, { allowBuild = true } = {}) {
   if (!runBuild()) fail('构建失败（请查看上面的 tsc / vite 输出）。未提供任何旧版本产物，以免运行到过期代码。');
 }
 
-// ---------------------------------------------------------------------------
-// 3. 存档服务（复用 platforms/saves/local-saves.ts，与 vite dev / preview 完全同一份实现）
-// ---------------------------------------------------------------------------
+// -----------
+// 3. 挂载本地存档服务
+// -----------
 async function loadSaveService() {
   try {
     return await import('../../platforms/saves/local-saves.ts');
@@ -196,9 +165,9 @@ async function loadSaveService() {
   }
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 4. 静态站点
-// ---------------------------------------------------------------------------
+// -----------
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -232,7 +201,7 @@ function send(response, status, headers, body) {
 function contentType(file) { return MIME[extname(file).toLowerCase()] ?? 'application/octet-stream'; }
 
 function cacheControl(pathname) {
-  // Vite 产物带内容哈希，可长期缓存；入口 HTML 必须每次校验，避免更新后仍跑旧代码。
+  // Vite 产物带内容哈希
   if (pathname.startsWith('/assets/')) return 'public, max-age=31536000, immutable';
   if (pathname === '/' || pathname.endsWith('.html')) return 'no-cache, no-store, must-revalidate';
   return 'no-cache';
@@ -249,7 +218,7 @@ async function sendFile(request, response, file, pathname) {
     'ETag': etag,
     'Cache-Control': cacheControl(pathname),
   };
-  // 304 不得携带实体头（Content-Type / Content-Length），否则部分浏览器会判定响应异常。
+  // 304 不得携带实体头（Content-Type
   if (request.headers['if-none-match'] === etag) {
     send(response, 304, { 'ETag': etag, 'Cache-Control': headers['Cache-Control'] });
     return true;
@@ -290,7 +259,7 @@ function serveStatic(request, response) {
       catch (error) { if (error?.code !== 'ENOENT') failure = error; }
     }
     if (failure) { send(response, 500, { 'Content-Type': 'text/plain; charset=utf-8' }, '读取文件失败'); return; }
-    // 单页应用回退：只有导航请求才回退到入口 HTML，避免把缺失的 .js 当成 HTML 返回。
+    // 单页应用回退
     if ((request.headers.accept ?? '').includes('text/html')) {
       try { if (await sendFile(request, response, indexFile, '/index.html')) return; }
       catch (error) { if (error?.code !== 'ENOENT') { send(response, 500, { 'Content-Type': 'text/plain; charset=utf-8' }, '读取文件失败'); return; } }
@@ -299,9 +268,9 @@ function serveStatic(request, response) {
   })();
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 5. 组装服务
-// ---------------------------------------------------------------------------
+// -----------
 function createLauncherServer(saveMiddleware, savesDirectory) {
   return createServer((request, response) => {
     const pathname = (request.url ?? '').split('?')[0];
@@ -333,7 +302,7 @@ function listen(server, host, port) {
   });
 }
 
-/** 停止后台启动器：只认自家 /api/launcher 身份，绝不按端口猜测杀进程。 */
+/** 停止后台启动器 */
 async function stopRunning(options) {
   let stopped = 0;
   for (let port = options.port; port <= options.port + 15; port++) {
@@ -359,7 +328,7 @@ function openBrowser(url) {
   catch { console.warn('未能自动打开浏览器，请手动访问上面的地址。'); }
 }
 
-/** 打印/打开用的地址：绑 0.0.0.0 或 :: 时要用回环地址才是本机可访问的 URL。 */
+/** 打印/打开用的地址 */
 function displayHost(host) {
   return host === '0.0.0.0' || host === '::' || host === '' ? DEFAULT_HOST : host;
 }
@@ -387,9 +356,9 @@ function shutdown(server) {
   process.on('SIGHUP', close);
 }
 
-// ---------------------------------------------------------------------------
-// 6. 自检（--check）：不触碰真实存档，使用临时目录跑一整轮接口
-// ---------------------------------------------------------------------------
+// -----------
+// 6. 自检（--check）
+// -----------
 async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
   const results = [];
   const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`  ${ok ? '✓' : '✗'} ${name}${detail ? ` — ${detail}` : ''}`); };
@@ -456,9 +425,9 @@ async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
   return failed.length === 0 ? 0 : 1;
 }
 
-// ---------------------------------------------------------------------------
+// -----------
 // 7. 入口
-// ---------------------------------------------------------------------------
+// -----------
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) { help(); return 0; }

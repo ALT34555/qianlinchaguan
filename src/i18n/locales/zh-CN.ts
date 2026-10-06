@@ -1,17 +1,4 @@
-/**
- * 简体中文语言包（基准语言）。
- *
- * 这里是所有界面文案的"源语言"：新增键时先写在这里，
- * 再由其他语言包补齐；缺键时自动回退到本语言包。
- *
- * 命名约定（全工程统一，不要在别处另起叫法）：
- *   茜林茶馆 —— 主工程
- *   舆图     —— 2D 世界地图（view.atlas）
- *   山川     —— 3D 世界   （view.world）
- *
- * 另：界面不放装饰性文字（英文小标题、诗句口号一类）。
- * 需要说明的地方就写清楚它是什么、怎么用。
- */
+/** 简体中文语言包（基准语言） */
 import type { Messages } from '../types';
 
 export const zhCN: Messages = {
@@ -70,6 +57,12 @@ export const zhCN: Messages = {
   'creator.equatorChunks.hint': '区块 / 圈',
   'creator.tectonicActivity': '板块活动度',
   'creator.landRatio': '陆占比',
+  'creator.precipitation': '降水量',
+  'creator.precipitation.hint': '默认 0.5 · 均衡；每格 0.1，降水与气候、地势共同影响河流分布',
+  'creator.precipitation.none': '不生成河流',
+  'creator.precipitation.balanced': '均衡',
+  'creator.precipitation.wet': '丰沛',
+  'creator.precipitation.rich': '河网丰富',
   'creator.landRatio.hint': '推荐 0.5 · 均衡；每格 0.1，星球漂移会改变最终陆地分布',
   'creator.landRatio.water': '全水',
   'creator.landRatio.land': '全陆',
@@ -170,6 +163,7 @@ export const zhCN: Messages = {
   'detail.flow': '河流流向',
   'detail.discharge': '上游汇水量',
   'detail.riverWidth': '河道宽度',
+  'detail.riverDepth': '主槽深度',
   'detail.meters': '{value} 米',
   'detail.riverWidthValue': '约 {value} 格',
   'detail.noFlow': '无流动 (静水或高地)',
@@ -273,7 +267,7 @@ export const zhCN: Messages = {
   'key.ArrowLeft': '←',
   'key.ArrowRight': '→',
 
-  // ---- 游戏内 HUD 与暂停菜单 ----
+  // 游戏HUD与暂停菜单
   'game.menu': 'ESC · 菜单',
   'game.hint.2d': '舆图探索',
   'game.hint.3d': '点击画面进入山川',
@@ -348,10 +342,17 @@ export const zhCN: Messages = {
 
   // ---- 气候带名称 ----
   'chunk.waterfall.name': '落差水（瀑布）',
-  'chunk.waterfall.desc': '大落差河段；上游水面沿陡坎落向下游，仍参与汇流',
+  'chunk.waterfall.desc': '16～256格落差的瀑布；64格以上在落点两岸形成湿地',
+  'chunk.wetland.name': '湿地',
+  'chunk.wetland.desc': '大瀑布落点两岸及缓坡河湾的浅滩、泥炭岸与细支流',
   'climate.0': '热带',
   'climate.1': '亚热带',
   'climate.2': '常规',
   'climate.3': '温带',
   'climate.4': '寒带',
+  'atlas.toggleChunkColors': '显示区块颜色',
+  'atlas.toggleChunkColors.hint': '切换为地质区块分类色；关闭后放大查看真实地表',
+  'atlas.surface.loading': '正在绘制地表…',
+  'atlas.surface.detail': '地表细节 · 继续滚动放大',
+  'atlas.surface.average': '地表平均色 · 放大查看细节',
 };

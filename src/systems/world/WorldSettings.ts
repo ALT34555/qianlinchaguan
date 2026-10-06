@@ -1,4 +1,4 @@
-/** 顺序固定为由热到冷；基础地形编号和气候归属互相独立。 */
+/** 顺序固定为由热到冷 */
 export const CLIMATES = [
   { name: '热带', zone: 100, color: '#e7ab64' },
   { name: '亚热带', zone: 200, color: '#aac76c' },
@@ -9,29 +9,31 @@ export const CLIMATES = [
 
 export type ClimateWeights = [number, number, number, number, number];
 export const DEFAULT_CLIMATE_WEIGHTS: ClimateWeights = [20, 20, 20, 20, 20];
-export const GENERATOR_VERSION = 9;
+export const GENERATOR_VERSION = 22;
 
 export interface PlanetSettings {
   map: 'procedural' | 'earth';
   poleTemperature: number;
   equatorTemperature: number;
-  /** 风吹向的方位角：0 北、90 东、180 南、270 西。 */
+  /** 风吹向的方位角 */
   monsoonDirection: number;
   equatorChunks: number;
-  /** 0 原始大陆、5 大块大陆、9 更分散的大块与岛屿。 */
+  /** 0 原始大陆、5 大块大陆、9 更分散的大块与岛屿 */
   tectonicActivity: number;
 }
 export interface WorldGeneration {
   mode: 'plane' | 'planet';
   planet: PlanetSettings;
   landRatio?: number;
+  /** 0 无河流 */
+  precipitation?: number;
 }
 export const DEFAULT_PLANET: PlanetSettings = {
   map: 'procedural', poleTemperature: -25, equatorTemperature: 30,
   monsoonDirection: 90, equatorChunks: 4096, tectonicActivity: 5,
 };
 export const EARTH_PLANET: PlanetSettings = { ...DEFAULT_PLANET, map: 'earth', poleTemperature: -30 };
-export const DEFAULT_GENERATION: WorldGeneration = { mode: 'plane', planet: DEFAULT_PLANET, landRatio: .5 };
+export const DEFAULT_GENERATION: WorldGeneration = { mode: 'plane', planet: DEFAULT_PLANET, landRatio: .5, precipitation: .5 };
 
 export function normalizeGeneration(value: unknown = DEFAULT_GENERATION): WorldGeneration {
   if (!value || typeof value !== 'object') throw new Error('地形生成规则无效。');
@@ -57,10 +59,15 @@ export function normalizeGeneration(value: unknown = DEFAULT_GENERATION): WorldG
       Math.abs(landRatio * 10 - Math.round(landRatio * 10)) > 1e-8) {
     throw new Error('陆占比须为 0～1，步进为 0.1。');
   }
-  return { mode: g.mode, planet: { ...p, tectonicActivity }, landRatio };
+  const precipitation = g.precipitation === undefined ? .5 : g.precipitation;
+  if (typeof precipitation !== 'number' || !Number.isFinite(precipitation) || precipitation < 0 || precipitation > 1 ||
+      Math.abs(precipitation * 10 - Math.round(precipitation * 10)) > 1e-8) {
+    throw new Error('降水量须为 0～1，步进为 0.1。');
+  }
+  return { mode: g.mode, planet: { ...p, tectonicActivity }, landRatio, precipitation };
 }
 
-/** 区块中心对应经纬度；经度循环，越过极点时反射纬度并转向半圈。 */
+/** 区块中心对应经纬度 */
 export function planetCoordinates(cx: number, cz: number, circumference: number): { longitude: number; latitude: number } {
   const wrap = (v: number) => ((v + circumference / 2) % circumference + circumference) % circumference - circumference / 2;
   let latitude = -wrap(cz + .5) / circumference * 360;

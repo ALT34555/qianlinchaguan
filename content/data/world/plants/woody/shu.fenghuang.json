@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.fenghuang","archetype":"broadleaf","climate":"tropical","name":"凤凰木","latin":"fenghuangmu","seed":406,"tags":["tree","flowering","ornamental"],"params":{"height":13,"trunk":5.6,"trunkRadius":0.6,"limbCount":4,"canopy":4.8,"blobs":10,"branchAngle":0.85,"bloomCount":6},"palette":{"foliage":"canopy","foliageDark":"foliageDeep","canopy":"jungle","bloom":"bloomWarm"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.fenghuang@seedling","state":"seedling"},
+    {"id":"shu.fenghuang@subadult","state":"subadult"},
+    {"id":"shu.fenghuang@flowering","state":"flowering"},
+    {"id":"shu.fenghuang@fruiting","state":"fruiting"},
+    {"id":"shu.fenghuang@withered","state":"withered"}
+  ]
+}

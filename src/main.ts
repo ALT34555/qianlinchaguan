@@ -18,16 +18,16 @@ const rdRaw = Number(params.get('rd'));
 const renderDistance = Number.isFinite(rdRaw) && rdRaw > 0 ? Math.max(2, Math.min(16, Math.round(rdRaw))) : DEFAULT_RENDER_DISTANCE;
 const menuRoot = document.getElementById('world-menu')!;
 let started = false;
-// 延迟访问浏览器存储，禁用存储时仍可打开菜单、生成世界和导出文件。
+// 延迟访问浏览器存储
 const desktopSettings = (window as Window & { desktopSettings?: { read(): string | null; write(value: string): void } }).desktopSettings;
 const storage = {
   getItem: (key: string) => key === SETTINGS_KEY && desktopSettings ? desktopSettings.read() : localStorage.getItem(key),
   setItem: (key: string, value: string) => { if (key === SETTINGS_KEY && desktopSettings) desktopSettings.write(value); else localStorage.setItem(key, value); },
 };
 
-// 语言必须先于任何界面创建：URL 的 ?lang= 参数 > 已保存偏好 > 浏览器语言 > 基准语言。
+// 语言必须先于任何界面创建
 initI18n({ storage, preferred: params.get('lang') });
-// 开始界面只显示工程名；进入游戏后 Game 会把标题改成「茜林茶馆 · 舆图 / 山川」。
+// 开始界面只显示工程名
 document.title = t('app.name');
 const loadingEl = document.getElementById('loading')!;
 loadingEl.textContent = t('loading.terrain');

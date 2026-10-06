@@ -1,0 +1,28 @@
+{
+  "rocks": [
+    {
+      "id": "rock.floe",
+      "archetype": "floe",
+      "name": "冰岩",
+      "latin": "bingyan",
+      "family": "ice",
+      "seed": 127,
+      "palette": {
+        "body": "ice",
+        "band": "iceDark",
+        "cap": "snow",
+        "base": "iceDark",
+        "crust": "snowCap"
+      },
+      "tags": [
+        "chunk:409",
+        "chunk:406",
+        "chunk:402",
+        "ice",
+        "cold",
+        "large",
+        "slippery"
+      ]
+    }
+  ]
+}

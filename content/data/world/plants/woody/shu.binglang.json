@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.binglang","archetype":"palm","climate":"tropical","name":"槟榔","latin":"binglang","seed":404,"tags":["tree","palm","fruit","cash_crop"],"params":{"height":9.5,"trunk":8.2,"trunkRadius":0.17,"lean":0.1,"fronds":9,"frondLength":3.4,"droop":0.45,"fruitCount":3},"palette":{"bark":"bark","barkLight":"barkLight","palmFrond":"palmFrond","foliageDark":"foliageDark","fruit":"fruitYellow"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.binglang@seedling","state":"seedling"},
+    {"id":"shu.binglang@subadult","state":"subadult"},
+    {"id":"shu.binglang@flowering","state":"flowering"},
+    {"id":"shu.binglang@fruiting","state":"fruiting"},
+    {"id":"shu.binglang@withered","state":"withered"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.mangguo","archetype":"broadleaf","climate":"tropical","name":"芒果","latin":"mangguo","seed":405,"tags":["tree","fruit","orchard"],"params":{"height":12,"trunk":5.2,"trunkRadius":0.55,"limbCount":3,"canopy":4.6,"blobs":9,"fruitCount":5},"palette":{"foliage":"canopy","foliageDark":"foliageDark","canopy":"foliage","fruit":"fruitYellow"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.mangguo@seedling","state":"seedling"},
+    {"id":"shu.mangguo@subadult","state":"subadult"},
+    {"id":"shu.mangguo@flowering","state":"flowering"},
+    {"id":"shu.mangguo@fruiting","state":"fruiting"},
+    {"id":"shu.mangguo@withered","state":"withered"}
+  ]
+}

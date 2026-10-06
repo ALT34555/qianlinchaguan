@@ -3,12 +3,7 @@ import { t } from '../i18n';
 export const ACTIONS = ['forward', 'back', 'left', 'right', 'jump', 'sprint', 'descend', 'debug'] as const;
 export type GameAction = typeof ACTIONS[number];
 
-/**
- * 操作名称。
- *
- * 注意：这里从"导出常量表"改成了函数。文案属于多语言资源，
- * 必须在**渲染时**求值，否则切换语言后已取到的字符串不会更新。
- */
+/** 操作名称 */
 export function actionLabel(action: GameAction): string {
   return t(`action.${action}`);
 }
@@ -63,13 +58,13 @@ export function saveSettings(storage: StorageLike, value: GameSettings): GameSet
 export function actionCodes(action: GameAction, bindings: GameSettings['keyBindings']): string[] {
   const code = bindings[action];
   if (/^(Shift|Control)(Left|Right)$/.test(code)) return [code.replace(/(Left|Right)$/, 'Left'), code.replace(/(Left|Right)$/, 'Right')];
-  // 方向键作为默认 WASD 的快捷替代；改键后让出对应方向键。
+  // 方向键作为默认 WASD 的快捷替代
   const arrows: Partial<Record<GameAction, string>> = { forward: 'ArrowUp', back: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
   const arrow = arrows[action];
   if (arrow && code === defaultSettings().keyBindings[action] && !Object.values(bindings).includes(arrow)) return [code, arrow];
   return [code];
 }
-/** 按键显示名；未在语言包中登记时回退为 KeyA → A、Digit1 → 1 的简写。 */
+/** 按键显示名 */
 export function keyLabel(code: string): string {
   const key = `key.${code}`;
   const label = t(key);

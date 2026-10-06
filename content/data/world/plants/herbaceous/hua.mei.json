@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"hua.mei","archetype":"blossomTree","climate":"temperate","name":"梅","latin":"mei","seed":801,"tags":["ornamental","flowering","shrub","zhongguo_sijunzi"],"params":{"height":3.4,"trunk":1.2,"trunkRadius":0.16,"lean":0.2,"limbCount":5,"blobs":4,"bloomCount":5,"bloomRadius":0.15,"snow":0.12,"snowOn":["canopy"],"sides":4},"palette":{"barkDark":"barkDark","barkLight":"barkLight","foliage":"foliage","bloom":"plumBloom"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"hua.mei@seedling","state":"seedling"},
+    {"id":"hua.mei@subadult","state":"subadult"},
+    {"id":"hua.mei@flowering","state":"flowering"},
+    {"id":"hua.mei@fruiting","state":"fruiting"},
+    {"id":"hua.mei@withered","state":"withered"}
+  ]
+}

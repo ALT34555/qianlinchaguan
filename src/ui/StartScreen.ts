@@ -27,10 +27,7 @@ export class StartScreen {
     this.stopLocaleWatch = onLocaleChange(this.onLocaleChange);
     this.home();
   }
-  /**
-   * 语言变更后就地重绘。
-   * 设置面板正开着时交给它自己刷新 —— 否则未保存的草稿会被丢弃。
-   */
+  /** 语言变更后就地重绘 */
   private onLocaleChange = (): void => {
     if (this.settings) return;
     this.rerender?.();
@@ -41,7 +38,7 @@ export class StartScreen {
     this.events.abort(); this.events = new AbortController();
     this.root.classList.remove('creator-page'); this.root.classList.add('landing-page'); this.root.scrollTop = 0;
   }
-  /** 顶栏只保留工程名：不放英文小标题与诗句，界面上不留装饰性文字。 */
+  /** 顶栏只保留工程名 */
   private header(): string {
     return `<header class="menu-header"><a class="wordmark" href="./">${t('app.name')}</a></header>`;
   }

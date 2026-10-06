@@ -1,9 +1,11 @@
 import { WorldGenerator, type ChunkInfo } from '../systems/world/WorldGenerator';
 import { getChunkTypeDef } from '../systems/world/ChunkTypes';
 import { CLIMATES } from '../systems/world/WorldSettings';
+import { snowLine } from '../systems/world/TerrainLayers';
 
 export type PlanetView = 'globe' | 'projection';
 export interface OverviewStyle {
+  chunkColors?:boolean;
   climate: boolean; relief: boolean; climateFilter: number | null;
   filterKey: string; matches: (info: ChunkInfo) => boolean;
 }
@@ -18,16 +20,16 @@ export function globePoint(u: number, v: number, longitude: number, latitude: nu
   return { longitude: ((lon / RAD + 540) % 360) - 180, latitude: lat / RAD };
 }
 
-export function overviewColor(info: ChunkInfo, climate: boolean, relief: boolean): [number, number, number] {
+export function overviewColor(info: ChunkInfo, climate: boolean, relief: boolean,chunkColors=false): [number, number, number] {
   let hex = climate ? CLIMATES[info.climate].color : getChunkTypeDef(info.type).mapColor;
-  // 全球层使用连续的海深/植被/高程色，局部层保留原有地块配色。
-  if (!climate) {
-    hex = info.elevation <= 0 ? '#397aa1' : info.temperature < 0 || info.elevation > 120 + info.temperature * 4 ? '#e3ebe1'
-      : info.type === 104 || info.type === 4 ? '#c5b078' : info.elevation > 95 ? '#8e947a' : '#73965e';
+  // 全球层使用连续的海深/植被/高程色
+  if (!climate && !chunkColors) {
+    hex = info.elevation <= 0 ? '#397aa1' : info.temperature < 0 || info.elevation > snowLine(info.temperature) ? '#e3ebe1'
+      : info.type === 104 || info.type === 4 ? '#c5b078' : info.elevation > 768 ? '#8e947a' : '#73965e';
   }
   const value = parseInt(hex.slice(1), 16);
   const light = relief ? info.elevation <= 0 ? 1 - Math.min(.4, -info.elevation / 280)
-    : 1 + Math.min(.2, info.elevation / 700) : 1;
+    : 1 + Math.min(.2, info.elevation / 4000) : 1;
   return [value >> 16, value >> 8 & 255, value & 255].map(v => Math.min(255, Math.round(v * light))) as [number, number, number];
 }
 
@@ -41,14 +43,14 @@ export class PlanetAtlasLayer {
   setGenerator(generator: WorldGenerator): void { this.generator = generator; this.texture = null; }
 
   private getTexture(style: OverviewStyle): ImageData {
-    const key = `${style.climate},${style.relief},${style.climateFilter},${style.filterKey}`;
+    const key = `${style.climate},${style.relief},${style.climateFilter},${style.filterKey},${style.chunkColors}`;
     if (this.texture && key === this.textureKey) return this.texture;
     const w = 720, h = 360, data = new ImageData(w, h), size = this.generator.generation.planet.equatorChunks;
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const info = this.generator.getOverviewInfo((x + .5) / w * size - size / 2 - .5,
         (y + .5) / h * size / 2 - size / 4 - .5);
       const i = (y * w + x) * 4;
-      let color = overviewColor(info, style.climate, style.relief);
+      let color = overviewColor(info, style.climate, style.relief,style.chunkColors);
       if (style.climate && style.climateFilter !== null && info.climate !== style.climateFilter) color = color.map(c => Math.round(c * .35)) as [number, number, number];
       if (style.filterKey && style.matches(info)) color = [Math.min(255, color[0] * .4 + 160), color[1] * .4, color[2] * .4];
       data.data.set([...color, 255], i);

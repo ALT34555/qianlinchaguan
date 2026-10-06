@@ -1,0 +1,61 @@
+{
+  "rocks": [
+    {
+      "id": "rock.ledge",
+      "archetype": "ledge",
+      "name": "石台",
+      "latin": "shitai",
+      "family": "sedimentary",
+      "seed": 37,
+      "palette": {
+        "body": "sandstone",
+        "band": "sandstoneDark",
+        "cap": "sandstonePale",
+        "base": "soil",
+        "crust": "dryGrass"
+      },
+      "chunkPalette": {
+        "8": {
+          "body": "basalt",
+          "band": "basaltDark",
+          "cap": "basaltPale",
+          "crust": "lichen"
+        },
+        "108": {
+          "body": "basalt",
+          "band": "basaltDark",
+          "cap": "basaltPale",
+          "crust": "moss"
+        },
+        "203": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "limestonePale",
+          "crust": "moss"
+        },
+        "208": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "limestonePale"
+        },
+        "308": {
+          "body": "quartzite",
+          "band": "sandstoneDark",
+          "cap": "quartzitePale",
+          "crust": "lichen"
+        }
+      },
+      "tags": [
+        "chunk:8",
+        "chunk:108",
+        "chunk:203",
+        "chunk:208",
+        "chunk:308",
+        "large",
+        "wide",
+        "plateau",
+        "dry"
+      ]
+    }
+  ]
+}

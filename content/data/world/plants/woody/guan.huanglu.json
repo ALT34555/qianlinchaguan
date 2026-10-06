@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.huanglu","archetype":"shrub","climate":"temperate","name":"黄栌","latin":"huanglu","seed":503,"tags":["shrub","ornamental","autumn_color"],"params":{"height":2.4,"canopy":1.5,"blobs":6,"bloomCount":4,"stems":4,"spread":0.7},"palette":{"foliage":"foliage","foliageDark":"foliageDeep","bloom":"bloomWhite"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.huanglu@seedling","state":"seedling"},
+    {"id":"guan.huanglu@subadult","state":"subadult"},
+    {"id":"guan.huanglu@flowering","state":"flowering"},
+    {"id":"guan.huanglu@fruiting","state":"fruiting"},
+    {"id":"guan.huanglu@withered","state":"withered"}
+  ]
+}

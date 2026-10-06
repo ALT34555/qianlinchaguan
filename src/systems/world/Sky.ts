@@ -1,18 +1,6 @@
 import * as THREE from 'three';
 
-/**
- * 天空与云层。
- *
- * 表现要点：
- * - 天穹用一层渐变球壳代替单一纯色：地平线直接取雾色，与远处地形的雾自然衔接；
- *   天顶、日出日落的暖光晕由昼夜相位推导。
- * - 日、月、星、云的边缘都是柔和渐变，没有硬切边。
- * - 云是一簇簇朝向相机的柔边云片，全部合并在一个 InstancedMesh 里一次绘制。
- *   漂移、起伏、呼吸、旋转都很慢，环绕边界处已经淡到看不见，因此不会突然跳变。
- *
- * 动画时间取 performance.now()（真实时间），而不是历法时钟：
- * 历法时钟带玩家设定的时间流速（默认 72 倍），直接拿它算风会把云吹成一条流线。
- */
+/** 天空与云层 */
 export class Sky {
   private readonly group = new THREE.Group();
   private readonly scene: THREE.Scene;
@@ -27,7 +15,7 @@ export class Sky {
   private readonly cloudInstances: number;
   private readonly textures: THREE.Texture[] = [];
   private readonly tint = new THREE.Color();
-  /** 水面上的雾距，用来推导云层的淡出半径；水下雾很短，不作为依据 */
+  /** 水面上的雾距 */
   private surfaceFogFar = 365;
   private underwater = false;
   private underwaterMix = 0;
@@ -38,7 +26,7 @@ export class Sky {
     const fog = scene.fog;
     if (fog instanceof THREE.Fog) this.surfaceFogFar = fog.far;
 
-    // 天穹 (Sky Dome)：地平线取雾色，天顶偏深蓝
+    // 天穹 (Sky Dome)
     const domeMaterial = new THREE.ShaderMaterial({
       side: THREE.BackSide,
       depthTest: false,
@@ -83,7 +71,7 @@ export class Sky {
         }
       `,
     });
-    // 放在不透明队列最前面，且不写深度，后面的世界照常盖在上面
+    // 放在不透明队列最前面
     this.dome = new THREE.Mesh(new THREE.SphereGeometry(DOME_RADIUS, 32, 20), domeMaterial);
     this.dome.renderOrder = -1000;
     this.dome.frustumCulled = false;
@@ -100,7 +88,7 @@ export class Sky {
     const positions = new Float32Array(starCount * 3);
     const colors = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount; i++) {
-      // 整球分布：星空要随天球一起转，只铺半球的话转过 90° 就会整片掉到地平线以下
+      // 整球分布
       const u = Math.random() * 2 - 1;
       const y = Math.sign(u) * Math.pow(Math.abs(u), 0.72);
       const phi = Math.random() * Math.PI * 2;
@@ -132,7 +120,7 @@ export class Sky {
     this.stars.frustumCulled = false;
     this.group.add(this.stars);
 
-    // 太阳与月亮 (Sun / Moon)：柔光贴图，外圈直接淡到透明
+    // 太阳与月亮 (Sun / Moon)
     const sunTexture = makeRadialTexture(256, [
       [0, 'rgba(255,255,250,1)'],
       [0.16, 'rgba(255,250,226,1)'],
@@ -288,12 +276,12 @@ export class Sky {
     scene.add(this.group);
   }
 
-  /** 云层淡出半径：跟随实际雾距，保证近处清晰、远处稳稳溶进天空 */
+  /** 云层淡出半径 */
   private cloudHalf(): number {
     return THREE.MathUtils.clamp(this.surfaceFogFar * 1.9, CLOUD_FADE_MIN, CLOUD_FADE_MAX);
   }
 
-  /** 水下状态由 Game 同步；天穹与云会整体压向水下的雾色 */
+  /** 水下状态由 Game 同步 */
   setUnderwater(underwater: boolean): void {
     this.underwater = underwater;
   }
@@ -309,6 +297,7 @@ export class Sky {
     this.group.position.set(cameraPos.x, 0, cameraPos.z);
     this.dome.position.y = cameraPos.y;
     this.stars.position.y = cameraPos.y;
+    this.clouds.position.y = cameraPos.y;
 
     // 昼夜：dayRatio 0 为正午、0.5 为子夜
     const angle = dayRatio * Math.PI * 2;
@@ -320,9 +309,9 @@ export class Sky {
     // 日月轨迹与朝向
     const sinA = Math.sin(angle);
     const cosA = Math.cos(angle);
-    this.sun.position.set(sinA * SKY_DISTANCE, cosA * SKY_DISTANCE, 0);
+    this.sun.position.set(sinA * SKY_DISTANCE, cameraPos.y + cosA * SKY_DISTANCE, 0);
     this.sun.lookAt(cameraPos);
-    this.moon.position.set(-sinA * SKY_DISTANCE, -cosA * SKY_DISTANCE, 0);
+    this.moon.position.set(-sinA * SKY_DISTANCE, cameraPos.y - cosA * SKY_DISTANCE, 0);
     this.moon.lookAt(cameraPos);
     this.stars.rotation.z = -angle;
     const sunTextureAlpha = 1 - this.underwaterMix;
@@ -346,7 +335,7 @@ export class Sky {
     (domeUniforms.uFogColor.value as THREE.Color).copy(horizon);
     (domeUniforms.uGlowColor.value as THREE.Color).copy(GLOW_DAY).lerp(GLOW_DUSK, dusk);
     domeUniforms.uGlow.value = 0.2 * day + 1.35 * dusk;
-    (domeUniforms.uSunDir.value as THREE.Vector3).set(sinA, cosA - cameraPos.y / SKY_DISTANCE, 0).normalize();
+    (domeUniforms.uSunDir.value as THREE.Vector3).set(sinA, cosA, 0).normalize();
     domeUniforms.uUnderwater.value = this.underwaterMix;
 
     // 星空只在真正入夜后浮现
@@ -371,10 +360,7 @@ export class Sky {
     this.updateCloudDrift(now, half);
   }
 
-  /**
-   * 云片漂移量：真实时间 × 速度后按环绕直径取模。
-   * 这里用双精度算好再交给着色器，长时间运行也不会因浮点精度而抖动。
-   */
+  /** 云片漂移量 */
   private updateCloudDrift(now: number, half: number): void {
     const drift = this.cloudDrift.array as Float32Array;
     const span = half * 2;
@@ -402,25 +388,25 @@ export class Sky {
   }
 }
 
-/** 天穹半径：要小于相机远裁剪面（最小渲染距离下约 608） */
+/** 天穹半径 */
 const DOME_RADIUS = 460;
 /** 星空半径：紧贴天穹内侧 */
 const STAR_RADIUS = 430;
 /** 日月距离 */
 const SKY_DISTANCE = 560;
 
-/** 云层高度带：地形最高约 252 方块，云必须在其之上 */
+/** 云层高度带 */
 const CLOUD_ALTITUDE_MIN = 300;
 const CLOUD_ALTITUDE_SPAN = 90;
-/** 云团数量，每团 4~6 片柔边云片，全部合并在一个 InstancedMesh 里 */
+/** 云团数量 */
 const CLOUD_CLUSTERS = 30;
 /** 云层淡出半径的上下限，以及与雾距的比例 */
 const CLOUD_FADE_MIN = 260;
 const CLOUD_FADE_MAX = 700;
 const CLOUD_FADE_NEAR_RATIO = 0.4;
-/** 云层起伏周期（秒）：所有波动频率都是它的整数分之一，因此可以安全取模 */
+/** 云层起伏周期（秒） */
 const CLOUD_OSC_PERIOD = 1024;
-/** 基础风向（单位向量）与风级速度（单位/秒）；云越高档位越高，形成视差 */
+/** 基础风向（单位向量）与风级速度（单位/秒） */
 const CLOUD_WIND = new THREE.Vector2(1, 0.34).normalize();
 const CLOUD_WIND_SPEED = 1.15;
 
@@ -461,7 +447,7 @@ function finishTexture(canvas: HTMLCanvasElement): THREE.CanvasTexture {
   return texture;
 }
 
-/** 径向渐变贴图；blobs > 0 时挖出斑驳（用于月海） */
+/** 径向渐变贴图 */
 function makeRadialTexture(
   size: number,
   stops: Array<[number, string]>,
@@ -497,7 +483,7 @@ function makeRadialTexture(
   return finishTexture(canvas);
 }
 
-/** 一朵云片的柔边：十几团柔和光斑叠加，再整体向外淡出，底部稍微压平 */
+/** 一朵云片的柔边 */
 function makeCloudTexture(): THREE.CanvasTexture {
   const size = 256;
   const { canvas, ctx } = makeCanvas(size);
@@ -546,10 +532,7 @@ interface CloudField {
   velocity: Float32Array;
 }
 
-/**
- * 撒云：每团云由 4~6 片云片叠成，云片共享同一团的风速与涡动相位，
- * 因此整团云是整体缓慢飘移、轻微形变，而不是各飘各的。
- */
+/** 撒云 */
 function buildCloudField(half: number): CloudField {
   const puffs: Array<{ x: number; y: number; z: number; w: number; h: number; rot: number; opacity: number; tint: number; phase: [number, number, number, number]; vx: number; vz: number }> = [];
   for (let c = 0; c < CLOUD_CLUSTERS; c++) {

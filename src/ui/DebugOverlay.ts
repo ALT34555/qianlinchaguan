@@ -1,12 +1,4 @@
-/**
- * F12 调试面板（右上角）：
- *  - 小地图：以玩家所在区块为中心的 5x5 = 25 个区块，北（-Z）朝上
- *  - 当前区块类型
- *  - 历法信息与时间控制
- *
- * 样式统一走 style.css 的 .debug-* 规则（颜色取自 theme.css 令牌），
- * 本文件不再写内联颜色，以便随语言与主题一起变化。
- */
+/** F12 调试面板与实时监控 */
 import { FLOW_DIRECTIONS } from '../systems/world/WorldGenerator';
 import { CHUNK_SIZE } from '../core/config';
 import type { Player } from '../entities/Player';
@@ -20,7 +12,7 @@ const GRID = 5;
 const HALF = Math.floor(GRID / 2);
 const MAP_PX = GRID * CHUNK_SIZE; // 320
 
-/** 画布配色：与 theme.css 令牌对齐（画布读不到 CSS 变量）。 */
+/** 画布配色 */
 const INK_BG = '#241c13';
 const INK_BG_EMPTY = '#2e2519';
 const INK_TEXT_DIM = '#8a7a5f';
@@ -31,7 +23,7 @@ export class DebugOverlay {
   private readonly root: HTMLDivElement;
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
-  /** 底图（地形 + 网格 + 类型标记），仅在中心区块变化或有新区块加载时重绘 */
+  /** 底图（地形 + 网格 + 类型标记） */
   private readonly base: HTMLCanvasElement;
   private readonly baseCtx: CanvasRenderingContext2D;
   private readonly typeEl: HTMLDivElement;
@@ -85,7 +77,7 @@ export class DebugOverlay {
     this.baseCtx = this.base.getContext('2d')!;
 
     const clock = this.game.calendarClock;
-    // 0.5x/1x/8x/64x 是国际通用写法，只有"暂停"需要翻译。
+    // 0.5x/1x/8x/64x 是国际通用写法
     const ids = ['cal-pause', 'cal-05x', 'cal-1x', 'cal-8x', 'cal-64x'];
     ids.forEach(id => this.speedButtons.push({ el: this.root.querySelector<HTMLButtonElement>('#' + id)!, labelKey: id === 'cal-pause' ? 'debug.pause' : '' }));
 
@@ -138,7 +130,7 @@ export class DebugOverlay {
     world.onChunkLoaded((c) => this.onChunkLoaded(c));
   }
 
-  /** 语言变更后刷新静态文案（不重建画布，避免丢失小地图状态）。 */
+  /** 语言变更后刷新静态文案（不重建画布 */
   applyLocale(): void {
     this.titleEl.textContent = t('debug.title');
     this.legendEl.innerHTML = CHUNK_TYPES.filter((def) => def.id !== 0)
@@ -189,12 +181,12 @@ export class DebugOverlay {
     ctx.globalCompositeOperation = 'source-over';
     ctx.drawImage(this.base, 0, 0);
 
-    // 这里**不做**昼夜 / 季节调色：叠加 multiply 会把整张小地图压暗（旧版在正午压到 20% 亮度，
-    // 正好是一天里最该看清地图的时候），既让地图蒙上一层深色阴影，也让画面颜色与图例的 mapColor 对不上。
-    // 小地图只当地形参考图用，时辰与季节由下方历法文字负责。
+    // 小地图不做昼夜调色
+    // 正好是一天里最该看清地图的时候）
+    // 小地图只当地形参考图用
     const px = p.x - (pcx - HALF) * CHUNK_SIZE;
     const pz = p.z - (pcz - HALF) * CHUNK_SIZE;
-    // 前方向量 (-sin yaw, -cos yaw)，画布 y 轴对应世界 +Z
+    // 前方向量 (-sin yaw, -cos yaw)
     const angle = Math.atan2(-Math.cos(p.yaw), -Math.sin(p.yaw));
     ctx.save();
     ctx.translate(px, pz);
@@ -234,7 +226,7 @@ export class DebugOverlay {
           const g = cal.gregorian.format(snap.gregorian);
           const c = cal.chinese.format(snap.chinese);
           const shichen = snap.shichen ? snap.shichen.label : '';
-          // 换行分隔
+          // 换行符拼接文本
           text = t('debug.calendar.real', { gregorian: g, time, chinese: c, ganzhi: snap.chinese.dayGanZhi, shichen, season });
         } else {
           const y = cal.yuan.format(snap.yuan);

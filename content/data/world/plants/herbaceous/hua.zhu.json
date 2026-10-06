@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"hua.zhu","archetype":"bamboo","climate":"subtropical","name":"庭竹","latin":"tingzhu","seed":803,"tags":["ornamental","bamboo","zhongguo_sijunzi"],"params":{"height":5.4,"trunkRadius":0.095,"frondLength":0.9,"culms":4,"nodeStep":0.95,"blades":28,"bloomCount":2,"snow":0.1,"snowOn":["canopy"],"spread":0.85},"palette":{"bamboo":"bamboo","bambooCulm":"bambooCulm","foliageDeep":"foliageDeep","bloom":"bloomWhite"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"hua.zhu@seedling","state":"seedling"},
+    {"id":"hua.zhu@subadult","state":"subadult"},
+    {"id":"hua.zhu@flowering","state":"flowering"},
+    {"id":"hua.zhu@fruiting","state":"fruiting"},
+    {"id":"hua.zhu@withered","state":"withered"}
+  ]
+}

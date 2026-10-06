@@ -1,0 +1,90 @@
+{
+  "rocks": [
+    {
+      "id": "rock.rubble",
+      "archetype": "rubble",
+      "name": "碎石堆",
+      "latin": "suishidui",
+      "family": "clastic",
+      "seed": 113,
+      "palette": {
+        "body": "scree",
+        "band": "screeDark",
+        "cap": "gravel",
+        "base": "soil",
+        "crust": "dryGrass"
+      },
+      "chunkPalette": {
+        "2": {
+          "body": "gravel",
+          "band": "gravelDark",
+          "cap": "chalk",
+          "crust": "dryGrass"
+        },
+        "5": {
+          "body": "gravel",
+          "band": "gravelDark",
+          "cap": "scree",
+          "crust": "dryGrass"
+        },
+        "7": {
+          "body": "scree",
+          "band": "screeDark",
+          "cap": "gravel",
+          "crust": "moss"
+        },
+        "102": {
+          "body": "gravel",
+          "band": "gravelDark",
+          "cap": "chalk",
+          "crust": "dryGrass"
+        },
+        "302": {
+          "body": "gravel",
+          "band": "gravelDark",
+          "cap": "gravel",
+          "crust": "dryGrass"
+        },
+        "401": {
+          "body": "glacialTill",
+          "band": "gravelDark",
+          "cap": "scree",
+          "crust": "lichen"
+        },
+        "402": {
+          "body": "glacialTill",
+          "band": "gravelDark",
+          "cap": "snow",
+          "crust": "snowCap"
+        },
+        "404": {
+          "body": "glacialTill",
+          "band": "gravelDark",
+          "cap": "scree",
+          "crust": "lichen"
+        },
+        "407": {
+          "body": "glacialTill",
+          "band": "gravelDark",
+          "cap": "scree",
+          "crust": "moss"
+        }
+      },
+      "tags": [
+        "chunk:2",
+        "chunk:5",
+        "chunk:7",
+        "chunk:102",
+        "chunk:302",
+        "chunk:401",
+        "chunk:402",
+        "chunk:404",
+        "chunk:407",
+        "small",
+        "loose",
+        "dense",
+        "wet"
+      ]
+    }
+  ]
+}

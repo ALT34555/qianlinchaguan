@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "flags": [
+    {
+      "id": "flag.rect.chizhi",
+      "name": "赤帜",
+      "latin": "chizhi",
+      "shape": "rect",
+      "params": {
+        "charge": { "kind": "square", "size": 0.44 },
+        "wave": { "waves": 1.3 }
+      },
+      "palette": { "field": "vermilion", "trim": "gold", "charge": "ivory" },
+      "tags": ["faction", "war"]
+    },
+    {
+      "id": "flag.rect.suqi",
+      "name": "素旗",
+      "latin": "suqi",
+      "shape": "rect",
+      "params": {
+        "charge": { "kind": "none" },
+        "wave": { "waves": 1.5, "amplitude": 0.12 }
+      },
+      "palette": { "field": "ivory", "trim": "charcoal" },
+      "tags": ["plain", "ceremony"]
+    },
+    {
+      "id": "flag.square.qingqi",
+      "name": "青旗",
+      "latin": "qingqi",
+      "shape": "square",
+      "params": {
+        "charge": { "kind": "square", "size": 0.5 }
+      },
+      "palette": { "field": "azure", "trim": "white", "charge": "ivory" },
+      "tags": ["faction", "naval"]
+    },
+    {
+      "id": "flag.square.huangqi",
+      "name": "黄方旗",
+      "latin": "huangqi",
+      "shape": "square",
+      "params": {
+        "charge": { "kind": "none" },
+        "wave": { "waves": 1.1, "amplitude": 0.08 }
+      },
+      "palette": { "field": "ochre", "trim": "charcoal" },
+      "tags": ["plain", "market"]
+    },
+    {
+      "id": "flag.swallowtail.jinyan",
+      "name": "金燕尾旗",
+      "latin": "jinyan",
+      "shape": "swallowtail",
+      "params": {
+        "charge": { "kind": "none" },
+        "wave": { "waves": 1.45 }
+      },
+      "palette": { "field": "gold", "trim": "crimson" },
+      "tags": ["noble", "ceremony"]
+    },
+    {
+      "id": "flag.pennant.lingqi",
+      "name": "令旗",
+      "latin": "lingqi",
+      "shape": "pennant",
+      "params": {
+        "charge": { "kind": "none" },
+        "wave": { "waves": 1.6, "amplitude": 0.13, "droop": 0.18 }
+      },
+      "palette": { "field": "crimson", "trim": "ivory" },
+      "tags": ["military", "command"]
+    },
+    {
+      "id": "flag.notched.dianqi",
+      "name": "靛缺旗",
+      "latin": "dianqi",
+      "shape": "notched",
+      "params": {
+        "charge": { "kind": "square", "size": 0.42 }
+      },
+      "palette": { "field": "indigo", "trim": "silver", "charge": "ivory" },
+      "tags": ["faction", "watch"]
+    },
+    {
+      "id": "flag.roundFly.cuiqi",
+      "name": "翠圆旗",
+      "latin": "cuiqi",
+      "shape": "roundFly",
+      "params": {
+        "charge": { "kind": "none" },
+        "wave": { "waves": 1.25 }
+      },
+      "palette": { "field": "jade", "trim": "gold" },
+      "tags": ["faction", "guard"]
+    },
+    {
+      "id": "flag.gonfalon.zifan",
+      "name": "紫幡",
+      "latin": "zifan",
+      "shape": "gonfalon",
+      "params": {
+        "hoist": 0.8,
+        "charge": { "kind": "square", "size": 0.4, "offsetY": -0.08 },
+        "wave": { "waves": 0.9, "amplitude": 0.07, "twist": 0.3, "bands": 5 }
+      },
+      "palette": { "field": "purple", "trim": "gold", "charge": "ivory" },
+      "tags": ["temple", "ceremony"]
+    }
+  ]
+}

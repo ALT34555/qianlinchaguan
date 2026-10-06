@@ -1,11 +1,16 @@
 import { WorldGenerator, FLOW_DIRECTIONS, type ChunkInfo } from '../systems/world/WorldGenerator';
+import { snowLine } from '../systems/world/TerrainLayers';
 import { getChunkTypeDef, formatChunkId, isRiverType } from '../systems/world/ChunkTypes';
 import { CLIMATES, planetCoordinates } from '../systems/world/WorldSettings';
 import { PlanetAtlasLayer, globePoint, overviewColor, type PlanetView } from './PlanetAtlasLayer';
 import { chunkName } from '../i18n/content';
 import { t } from '../i18n';
+import { CHUNK_SIZE } from '../core/config';
+import { MAX_BRAID_OFFSET, MAX_MOUTH_LENGTH, MAX_RIVER_RADIUS } from '../systems/world/RiverChannels';
+import {MAX_RIVER_BEND} from '../systems/world/RiverGeometry';
+import {AtlasSurfaceCache} from './AtlasSurfaceCache';
 
-/** 画布配色：与 theme.css 的令牌保持一致（画布读不到 CSS 变量，只能就近定义）。 */
+/** 画布配色 */
 const INK_BG = '#241c13';
 const PAPER_TEXT = '#eadfc0';
 const CINNABAR_MARK = '#c2333f';
@@ -48,6 +53,8 @@ export class AtlasView {
   private planetView: PlanetView = 'globe';
   private preferredOverview: PlanetView = 'globe';
   private readonly planetLayer: PlanetAtlasLayer;
+  private readonly surfaceCache: AtlasSurfaceCache;
+  private showChunkColors=false;
 
   // 状态控制（进入2D地图界面后，默认只显示色块）
   private showChunkInfo = false;     // 显示/隐藏区块信息（编号、类型）
@@ -83,6 +90,7 @@ export class AtlasView {
     this.ctx = this.canvas.getContext('2d')!;
     this.generator = options.generator;
     this.planetLayer = new PlanetAtlasLayer(this.generator);
+    this.surfaceCache=new AtlasSurfaceCache(this.generator,()=>{if(this.active)this.requestRender();});
     this.onChunkSelect = options.onChunkSelect;
     this.onChunkActivate = options.onChunkActivate;
     this.onStatsUpdate = options.onStatsUpdate;
@@ -97,6 +105,7 @@ export class AtlasView {
     const view = this.planetView;
     this.generator = generator;
     this.planetLayer.setGenerator(generator);
+    this.surfaceCache.setGenerator(generator);
     this.centerSpawn();
     if (this.isPlanet) { this.planetView = view; this.showOverview(); }
     this.requestRender();
@@ -125,6 +134,7 @@ export class AtlasView {
     this.active = value;
     this.isDragging = false;
     this.canvas.style.cursor = 'grab';
+    if (value) this.requestRender();
   }
 
   resetView(): void {
@@ -141,7 +151,7 @@ export class AtlasView {
     const cy = clientY !== undefined ? clientY - rect.top : this.canvas.clientHeight / 2;
 
     const oldScale = this.scale;
-    const newScale = Math.max(this.isPlanet ? this.overviewScale : .35, Math.min(3.5, oldScale * factor));
+    const newScale = Math.max(this.isPlanet ? this.overviewScale : .35, Math.min(8, oldScale * factor));
     if (newScale === oldScale) return;
 
     if (this.isPlanet && this.planetView === 'globe') {
@@ -150,8 +160,8 @@ export class AtlasView {
       if (newScale >= this.overviewScale * 5) {
         const center = target ?? { cx: this.centerCx, cz: this.centerCz };
         const size = this.generator.generation.planet.equatorChunks;
-        // 将球面的角尺度转换为投影的区块尺度，保留缩放目标的位置。
-        this.scale = Math.min(3.5, this.globeRadius * Math.PI * 2 / size / this.baseCellSize);
+        // 将球面的角尺度转换为投影的区块尺度
+        this.scale = Math.min(8, this.globeRadius * Math.PI * 2 / size / this.baseCellSize);
         this.centerCx = Math.round(center.cx); this.centerCz = Math.round(center.cz);
         const cell = this.baseCellSize * this.scale;
         this.panX = cx - this.canvas.clientWidth / 2 - cell / 2;
@@ -247,6 +257,9 @@ export class AtlasView {
     return this.showClimate;
   }
 
+  setShowChunkColors(show:boolean):void{this.showChunkColors=show;this.requestRender();}
+  getShowChunkColors():boolean{return this.showChunkColors;}
+
   setActiveClimateFilter(climateIndex: number | null): void {
     this.activeClimateFilter = climateIndex;
     this.requestRender();
@@ -332,7 +345,7 @@ export class AtlasView {
         case 'river':
           return isRiverType(info.type);
         case 'water':
-          return info.type === 2 || isRiverType(info.type) || info.type % 100 === 2 || info.type === 105;
+          return info.type === 2 || isRiverType(info.type) || info.type % 100 === 2 || info.type === 105 || info.type===11;
         case 'mountain':
           return (
             info.type === 3 ||
@@ -372,6 +385,7 @@ export class AtlasView {
   // ---- 核心绘制逻辑 ----
 
   private draw(): void {
+    this.surfaceCache.beginFrame();
     const ctx = this.ctx;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const width = this.canvas.width / dpr;
@@ -390,6 +404,7 @@ export class AtlasView {
     }
 
     const cellSize = this.baseCellSize * this.scale;
+    const surfaceMode=!this.showChunkColors&&!this.showClimate&&cellSize>=Math.max(24,Math.sqrt(width*height/512));
     const halfW = width / 2;
     const halfH = height / 2;
 
@@ -437,7 +452,9 @@ export class AtlasView {
       const { info, sx, sy } = item;
       const def = getChunkTypeDef(info.type);
 
-      let color = def.mapColor;
+      let color = this.showChunkColors ? def.mapColor : `rgb(${overviewColor(info,false,false).join(',')})`;
+      const tile=surfaceMode?this.surfaceCache.get(info.cx,info.cz,(sx+cellSize/2-width/2)**2+(sy+cellSize/2-height/2)**2):undefined;
+      if(tile)color=tile.average;
       if (this.showClimate) {
         color = CLIMATES[info.climate].color;
         // 如果激活了单项气候高亮，则弱化其他气候色块
@@ -448,6 +465,7 @@ export class AtlasView {
 
       ctx.fillStyle = color;
       ctx.fillRect(sx, sy, cellSize, cellSize);
+      if(tile&&cellSize>=72){ctx.imageSmoothingEnabled=false;ctx.drawImage(tile.image,sx,sy,cellSize,cellSize);}
 
       // 区块网格线（微弱分割）
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
@@ -455,14 +473,14 @@ export class AtlasView {
       ctx.strokeRect(sx, sy, cellSize, cellSize);
     }
 
-    // 2. 显示具体投影（地势起伏浮雕阴影与河流走向投影）
-    if (this.showProjection) {
+    // 2. 显示具体投影（地势起伏浮雕阴影与河流走向投
+    if (this.showProjection && !surfaceMode) {
       for (const item of visibleChunks) {
         const { info, sx, sy } = item;
         const cx = info.cx;
         const cz = info.cz;
 
-        // 计算相邻区块的高程差，模拟西北入射光（Sun from NW）
+        // 计算相邻区块的高程差
         const eastH = this.generator.getChunkInfo(cx + 1, cz).elevation;
         const westH = this.generator.getChunkInfo(cx - 1, cz).elevation;
         const southH = this.generator.getChunkInfo(cx, cz + 1).elevation;
@@ -471,7 +489,7 @@ export class AtlasView {
         const dx = (eastH - westH) * 0.5;
         const dz = (southH - northH) * 0.5;
         // 西北光矢量：(-0.707, -0.707)
-        const slopeLighting = (-dx * 0.707 - dz * 0.707) * 0.038;
+        const slopeLighting = (-dx * 0.707 - dz * 0.707) * 0.012;
 
         if (slopeLighting > 0) {
           // 向阳坡光照投影
@@ -493,49 +511,51 @@ export class AtlasView {
         }
 
         // 高海拔冷光山脊投影
-        if (info.elevation > 75) {
-          const peakAlpha = Math.min(0.32, (info.elevation - 75) / 120);
+        const snowHeight = snowLine(info.temperature);
+        if (info.elevation > snowHeight) {
+          const peakAlpha = Math.min(0.32, (info.elevation - snowHeight) / 480);
           ctx.fillStyle = `rgba(240, 248, 255, ${peakAlpha.toFixed(3)})`;
           ctx.fillRect(sx, sy, cellSize, cellSize);
         }
 
-        // 河流具体流向与水体投影
-        if (isRiverType(info.type) && info.flow >= 0) {
-          const d = FLOW_DIRECTIONS[info.flow];
-          const midX = sx + cellSize * 0.5;
-          const midY = sy + cellSize * 0.5;
-          const arrowLen = cellSize * 0.38;
+      }
 
-          // 河流宽度指示线条
-          const streamWidth = Math.max(2, Math.min(7, (info.riverWidth || 4) * (cellSize / 45)));
-          ctx.save();
-          ctx.strokeStyle = '#38bdf8';
-          ctx.lineWidth = streamWidth;
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(midX - d.dx * arrowLen * 0.6, midY - d.dz * arrowLen * 0.6);
-          ctx.lineTo(midX + d.dx * arrowLen * 0.8, midY + d.dz * arrowLen * 0.8);
-          ctx.stroke();
+    }
 
-          // 箭头高亮
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-
-          // 绘制流向符号
-          if (cellSize >= 18) {
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = '#000000';
-            ctx.shadowBlur = 3;
-            ctx.font = `bold ${Math.max(10, Math.round(cellSize * 0.36))}px ${CANVAS_FONT}`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(d.arrow, midX, midY);
-            ctx.shadowBlur = 0;
+    // 局部地图默认显示实际中心线及河宽
+    if((!surfaceMode||cellSize<72)&&!this.showClimate&&cellSize>=6){
+      ctx.save();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const riverPadding = Math.ceil((MAX_RIVER_RADIUS + CHUNK_SIZE + 14 + MAX_BRAID_OFFSET + MAX_MOUTH_LENGTH+MAX_RIVER_BEND) / CHUNK_SIZE);
+      for (let cz = minCz - riverPadding; cz <= maxCz + riverPadding; cz++) {
+        for (let cx = minCx - riverPadding; cx <= maxCx + riverPadding; cx++) {
+          if (this.isPlanet && (cz < -this.generator.generation.planet.equatorChunks / 4 || cz >= this.generator.generation.planet.equatorChunks / 4)) continue;
+          const sx = halfW + this.panX + (cx - this.centerCx) * cellSize;
+          const sy = halfH + this.panY + (cz - this.centerCz) * cellSize;
+          for (const path of this.generator.getRiverPaths(cx, cz)) {
+            for (let i = 1; i < path.length; i++) {
+              const a = path[i - 1], b = path[i];
+              ctx.lineWidth = Math.max(1, (a.width + b.width) * cellSize / CHUNK_SIZE);
+              ctx.beginPath();
+              ctx.moveTo(sx + (a.x / CHUNK_SIZE - cx) * cellSize, sy + (a.z / CHUNK_SIZE - cz) * cellSize);
+              ctx.lineTo(sx + (b.x / CHUNK_SIZE - cx) * cellSize, sy + (b.z / CHUNK_SIZE - cz) * cellSize);
+              ctx.stroke();
+            }
           }
-          ctx.restore();
         }
       }
+      if (this.showProjection && cellSize >= 18) for (const {info, sx, sy} of visibleChunks) {
+        if (!isRiverType(info.type) || info.flow < 0) continue;
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 3;
+        ctx.font = `bold ${Math.max(10, Math.round(cellSize * .36))}px ${CANVAS_FONT}`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(FLOW_DIRECTIONS[info.flow].arrow, sx + cellSize * .5, sy + cellSize * .5);
+      }
+      ctx.restore();
     }
 
     // 3. 显示区块信息（编号、类型）
@@ -585,7 +605,7 @@ export class AtlasView {
       }
     }
 
-    // 4. 筛选特定区块：用红色绘制轮廓线
+    // 4. 筛选特定区块：用红色表示轮廓线（核心需求）
     if (isFiltering) {
       ctx.save();
       for (const item of visibleChunks) {
@@ -662,6 +682,12 @@ export class AtlasView {
       ctx.restore();
     }
 
+    this.surfaceCache.endFrame();
+    if(surfaceMode){
+      const text=this.surfaceCache.loading?t('atlas.surface.loading'):t(cellSize>=72?'atlas.surface.detail':'atlas.surface.average');
+      ctx.font=`13px ${CANVAS_FONT}`;ctx.fillStyle='rgba(36,28,19,.78)';
+      ctx.fillRect(12,height-78,ctx.measureText(text).width+20,24);ctx.fillStyle=PAPER_TEXT;ctx.fillText(text,22,height-61);
+    }
     ctx.restore();
 
     // 回调通知外部状态与统计
@@ -690,12 +716,12 @@ export class AtlasView {
     const size = this.generator.generation.planet.equatorChunks, cell = this.baseCellSize * this.scale;
     const counts: [number, number, number, number, number] = [0, 0, 0, 0, 0];
     let samples = 0, matches = 0;
-    const style = { climate: this.showClimate, relief: this.showProjection, climateFilter: this.activeClimateFilter,
+    const style = { climate: this.showClimate, relief: this.showProjection, climateFilter: this.activeClimateFilter,chunkColors:this.showChunkColors,
       filterKey: this.getActiveFilterLabel(), matches: (info: ChunkInfo) => this.isChunkMatched(info) };
     if (this.isGlobe) {
       const coord = planetCoordinates(this.centerCx, this.centerCz, size);
       this.planetLayer.drawGlobe(ctx, width, height, this.globeRadius, coord.longitude, coord.latitude, style);
-      // 对可见半球做稀疏统计；不把采样数量冒充真实区块数量。
+      // 对可见半球做稀疏统计
       for (let y = 12; y < height; y += 24) for (let x = 12; x < width; x += 24) {
         const chunk = this.getChunkAtPoint(x, y);
         if (!chunk) continue;
@@ -716,7 +742,7 @@ export class AtlasView {
         const info = this.generator.getOverviewInfo(x + (step - 1) / 2, z + (step - 1) / 2);
         const sx = width / 2 + this.panX + (x - this.centerCx) * cell;
         const sy = height / 2 + this.panY + (z - this.centerCz) * cell;
-        let color = overviewColor(info, this.showClimate, this.showProjection);
+        let color = overviewColor(info, this.showClimate, this.showProjection,this.showChunkColors);
         if (this.showClimate && this.activeClimateFilter !== null && info.climate !== this.activeClimateFilter) color = color.map(c => c * .35) as [number, number, number];
         if (!texture) { ctx.fillStyle = `rgb(${color.join(',')})`; ctx.fillRect(sx, sy, tile + .5, tile + .5); }
         counts[info.climate]++; samples++;
@@ -748,7 +774,7 @@ export class AtlasView {
       activeFilterName: this.getActiveFilterLabel(), level: this.isGlobe ? 'globe' : 'overview' });
   }
 
-  // 颜色淡化辅助：向暖墨色（36,28,19）靠拢，避免淡化后偏冷灰
+  // 颜色淡化辅助
   private dimHexColor(hex: string, factor: number): string {
     const c = hex.replace('#', '');
     const num = parseInt(c, 16);
@@ -973,6 +999,7 @@ export class AtlasView {
 
   destroy(): void {
     this.destroyed = true;
+    this.surfaceCache.dispose();
     this.events.abort();
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();

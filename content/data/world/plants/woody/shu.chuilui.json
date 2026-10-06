@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.chuilui","archetype":"broadleaf","climate":"temperate","name":"垂柳","latin":"chuiliu","seed":205,"tags":["tree","riparian"],"params":{"height":12,"trunk":4.6,"trunkRadius":0.56,"limbCount":3,"limbLength":3.2,"canopy":5,"blobs":10,"branchAngle":0.45},"palette":{"foliage":"canopy","canopy":"foliage","foliageDark":"foliageDeep"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.chuilui@seedling","state":"seedling"},
+    {"id":"shu.chuilui@subadult","state":"subadult"},
+    {"id":"shu.chuilui@flowering","state":"flowering"},
+    {"id":"shu.chuilui@fruiting","state":"fruiting"},
+    {"id":"shu.chuilui@withered","state":"withered"}
+  ]
+}

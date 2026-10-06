@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shui.pucao","archetype":"grassClump","climate":"subtropical","name":"蒲草","latin":"pucao","seed":607,"tags":["water","wet","ground"],"params":{"height":1.9,"blades":7,"bloomCount":3,"spread":0.34},"palette":{"foliage":"palmFrond","foliageDark":"foliageDark","bloom":"thorn"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shui.pucao@seedling","state":"seedling"},
+    {"id":"shui.pucao@subadult","state":"subadult"},
+    {"id":"shui.pucao@flowering","state":"flowering"},
+    {"id":"shui.pucao@fruiting","state":"fruiting"},
+    {"id":"shui.pucao@withered","state":"withered"}
+  ]
+}

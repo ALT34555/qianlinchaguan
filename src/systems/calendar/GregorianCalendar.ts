@@ -1,11 +1,4 @@
-/**
- * 公历（格里高利历）日历。
- *
- * 特点：
- *  - 以整数日序 jdn 为核心，日期与日序可无损互转（含公元前的先期格里高利历）；
- *  - 提供星期、年内日序、ISO 周、季度等派生信息；
- *  - 只负责"这一天是什么"，不涉及任何天文推算，因此可任意范围使用。
- */
+/** 公历换算器（Proleptic） */
 import {
   daysInMonth,
   gregorianToJdn,
@@ -54,7 +47,7 @@ export class GregorianCalendar {
     };
   }
 
-  /** 由 Unix 毫秒时间戳得到公历日期（按本实例的时区）。 */
+  /** 由 Unix 毫秒时间戳得到公历日期（按本实例的 */
   fromUnixMs(ms: number): GregorianDate {
     const { jdn, frac } = dayTimeFromUnixMs(ms, this.utcOffsetMinutes);
     return this.fromDayTime(jdn, frac);

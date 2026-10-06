@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.wujiaofeng","archetype":"broadleaf","climate":"temperate","name":"五角枫","latin":"wujiaofeng","seed":203,"tags":["tree","ornamental","autumn_color"],"params":{"height":11.5,"trunk":5,"trunkRadius":0.52,"limbCount":4,"canopy":4.1,"blobs":9,"branchAngle":0.8},"palette":{"foliage":"foliage","foliageDark":"foliageDark","canopy":"canopy"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.wujiaofeng@seedling","state":"seedling"},
+    {"id":"shu.wujiaofeng@subadult","state":"subadult"},
+    {"id":"shu.wujiaofeng@flowering","state":"flowering"},
+    {"id":"shu.wujiaofeng@fruiting","state":"fruiting"},
+    {"id":"shu.wujiaofeng@withered","state":"withered"}
+  ]
+}

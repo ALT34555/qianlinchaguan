@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"cao.hanji","archetype":"bramble","climate":"subtropical","name":"旱棘丛","latin":"hanjicong","seed":606,"tags":["shrub","arid","thorny"],"params":{"height":1.1,"blobs":3,"bloomCount":3,"stems":6,"spread":0.95,"thorns":1},"palette":{"foliage":"foliage","foliageDark":"foliageDark","bloom":"bloomWhite"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"cao.hanji@seedling","state":"seedling"},
+    {"id":"cao.hanji@subadult","state":"subadult"},
+    {"id":"cao.hanji@flowering","state":"flowering"},
+    {"id":"cao.hanji@fruiting","state":"fruiting"},
+    {"id":"cao.hanji@withered","state":"withered"}
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "rocks": [
+    {
+      "id": "rock.shard",
+      "archetype": "shard",
+      "name": "碎岩",
+      "latin": "suiyan",
+      "family": "metamorphic",
+      "seed": 67,
+      "palette": {
+        "body": "shale",
+        "band": "shaleDark",
+        "cap": "slatePale",
+        "base": "soil",
+        "crust": "dryGrass"
+      },
+      "chunkPalette": {
+        "4": {
+          "body": "sandstone",
+          "band": "sandstoneDark",
+          "cap": "sandstonePale"
+        },
+        "6": {
+          "body": "quartzite",
+          "band": "graniteDark",
+          "cap": "quartzitePale",
+          "crust": "moss"
+        },
+        "9": {
+          "body": "conglomerate",
+          "band": "conglomerateDark",
+          "cap": "sandstonePale",
+          "crust": "dryGrass"
+        },
+        "11": {
+          "body": "stone",
+          "band": "graniteDark",
+          "cap": "quartzitePale",
+          "crust": "moss"
+        },
+        "101": {
+          "body": "sandstone",
+          "band": "sandstoneDark",
+          "cap": "limestonePale",
+          "crust": "dryGrass"
+        },
+        "103": {
+          "body": "conglomerate",
+          "band": "conglomerateDark",
+          "cap": "sandstonePale",
+          "crust": "moss"
+        },
+        "104": {
+          "body": "chalk",
+          "band": "limestoneDark",
+          "cap": "limestonePale",
+          "crust": "dryGrass"
+        },
+        "105": {
+          "body": "gravel",
+          "band": "gravelDark",
+          "cap": "scree",
+          "crust": "moss"
+        },
+        "106": {
+          "body": "conglomerate",
+          "band": "conglomerateDark",
+          "cap": "sandstonePale",
+          "crust": "moss"
+        },
+        "109": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "limestonePale",
+          "crust": "moss"
+        },
+        "201": {
+          "body": "scree",
+          "band": "screeDark",
+          "cap": "gravel",
+          "crust": "dryGrass"
+        },
+        "205": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "sandstonePale",
+          "crust": "moss"
+        },
+        "206": {
+          "body": "quartzite",
+          "band": "graniteDark",
+          "cap": "quartzitePale",
+          "crust": "moss"
+        },
+        "301": {
+          "body": "scree",
+          "band": "screeDark",
+          "cap": "gravel",
+          "crust": "dryGrass"
+        },
+        "305": {
+          "body": "stone",
+          "band": "graniteDark",
+          "cap": "quartzitePale",
+          "crust": "moss"
+        },
+        "306": {
+          "body": "stone",
+          "band": "graniteDark",
+          "cap": "quartzitePale",
+          "crust": "moss"
+        },
+        "307": {
+          "body": "gravel",
+          "band": "gravelDark",
+          "cap": "sandstonePale",
+          "crust": "moss"
+        },
+        "404": {
+          "body": "glacialTill",
+          "band": "gravelDark",
+          "cap": "scree",
+          "crust": "lichen"
+        },
+        "405": {
+          "body": "quartzite",
+          "band": "graniteDark",
+          "cap": "snow",
+          "crust": "snowCap"
+        }
+      },
+      "tags": [
+        "chunk:4",
+        "chunk:6",
+        "chunk:9",
+        "chunk:11",
+        "chunk:101",
+        "chunk:103",
+        "chunk:104",
+        "chunk:105",
+        "chunk:106",
+        "chunk:109",
+        "chunk:201",
+        "chunk:205",
+        "chunk:206",
+        "chunk:301",
+        "chunk:305",
+        "chunk:306",
+        "chunk:307",
+        "chunk:404",
+        "chunk:405",
+        "small",
+        "angular",
+        "universal",
+        "ground"
+      ]
+    }
+  ]
+}

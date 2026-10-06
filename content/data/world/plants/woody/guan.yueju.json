@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.yueju","archetype":"shrub","climate":"cold","name":"越橘","latin":"yueju","seed":509,"tags":["shrub","berry","understory","fruit","snow"],"params":{"height":0.85,"canopy":0.7,"blobs":4,"petals":4,"fruitCount":5,"snow":0.14,"snowOn":["canopy","ground"],"stems":3},"palette":{"foliage":"foliageDark","foliageDark":"foliageDeep","fruit":"fruit"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.yueju@seedling","state":"seedling"},
+    {"id":"guan.yueju@subadult","state":"subadult"},
+    {"id":"guan.yueju@flowering","state":"flowering"},
+    {"id":"guan.yueju@fruiting","state":"fruiting"},
+    {"id":"guan.yueju@withered","state":"withered"}
+  ]
+}

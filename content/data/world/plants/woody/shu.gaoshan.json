@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shu.gaoshan","archetype":"broadleaf","climate":"temperate","name":"高山栎","latin":"gaoshanli","seed":201,"tags":["tree","canopy","fruit","timber"],"params":{"height":14,"trunk":6.5,"trunkRadius":0.78,"limbCount":3,"canopy":4.8,"blobs":9,"fruitCount":2},"palette":{"foliage":"foliage","foliageDark":"foliageDark","canopy":"canopy","fruit":"fruit"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.gaoshan@seedling","state":"seedling"},
+    {"id":"shu.gaoshan@subadult","state":"subadult"},
+    {"id":"shu.gaoshan@flowering","state":"flowering"},
+    {"id":"shu.gaoshan@fruiting","state":"fruiting"},
+    {"id":"shu.gaoshan@withered","state":"withered"}
+  ]
+}

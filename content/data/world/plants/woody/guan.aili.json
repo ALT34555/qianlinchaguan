@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.aili","archetype":"shrub","climate":"cold","name":"矮桦","latin":"aihua","seed":510,"tags":["shrub","tundra","snow"],"params":{"height":0.7,"canopy":0.8,"blobs":4,"petals":4,"snow":0.14,"snowOn":["canopy","ground"],"stems":4,"spread":0.5},"palette":{"foliage":"canopy","foliageDark":"foliageDark"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.aili@seedling","state":"seedling"},
+    {"id":"guan.aili@subadult","state":"subadult"},
+    {"id":"guan.aili@flowering","state":"flowering"},
+    {"id":"guan.aili@fruiting","state":"fruiting"},
+    {"id":"guan.aili@withered","state":"withered"}
+  ]
+}

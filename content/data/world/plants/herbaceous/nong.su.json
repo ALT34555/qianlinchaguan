@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"nong.su","archetype":"grassClump","climate":"temperate","name":"粟","latin":"su","seed":703,"tags":["crop","staple","ground","farm","arid"],"params":{"height":0.9,"blades":7,"bloomCount":2,"fruitCount":4,"spread":0.24},"palette":{"foliage":"cropGreen","foliageDark":"foliageDeep","bloom":"grainPale","fruit":"grain"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"nong.su@seedling","state":"seedling"},
+    {"id":"nong.su@subadult","state":"subadult"},
+    {"id":"nong.su@flowering","state":"flowering"},
+    {"id":"nong.su@fruiting","state":"fruiting"},
+    {"id":"nong.su@withered","state":"withered"}
+  ]
+}

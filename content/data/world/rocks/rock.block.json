@@ -1,0 +1,69 @@
+{
+  "rocks": [
+    {
+      "id": "rock.block",
+      "archetype": "block",
+      "name": "岩块",
+      "latin": "yankuai",
+      "family": "igneous",
+      "seed": 23,
+      "palette": {
+        "body": "basalt",
+        "band": "basaltDark",
+        "cap": "basaltPale",
+        "base": "soil",
+        "crust": "lichen"
+      },
+      "chunkPalette": {
+        "4": {
+          "body": "limestone",
+          "band": "limestoneDark",
+          "cap": "limestonePale",
+          "crust": "dryGrass"
+        },
+        "9": {
+          "body": "sandstone",
+          "band": "sandstoneDark",
+          "cap": "sandstonePale",
+          "crust": "dryGrass"
+        },
+        "10": {
+          "body": "quartzite",
+          "band": "quartziteDark",
+          "cap": "quartzitePale",
+          "crust": "moss"
+        },
+        "104": {
+          "body": "chalk",
+          "band": "limestoneDark",
+          "cap": "limestonePale",
+          "crust": "dryGrass"
+        },
+        "402": {
+          "body": "ice",
+          "band": "iceDark",
+          "cap": "snow",
+          "crust": "snowCap"
+        },
+        "409": {
+          "body": "ice",
+          "band": "iceDark",
+          "cap": "snow",
+          "crust": "snowCap"
+        }
+      },
+      "tags": [
+        "chunk:4",
+        "chunk:9",
+        "chunk:10",
+        "chunk:104",
+        "chunk:402",
+        "chunk:409",
+        "hard",
+        "bedrock",
+        "cold",
+        "dry"
+      ]
+    }
+  ]
+}

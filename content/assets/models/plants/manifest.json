@@ -1,0 +1,5238 @@
+{
+  "version": 3,
+  "generator": "src/systems/world/vegetation/（Plants.ts / archetypes.ts / geometry.ts）",
+  "note": "统计量由当前参数表与生成器实时算出（普通态逐季列全，其余状态只记一季）。⚠️ 各处 glb 路径是**导出目标路径，目前尚未生成**；version 1 的 GLB 产物已归档到 _legacy_v1/ 隔离。字段语义与状态规则见 .fordev_docs/vegetation.md。重出本文件：node 000base/tools/plant-manifest.mjs",
+  "archive": "plants.glb",
+  "units": "1 = 1 block（1 格）",
+  "up": "Y",
+  "seasons": [
+    "spring",
+    "summer",
+    "autumn",
+    "winter"
+  ],
+  "materials": [
+    "solid",
+    "snow",
+    "bloom",
+    "fruit"
+  ],
+  "states": [
+    {
+      "code": 0,
+      "state": "planted",
+      "label": "种植",
+      "model": false
+    },
+    {
+      "code": 1,
+      "state": "normal",
+      "label": "普通",
+      "model": true
+    },
+    {
+      "code": 2,
+      "state": "seedling",
+      "label": "幼苗",
+      "model": true
+    },
+    {
+      "code": 3,
+      "state": "subadult",
+      "label": "亚成",
+      "model": true
+    },
+    {
+      "code": 4,
+      "state": "flowering",
+      "label": "开花",
+      "model": true
+    },
+    {
+      "code": 5,
+      "state": "fruiting",
+      "label": "结实",
+      "model": true
+    },
+    {
+      "code": 6,
+      "state": "withered",
+      "label": "干枯",
+      "model": true
+    }
+  ],
+  "petal": {
+    "shape": "petal",
+    "note": "花朵的最小元素是**单瓣**（geometry.petal，4 顶点 2 个三角形），花瓣数由参数表 petals 决定：连翘 4、梅 5、莲 8、菊 10。同一片花瓣换色板键就是叶片（幼苗子叶、树冠碎叶、枯木残叶）。",
+    "trianglesPerPetal": 2,
+    "defaultPetals": 5,
+    "petalCounts": {
+      "shu.yunshan": 5,
+      "shu.lengshan": 5,
+      "shu.luoye": 5,
+      "shu.chuizhi": 5,
+      "shu.gaoshan": 5,
+      "shu.hongpi": 5,
+      "shu.wujiaofeng": 5,
+      "shu.yinxing": 5,
+      "shu.chuilui": 5,
+      "shu.baigan": 5,
+      "shu.xiangzhang": 5,
+      "shu.cha": 5,
+      "shu.masan": 5,
+      "shu.ganju": 5,
+      "shu.paotong": 5,
+      "shu.maozhu": 5,
+      "shu.longnao": 5,
+      "shu.mumian": 5,
+      "shu.yezi": 5,
+      "shu.binglang": 5,
+      "shu.mangguo": 5,
+      "shu.fenghuang": 5,
+      "guan.zhen": 4,
+      "guan.lianqiao": 4,
+      "guan.huanglu": 5,
+      "guan.zhizi": 5,
+      "guan.moli": 5,
+      "guan.dujuan": 5,
+      "guan.fusang": 5,
+      "guan.xuangouzi": 5,
+      "guan.yueju": 4,
+      "guan.aili": 4,
+      "cao.yangmao": 5,
+      "cao.jue": 5,
+      "cao.luwei": 5,
+      "cao.dixue": 5,
+      "cao.shamo": 5,
+      "cao.hanji": 5,
+      "shui.pucao": 5,
+      "shui.lian": 8,
+      "nong.dao": 5,
+      "nong.mai": 5,
+      "nong.su": 5,
+      "nong.da": 5,
+      "nong.sang": 5,
+      "hua.mei": 5,
+      "hua.lan": 5,
+      "hua.zhu": 5,
+      "hua.ju": 10
+    },
+    "singleGeometry": "buildPetalGeometry()",
+    "renderNote": "花瓣是单面薄片：植物材质请用 side: THREE.DoubleSide（低模叶/花瓣的通行做法）。"
+  },
+  "pollen": {
+    "colorKey": "pollen",
+    "color": "#f7e8aa",
+    "archetypes": [
+      "conifer"
+    ],
+    "material": "bloom",
+    "grainTriangles": 6,
+    "note": "针叶树（裸子植物）的花期即散粉期，外观与普通态一致，只在树冠上多一层 pollen 色微小花粉颗粒（走 bloom 材质槽）；花瓣花的**花心**同样用 pollen 上色。"
+  },
+  "counts": {
+    "species": 49,
+    "geometries": 1176,
+    "byState": {
+      "seedling": 49,
+      "subadult": 49,
+      "flowering": 49,
+      "fruiting": 49,
+      "withered": 49
+    },
+    "byClimate": {
+      "cold": 7,
+      "temperate": 18,
+      "subtropical": 16,
+      "tropical": 8
+    },
+    "trianglesTotal": 209384,
+    "trianglesAverage": 178,
+    "trianglesMax": 740,
+    "trianglesMaxAt": "hua.zhu/flowering/summer"
+  },
+  "plants": [
+    {
+      "id": "shu.yunshan",
+      "name": "云杉",
+      "latin": "yunshan",
+      "archetype": "conifer",
+      "climate": "cold",
+      "tags": [
+        "tree",
+        "conifer",
+        "timber",
+        "snow"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 17.973,
+            "radius": 2.586,
+            "triangles": 157,
+            "vertices": 471,
+            "materials": "solid:157",
+            "glb": "singles/shu.yunshan__normal__spring.glb"
+          },
+          "summer": {
+            "height": 17.973,
+            "radius": 2.586,
+            "triangles": 157,
+            "vertices": 471,
+            "materials": "solid:157",
+            "glb": "singles/shu.yunshan__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 17.973,
+            "radius": 2.586,
+            "triangles": 193,
+            "vertices": 579,
+            "materials": "solid:157 snow:36",
+            "glb": "singles/shu.yunshan__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 17.973,
+            "radius": 2.586,
+            "triangles": 193,
+            "vertices": 579,
+            "materials": "solid:157 snow:36",
+            "glb": "singles/shu.yunshan__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.293,
+          "radius": 0.86,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.yunshan__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 9.885,
+          "radius": 1.432,
+          "triangles": 157,
+          "vertices": 471,
+          "materials": "solid:157",
+          "label": "亚成",
+          "glb": "singles/shu.yunshan__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 17.973,
+          "radius": 2.586,
+          "triangles": 613,
+          "vertices": 1839,
+          "materials": "solid:157 bloom:456",
+          "label": "开花",
+          "glb": "singles/shu.yunshan__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 17.973,
+          "radius": 2.586,
+          "triangles": 157,
+          "vertices": 471,
+          "materials": "solid:157",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/shu.yunshan__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 4.157,
+          "radius": 4.32,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/shu.yunshan__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.lengshan",
+      "name": "冷杉",
+      "latin": "lengshan",
+      "archetype": "conifer",
+      "climate": "cold",
+      "tags": [
+        "tree",
+        "conifer",
+        "timber",
+        "snow"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 21.946,
+            "radius": 3.287,
+            "triangles": 141,
+            "vertices": 423,
+            "materials": "solid:141",
+            "glb": "singles/shu.lengshan__normal__spring.glb"
+          },
+          "summer": {
+            "height": 21.946,
+            "radius": 3.287,
+            "triangles": 141,
+            "vertices": 423,
+            "materials": "solid:141",
+            "glb": "singles/shu.lengshan__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 21.946,
+            "radius": 3.287,
+            "triangles": 171,
+            "vertices": 513,
+            "materials": "solid:141 snow:30",
+            "glb": "singles/shu.lengshan__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 21.946,
+            "radius": 3.287,
+            "triangles": 171,
+            "vertices": 513,
+            "materials": "solid:141 snow:30",
+            "glb": "singles/shu.lengshan__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.462,
+          "radius": 1.065,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.lengshan__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 12.07,
+          "radius": 1.818,
+          "triangles": 141,
+          "vertices": 423,
+          "materials": "solid:141",
+          "label": "亚成",
+          "glb": "singles/shu.lengshan__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 21.946,
+          "radius": 3.287,
+          "triangles": 549,
+          "vertices": 1647,
+          "materials": "solid:141 bloom:408",
+          "label": "开花",
+          "glb": "singles/shu.lengshan__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 21.946,
+          "radius": 3.287,
+          "triangles": 141,
+          "vertices": 423,
+          "materials": "solid:141",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/shu.lengshan__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 8.054,
+          "radius": 7.77,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/shu.lengshan__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.luoye",
+      "name": "落叶松",
+      "latin": "luoyesong",
+      "archetype": "conifer",
+      "climate": "cold",
+      "tags": [
+        "tree",
+        "conifer",
+        "autumn_color",
+        "snow"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 18.966,
+            "radius": 2.751,
+            "triangles": 141,
+            "vertices": 423,
+            "materials": "solid:141",
+            "glb": "singles/shu.luoye__normal__spring.glb"
+          },
+          "summer": {
+            "height": 18.966,
+            "radius": 2.751,
+            "triangles": 141,
+            "vertices": 423,
+            "materials": "solid:141",
+            "glb": "singles/shu.luoye__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 18.966,
+            "radius": 2.751,
+            "triangles": 165,
+            "vertices": 495,
+            "materials": "solid:141 snow:24",
+            "glb": "singles/shu.luoye__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 18.966,
+            "radius": 2.751,
+            "triangles": 165,
+            "vertices": 495,
+            "materials": "solid:141 snow:24",
+            "glb": "singles/shu.luoye__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.674,
+          "radius": 0.994,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.luoye__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 10.431,
+          "radius": 1.523,
+          "triangles": 141,
+          "vertices": 423,
+          "materials": "solid:141",
+          "label": "亚成",
+          "glb": "singles/shu.luoye__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 18.966,
+          "radius": 2.751,
+          "triangles": 549,
+          "vertices": 1647,
+          "materials": "solid:141 bloom:408",
+          "label": "开花",
+          "glb": "singles/shu.luoye__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 18.966,
+          "radius": 2.751,
+          "triangles": 141,
+          "vertices": 423,
+          "materials": "solid:141",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/shu.luoye__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 7.287,
+          "radius": 5.711,
+          "triangles": 101,
+          "vertices": 303,
+          "materials": "solid:101",
+          "label": "干枯",
+          "glb": "singles/shu.luoye__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.chuizhi",
+      "name": "垂枝桦",
+      "latin": "chuizhihua",
+      "archetype": "broadleaf",
+      "climate": "cold",
+      "tags": [
+        "tree",
+        "pioneer",
+        "snow"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 10.269,
+            "radius": 3.894,
+            "triangles": 172,
+            "vertices": 516,
+            "materials": "solid:172",
+            "glb": "singles/shu.chuizhi__normal__spring.glb"
+          },
+          "summer": {
+            "height": 10.269,
+            "radius": 3.894,
+            "triangles": 172,
+            "vertices": 516,
+            "materials": "solid:172",
+            "glb": "singles/shu.chuizhi__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 10.358,
+            "radius": 3.894,
+            "triangles": 202,
+            "vertices": 606,
+            "materials": "solid:172 snow:30",
+            "glb": "singles/shu.chuizhi__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 10.358,
+            "radius": 3.894,
+            "triangles": 202,
+            "vertices": 606,
+            "materials": "solid:172 snow:30",
+            "glb": "singles/shu.chuizhi__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.946,
+          "radius": 0.495,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.chuizhi__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 5.648,
+          "radius": 2.141,
+          "triangles": 172,
+          "vertices": 516,
+          "materials": "solid:172",
+          "label": "亚成",
+          "glb": "singles/shu.chuizhi__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 10.269,
+          "radius": 4.024,
+          "triangles": 270,
+          "vertices": 810,
+          "materials": "solid:172 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.chuizhi__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 10.269,
+          "radius": 3.894,
+          "triangles": 222,
+          "vertices": 666,
+          "materials": "solid:172 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.chuizhi__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 3.547,
+          "radius": 3.368,
+          "triangles": 47,
+          "vertices": 141,
+          "materials": "solid:47",
+          "label": "干枯",
+          "glb": "singles/shu.chuizhi__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.gaoshan",
+      "name": "高山栎",
+      "latin": "gaoshanli",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "tags": [
+        "tree",
+        "canopy",
+        "fruit",
+        "timber"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 13.086,
+            "radius": 8.065,
+            "triangles": 267,
+            "vertices": 801,
+            "materials": "solid:247 fruit:20",
+            "glb": "singles/shu.gaoshan__normal__spring.glb"
+          },
+          "summer": {
+            "height": 13.086,
+            "radius": 8.065,
+            "triangles": 267,
+            "vertices": 801,
+            "materials": "solid:247 fruit:20",
+            "glb": "singles/shu.gaoshan__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 13.086,
+            "radius": 8.065,
+            "triangles": 267,
+            "vertices": 801,
+            "materials": "solid:247 fruit:20",
+            "glb": "singles/shu.gaoshan__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 13.086,
+            "radius": 8.065,
+            "triangles": 267,
+            "vertices": 801,
+            "materials": "solid:247 fruit:20",
+            "glb": "singles/shu.gaoshan__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.506,
+          "radius": 0.859,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.gaoshan__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 7.197,
+          "radius": 4.436,
+          "triangles": 247,
+          "vertices": 741,
+          "materials": "solid:247",
+          "label": "亚成",
+          "glb": "singles/shu.gaoshan__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 13.086,
+          "radius": 8.065,
+          "triangles": 345,
+          "vertices": 1035,
+          "materials": "solid:247 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.gaoshan__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 13.086,
+          "radius": 8.065,
+          "triangles": 297,
+          "vertices": 891,
+          "materials": "solid:247 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.gaoshan__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 6.079,
+          "radius": 4.916,
+          "triangles": 86,
+          "vertices": 258,
+          "materials": "solid:86",
+          "label": "干枯",
+          "glb": "singles/shu.gaoshan__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.hongpi",
+      "name": "红皮松",
+      "latin": "hongpisong",
+      "archetype": "conifer",
+      "climate": "temperate",
+      "tags": [
+        "tree",
+        "conifer",
+        "timber"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 19.557,
+            "radius": 3.711,
+            "triangles": 125,
+            "vertices": 375,
+            "materials": "solid:125",
+            "glb": "singles/shu.hongpi__normal__spring.glb"
+          },
+          "summer": {
+            "height": 19.557,
+            "radius": 3.711,
+            "triangles": 125,
+            "vertices": 375,
+            "materials": "solid:125",
+            "glb": "singles/shu.hongpi__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 19.557,
+            "radius": 3.711,
+            "triangles": 125,
+            "vertices": 375,
+            "materials": "solid:125",
+            "glb": "singles/shu.hongpi__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 19.557,
+            "radius": 3.711,
+            "triangles": 125,
+            "vertices": 375,
+            "materials": "solid:125",
+            "glb": "singles/shu.hongpi__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.799,
+          "radius": 0.962,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.hongpi__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 10.756,
+          "radius": 2.051,
+          "triangles": 125,
+          "vertices": 375,
+          "materials": "solid:125",
+          "label": "亚成",
+          "glb": "singles/shu.hongpi__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 19.557,
+          "radius": 3.711,
+          "triangles": 485,
+          "vertices": 1455,
+          "materials": "solid:125 bloom:360",
+          "label": "开花",
+          "glb": "singles/shu.hongpi__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 19.557,
+          "radius": 3.711,
+          "triangles": 125,
+          "vertices": 375,
+          "materials": "solid:125",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/shu.hongpi__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 8.347,
+          "radius": 5.59,
+          "triangles": 101,
+          "vertices": 303,
+          "materials": "solid:101",
+          "label": "干枯",
+          "glb": "singles/shu.hongpi__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.wujiaofeng",
+      "name": "五角枫",
+      "latin": "wujiaofeng",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "tags": [
+        "tree",
+        "ornamental",
+        "autumn_color"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 10.462,
+            "radius": 6.857,
+            "triangles": 266,
+            "vertices": 798,
+            "materials": "solid:266",
+            "glb": "singles/shu.wujiaofeng__normal__spring.glb"
+          },
+          "summer": {
+            "height": 10.462,
+            "radius": 6.857,
+            "triangles": 266,
+            "vertices": 798,
+            "materials": "solid:266",
+            "glb": "singles/shu.wujiaofeng__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 10.462,
+            "radius": 6.857,
+            "triangles": 266,
+            "vertices": 798,
+            "materials": "solid:266",
+            "glb": "singles/shu.wujiaofeng__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 10.462,
+            "radius": 6.857,
+            "triangles": 266,
+            "vertices": 798,
+            "materials": "solid:266",
+            "glb": "singles/shu.wujiaofeng__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.196,
+          "radius": 0.684,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.wujiaofeng__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 5.754,
+          "radius": 3.772,
+          "triangles": 266,
+          "vertices": 798,
+          "materials": "solid:266",
+          "label": "亚成",
+          "glb": "singles/shu.wujiaofeng__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 10.462,
+          "radius": 6.857,
+          "triangles": 364,
+          "vertices": 1092,
+          "materials": "solid:266 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.wujiaofeng__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 10.462,
+          "radius": 6.857,
+          "triangles": 316,
+          "vertices": 948,
+          "materials": "solid:266 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.wujiaofeng__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 4.778,
+          "radius": 3.875,
+          "triangles": 93,
+          "vertices": 279,
+          "materials": "solid:93",
+          "label": "干枯",
+          "glb": "singles/shu.wujiaofeng__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.yinxing",
+      "name": "银杏",
+      "latin": "yinxing",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "tags": [
+        "tree",
+        "ornamental",
+        "autumn_color",
+        "fruit"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 14.35,
+            "radius": 5.356,
+            "triangles": 263,
+            "vertices": 789,
+            "materials": "solid:233 fruit:30",
+            "glb": "singles/shu.yinxing__normal__spring.glb"
+          },
+          "summer": {
+            "height": 14.35,
+            "radius": 5.356,
+            "triangles": 263,
+            "vertices": 789,
+            "materials": "solid:233 fruit:30",
+            "glb": "singles/shu.yinxing__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 14.35,
+            "radius": 5.356,
+            "triangles": 263,
+            "vertices": 789,
+            "materials": "solid:233 fruit:30",
+            "glb": "singles/shu.yinxing__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 14.35,
+            "radius": 5.356,
+            "triangles": 263,
+            "vertices": 789,
+            "materials": "solid:233 fruit:30",
+            "glb": "singles/shu.yinxing__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.41,
+          "radius": 0.823,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.yinxing__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 7.893,
+          "radius": 2.946,
+          "triangles": 233,
+          "vertices": 699,
+          "materials": "solid:233",
+          "label": "亚成",
+          "glb": "singles/shu.yinxing__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 14.35,
+          "radius": 5.356,
+          "triangles": 331,
+          "vertices": 993,
+          "materials": "solid:233 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.yinxing__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 14.35,
+          "radius": 5.356,
+          "triangles": 283,
+          "vertices": 849,
+          "materials": "solid:233 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.yinxing__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 4.327,
+          "radius": 6.274,
+          "triangles": 70,
+          "vertices": 210,
+          "materials": "solid:70",
+          "label": "干枯",
+          "glb": "singles/shu.yinxing__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.chuilui",
+      "name": "垂柳",
+      "latin": "chuiliu",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "tags": [
+        "tree",
+        "riparian"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 10.485,
+            "radius": 8.45,
+            "triangles": 261,
+            "vertices": 783,
+            "materials": "solid:261",
+            "glb": "singles/shu.chuilui__normal__spring.glb"
+          },
+          "summer": {
+            "height": 10.485,
+            "radius": 8.45,
+            "triangles": 261,
+            "vertices": 783,
+            "materials": "solid:261",
+            "glb": "singles/shu.chuilui__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 10.485,
+            "radius": 8.45,
+            "triangles": 261,
+            "vertices": 783,
+            "materials": "solid:261",
+            "glb": "singles/shu.chuilui__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 10.485,
+            "radius": 8.45,
+            "triangles": 261,
+            "vertices": 783,
+            "materials": "solid:261",
+            "glb": "singles/shu.chuilui__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.263,
+          "radius": 0.748,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.chuilui__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 5.767,
+          "radius": 4.648,
+          "triangles": 261,
+          "vertices": 783,
+          "materials": "solid:261",
+          "label": "亚成",
+          "glb": "singles/shu.chuilui__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 10.485,
+          "radius": 8.45,
+          "triangles": 359,
+          "vertices": 1077,
+          "materials": "solid:261 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.chuilui__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 10.485,
+          "radius": 8.45,
+          "triangles": 311,
+          "vertices": 933,
+          "materials": "solid:261 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.chuilui__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 4.702,
+          "radius": 5.036,
+          "triangles": 72,
+          "vertices": 216,
+          "materials": "solid:72",
+          "label": "干枯",
+          "glb": "singles/shu.chuilui__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.baigan",
+      "name": "白干桦",
+      "latin": "baiganhua",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "tags": [
+        "tree",
+        "pioneer"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 15.115,
+            "radius": 5.152,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:200",
+            "glb": "singles/shu.baigan__normal__spring.glb"
+          },
+          "summer": {
+            "height": 15.115,
+            "radius": 5.152,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:200",
+            "glb": "singles/shu.baigan__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 15.115,
+            "radius": 5.152,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:200",
+            "glb": "singles/shu.baigan__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 15.115,
+            "radius": 5.152,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:200",
+            "glb": "singles/shu.baigan__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.295,
+          "radius": 0.756,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.baigan__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 8.313,
+          "radius": 2.834,
+          "triangles": 200,
+          "vertices": 600,
+          "materials": "solid:200",
+          "label": "亚成",
+          "glb": "singles/shu.baigan__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 15.243,
+          "radius": 5.152,
+          "triangles": 298,
+          "vertices": 894,
+          "materials": "solid:200 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.baigan__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 15.115,
+          "radius": 5.152,
+          "triangles": 250,
+          "vertices": 750,
+          "materials": "solid:200 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.baigan__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 4.561,
+          "radius": 4.199,
+          "triangles": 56,
+          "vertices": 168,
+          "materials": "solid:56",
+          "label": "干枯",
+          "glb": "singles/shu.baigan__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.xiangzhang",
+      "name": "香樟",
+      "latin": "xiangzhang",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "tags": [
+        "tree",
+        "canopy",
+        "timber"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 17.467,
+            "radius": 9.412,
+            "triangles": 261,
+            "vertices": 783,
+            "materials": "solid:261",
+            "glb": "singles/shu.xiangzhang__normal__spring.glb"
+          },
+          "summer": {
+            "height": 17.467,
+            "radius": 9.412,
+            "triangles": 261,
+            "vertices": 783,
+            "materials": "solid:261",
+            "glb": "singles/shu.xiangzhang__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 17.467,
+            "radius": 9.412,
+            "triangles": 261,
+            "vertices": 783,
+            "materials": "solid:261",
+            "glb": "singles/shu.xiangzhang__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 17.467,
+            "radius": 9.412,
+            "triangles": 261,
+            "vertices": 783,
+            "materials": "solid:261",
+            "glb": "singles/shu.xiangzhang__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.885,
+          "radius": 1.071,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.xiangzhang__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 9.607,
+          "radius": 5.177,
+          "triangles": 261,
+          "vertices": 783,
+          "materials": "solid:261",
+          "label": "亚成",
+          "glb": "singles/shu.xiangzhang__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 17.467,
+          "radius": 9.412,
+          "triangles": 359,
+          "vertices": 1077,
+          "materials": "solid:261 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.xiangzhang__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 17.467,
+          "radius": 9.412,
+          "triangles": 311,
+          "vertices": 933,
+          "materials": "solid:261 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.xiangzhang__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 7.8,
+          "radius": 8.753,
+          "triangles": 86,
+          "vertices": 258,
+          "materials": "solid:86",
+          "label": "干枯",
+          "glb": "singles/shu.xiangzhang__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.cha",
+      "name": "茶树",
+      "latin": "chashu",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "tags": [
+        "tree",
+        "crop",
+        "cash_crop",
+        "flowering",
+        "fruit"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f8f6ee",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 2.571,
+            "radius": 2.577,
+            "triangles": 324,
+            "vertices": 972,
+            "materials": "solid:200 bloom:84 fruit:40",
+            "glb": "singles/shu.cha__normal__spring.glb"
+          },
+          "summer": {
+            "height": 2.571,
+            "radius": 2.577,
+            "triangles": 324,
+            "vertices": 972,
+            "materials": "solid:200 bloom:84 fruit:40",
+            "glb": "singles/shu.cha__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 2.571,
+            "radius": 2.577,
+            "triangles": 324,
+            "vertices": 972,
+            "materials": "solid:200 bloom:84 fruit:40",
+            "glb": "singles/shu.cha__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 2.571,
+            "radius": 2.577,
+            "triangles": 324,
+            "vertices": 972,
+            "materials": "solid:200 bloom:84 fruit:40",
+            "glb": "singles/shu.cha__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.266,
+          "radius": 0.135,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.cha__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 1.414,
+          "radius": 1.417,
+          "triangles": 200,
+          "vertices": 600,
+          "materials": "solid:200",
+          "label": "亚成",
+          "glb": "singles/shu.cha__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 2.571,
+          "radius": 2.577,
+          "triangles": 298,
+          "vertices": 894,
+          "materials": "solid:200 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.cha__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 2.571,
+          "radius": 2.577,
+          "triangles": 250,
+          "vertices": 750,
+          "materials": "solid:200 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.cha__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 1.112,
+          "radius": 0.915,
+          "triangles": 70,
+          "vertices": 210,
+          "materials": "solid:70",
+          "label": "干枯",
+          "glb": "singles/shu.cha__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.masan",
+      "name": "马尾松",
+      "latin": "maweisong",
+      "archetype": "conifer",
+      "climate": "subtropical",
+      "tags": [
+        "tree",
+        "conifer",
+        "timber"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 18.78,
+            "radius": 4.578,
+            "triangles": 141,
+            "vertices": 423,
+            "materials": "solid:141",
+            "glb": "singles/shu.masan__normal__spring.glb"
+          },
+          "summer": {
+            "height": 18.78,
+            "radius": 4.578,
+            "triangles": 141,
+            "vertices": 423,
+            "materials": "solid:141",
+            "glb": "singles/shu.masan__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 18.78,
+            "radius": 4.578,
+            "triangles": 141,
+            "vertices": 423,
+            "materials": "solid:141",
+            "glb": "singles/shu.masan__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 18.78,
+            "radius": 4.578,
+            "triangles": 141,
+            "vertices": 423,
+            "materials": "solid:141",
+            "glb": "singles/shu.masan__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.646,
+          "radius": 0.91,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.masan__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 10.329,
+          "radius": 2.528,
+          "triangles": 141,
+          "vertices": 423,
+          "materials": "solid:141",
+          "label": "亚成",
+          "glb": "singles/shu.masan__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 18.78,
+          "radius": 4.578,
+          "triangles": 549,
+          "vertices": 1647,
+          "materials": "solid:141 bloom:408",
+          "label": "开花",
+          "glb": "singles/shu.masan__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 18.78,
+          "radius": 4.578,
+          "triangles": 141,
+          "vertices": 423,
+          "materials": "solid:141",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/shu.masan__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 5.33,
+          "radius": 5.792,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/shu.masan__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.ganju",
+      "name": "柑橘",
+      "latin": "ganju",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "tags": [
+        "tree",
+        "orchard",
+        "fruit"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 5.124,
+            "radius": 4.203,
+            "triangles": 265,
+            "vertices": 795,
+            "materials": "solid:205 fruit:60",
+            "glb": "singles/shu.ganju__normal__spring.glb"
+          },
+          "summer": {
+            "height": 5.124,
+            "radius": 4.203,
+            "triangles": 265,
+            "vertices": 795,
+            "materials": "solid:205 fruit:60",
+            "glb": "singles/shu.ganju__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 5.124,
+            "radius": 4.203,
+            "triangles": 265,
+            "vertices": 795,
+            "materials": "solid:205 fruit:60",
+            "glb": "singles/shu.ganju__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 5.124,
+            "radius": 4.203,
+            "triangles": 265,
+            "vertices": 795,
+            "materials": "solid:205 fruit:60",
+            "glb": "singles/shu.ganju__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.577,
+          "radius": 0.342,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.ganju__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 2.818,
+          "radius": 2.311,
+          "triangles": 205,
+          "vertices": 615,
+          "materials": "solid:205",
+          "label": "亚成",
+          "glb": "singles/shu.ganju__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 5.124,
+          "radius": 4.203,
+          "triangles": 303,
+          "vertices": 909,
+          "materials": "solid:205 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.ganju__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 5.124,
+          "radius": 4.203,
+          "triangles": 255,
+          "vertices": 765,
+          "materials": "solid:205 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.ganju__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 2.276,
+          "radius": 1.97,
+          "triangles": 75,
+          "vertices": 225,
+          "materials": "solid:75",
+          "label": "干枯",
+          "glb": "singles/shu.ganju__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.paotong",
+      "name": "泡桐",
+      "latin": "paotong",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "tags": [
+        "tree",
+        "flowering",
+        "timber"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#ec9cb4",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 16.556,
+            "radius": 7.095,
+            "triangles": 317,
+            "vertices": 951,
+            "materials": "solid:233 bloom:84",
+            "glb": "singles/shu.paotong__normal__spring.glb"
+          },
+          "summer": {
+            "height": 16.556,
+            "radius": 7.095,
+            "triangles": 317,
+            "vertices": 951,
+            "materials": "solid:233 bloom:84",
+            "glb": "singles/shu.paotong__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 16.556,
+            "radius": 7.095,
+            "triangles": 317,
+            "vertices": 951,
+            "materials": "solid:233 bloom:84",
+            "glb": "singles/shu.paotong__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 16.556,
+            "radius": 7.095,
+            "triangles": 317,
+            "vertices": 951,
+            "materials": "solid:233 bloom:84",
+            "glb": "singles/shu.paotong__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.614,
+          "radius": 0.921,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.paotong__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 9.106,
+          "radius": 3.902,
+          "triangles": 233,
+          "vertices": 699,
+          "materials": "solid:233",
+          "label": "亚成",
+          "glb": "singles/shu.paotong__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 16.556,
+          "radius": 7.095,
+          "triangles": 331,
+          "vertices": 993,
+          "materials": "solid:233 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.paotong__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 16.556,
+          "radius": 7.095,
+          "triangles": 283,
+          "vertices": 849,
+          "materials": "solid:233 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.paotong__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 7.488,
+          "radius": 6.966,
+          "triangles": 77,
+          "vertices": 231,
+          "materials": "solid:77",
+          "label": "干枯",
+          "glb": "singles/shu.paotong__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.maozhu",
+      "name": "毛竹",
+      "latin": "maozhu",
+      "archetype": "bamboo",
+      "climate": "subtropical",
+      "tags": [
+        "bamboo",
+        "grove",
+        "timber"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f8f6ee",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 9.07,
+            "radius": 1.852,
+            "triangles": 336,
+            "vertices": 1008,
+            "materials": "solid:336",
+            "glb": "singles/shu.maozhu__normal__spring.glb"
+          },
+          "summer": {
+            "height": 9.07,
+            "radius": 1.852,
+            "triangles": 336,
+            "vertices": 1008,
+            "materials": "solid:336",
+            "glb": "singles/shu.maozhu__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 9.07,
+            "radius": 1.852,
+            "triangles": 336,
+            "vertices": 1008,
+            "materials": "solid:336",
+            "glb": "singles/shu.maozhu__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 9.07,
+            "radius": 1.852,
+            "triangles": 336,
+            "vertices": 1008,
+            "materials": "solid:336",
+            "glb": "singles/shu.maozhu__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.425,
+          "radius": 0.222,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.maozhu__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 4.989,
+          "radius": 1.019,
+          "triangles": 336,
+          "vertices": 1008,
+          "materials": "solid:336",
+          "label": "亚成",
+          "glb": "singles/shu.maozhu__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 9.36,
+          "radius": 2,
+          "triangles": 406,
+          "vertices": 1218,
+          "materials": "solid:336 bloom:70",
+          "label": "开花",
+          "glb": "singles/shu.maozhu__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 9.07,
+          "radius": 1.852,
+          "triangles": 336,
+          "vertices": 1008,
+          "materials": "solid:336",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/shu.maozhu__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 3.062,
+          "radius": 3.226,
+          "triangles": 101,
+          "vertices": 303,
+          "materials": "solid:101",
+          "label": "干枯",
+          "glb": "singles/shu.maozhu__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.longnao",
+      "name": "龙脑香巨木",
+      "latin": "longnaoxiang",
+      "archetype": "broadleaf",
+      "climate": "tropical",
+      "tags": [
+        "tree",
+        "canopy",
+        "jungle",
+        "timber"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 29.23,
+            "radius": 11.45,
+            "triangles": 322,
+            "vertices": 966,
+            "materials": "solid:322",
+            "glb": "singles/shu.longnao__normal__spring.glb"
+          },
+          "summer": {
+            "height": 29.23,
+            "radius": 11.45,
+            "triangles": 322,
+            "vertices": 966,
+            "materials": "solid:322",
+            "glb": "singles/shu.longnao__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 29.23,
+            "radius": 11.45,
+            "triangles": 322,
+            "vertices": 966,
+            "materials": "solid:322",
+            "glb": "singles/shu.longnao__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 29.23,
+            "radius": 11.45,
+            "triangles": 322,
+            "vertices": 966,
+            "materials": "solid:322",
+            "glb": "singles/shu.longnao__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 2.774,
+          "radius": 1.491,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.longnao__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 16.077,
+          "radius": 6.298,
+          "triangles": 322,
+          "vertices": 966,
+          "materials": "solid:322",
+          "label": "亚成",
+          "glb": "singles/shu.longnao__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 29.23,
+          "radius": 11.45,
+          "triangles": 420,
+          "vertices": 1260,
+          "materials": "solid:322 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.longnao__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 29.23,
+          "radius": 11.45,
+          "triangles": 372,
+          "vertices": 1116,
+          "materials": "solid:322 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.longnao__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 12.988,
+          "radius": 11.554,
+          "triangles": 112,
+          "vertices": 336,
+          "materials": "solid:112",
+          "label": "干枯",
+          "glb": "singles/shu.longnao__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.mumian",
+      "name": "木棉",
+      "latin": "mumian",
+      "archetype": "broadleaf",
+      "climate": "tropical",
+      "tags": [
+        "tree",
+        "canopy",
+        "jungle",
+        "flowering"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#d0524a",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 30.337,
+            "radius": 10.192,
+            "triangles": 378,
+            "vertices": 1134,
+            "materials": "solid:294 bloom:84",
+            "glb": "singles/shu.mumian__normal__spring.glb"
+          },
+          "summer": {
+            "height": 30.337,
+            "radius": 10.192,
+            "triangles": 378,
+            "vertices": 1134,
+            "materials": "solid:294 bloom:84",
+            "glb": "singles/shu.mumian__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 30.337,
+            "radius": 10.192,
+            "triangles": 378,
+            "vertices": 1134,
+            "materials": "solid:294 bloom:84",
+            "glb": "singles/shu.mumian__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 30.337,
+            "radius": 10.192,
+            "triangles": 378,
+            "vertices": 1134,
+            "materials": "solid:294 bloom:84",
+            "glb": "singles/shu.mumian__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 2.5,
+          "radius": 1.384,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.mumian__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 16.685,
+          "radius": 5.606,
+          "triangles": 294,
+          "vertices": 882,
+          "materials": "solid:294",
+          "label": "亚成",
+          "glb": "singles/shu.mumian__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 30.337,
+          "radius": 10.36,
+          "triangles": 392,
+          "vertices": 1176,
+          "materials": "solid:294 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.mumian__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 30.337,
+          "radius": 10.192,
+          "triangles": 344,
+          "vertices": 1032,
+          "materials": "solid:294 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.mumian__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 10.939,
+          "radius": 8.239,
+          "triangles": 79,
+          "vertices": 237,
+          "materials": "solid:79",
+          "label": "干枯",
+          "glb": "singles/shu.mumian__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.yezi",
+      "name": "椰子棕榈",
+      "latin": "yezizonglv",
+      "archetype": "palm",
+      "climate": "tropical",
+      "tags": [
+        "tree",
+        "palm",
+        "coast",
+        "fruit"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 11.78,
+            "radius": 7.586,
+            "triangles": 572,
+            "vertices": 1716,
+            "materials": "solid:532 fruit:40",
+            "glb": "singles/shu.yezi__normal__spring.glb"
+          },
+          "summer": {
+            "height": 11.78,
+            "radius": 7.586,
+            "triangles": 572,
+            "vertices": 1716,
+            "materials": "solid:532 fruit:40",
+            "glb": "singles/shu.yezi__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 11.78,
+            "radius": 7.586,
+            "triangles": 572,
+            "vertices": 1716,
+            "materials": "solid:532 fruit:40",
+            "glb": "singles/shu.yezi__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 11.78,
+            "radius": 7.586,
+            "triangles": 572,
+            "vertices": 1716,
+            "materials": "solid:532 fruit:40",
+            "glb": "singles/shu.yezi__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.949,
+          "radius": 0.241,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.yezi__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 6.553,
+          "radius": 4.177,
+          "triangles": 468,
+          "vertices": 1404,
+          "materials": "solid:468",
+          "label": "亚成",
+          "glb": "singles/shu.yezi__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 12.132,
+          "radius": 7.586,
+          "triangles": 630,
+          "vertices": 1890,
+          "materials": "solid:532 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.yezi__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 11.78,
+          "radius": 7.586,
+          "triangles": 582,
+          "vertices": 1746,
+          "materials": "solid:532 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.yezi__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 5.124,
+          "radius": 4.046,
+          "triangles": 59,
+          "vertices": 177,
+          "materials": "solid:59",
+          "label": "干枯",
+          "glb": "singles/shu.yezi__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.binglang",
+      "name": "槟榔",
+      "latin": "binglang",
+      "archetype": "palm",
+      "climate": "tropical",
+      "tags": [
+        "tree",
+        "palm",
+        "fruit",
+        "cash_crop"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 8.694,
+            "radius": 4.355,
+            "triangles": 450,
+            "vertices": 1350,
+            "materials": "solid:420 fruit:30",
+            "glb": "singles/shu.binglang__normal__spring.glb"
+          },
+          "summer": {
+            "height": 8.694,
+            "radius": 4.355,
+            "triangles": 450,
+            "vertices": 1350,
+            "materials": "solid:420 fruit:30",
+            "glb": "singles/shu.binglang__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 8.694,
+            "radius": 4.355,
+            "triangles": 450,
+            "vertices": 1350,
+            "materials": "solid:420 fruit:30",
+            "glb": "singles/shu.binglang__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 8.694,
+            "radius": 4.355,
+            "triangles": 450,
+            "vertices": 1350,
+            "materials": "solid:420 fruit:30",
+            "glb": "singles/shu.binglang__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.754,
+          "radius": 0.21,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.binglang__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 4.884,
+          "radius": 2.394,
+          "triangles": 372,
+          "vertices": 1116,
+          "materials": "solid:372",
+          "label": "亚成",
+          "glb": "singles/shu.binglang__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 8.694,
+          "radius": 4.355,
+          "triangles": 518,
+          "vertices": 1554,
+          "materials": "solid:420 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.binglang__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 8.694,
+          "radius": 4.355,
+          "triangles": 470,
+          "vertices": 1410,
+          "materials": "solid:420 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.binglang__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 6.093,
+          "radius": 2.575,
+          "triangles": 80,
+          "vertices": 240,
+          "materials": "solid:80",
+          "label": "干枯",
+          "glb": "singles/shu.binglang__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.mangguo",
+      "name": "芒果",
+      "latin": "mangguo",
+      "archetype": "broadleaf",
+      "climate": "tropical",
+      "tags": [
+        "tree",
+        "fruit",
+        "orchard"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 11.4,
+            "radius": 7.874,
+            "triangles": 297,
+            "vertices": 891,
+            "materials": "solid:247 fruit:50",
+            "glb": "singles/shu.mangguo__normal__spring.glb"
+          },
+          "summer": {
+            "height": 11.4,
+            "radius": 7.874,
+            "triangles": 297,
+            "vertices": 891,
+            "materials": "solid:247 fruit:50",
+            "glb": "singles/shu.mangguo__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 11.4,
+            "radius": 7.874,
+            "triangles": 297,
+            "vertices": 891,
+            "materials": "solid:247 fruit:50",
+            "glb": "singles/shu.mangguo__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 11.4,
+            "radius": 7.874,
+            "triangles": 297,
+            "vertices": 891,
+            "materials": "solid:247 fruit:50",
+            "glb": "singles/shu.mangguo__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.247,
+          "radius": 0.699,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.mangguo__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 6.27,
+          "radius": 4.331,
+          "triangles": 247,
+          "vertices": 741,
+          "materials": "solid:247",
+          "label": "亚成",
+          "glb": "singles/shu.mangguo__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 11.4,
+          "radius": 7.874,
+          "triangles": 345,
+          "vertices": 1035,
+          "materials": "solid:247 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.mangguo__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 11.4,
+          "radius": 7.874,
+          "triangles": 297,
+          "vertices": 891,
+          "materials": "solid:247 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.mangguo__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 3.57,
+          "radius": 3.988,
+          "triangles": 72,
+          "vertices": 216,
+          "materials": "solid:72",
+          "label": "干枯",
+          "glb": "singles/shu.mangguo__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shu.fenghuang",
+      "name": "凤凰木",
+      "latin": "fenghuangmu",
+      "archetype": "broadleaf",
+      "climate": "tropical",
+      "tags": [
+        "tree",
+        "flowering",
+        "ornamental"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f2b451",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 12.066,
+            "radius": 7.626,
+            "triangles": 364,
+            "vertices": 1092,
+            "materials": "solid:280 bloom:84",
+            "glb": "singles/shu.fenghuang__normal__spring.glb"
+          },
+          "summer": {
+            "height": 12.066,
+            "radius": 7.626,
+            "triangles": 364,
+            "vertices": 1092,
+            "materials": "solid:280 bloom:84",
+            "glb": "singles/shu.fenghuang__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 12.066,
+            "radius": 7.626,
+            "triangles": 364,
+            "vertices": 1092,
+            "materials": "solid:280 bloom:84",
+            "glb": "singles/shu.fenghuang__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 12.066,
+            "radius": 7.626,
+            "triangles": 364,
+            "vertices": 1092,
+            "materials": "solid:280 bloom:84",
+            "glb": "singles/shu.fenghuang__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 1.369,
+          "radius": 0.803,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shu.fenghuang__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 6.636,
+          "radius": 4.189,
+          "triangles": 280,
+          "vertices": 840,
+          "materials": "solid:280",
+          "label": "亚成",
+          "glb": "singles/shu.fenghuang__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 12.066,
+          "radius": 7.705,
+          "triangles": 378,
+          "vertices": 1134,
+          "materials": "solid:280 bloom:98",
+          "label": "开花",
+          "glb": "singles/shu.fenghuang__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 12.066,
+          "radius": 7.616,
+          "triangles": 330,
+          "vertices": 990,
+          "materials": "solid:280 fruit:50",
+          "label": "结实",
+          "glb": "singles/shu.fenghuang__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 6.806,
+          "radius": 4.465,
+          "triangles": 100,
+          "vertices": 300,
+          "materials": "solid:100",
+          "label": "干枯",
+          "glb": "singles/shu.fenghuang__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.zhen",
+      "name": "榛丛",
+      "latin": "zhencong",
+      "archetype": "shrub",
+      "climate": "temperate",
+      "tags": [
+        "shrub",
+        "understory",
+        "fruit"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.925,
+            "radius": 1.76,
+            "triangles": 125,
+            "vertices": 375,
+            "materials": "solid:95 fruit:30",
+            "glb": "singles/guan.zhen__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.925,
+            "radius": 1.76,
+            "triangles": 125,
+            "vertices": 375,
+            "materials": "solid:95 fruit:30",
+            "glb": "singles/guan.zhen__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.925,
+            "radius": 1.76,
+            "triangles": 125,
+            "vertices": 375,
+            "materials": "solid:95 fruit:30",
+            "glb": "singles/guan.zhen__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.925,
+            "radius": 1.76,
+            "triangles": 125,
+            "vertices": 375,
+            "materials": "solid:95 fruit:30",
+            "glb": "singles/guan.zhen__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.192,
+          "radius": 0.104,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.zhen__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 1.059,
+          "radius": 0.968,
+          "triangles": 95,
+          "vertices": 285,
+          "materials": "solid:95",
+          "label": "亚成",
+          "glb": "singles/guan.zhen__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.925,
+          "radius": 1.76,
+          "triangles": 179,
+          "vertices": 537,
+          "materials": "solid:95 bloom:84",
+          "label": "开花",
+          "glb": "singles/guan.zhen__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.925,
+          "radius": 1.76,
+          "triangles": 145,
+          "vertices": 435,
+          "materials": "solid:95 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.zhen__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 1.233,
+          "radius": 0.812,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/guan.zhen__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.lianqiao",
+      "name": "连翘",
+      "latin": "lianqiao",
+      "archetype": "shrub",
+      "climate": "temperate",
+      "tags": [
+        "shrub",
+        "flowering",
+        "ornamental",
+        "medicine"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f2c955",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.598,
+            "radius": 1.828,
+            "triangles": 188,
+            "vertices": 564,
+            "materials": "solid:116 bloom:72",
+            "glb": "singles/guan.lianqiao__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.598,
+            "radius": 1.828,
+            "triangles": 188,
+            "vertices": 564,
+            "materials": "solid:116 bloom:72",
+            "glb": "singles/guan.lianqiao__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.598,
+            "radius": 1.828,
+            "triangles": 188,
+            "vertices": 564,
+            "materials": "solid:116 bloom:72",
+            "glb": "singles/guan.lianqiao__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.598,
+            "radius": 1.828,
+            "triangles": 188,
+            "vertices": 564,
+            "materials": "solid:116 bloom:72",
+            "glb": "singles/guan.lianqiao__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.157,
+          "radius": 0.092,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.lianqiao__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.879,
+          "radius": 1.005,
+          "triangles": 116,
+          "vertices": 348,
+          "materials": "solid:116",
+          "label": "亚成",
+          "glb": "singles/guan.lianqiao__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.598,
+          "radius": 1.828,
+          "triangles": 200,
+          "vertices": 600,
+          "materials": "solid:116 bloom:84",
+          "label": "开花",
+          "glb": "singles/guan.lianqiao__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.598,
+          "radius": 1.828,
+          "triangles": 166,
+          "vertices": 498,
+          "materials": "solid:116 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.lianqiao__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.972,
+          "radius": 0.659,
+          "triangles": 103,
+          "vertices": 309,
+          "materials": "solid:103",
+          "label": "干枯",
+          "glb": "singles/guan.lianqiao__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.huanglu",
+      "name": "黄栌",
+      "latin": "huanglu",
+      "archetype": "shrub",
+      "climate": "temperate",
+      "tags": [
+        "shrub",
+        "ornamental",
+        "autumn_color"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f8f6ee",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 2.459,
+            "radius": 2.518,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:130 bloom:70",
+            "glb": "singles/guan.huanglu__normal__spring.glb"
+          },
+          "summer": {
+            "height": 2.459,
+            "radius": 2.518,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:130 bloom:70",
+            "glb": "singles/guan.huanglu__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 2.459,
+            "radius": 2.518,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:130 bloom:70",
+            "glb": "singles/guan.huanglu__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 2.459,
+            "radius": 2.518,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:130 bloom:70",
+            "glb": "singles/guan.huanglu__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.249,
+          "radius": 0.133,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.huanglu__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 1.352,
+          "radius": 1.385,
+          "triangles": 130,
+          "vertices": 390,
+          "materials": "solid:130",
+          "label": "亚成",
+          "glb": "singles/guan.huanglu__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 2.459,
+          "radius": 2.518,
+          "triangles": 228,
+          "vertices": 684,
+          "materials": "solid:130 bloom:98",
+          "label": "开花",
+          "glb": "singles/guan.huanglu__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 2.459,
+          "radius": 2.518,
+          "triangles": 180,
+          "vertices": 540,
+          "materials": "solid:130 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.huanglu__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 1.155,
+          "radius": 0.879,
+          "triangles": 89,
+          "vertices": 267,
+          "materials": "solid:89",
+          "label": "干枯",
+          "glb": "singles/guan.huanglu__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.zhizi",
+      "name": "栀子",
+      "latin": "zhizi",
+      "archetype": "shrub",
+      "climate": "subtropical",
+      "tags": [
+        "shrub",
+        "flowering",
+        "ornamental",
+        "fragrant"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f8f6ee",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.456,
+            "radius": 1.679,
+            "triangles": 193,
+            "vertices": 579,
+            "materials": "solid:109 bloom:84",
+            "glb": "singles/guan.zhizi__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.456,
+            "radius": 1.679,
+            "triangles": 193,
+            "vertices": 579,
+            "materials": "solid:109 bloom:84",
+            "glb": "singles/guan.zhizi__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.456,
+            "radius": 1.679,
+            "triangles": 193,
+            "vertices": 579,
+            "materials": "solid:109 bloom:84",
+            "glb": "singles/guan.zhizi__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.456,
+            "radius": 1.679,
+            "triangles": 193,
+            "vertices": 579,
+            "materials": "solid:109 bloom:84",
+            "glb": "singles/guan.zhizi__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.15,
+          "radius": 0.086,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.zhizi__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.801,
+          "radius": 0.924,
+          "triangles": 109,
+          "vertices": 327,
+          "materials": "solid:109",
+          "label": "亚成",
+          "glb": "singles/guan.zhizi__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.456,
+          "radius": 1.679,
+          "triangles": 207,
+          "vertices": 621,
+          "materials": "solid:109 bloom:98",
+          "label": "开花",
+          "glb": "singles/guan.zhizi__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.456,
+          "radius": 1.679,
+          "triangles": 159,
+          "vertices": 477,
+          "materials": "solid:109 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.zhizi__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 1.028,
+          "radius": 0.671,
+          "triangles": 89,
+          "vertices": 267,
+          "materials": "solid:89",
+          "label": "干枯",
+          "glb": "singles/guan.zhizi__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.moli",
+      "name": "茉莉",
+      "latin": "moli",
+      "archetype": "shrub",
+      "climate": "subtropical",
+      "tags": [
+        "shrub",
+        "flowering",
+        "ornamental",
+        "fragrant"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f8f6ee",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.314,
+            "radius": 1.362,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:102 bloom:98",
+            "glb": "singles/guan.moli__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.314,
+            "radius": 1.362,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:102 bloom:98",
+            "glb": "singles/guan.moli__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.314,
+            "radius": 1.362,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:102 bloom:98",
+            "glb": "singles/guan.moli__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.314,
+            "radius": 1.362,
+            "triangles": 200,
+            "vertices": 600,
+            "materials": "solid:102 bloom:98",
+            "glb": "singles/guan.moli__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.113,
+          "radius": 0.059,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.moli__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.723,
+          "radius": 0.749,
+          "triangles": 102,
+          "vertices": 306,
+          "materials": "solid:102",
+          "label": "亚成",
+          "glb": "singles/guan.moli__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.314,
+          "radius": 1.362,
+          "triangles": 200,
+          "vertices": 600,
+          "materials": "solid:102 bloom:98",
+          "label": "开花",
+          "glb": "singles/guan.moli__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.314,
+          "radius": 1.362,
+          "triangles": 152,
+          "vertices": 456,
+          "materials": "solid:102 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.moli__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.67,
+          "radius": 0.428,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/guan.moli__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.dujuan",
+      "name": "杜鹃",
+      "latin": "dujuan",
+      "archetype": "shrub",
+      "climate": "subtropical",
+      "tags": [
+        "shrub",
+        "flowering",
+        "ornamental"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#ec9cb4",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.403,
+            "radius": 1.401,
+            "triangles": 221,
+            "vertices": 663,
+            "materials": "solid:109 bloom:112",
+            "glb": "singles/guan.dujuan__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.403,
+            "radius": 1.401,
+            "triangles": 221,
+            "vertices": 663,
+            "materials": "solid:109 bloom:112",
+            "glb": "singles/guan.dujuan__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.403,
+            "radius": 1.401,
+            "triangles": 221,
+            "vertices": 663,
+            "materials": "solid:109 bloom:112",
+            "glb": "singles/guan.dujuan__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.403,
+            "radius": 1.401,
+            "triangles": 221,
+            "vertices": 663,
+            "materials": "solid:109 bloom:112",
+            "glb": "singles/guan.dujuan__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.127,
+          "radius": 0.065,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.dujuan__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.772,
+          "radius": 0.771,
+          "triangles": 109,
+          "vertices": 327,
+          "materials": "solid:109",
+          "label": "亚成",
+          "glb": "singles/guan.dujuan__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.403,
+          "radius": 1.401,
+          "triangles": 207,
+          "vertices": 621,
+          "materials": "solid:109 bloom:98",
+          "label": "开花",
+          "glb": "singles/guan.dujuan__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.403,
+          "radius": 1.401,
+          "triangles": 159,
+          "vertices": 477,
+          "materials": "solid:109 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.dujuan__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.882,
+          "radius": 0.49,
+          "triangles": 96,
+          "vertices": 288,
+          "materials": "solid:96",
+          "label": "干枯",
+          "glb": "singles/guan.dujuan__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.fusang",
+      "name": "扶桑",
+      "latin": "fusang",
+      "archetype": "shrub",
+      "climate": "tropical",
+      "tags": [
+        "shrub",
+        "flowering",
+        "ornamental"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#d0524a",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 2.281,
+            "radius": 2.098,
+            "triangles": 207,
+            "vertices": 621,
+            "materials": "solid:109 bloom:98",
+            "glb": "singles/guan.fusang__normal__spring.glb"
+          },
+          "summer": {
+            "height": 2.281,
+            "radius": 2.098,
+            "triangles": 207,
+            "vertices": 621,
+            "materials": "solid:109 bloom:98",
+            "glb": "singles/guan.fusang__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 2.281,
+            "radius": 2.098,
+            "triangles": 207,
+            "vertices": 621,
+            "materials": "solid:109 bloom:98",
+            "glb": "singles/guan.fusang__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 2.281,
+            "radius": 2.098,
+            "triangles": 207,
+            "vertices": 621,
+            "materials": "solid:109 bloom:98",
+            "glb": "singles/guan.fusang__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.223,
+          "radius": 0.113,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.fusang__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 1.255,
+          "radius": 1.154,
+          "triangles": 109,
+          "vertices": 327,
+          "materials": "solid:109",
+          "label": "亚成",
+          "glb": "singles/guan.fusang__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 2.281,
+          "radius": 2.098,
+          "triangles": 207,
+          "vertices": 621,
+          "materials": "solid:109 bloom:98",
+          "label": "开花",
+          "glb": "singles/guan.fusang__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 2.281,
+          "radius": 2.098,
+          "triangles": 159,
+          "vertices": 477,
+          "materials": "solid:109 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.fusang__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 1.29,
+          "radius": 0.784,
+          "triangles": 96,
+          "vertices": 288,
+          "materials": "solid:96",
+          "label": "干枯",
+          "glb": "singles/guan.fusang__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.xuangouzi",
+      "name": "悬钩子",
+      "latin": "xuangouzi",
+      "archetype": "bramble",
+      "climate": "temperate",
+      "tags": [
+        "shrub",
+        "berry",
+        "thorny",
+        "fruit"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.419,
+            "radius": 1.612,
+            "triangles": 180,
+            "vertices": 540,
+            "materials": "solid:140 fruit:40",
+            "glb": "singles/guan.xuangouzi__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.419,
+            "radius": 1.612,
+            "triangles": 180,
+            "vertices": 540,
+            "materials": "solid:140 fruit:40",
+            "glb": "singles/guan.xuangouzi__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.419,
+            "radius": 1.612,
+            "triangles": 180,
+            "vertices": 540,
+            "materials": "solid:140 fruit:40",
+            "glb": "singles/guan.xuangouzi__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.419,
+            "radius": 1.612,
+            "triangles": 180,
+            "vertices": 540,
+            "materials": "solid:140 fruit:40",
+            "glb": "singles/guan.xuangouzi__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.142,
+          "radius": 0.073,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.xuangouzi__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.79,
+          "radius": 0.887,
+          "triangles": 140,
+          "vertices": 420,
+          "materials": "solid:140",
+          "label": "亚成",
+          "glb": "singles/guan.xuangouzi__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.419,
+          "radius": 1.612,
+          "triangles": 238,
+          "vertices": 714,
+          "materials": "solid:140 bloom:98",
+          "label": "开花",
+          "glb": "singles/guan.xuangouzi__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.419,
+          "radius": 1.612,
+          "triangles": 190,
+          "vertices": 570,
+          "materials": "solid:140 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.xuangouzi__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 1.023,
+          "radius": 0.595,
+          "triangles": 103,
+          "vertices": 309,
+          "materials": "solid:103",
+          "label": "干枯",
+          "glb": "singles/guan.xuangouzi__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.yueju",
+      "name": "越橘",
+      "latin": "yueju",
+      "archetype": "shrub",
+      "climate": "cold",
+      "tags": [
+        "shrub",
+        "berry",
+        "understory",
+        "fruit",
+        "snow"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 0.918,
+            "radius": 1.071,
+            "triangles": 145,
+            "vertices": 435,
+            "materials": "solid:95 fruit:50",
+            "glb": "singles/guan.yueju__normal__spring.glb"
+          },
+          "summer": {
+            "height": 0.918,
+            "radius": 1.071,
+            "triangles": 145,
+            "vertices": 435,
+            "materials": "solid:95 fruit:50",
+            "glb": "singles/guan.yueju__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.086,
+            "radius": 1.401,
+            "triangles": 169,
+            "vertices": 507,
+            "materials": "solid:95 snow:24 fruit:50",
+            "glb": "singles/guan.yueju__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.086,
+            "radius": 1.401,
+            "triangles": 169,
+            "vertices": 507,
+            "materials": "solid:95 snow:24 fruit:50",
+            "glb": "singles/guan.yueju__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.089,
+          "radius": 0.05,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.yueju__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.505,
+          "radius": 0.589,
+          "triangles": 95,
+          "vertices": 285,
+          "materials": "solid:95",
+          "label": "亚成",
+          "glb": "singles/guan.yueju__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 0.918,
+          "radius": 1.071,
+          "triangles": 179,
+          "vertices": 537,
+          "materials": "solid:95 bloom:84",
+          "label": "开花",
+          "glb": "singles/guan.yueju__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 0.918,
+          "radius": 1.071,
+          "triangles": 145,
+          "vertices": 435,
+          "materials": "solid:95 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.yueju__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.929,
+          "radius": 0.311,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/guan.yueju__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "guan.aili",
+      "name": "矮桦",
+      "latin": "aihua",
+      "archetype": "shrub",
+      "climate": "cold",
+      "tags": [
+        "shrub",
+        "tundra",
+        "snow"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 0.851,
+            "radius": 1.315,
+            "triangles": 102,
+            "vertices": 306,
+            "materials": "solid:102",
+            "glb": "singles/guan.aili__normal__spring.glb"
+          },
+          "summer": {
+            "height": 0.851,
+            "radius": 1.315,
+            "triangles": 102,
+            "vertices": 306,
+            "materials": "solid:102",
+            "glb": "singles/guan.aili__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.065,
+            "radius": 1.585,
+            "triangles": 126,
+            "vertices": 378,
+            "materials": "solid:102 snow:24",
+            "glb": "singles/guan.aili__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.065,
+            "radius": 1.585,
+            "triangles": 126,
+            "vertices": 378,
+            "materials": "solid:102 snow:24",
+            "glb": "singles/guan.aili__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.079,
+          "radius": 0.049,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/guan.aili__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.468,
+          "radius": 0.723,
+          "triangles": 102,
+          "vertices": 306,
+          "materials": "solid:102",
+          "label": "亚成",
+          "glb": "singles/guan.aili__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 0.851,
+          "radius": 1.315,
+          "triangles": 186,
+          "vertices": 558,
+          "materials": "solid:102 bloom:84",
+          "label": "开花",
+          "glb": "singles/guan.aili__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 0.851,
+          "radius": 1.315,
+          "triangles": 152,
+          "vertices": 456,
+          "materials": "solid:102 fruit:50",
+          "label": "结实",
+          "glb": "singles/guan.aili__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.872,
+          "radius": 0.297,
+          "triangles": 94,
+          "vertices": 282,
+          "materials": "solid:94",
+          "label": "干枯",
+          "glb": "singles/guan.aili__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "cao.yangmao",
+      "name": "羊茅草",
+      "latin": "yangmaocao",
+      "archetype": "grassClump",
+      "climate": "temperate",
+      "tags": [
+        "ground"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#b6a35e",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 0.568,
+            "radius": 0.326,
+            "triangles": 42,
+            "vertices": 98,
+            "materials": "solid:42",
+            "glb": "singles/cao.yangmao__normal__spring.glb"
+          },
+          "summer": {
+            "height": 0.568,
+            "radius": 0.326,
+            "triangles": 42,
+            "vertices": 98,
+            "materials": "solid:42",
+            "glb": "singles/cao.yangmao__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 0.568,
+            "radius": 0.326,
+            "triangles": 42,
+            "vertices": 98,
+            "materials": "solid:42",
+            "glb": "singles/cao.yangmao__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 0.568,
+            "radius": 0.326,
+            "triangles": 42,
+            "vertices": 98,
+            "materials": "solid:42",
+            "glb": "singles/cao.yangmao__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.079,
+          "radius": 0.046,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/cao.yangmao__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.312,
+          "radius": 0.179,
+          "triangles": 42,
+          "vertices": 98,
+          "materials": "solid:42",
+          "label": "亚成",
+          "glb": "singles/cao.yangmao__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 0.581,
+          "radius": 0.345,
+          "triangles": 98,
+          "vertices": 266,
+          "materials": "solid:42 bloom:56",
+          "label": "开花",
+          "glb": "singles/cao.yangmao__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 0.74,
+          "radius": 0.443,
+          "triangles": 142,
+          "vertices": 398,
+          "materials": "solid:42 fruit:100",
+          "label": "结实",
+          "glb": "singles/cao.yangmao__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.883,
+          "radius": 0.261,
+          "triangles": 94,
+          "vertices": 282,
+          "materials": "solid:94",
+          "label": "干枯",
+          "glb": "singles/cao.yangmao__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "cao.jue",
+      "name": "蕨",
+      "latin": "jue",
+      "archetype": "grassClump",
+      "climate": "temperate",
+      "tags": [
+        "ground",
+        "understory"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#b6a35e",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.137,
+            "radius": 0.574,
+            "triangles": 36,
+            "vertices": 84,
+            "materials": "solid:36",
+            "glb": "singles/cao.jue__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.137,
+            "radius": 0.574,
+            "triangles": 36,
+            "vertices": 84,
+            "materials": "solid:36",
+            "glb": "singles/cao.jue__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.137,
+            "radius": 0.574,
+            "triangles": 36,
+            "vertices": 84,
+            "materials": "solid:36",
+            "glb": "singles/cao.jue__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.137,
+            "radius": 0.574,
+            "triangles": 36,
+            "vertices": 84,
+            "materials": "solid:36",
+            "glb": "singles/cao.jue__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.097,
+          "radius": 0.057,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/cao.jue__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.625,
+          "radius": 0.316,
+          "triangles": 36,
+          "vertices": 84,
+          "materials": "solid:36",
+          "label": "亚成",
+          "glb": "singles/cao.jue__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.137,
+          "radius": 0.574,
+          "triangles": 36,
+          "vertices": 84,
+          "materials": "solid:36",
+          "label": "开花",
+          "renderedAs": "normal",
+          "glb": "singles/cao.jue__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.137,
+          "radius": 0.574,
+          "triangles": 36,
+          "vertices": 84,
+          "materials": "solid:36",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/cao.jue__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.852,
+          "radius": 0.364,
+          "triangles": 94,
+          "vertices": 282,
+          "materials": "solid:94",
+          "label": "干枯",
+          "glb": "singles/cao.jue__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "cao.luwei",
+      "name": "芦苇",
+      "latin": "luwei",
+      "archetype": "grassClump",
+      "climate": "subtropical",
+      "tags": [
+        "ground",
+        "riparian"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#8f8746",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 2.412,
+            "radius": 0.588,
+            "triangles": 72,
+            "vertices": 184,
+            "materials": "solid:48 bloom:24",
+            "glb": "singles/cao.luwei__normal__spring.glb"
+          },
+          "summer": {
+            "height": 2.412,
+            "radius": 0.588,
+            "triangles": 72,
+            "vertices": 184,
+            "materials": "solid:48 bloom:24",
+            "glb": "singles/cao.luwei__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 2.412,
+            "radius": 0.588,
+            "triangles": 72,
+            "vertices": 184,
+            "materials": "solid:48 bloom:24",
+            "glb": "singles/cao.luwei__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 2.412,
+            "radius": 0.588,
+            "triangles": 72,
+            "vertices": 184,
+            "materials": "solid:48 bloom:24",
+            "glb": "singles/cao.luwei__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.235,
+          "radius": 0.131,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/cao.luwei__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 1.327,
+          "radius": 0.309,
+          "triangles": 48,
+          "vertices": 112,
+          "materials": "solid:48",
+          "label": "亚成",
+          "glb": "singles/cao.luwei__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 2.412,
+          "radius": 0.598,
+          "triangles": 104,
+          "vertices": 280,
+          "materials": "solid:48 bloom:56",
+          "label": "开花",
+          "glb": "singles/cao.luwei__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 2.685,
+          "radius": 0.667,
+          "triangles": 148,
+          "vertices": 412,
+          "materials": "solid:48 fruit:100",
+          "label": "结实",
+          "glb": "singles/cao.luwei__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 1.062,
+          "radius": 0.905,
+          "triangles": 80,
+          "vertices": 240,
+          "materials": "solid:80",
+          "label": "干枯",
+          "glb": "singles/cao.luwei__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "cao.dixue",
+      "name": "雪线地衣",
+      "latin": "dixuediyi",
+      "archetype": "succulent",
+      "climate": "cold",
+      "tags": [
+        "ground",
+        "tundra",
+        "snow"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 0.451,
+            "radius": 0.465,
+            "triangles": 87,
+            "vertices": 261,
+            "materials": "solid:87",
+            "glb": "singles/cao.dixue__normal__spring.glb"
+          },
+          "summer": {
+            "height": 0.451,
+            "radius": 0.465,
+            "triangles": 87,
+            "vertices": 261,
+            "materials": "solid:87",
+            "glb": "singles/cao.dixue__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 0.451,
+            "radius": 0.465,
+            "triangles": 87,
+            "vertices": 261,
+            "materials": "solid:87",
+            "glb": "singles/cao.dixue__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 0.451,
+            "radius": 0.465,
+            "triangles": 87,
+            "vertices": 261,
+            "materials": "solid:87",
+            "glb": "singles/cao.dixue__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.084,
+          "radius": 0.042,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/cao.dixue__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.275,
+          "radius": 0.255,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "亚成",
+          "glb": "singles/cao.dixue__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 0.451,
+          "radius": 0.465,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "开花",
+          "renderedAs": "normal",
+          "glb": "singles/cao.dixue__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 0.451,
+          "radius": 0.465,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/cao.dixue__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.921,
+          "radius": 0.304,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/cao.dixue__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "cao.shamo",
+      "name": "荒漠多肉",
+      "latin": "shamoduorou",
+      "archetype": "succulent",
+      "climate": "tropical",
+      "tags": [
+        "shrub",
+        "arid",
+        "succulent"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f2c955",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.424,
+            "radius": 0.899,
+            "triangles": 297,
+            "vertices": 891,
+            "materials": "solid:241 bloom:56",
+            "glb": "singles/cao.shamo__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.424,
+            "radius": 0.899,
+            "triangles": 297,
+            "vertices": 891,
+            "materials": "solid:241 bloom:56",
+            "glb": "singles/cao.shamo__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.424,
+            "radius": 0.899,
+            "triangles": 297,
+            "vertices": 891,
+            "materials": "solid:241 bloom:56",
+            "glb": "singles/cao.shamo__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.424,
+            "radius": 0.899,
+            "triangles": 297,
+            "vertices": 891,
+            "materials": "solid:241 bloom:56",
+            "glb": "singles/cao.shamo__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.142,
+          "radius": 0.069,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/cao.shamo__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.681,
+          "radius": 0.494,
+          "triangles": 241,
+          "vertices": 723,
+          "materials": "solid:241",
+          "label": "亚成",
+          "glb": "singles/cao.shamo__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.544,
+          "radius": 0.899,
+          "triangles": 339,
+          "vertices": 1017,
+          "materials": "solid:241 bloom:98",
+          "label": "开花",
+          "glb": "singles/cao.shamo__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.188,
+          "radius": 0.899,
+          "triangles": 291,
+          "vertices": 873,
+          "materials": "solid:241 fruit:50",
+          "label": "结实",
+          "glb": "singles/cao.shamo__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.957,
+          "radius": 0.541,
+          "triangles": 89,
+          "vertices": 267,
+          "materials": "solid:89",
+          "label": "干枯",
+          "glb": "singles/cao.shamo__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "cao.hanji",
+      "name": "旱棘丛",
+      "latin": "hanjicong",
+      "archetype": "bramble",
+      "climate": "subtropical",
+      "tags": [
+        "shrub",
+        "arid",
+        "thorny"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f8f6ee",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.137,
+            "radius": 1.363,
+            "triangles": 176,
+            "vertices": 528,
+            "materials": "solid:106 bloom:70",
+            "glb": "singles/cao.hanji__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.137,
+            "radius": 1.363,
+            "triangles": 176,
+            "vertices": 528,
+            "materials": "solid:106 bloom:70",
+            "glb": "singles/cao.hanji__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.137,
+            "radius": 1.363,
+            "triangles": 176,
+            "vertices": 528,
+            "materials": "solid:106 bloom:70",
+            "glb": "singles/cao.hanji__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.137,
+            "radius": 1.363,
+            "triangles": 176,
+            "vertices": 528,
+            "materials": "solid:106 bloom:70",
+            "glb": "singles/cao.hanji__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.115,
+          "radius": 0.066,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/cao.hanji__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.634,
+          "radius": 0.75,
+          "triangles": 106,
+          "vertices": 318,
+          "materials": "solid:106",
+          "label": "亚成",
+          "glb": "singles/cao.hanji__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.137,
+          "radius": 1.363,
+          "triangles": 204,
+          "vertices": 612,
+          "materials": "solid:106 bloom:98",
+          "label": "开花",
+          "glb": "singles/cao.hanji__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.137,
+          "radius": 1.363,
+          "triangles": 156,
+          "vertices": 468,
+          "materials": "solid:106 fruit:50",
+          "label": "结实",
+          "glb": "singles/cao.hanji__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.897,
+          "radius": 0.557,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/cao.hanji__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shui.pucao",
+      "name": "蒲草",
+      "latin": "pucao",
+      "archetype": "grassClump",
+      "climate": "subtropical",
+      "tags": [
+        "water",
+        "wet",
+        "ground"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#8b7a4f",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 2.106,
+            "radius": 0.41,
+            "triangles": 66,
+            "vertices": 170,
+            "materials": "solid:42 bloom:24",
+            "glb": "singles/shui.pucao__normal__spring.glb"
+          },
+          "summer": {
+            "height": 2.106,
+            "radius": 0.41,
+            "triangles": 66,
+            "vertices": 170,
+            "materials": "solid:42 bloom:24",
+            "glb": "singles/shui.pucao__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 2.106,
+            "radius": 0.41,
+            "triangles": 66,
+            "vertices": 170,
+            "materials": "solid:42 bloom:24",
+            "glb": "singles/shui.pucao__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 2.106,
+            "radius": 0.41,
+            "triangles": 66,
+            "vertices": 170,
+            "materials": "solid:42 bloom:24",
+            "glb": "singles/shui.pucao__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.199,
+          "radius": 0.115,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shui.pucao__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 1.158,
+          "radius": 0.225,
+          "triangles": 42,
+          "vertices": 98,
+          "materials": "solid:42",
+          "label": "亚成",
+          "glb": "singles/shui.pucao__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 2.106,
+          "radius": 0.41,
+          "triangles": 98,
+          "vertices": 266,
+          "materials": "solid:42 bloom:56",
+          "label": "开花",
+          "glb": "singles/shui.pucao__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 2.356,
+          "radius": 0.41,
+          "triangles": 142,
+          "vertices": 398,
+          "materials": "solid:42 fruit:100",
+          "label": "结实",
+          "glb": "singles/shui.pucao__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.96,
+          "radius": 0.749,
+          "triangles": 101,
+          "vertices": 303,
+          "materials": "solid:101",
+          "label": "干枯",
+          "glb": "singles/shui.pucao__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "shui.lian",
+      "name": "莲",
+      "latin": "lian",
+      "archetype": "succulent",
+      "climate": "subtropical",
+      "tags": [
+        "water",
+        "wet",
+        "flowering"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f0b0c4",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.299,
+            "radius": 0.584,
+            "triangles": 197,
+            "vertices": 591,
+            "materials": "solid:87 bloom:80 fruit:30",
+            "glb": "singles/shui.lian__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.299,
+            "radius": 0.584,
+            "triangles": 197,
+            "vertices": 591,
+            "materials": "solid:87 bloom:80 fruit:30",
+            "glb": "singles/shui.lian__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.299,
+            "radius": 0.584,
+            "triangles": 197,
+            "vertices": 591,
+            "materials": "solid:87 bloom:80 fruit:30",
+            "glb": "singles/shui.lian__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.299,
+            "radius": 0.584,
+            "triangles": 197,
+            "vertices": 591,
+            "materials": "solid:87 bloom:80 fruit:30",
+            "glb": "singles/shui.lian__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.117,
+          "radius": 0.068,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/shui.lian__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.533,
+          "radius": 0.305,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "亚成",
+          "glb": "singles/shui.lian__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.334,
+          "radius": 0.664,
+          "triangles": 227,
+          "vertices": 681,
+          "materials": "solid:87 bloom:140",
+          "label": "开花",
+          "glb": "singles/shui.lian__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 0.947,
+          "radius": 0.555,
+          "triangles": 137,
+          "vertices": 411,
+          "materials": "solid:87 fruit:50",
+          "label": "结实",
+          "glb": "singles/shui.lian__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.872,
+          "radius": 0.425,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/shui.lian__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "nong.dao",
+      "name": "水稻",
+      "latin": "shuidao",
+      "archetype": "grassClump",
+      "climate": "subtropical",
+      "tags": [
+        "crop",
+        "staple",
+        "ground",
+        "farm",
+        "wet"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#e6d9a8",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.071,
+            "radius": 0.46,
+            "triangles": 132,
+            "vertices": 364,
+            "materials": "solid:48 bloom:24 fruit:60",
+            "glb": "singles/nong.dao__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.071,
+            "radius": 0.46,
+            "triangles": 132,
+            "vertices": 364,
+            "materials": "solid:48 bloom:24 fruit:60",
+            "glb": "singles/nong.dao__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.071,
+            "radius": 0.46,
+            "triangles": 132,
+            "vertices": 364,
+            "materials": "solid:48 bloom:24 fruit:60",
+            "glb": "singles/nong.dao__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.071,
+            "radius": 0.46,
+            "triangles": 132,
+            "vertices": 364,
+            "materials": "solid:48 bloom:24 fruit:60",
+            "glb": "singles/nong.dao__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.088,
+          "radius": 0.047,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/nong.dao__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.56,
+          "radius": 0.204,
+          "triangles": 48,
+          "vertices": 112,
+          "materials": "solid:48",
+          "label": "亚成",
+          "glb": "singles/nong.dao__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 1.018,
+          "radius": 0.372,
+          "triangles": 104,
+          "vertices": 280,
+          "materials": "solid:48 bloom:56",
+          "label": "开花",
+          "glb": "singles/nong.dao__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.071,
+          "radius": 0.46,
+          "triangles": 148,
+          "vertices": 412,
+          "materials": "solid:48 fruit:100",
+          "label": "结实",
+          "glb": "singles/nong.dao__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.744,
+          "radius": 0.356,
+          "triangles": 108,
+          "vertices": 324,
+          "materials": "solid:108",
+          "label": "干枯",
+          "glb": "singles/nong.dao__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "nong.mai",
+      "name": "小麦",
+      "latin": "xiaomai",
+      "archetype": "grassClump",
+      "climate": "temperate",
+      "tags": [
+        "crop",
+        "staple",
+        "ground",
+        "farm"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#e6d9a8",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 1.085,
+            "radius": 0.365,
+            "triangles": 120,
+            "vertices": 336,
+            "materials": "solid:36 bloom:24 fruit:60",
+            "glb": "singles/nong.mai__normal__spring.glb"
+          },
+          "summer": {
+            "height": 1.085,
+            "radius": 0.365,
+            "triangles": 120,
+            "vertices": 336,
+            "materials": "solid:36 bloom:24 fruit:60",
+            "glb": "singles/nong.mai__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 1.085,
+            "radius": 0.365,
+            "triangles": 120,
+            "vertices": 336,
+            "materials": "solid:36 bloom:24 fruit:60",
+            "glb": "singles/nong.mai__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 1.085,
+            "radius": 0.365,
+            "triangles": 120,
+            "vertices": 336,
+            "materials": "solid:36 bloom:24 fruit:60",
+            "glb": "singles/nong.mai__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.084,
+          "radius": 0.041,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/nong.mai__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.492,
+          "radius": 0.135,
+          "triangles": 36,
+          "vertices": 84,
+          "materials": "solid:36",
+          "label": "亚成",
+          "glb": "singles/nong.mai__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 0.894,
+          "radius": 0.306,
+          "triangles": 92,
+          "vertices": 252,
+          "materials": "solid:36 bloom:56",
+          "label": "开花",
+          "glb": "singles/nong.mai__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 1.085,
+          "radius": 0.365,
+          "triangles": 136,
+          "vertices": 384,
+          "materials": "solid:36 fruit:100",
+          "label": "结实",
+          "glb": "singles/nong.mai__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.781,
+          "radius": 0.348,
+          "triangles": 94,
+          "vertices": 282,
+          "materials": "solid:94",
+          "label": "干枯",
+          "glb": "singles/nong.mai__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "nong.su",
+      "name": "粟",
+      "latin": "su",
+      "archetype": "grassClump",
+      "climate": "temperate",
+      "tags": [
+        "crop",
+        "staple",
+        "ground",
+        "farm",
+        "arid"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#e6d9a8",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 0.989,
+            "radius": 0.277,
+            "triangles": 146,
+            "vertices": 410,
+            "materials": "solid:42 bloom:24 fruit:80",
+            "glb": "singles/nong.su__normal__spring.glb"
+          },
+          "summer": {
+            "height": 0.989,
+            "radius": 0.277,
+            "triangles": 146,
+            "vertices": 410,
+            "materials": "solid:42 bloom:24 fruit:80",
+            "glb": "singles/nong.su__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 0.989,
+            "radius": 0.277,
+            "triangles": 146,
+            "vertices": 410,
+            "materials": "solid:42 bloom:24 fruit:80",
+            "glb": "singles/nong.su__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 0.989,
+            "radius": 0.277,
+            "triangles": 146,
+            "vertices": 410,
+            "materials": "solid:42 bloom:24 fruit:80",
+            "glb": "singles/nong.su__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.094,
+          "radius": 0.055,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/nong.su__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.544,
+          "radius": 0.152,
+          "triangles": 42,
+          "vertices": 98,
+          "materials": "solid:42",
+          "label": "亚成",
+          "glb": "singles/nong.su__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 0.989,
+          "radius": 0.277,
+          "triangles": 98,
+          "vertices": 266,
+          "materials": "solid:42 bloom:56",
+          "label": "开花",
+          "glb": "singles/nong.su__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 0.989,
+          "radius": 0.277,
+          "triangles": 142,
+          "vertices": 398,
+          "materials": "solid:42 fruit:100",
+          "label": "结实",
+          "glb": "singles/nong.su__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.77,
+          "radius": 0.399,
+          "triangles": 101,
+          "vertices": 303,
+          "materials": "solid:101",
+          "label": "干枯",
+          "glb": "singles/nong.su__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "nong.da",
+      "name": "大豆",
+      "latin": "dadou",
+      "archetype": "shrub",
+      "climate": "temperate",
+      "tags": [
+        "crop",
+        "oil_crop",
+        "farm",
+        "fruit"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f8f6ee",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 0.966,
+            "radius": 0.843,
+            "triangles": 222,
+            "vertices": 666,
+            "materials": "solid:102 bloom:70 fruit:50",
+            "glb": "singles/nong.da__normal__spring.glb"
+          },
+          "summer": {
+            "height": 0.966,
+            "radius": 0.843,
+            "triangles": 222,
+            "vertices": 666,
+            "materials": "solid:102 bloom:70 fruit:50",
+            "glb": "singles/nong.da__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 0.966,
+            "radius": 0.843,
+            "triangles": 222,
+            "vertices": 666,
+            "materials": "solid:102 bloom:70 fruit:50",
+            "glb": "singles/nong.da__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 0.966,
+            "radius": 0.843,
+            "triangles": 222,
+            "vertices": 666,
+            "materials": "solid:102 bloom:70 fruit:50",
+            "glb": "singles/nong.da__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.086,
+          "radius": 0.05,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/nong.da__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.531,
+          "radius": 0.464,
+          "triangles": 102,
+          "vertices": 306,
+          "materials": "solid:102",
+          "label": "亚成",
+          "glb": "singles/nong.da__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 0.966,
+          "radius": 0.843,
+          "triangles": 200,
+          "vertices": 600,
+          "materials": "solid:102 bloom:98",
+          "label": "开花",
+          "glb": "singles/nong.da__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 0.966,
+          "radius": 0.843,
+          "triangles": 152,
+          "vertices": 456,
+          "materials": "solid:102 fruit:50",
+          "label": "结实",
+          "glb": "singles/nong.da__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.938,
+          "radius": 0.326,
+          "triangles": 96,
+          "vertices": 288,
+          "materials": "solid:96",
+          "label": "干枯",
+          "glb": "singles/nong.da__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "nong.sang",
+      "name": "桑树",
+      "latin": "sangshu",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "tags": [
+        "tree",
+        "crop",
+        "cash_crop",
+        "fruit",
+        "orchard"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#a8456b",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 6.333,
+            "radius": 4.88,
+            "triangles": 377,
+            "vertices": 1131,
+            "materials": "solid:233 bloom:84 fruit:60",
+            "glb": "singles/nong.sang__normal__spring.glb"
+          },
+          "summer": {
+            "height": 6.333,
+            "radius": 4.88,
+            "triangles": 377,
+            "vertices": 1131,
+            "materials": "solid:233 bloom:84 fruit:60",
+            "glb": "singles/nong.sang__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 6.333,
+            "radius": 4.88,
+            "triangles": 377,
+            "vertices": 1131,
+            "materials": "solid:233 bloom:84 fruit:60",
+            "glb": "singles/nong.sang__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 6.333,
+            "radius": 4.88,
+            "triangles": 377,
+            "vertices": 1131,
+            "materials": "solid:233 bloom:84 fruit:60",
+            "glb": "singles/nong.sang__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.67,
+          "radius": 0.363,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/nong.sang__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 3.483,
+          "radius": 2.684,
+          "triangles": 233,
+          "vertices": 699,
+          "materials": "solid:233",
+          "label": "亚成",
+          "glb": "singles/nong.sang__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 6.333,
+          "radius": 4.88,
+          "triangles": 331,
+          "vertices": 993,
+          "materials": "solid:233 bloom:98",
+          "label": "开花",
+          "glb": "singles/nong.sang__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 6.333,
+          "radius": 4.88,
+          "triangles": 283,
+          "vertices": 849,
+          "materials": "solid:233 fruit:50",
+          "label": "结实",
+          "glb": "singles/nong.sang__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 2.253,
+          "radius": 2.686,
+          "triangles": 70,
+          "vertices": 210,
+          "materials": "solid:70",
+          "label": "干枯",
+          "glb": "singles/nong.sang__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "hua.mei",
+      "name": "梅",
+      "latin": "mei",
+      "archetype": "blossomTree",
+      "climate": "temperate",
+      "tags": [
+        "ornamental",
+        "flowering",
+        "shrub",
+        "zhongguo_sijunzi"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f0b8cb",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 2.419,
+            "radius": 2.082,
+            "triangles": 349,
+            "vertices": 1047,
+            "materials": "solid:111 bloom:238",
+            "glb": "singles/hua.mei__normal__spring.glb"
+          },
+          "summer": {
+            "height": 2.419,
+            "radius": 2.082,
+            "triangles": 349,
+            "vertices": 1047,
+            "materials": "solid:111 bloom:238",
+            "glb": "singles/hua.mei__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 2.931,
+            "radius": 2.082,
+            "triangles": 355,
+            "vertices": 1065,
+            "materials": "solid:111 snow:6 bloom:238",
+            "glb": "singles/hua.mei__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 2.931,
+            "radius": 2.082,
+            "triangles": 355,
+            "vertices": 1065,
+            "materials": "solid:111 snow:6 bloom:238",
+            "glb": "singles/hua.mei__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.349,
+          "radius": 0.201,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/hua.mei__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 1.224,
+          "radius": 1.145,
+          "triangles": 111,
+          "vertices": 333,
+          "materials": "solid:111",
+          "label": "亚成",
+          "glb": "singles/hua.mei__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 2.419,
+          "radius": 2.082,
+          "triangles": 363,
+          "vertices": 1089,
+          "materials": "solid:111 bloom:252",
+          "label": "开花",
+          "glb": "singles/hua.mei__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 2.419,
+          "radius": 2.082,
+          "triangles": 349,
+          "vertices": 1047,
+          "materials": "solid:111 bloom:238",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/hua.mei__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 1.733,
+          "radius": 1.514,
+          "triangles": 101,
+          "vertices": 303,
+          "materials": "solid:101",
+          "label": "干枯",
+          "glb": "singles/hua.mei__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "hua.lan",
+      "name": "兰",
+      "latin": "lan",
+      "archetype": "orchid",
+      "climate": "subtropical",
+      "tags": [
+        "ornamental",
+        "flowering",
+        "ground",
+        "zhongguo_sijunzi"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#d7c078",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 0.787,
+            "radius": 0.766,
+            "triangles": 130,
+            "vertices": 390,
+            "materials": "solid:50 bloom:80",
+            "glb": "singles/hua.lan__normal__spring.glb"
+          },
+          "summer": {
+            "height": 0.787,
+            "radius": 0.766,
+            "triangles": 130,
+            "vertices": 390,
+            "materials": "solid:50 bloom:80",
+            "glb": "singles/hua.lan__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 0.787,
+            "radius": 0.766,
+            "triangles": 130,
+            "vertices": 390,
+            "materials": "solid:50 bloom:80",
+            "glb": "singles/hua.lan__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 0.787,
+            "radius": 0.766,
+            "triangles": 130,
+            "vertices": 390,
+            "materials": "solid:50 bloom:80",
+            "glb": "singles/hua.lan__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.079,
+          "radius": 0.047,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/hua.lan__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.398,
+          "radius": 0.421,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "亚成",
+          "glb": "singles/hua.lan__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 0.787,
+          "radius": 0.766,
+          "triangles": 162,
+          "vertices": 486,
+          "materials": "solid:50 bloom:112",
+          "label": "开花",
+          "glb": "singles/hua.lan__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 0.787,
+          "radius": 0.766,
+          "triangles": 130,
+          "vertices": 390,
+          "materials": "solid:50 bloom:80",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/hua.lan__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.941,
+          "radius": 0.296,
+          "triangles": 101,
+          "vertices": 303,
+          "materials": "solid:101",
+          "label": "干枯",
+          "glb": "singles/hua.lan__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "hua.zhu",
+      "name": "庭竹",
+      "latin": "tingzhu",
+      "archetype": "bamboo",
+      "climate": "subtropical",
+      "tags": [
+        "ornamental",
+        "bamboo",
+        "zhongguo_sijunzi"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#f8f6ee",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 5.798,
+            "radius": 1.229,
+            "triangles": 690,
+            "vertices": 2070,
+            "materials": "solid:670 bloom:20",
+            "glb": "singles/hua.zhu__normal__spring.glb"
+          },
+          "summer": {
+            "height": 5.798,
+            "radius": 1.229,
+            "triangles": 690,
+            "vertices": 2070,
+            "materials": "solid:670 bloom:20",
+            "glb": "singles/hua.zhu__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 5.798,
+            "radius": 1.229,
+            "triangles": 696,
+            "vertices": 2088,
+            "materials": "solid:670 snow:6 bloom:20",
+            "glb": "singles/hua.zhu__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 5.798,
+            "radius": 1.229,
+            "triangles": 696,
+            "vertices": 2088,
+            "materials": "solid:670 snow:6 bloom:20",
+            "glb": "singles/hua.zhu__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.407,
+          "radius": 0.23,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/hua.zhu__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 3.022,
+          "radius": 0.676,
+          "triangles": 670,
+          "vertices": 2010,
+          "materials": "solid:670",
+          "label": "亚成",
+          "glb": "singles/hua.zhu__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 5.826,
+          "radius": 1.456,
+          "triangles": 740,
+          "vertices": 2220,
+          "materials": "solid:670 bloom:70",
+          "label": "开花",
+          "glb": "singles/hua.zhu__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 5.798,
+          "radius": 1.229,
+          "triangles": 690,
+          "vertices": 2070,
+          "materials": "solid:670 bloom:20",
+          "label": "结实",
+          "renderedAs": "normal",
+          "glb": "singles/hua.zhu__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 1.968,
+          "radius": 2.336,
+          "triangles": 87,
+          "vertices": 261,
+          "materials": "solid:87",
+          "label": "干枯",
+          "glb": "singles/hua.zhu__withered__<season>.glb"
+        }
+      }
+    },
+    {
+      "id": "hua.ju",
+      "name": "菊",
+      "latin": "ju",
+      "archetype": "shrub",
+      "climate": "temperate",
+      "tags": [
+        "ornamental",
+        "flowering",
+        "ground",
+        "zhongguo_sijunzi"
+      ],
+      "states": [
+        "planted",
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "bloomColor": "#e6c352",
+      "geometries": {
+        "normal": {
+          "spring": {
+            "height": 0.861,
+            "radius": 0.769,
+            "triangles": 253,
+            "vertices": 759,
+            "materials": "solid:109 bloom:144",
+            "glb": "singles/hua.ju__normal__spring.glb"
+          },
+          "summer": {
+            "height": 0.861,
+            "radius": 0.769,
+            "triangles": 253,
+            "vertices": 759,
+            "materials": "solid:109 bloom:144",
+            "glb": "singles/hua.ju__normal__summer.glb"
+          },
+          "autumn": {
+            "height": 0.861,
+            "radius": 0.769,
+            "triangles": 253,
+            "vertices": 759,
+            "materials": "solid:109 bloom:144",
+            "glb": "singles/hua.ju__normal__autumn.glb"
+          },
+          "winter": {
+            "height": 0.861,
+            "radius": 0.769,
+            "triangles": 253,
+            "vertices": 759,
+            "materials": "solid:109 bloom:144",
+            "glb": "singles/hua.ju__normal__winter.glb"
+          }
+        },
+        "seedling": {
+          "height": 0.085,
+          "radius": 0.048,
+          "triangles": 50,
+          "vertices": 150,
+          "materials": "solid:50",
+          "label": "幼苗",
+          "glb": "singles/hua.ju__seedling__<season>.glb"
+        },
+        "subadult": {
+          "height": 0.471,
+          "radius": 0.421,
+          "triangles": 109,
+          "vertices": 327,
+          "materials": "solid:109",
+          "label": "亚成",
+          "glb": "singles/hua.ju__subadult__<season>.glb"
+        },
+        "flowering": {
+          "height": 0.861,
+          "radius": 0.766,
+          "triangles": 277,
+          "vertices": 831,
+          "materials": "solid:109 bloom:168",
+          "label": "开花",
+          "glb": "singles/hua.ju__flowering__<season>.glb"
+        },
+        "fruiting": {
+          "height": 0.856,
+          "radius": 0.766,
+          "triangles": 159,
+          "vertices": 477,
+          "materials": "solid:109 fruit:50",
+          "label": "结实",
+          "glb": "singles/hua.ju__fruiting__<season>.glb"
+        },
+        "withered": {
+          "height": 0.932,
+          "radius": 0.299,
+          "triangles": 96,
+          "vertices": 288,
+          "materials": "solid:96",
+          "label": "干枯",
+          "glb": "singles/hua.ju__withered__<season>.glb"
+        }
+      }
+    }
+  ]
+}

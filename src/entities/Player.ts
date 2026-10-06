@@ -1,12 +1,4 @@
-/**
- * 玩家（观景模式）：行走 / 跳跃 / 飞行 / 游泳，与连续三角地表做脚底碰撞。
- *
- * 操作：
- *  - 方向键（或 WASD）移动，鼠标转视角（点击画面锁定鼠标）
- *  - 单击空格：跳跃；双击空格：切换浮空（飞行）
- *  - Shift：疾跑 / 加速飞行
- *  - 飞行时：按住空格上升，Ctrl 下降（避免 Ctrl+W 误关窗口）
- */
+/** 玩家（观景模式） */
 import type { Input } from '../core/Input';
 import { WORLD_MAX_Y, WORLD_MIN_Y } from '../core/config';
 import type { World } from '../systems/world/World';
@@ -133,9 +125,9 @@ export class Player {
     return probeY < this.world.getWaterLevel(this.x, this.z) && this.world.getHeight(this.x, this.z) <= probeY;
   }
 
-  // ------------------------------------------------------------------
+  // -----------
   // 碰撞
-  // ------------------------------------------------------------------
+  // -----------
 
   /** 脚底矩形与可见三角面的最高交点。 */
   private maxGroundUnder(x: number, z: number): number {
@@ -193,7 +185,7 @@ export class Player {
       }
       return;
     }
-    // 自动上台阶（观景模式，方便用方向键在起伏地形上行走）
+    // 自动上台阶（观景模式
     const rise = ground - this.y;
     if ((wasGrounded || this.onGround || this.inWater || this.flying) && rise <= STEP_HEIGHT) {
       this.x = nx;

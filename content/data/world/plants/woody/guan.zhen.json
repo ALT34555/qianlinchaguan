@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"guan.zhen","archetype":"shrub","climate":"temperate","name":"榛丛","latin":"zhencong","seed":501,"tags":["shrub","understory","fruit"],"params":{"height":1.8,"canopy":1.05,"blobs":4,"petals":4,"fruitCount":3,"stems":3},"palette":{"foliage":"foliage","foliageDark":"foliageDark","canopy":"canopy","fruit":"fruit"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"guan.zhen@seedling","state":"seedling"},
+    {"id":"guan.zhen@subadult","state":"subadult"},
+    {"id":"guan.zhen@flowering","state":"flowering"},
+    {"id":"guan.zhen@fruiting","state":"fruiting"},
+    {"id":"guan.zhen@withered","state":"withered"}
+  ]
+}
