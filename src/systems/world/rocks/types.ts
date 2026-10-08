@@ -10,22 +10,22 @@ export type RockMaterialFamily =
   | 'metamorphic'
   /** 松散堆积物 */
   | 'clastic'
-  /** 冰：冰壳、蓝冰 —— 半透明观感，冷色 */
+  /** 冰材质冷色 */
   | 'ice';
 
 export const ROCK_MATERIAL_FAMILIES: readonly RockMaterialFamily[] = [
   'igneous', 'sedimentary', 'metamorphic', 'clastic', 'ice',
 ];
 
-/** 岩石形态档：描述呈现方式，不是生命周期 */
+/** 岩石形态档定义 */
 export type RockForm =
-  /** 露头：完整露出地表，正常尺寸（默认档） */
+  /** 露头形态（默认） */
   | 'outcrop'
-  /** 半埋：整体下沉、横向放大，像从土里长出来的一角 */
+  /** 半埋沉降形态 */
   | 'buried'
-  /** 叠置：再叠一块小石（组合），有主次关系 */
+  /** 叠置双石组合形态 */
   | 'stacked'
-  /** 覆被：朝上面大面积盖住苔藓 / 积雪 / 冰 */
+  /** 表面覆被形态 */
   | 'crusted';
 
 export const ROCK_FORMS: readonly RockForm[] = ['outcrop', 'buried', 'stacked', 'crusted'];
@@ -48,11 +48,11 @@ export const SEASONS: readonly Season[] = ['spring', 'summer', 'autumn', 'winter
 /** 色板键 */
 export type RockPaletteKey =
   // ---- 通用 ----
-  /** 通用石头：与 blocks.json 的石头方块同色 */
+  /** 通用石头方块同色 */
   | 'stone'
   /** 基岩色（深，用于裂隙内部与叠置阴影） */
   | 'bedrock'
-  /** 风化土壳 / 贴地的土色（半埋档的"土"） */
+  /** 风化贴地土色 */
   | 'soil'
   // ---- 火成岩 ----
   | 'granite'
@@ -107,7 +107,7 @@ export type RockMaterial = 'solid' | 'moss' | 'snow' | 'ice';
 
 export const ROCK_MATERIALS: readonly RockMaterial[] = ['solid', 'moss', 'snow', 'ice'];
 
-/** 低模几何形状（`shell` / `slab` / `blob` 与植被共用构建器原语） */
+/** 低模几何形状原语 */
 export type RockShapeType =
   /** 环壳 */
   | 'shell'
@@ -115,7 +115,7 @@ export type RockShapeType =
   | 'column'
   /** 低面球 */
   | 'blob'
-  /** 板片：薄而扁的多边形板（板岩 / 页岩 / 片岩） */
+  /** 多边形薄板片 */
   | 'slab';
 
 export const ROCK_SHAPE_TYPES: readonly RockShapeType[] = ['shell', 'column', 'blob', 'slab'];
@@ -127,19 +127,19 @@ export interface RockParams {
   diameter?: number;
   /** 高度，单位：格 */
   height?: number;
-  /** 高宽比：height 未显式给出时按它算 */
+  /** 默认高宽比 */
   aspect?: number;
   /** 整体尺寸倍率，默认 1 */
   sizeScale?: number;
-  /** 是否允许在运行时按 hash 再抖 0.85~1 倍 */
+  /** 运行时尺寸哈希扰动 */
   variant?: boolean;
 
   // ---- 轮廓 ----
-  /** 环壳的径向分段数（决定"几边形"的棱），默认 6 */
+  /** 径向分段数，默认6 */
   sides?: number;
   /** 壳层数量（上下叠几层壳） */
   shells?: number;
-  /** 层间半径收缩比（上一层相对下一层），默认 0.78 */
+  /** 层间收缩比，默认0.78 */
   shellTaper?: number;
   /** 层间水平错位量（相对直径） */
   shellSkew?: number;
@@ -147,29 +147,29 @@ export interface RockParams {
   shellTwist?: number;
   /** 每层高度占整体高度的比例 */
   shellRatios?: number[];
-  /** 贴地壳的扁度（0.3 = 像一块被压扁的饼） */
+  /** 贴地壳扁度参数 */
   baseFlatten?: number;
   /** 顶点径向抖动 0~1 */
   jitter?: number;
-  /** 顶面是否封盖，默认 true（不封会看到内部） */
+  /** 顶面封盖开关，默认true */
   cap?: boolean;
 
   // ---- 倾斜与姿态 ----
-  /** 绕 X 轴倾斜（弧度），正值顶部偏向 +Z */
+  /** 绕 X 轴倾斜弧度 */
   tiltX?: number;
-  /** 绕 Z 轴倾斜（弧度），正值顶部偏向 +X */
+  /** 绕 Z 轴倾斜弧度 */
   tiltZ?: number;
   /** 绕 Y 轴旋转（弧度） */
   rotY?: number;
 
-  // ---- 柱状（尖石 / 石柱 / 矮墩）----
+  // 柱状原型参数
   /** 柱的分节数，默认 3 */
   segments?: number;
   /** 柱顶相对柱底的半径比 */
   tipRatio?: number;
-  /** 柱底相对主体直径的比例，默认 0.55 */
+  /** 柱底直径比例，默认0.55 */
   baseRatio?: number;
-  /** 分节错位量（相对半径），默认 0.12 */
+  /** 分节错位量，默认0.12 */
   nodeSkew?: number;
   /** 分节扭转（弧度），默认 0.35 */
   nodeTwist?: number;
@@ -179,28 +179,28 @@ export interface RockParams {
   plates?: number;
   /** 板厚（相对直径），默认 0.1 */
   plateThickness?: number;
-  /** 板片错位量（相对直径），默认 0.12 */
+  /** 板片错位量，默认0.12 */
   plateSkew?: number;
   /** 板片倾角（弧度） */
   plateTilt?: number;
 
   // ---- 组合（碎石堆 / 叠置）----
-  /** 碎石数量（rubble 原型），默认 5 */
+  /** 碎石数量，默认5 */
   chunks?: number;
-  /** 碎石散布半径（相对直径），默认 0.85 */
+  /** 碎石散布半径，默认0.85 */
   spread?: number;
-  /** 叠置档追加的小石尺寸比，默认 0.42 */
+  /** 叠置小石尺寸比，默认0.42 */
   stackRatio?: number;
-  /** 叠置档小石的横向偏移（相对直径），默认 0.3 */
+  /** 叠置小石横偏，默认0.3 */
   stackOffset?: number;
 
-  // ---- 覆被（苔藓 / 积雪 / 冰）----
+  // 覆被参数
   /** 朝上面的覆被覆盖率 0~1 */
   crust?: number;
   /** 覆被只出现在"坡缓的上面" */
   crustSlope?: number;
 
-  // ---- 尺寸派生（由形态档写入，参数表不要手写）----
+  // 尺寸派生参数
   /** 半埋下沉量（相对高度），默认 0 */
   sink?: number;
   /** 横向放大倍率，默认 1 */
@@ -211,35 +211,35 @@ export interface RockParams {
 export interface RockFormDef {
   /** 中文名（界面 / 文档用） */
   label: string;
-  /** 英文名（导出文件名 / id 后缀用） */
+  /** 英文标识名 */
   latin: string;
   /** 形态档编号 0~3 */
   code: number;
-  /** 参数覆盖（在物种参数之上叠加，先乘算再覆盖） */
+  /** 形态档参数覆盖 */
   paramPatch?: RockParams;
   /** 数值型尺寸参数统一乘算 */
   paramScale?: number;
-  /** 覆被材质槽：crusted 档把朝上面换成这个槽 */
+  /** 覆被材质槽 */
   crustMaterial?: RockMaterial;
   /** 覆被使用的色板键 */
   crustColor?: RockPaletteKey;
   /** 是否叠置第二块小石 */
   stacked?: boolean;
-  /** 该档在秋冬是否自动挂雪（crusted 之外的原型用它） */
+  /** 秋冬自动积雪开关 */
   snow?: boolean;
 }
 
 export type RockFormTable = Record<RockForm, RockFormDef>;
 
-/** 参数表里的一块岩石（一个文件 = 一个岩石单位） */
+/** 岩石单位原始定义 */
 export interface RockDef {
-  /** 单位 id，形如 `rock.boulder` */
+  /** 单位ID标识 */
   id: string;
   /** 原型名 */
   archetype: string;
   /** 中文名（界面 / 文档用） */
   name: string;
-  /** 拼音名（导出文件名 / manifest 用） */
+  /** 拼音标识名 */
   latin?: string;
   /** 岩性族：决定默认色板与默认粗糙度 */
   family: RockMaterialFamily;
@@ -252,7 +252,7 @@ export interface RockDef {
   chunkPalette?: Record<string, RockPalette>;
   /** 标签 */
   tags?: string[];
-  /** 参数表文件名（注册表自动回填，便于报错定位） */
+  /** 来源配置文件名 */
   source?: string;
 }
 
@@ -291,7 +291,7 @@ export interface RockPaletteEntry {
 export interface RockPaletteFile {
   /** 岩性色 */
   stone?: Record<string, RockPaletteEntry>;
-  /** 覆被色：苔藓 / 雪 / 地衣 / 干草 */
+  /** 覆被色键 */
   cover?: Record<string, RockPaletteEntry>;
 }
 
@@ -302,19 +302,19 @@ export type ResolvedRockPalette = Partial<Record<RockColorSlot, string>>;
 export interface RockBuildOptions {
   /** 季节：只影响"秋冬挂雪" */
   season?: Season;
-  /** 形态档（露头 / 半埋 / 叠置 / 覆被） */
+  /** 岩石形态档 */
   form?: RockForm;
   /** 个体形态种子 */
   shapeSeed?: number;
   /** 整体缩放（1 = 参数表原始尺寸） */
   scale?: number;
-  /** 强制覆被（不传时按形态档与季节自动决定） */
+  /** 强制覆被材质槽 */
   crust?: boolean;
   /** 覆被色板键覆盖（如把苔藓换成地衣） */
   crustColor?: RockPaletteKey;
 }
 
-/** 装配完成、可直接交给原型生成的一块岩石 */
+/** 装配完成的岩石构建定义 */
 export interface RockBuildDef {
   id: string;
   archetype: string;
@@ -324,19 +324,19 @@ export interface RockBuildDef {
   seed: number;
   /** 本次生成使用的形态档 */
   form: RockForm;
-  /** 本次生成的个体种子（世界坐标哈希），默认 0 */
+  /** 个体生成种子 */
   shapeSeed: number;
-  /** 本档实际使用的覆被材质槽（无覆被时 undefined） */
+  /** 实际覆被材质槽 */
   crustMaterial?: RockMaterial;
-  /** 本档实际使用的覆被色板键（覆被关闭时 undefined） */
+  /** 实际覆被色板键 */
   crustColor?: RockPaletteKey;
   /** 覆被的实际颜色 `#rrggbb` */
   crustRgb?: string;
   params: RockParams;
   palette: ResolvedRockPalette;
-  /** 确定性形态种子：`原型:单位id:seed` 的哈希 */
+  /** 确定性形态种子 */
   buildSeed: number;
   season: Season;
-  /** 本次生成是否挂雪（由季节 + 覆被档决定） */
+  /** 本次生成是否挂雪 */
   snow: boolean;
 }

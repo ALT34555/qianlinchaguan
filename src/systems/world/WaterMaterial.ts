@@ -60,7 +60,7 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         #include <normal_fragment_maps>
         vec3 waterBaseNormal = inverseTransformDirection(normal, viewMatrix);
         float waterTop = smoothstep(0.45, 0.9, abs(waterBaseNormal.y));
-        // 法线波动而不位移几何，岸线、碰撞和相邻区块始终吻合。
+        // 仅扰动法线，保持几何岸线贴合
         vec2 wp = vWaterWorld.xz - vWaterFlow * uWaterTime;
         float w1 = dot(wp, vec2(0.72, 0.43)) - uWaterTime * 0.85;
         float w2 = dot(wp, vec2(-0.38, 1.12)) + uWaterTime * 0.62;

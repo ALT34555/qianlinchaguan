@@ -4,12 +4,12 @@ export interface RiverGuideGraph {
   downstream(x:number,z:number):readonly [number,number]|null;
 }
 export interface RiverGuide {x:number;z:number;tx:number;tz:number}
-/** 节点只允许在所属区块中央轻微扰动，不迁移方向区块。 */
+/** 节点仅在所属区块中央微调。 */
 export const MAX_RIVER_BEND=16;
 export const RIVER_NODE_NOISE=3;
 export const RIVER_BANK_BLEND=8;
 
-/** →与↓在原方格内形成↘过渡；转弯锚点最多内移12格，不改变接收关系。 */
+/** 直角转弯平滑过渡，锚点最多内移12格。 */
 export function riverGuide(x:number,z:number,graph:RiverGuideGraph):RiverGuide{
   const a=graph.upstream(x,z),b=graph.downstream(x,z);
   const incoming=a?Math.hypot(x-a[0],z-a[1]):1,outgoing=b?Math.hypot(b[0]-x,b[1]-z):1;
@@ -22,7 +22,7 @@ export function riverGuide(x:number,z:number,graph:RiverGuideGraph):RiverGuide{
 }
 
 interface Point {x:number;z:number}
-/** 两个半段各留在所属方格内，斜向连边准确穿过共享角点。 */
+/** 分段保留在所属方格，穿过共享角点。 */
 export function riverCurve(start:Point,end:Point,ta:Point,tb:Point,t:number,size:number):Point{
   const ax=Math.floor(start.x/size),az=Math.floor(start.z/size),bx=Math.floor(end.x/size),bz=Math.floor(end.z/size);
   const dx=Math.sign(bx-ax),dz=Math.sign(bz-az),length=Math.hypot(dx,dz)||1;

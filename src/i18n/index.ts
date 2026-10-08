@@ -28,7 +28,7 @@ let current: LocaleCode = BASE_LOCALE;
 let storage: StorageLike | null = null;
 let documentRef: Document | null = typeof document === 'undefined' ? null : document;
 
-/** 按注册顺序排列的语言代码，供语言切换器使用。 */
+/** 语言切换器候选语言代码。 */
 function codes(): LocaleCode[] {
   return [...entries.keys()];
 }
@@ -58,9 +58,7 @@ function pluralRulesFor(tag: string): Intl.PluralRules {
   return rules;
 }
 
-// -----------
 // 语言注册（扩展点）
-// -----------
 
 /** 注册或覆盖一种语言 */
 export function registerLocale(meta: LocaleMeta, messages: Messages): void {
@@ -72,7 +70,7 @@ export function registerLocaleLoader(meta: LocaleMeta, loader: LocaleLoader): vo
   entries.set(meta.code, { meta, messages: null, loader });
 }
 
-/** 确保某语言的文案已加载（对已注册的语言是空操作）。 */
+/** 确保某语言文案已加载。 */
 export async function ensureLocale(code: LocaleCode): Promise<LocaleCode> {
   const resolved = resolveLocale(code);
   const entry = entries.get(resolved)!;
@@ -80,7 +78,7 @@ export async function ensureLocale(code: LocaleCode): Promise<LocaleCode> {
   return resolved;
 }
 
-/** 已注册的语言列表（含尚未加载文案的惰性语言）。 */
+/** 已注册的语言元数据列表。 */
 export function availableLocales(): LocaleMeta[] {
   return codes().map(code => entries.get(code)!.meta);
 }
@@ -90,11 +88,9 @@ export function localeMeta(code: LocaleCode = current): LocaleMeta {
   return entries.get(code)?.meta ?? { code, label: code, htmlLang: code };
 }
 
-// -----------
 // 语言解析与切换
-// -----------
 
-/** 把任意用户输入（URL 参数、navigator */
+/** 解析语言代码，回退至基准语言。 */
 export function resolveLocale(input: string | null | undefined): LocaleCode {
   const raw = normalize(String(input ?? ''));
   if (!raw) return BASE_LOCALE;
@@ -106,7 +102,7 @@ export function resolveLocale(input: string | null | undefined): LocaleCode {
   return BASE_LOCALE;
 }
 
-/** 浏览器/系统偏好语言，逐项尝试直到命中已注册语言。 */
+/** 探测系统偏好语言。 */
 export function browserLocale(): LocaleCode {
   const candidates = typeof navigator === 'undefined'
     ? []
@@ -114,7 +110,7 @@ export function browserLocale(): LocaleCode {
   for (const candidate of candidates) {
     if (!candidate) continue;
     const resolved = resolveLocale(candidate);
-    // resolveLocale 在完全不认识时返回基
+    // 无法识别时回退基准语言
     const base = normalize(candidate).split('-')[0];
     if (codes().some(code => normalize(code).split('-')[0] === base)) return resolved;
   }
@@ -126,7 +122,7 @@ export function getLocale(): LocaleCode {
   return current;
 }
 
-/** 语言代码写入 <html lang> 的值 */
+/** 写入 html lang 属性值。 */
 export function localeTag(code: LocaleCode = current): string {
   return localeMeta(code).htmlLang || code;
 }
@@ -177,14 +173,12 @@ function applyDocumentLocale(): void {
   root.setAttribute('data-locale', current);
 }
 
-// -----------
 // 初始化
-// -----------
 
 export interface InitOptions {
-  /** 文案存储；省略时尝试 localStorage。 */
+  /** 文案存储；默认 localStorage。 */
   storage?: StorageLike | null;
-  /** 优先级最高的语言偏好，通常来自 URL 参数。 */
+  /** 高优先级语言偏好，如 URL 参数。 */
   preferred?: string | null;
   /** 关闭时忽略已保存的偏好与浏览器语言 */
   autoDetect?: boolean;
@@ -215,9 +209,7 @@ export function initI18n(options: InitOptions = {}): LocaleCode {
   return current;
 }
 
-// -----------
 // 取文案
-// -----------
 
 /** 取一条文案 */
 export function t(key: string, params?: MessageParams): string {
@@ -239,7 +231,7 @@ export function hasMessage(key: string): boolean {
   return lookup(current, key) !== undefined || lookup(BASE_LOCALE, key) !== undefined;
 }
 
-/** 当前语言下缺失的键（以基准语言为参照） */
+/** 当前语言缺失的文案键名。 */
 export function missingKeys(): string[] {
   const base = entries.get(BASE_LOCALE)?.messages ?? {};
   return Object.keys(base).filter(key => lookup(current, key) === undefined);
@@ -260,9 +252,7 @@ export function applyDomI18n(root: ParentNode = document): void {
   });
 }
 
-// -----------
-// 本地化格式化（数字 / 时间），随语言自动切换
-// -----------
+// 本地化格式化工具
 
 /** 按当前语言格式化数字。 */
 export function formatNumber(value: number, digits = 0): string {
@@ -276,9 +266,7 @@ export function formatDateTime(ms: number): string {
   catch { return new Date(ms).toLocaleString(); }
 }
 
-// -----------
 // 内置语言包注册
-// -----------
 
 registerLocale({ code: 'zh-CN', label: '简体中文', englishLabel: 'Simplified Chinese', htmlLang: 'zh-CN' }, zhCN);
 registerLocale({ code: 'en', label: 'English', englishLabel: 'English', htmlLang: 'en' }, en);

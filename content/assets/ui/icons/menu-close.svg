@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <g fill="#f1e5c7" opacity="0.8" transform="translate(32 32) scale(1.16) translate(-32 -32)">
+    <path id="menu-close-stroke" d="M17,17 C19.5,14.8 22.8,15.6 26,18.4 L42.6,35 C45.4,37.8 46.2,41.1 44,43.3 C41.8,45.5 38.5,44.7 35.7,41.9 L19.1,25.3 C16.3,22.5 15.5,19.2 17,17 Z"/>
+    <use href="#menu-close-stroke" transform="rotate(90 32 32)"/>
+  </g>
+  <g fill="#a61b29">
+    <path d="M17,17 C19.5,14.8 22.8,15.6 26,18.4 L42.6,35 C45.4,37.8 46.2,41.1 44,43.3 C41.8,45.5 38.5,44.7 35.7,41.9 L19.1,25.3 C16.3,22.5 15.5,19.2 17,17 Z"/>
+    <use href="#menu-close-stroke" transform="rotate(90 32 32)" fill="#a61b29"/>
+  </g>
+</svg>

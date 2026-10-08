@@ -3,7 +3,7 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createReadStream, existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readdir, rm, stat, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -11,7 +11,7 @@ import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path
 import { fileURLToPath } from 'node:url';
 
 const APP_ID = 'qianlinchaguan-launcher';
-/** 产品版本唯一真源：package.json */
+/** 产品版本读自配置 */
 const APP_VERSION = createRequire(import.meta.url)('../../package.json').version;
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(HERE, '..', '..');
@@ -20,9 +20,7 @@ const DEFAULT_PORT = 17873;
 const DEFAULT_HOST = '127.0.0.1';
 const IS_WINDOWS = process.platform === 'win32';
 
-// -----------
 // 0. Node 版本守卫
-// -----------
 const [NODE_MAJOR, NODE_MINOR] = process.versions.node.split('.').map(Number);
 
 function stripMode() {
@@ -40,16 +38,16 @@ if (STRIP === 'none') {
   process.exit(1);
 }
 if (STRIP === 'flag' && !process.execArgv.includes('--experimental-strip-types')) {
-  // 用子进程带上参数重跑自己，父进程原样转发退出码。
+  // 子进程重启并转发退出码
   const result = spawnSync(process.execPath,
     ['--experimental-strip-types', fileURLToPath(import.meta.url), ...process.argv.slice(2)],
     { stdio: 'inherit' });
   process.exit(result.status ?? 1);
 }
 
-// -----------
+const { ModResourceService, modResourceMiddleware } = await import('../mods/resources.ts');
+
 // 1. 命令行参数
-// -----------
 function fail(message) {
   console.error(`\n${message}\n`);
   process.exit(1);
@@ -101,13 +99,11 @@ function help() {
   --stop         停止正在运行的后台启动器（静默启动后用它收工）
   --help, -h     显示本帮助
 
-说明：本服务只监听回环地址；存档以独立 JSON 文件写入存档目录。
+说明：本服务只监听回环地址；存档以独立 .sav 压缩包写入存档目录。
       直接双击 file:// 打开 dist\\index.html 无法本地存档，必须经由本启动器。`);
 }
 
-// -----------
 // 2. 检查并按需构建
-// -----------
 const WATCHED = ['src', 'content', 'index.html', 'vite.config.ts', 'tsconfig.json', 'package.json'];
 
 async function newestMtime(target) {
@@ -125,7 +121,7 @@ async function newestMtime(target) {
 
 function runBuild() {
   console.log('正在构建（npm run build）…\n');
-  // Windows 上 .cmd 包装脚本必须走 s
+  // Windows 包装脚本启用 shell
   const result = spawnSync('npm run build', { cwd: PROJECT_ROOT, stdio: 'inherit', shell: true });
   return result.status === 0;
 }
@@ -155,9 +151,7 @@ async function ensureBuild(options, { allowBuild = true } = {}) {
   if (!runBuild()) fail('构建失败（请查看上面的 tsc / vite 输出）。未提供任何旧版本产物，以免运行到过期代码。');
 }
 
-// -----------
 // 3. 挂载本地存档服务
-// -----------
 async function loadSaveService() {
   try {
     return await import('../../platforms/saves/local-saves.ts');
@@ -167,9 +161,7 @@ async function loadSaveService() {
   }
 }
 
-// -----------
 // 4. 静态站点
-// -----------
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -220,7 +212,7 @@ async function sendFile(request, response, file, pathname) {
     'ETag': etag,
     'Cache-Control': cacheControl(pathname),
   };
-  // 304 不得携带实体头（Content-Type
+  // 304 响应不带实体头
   if (request.headers['if-none-match'] === etag) {
     send(response, 304, { 'ETag': etag, 'Cache-Control': headers['Cache-Control'] });
     return true;
@@ -270,10 +262,8 @@ function serveStatic(request, response) {
   })();
 }
 
-// -----------
 // 5. 组装服务
-// -----------
-function createLauncherServer(saveMiddleware, savesDirectory) {
+function createLauncherServer(saveMiddleware, savesDirectory, modMiddleware) {
   return createServer((request, response) => {
     const pathname = (request.url ?? '').split('?')[0];
     if (pathname === '/api/launcher') {
@@ -282,7 +272,7 @@ function createLauncherServer(saveMiddleware, savesDirectory) {
         JSON.stringify({ app: APP_ID, version: APP_VERSION, pid: process.pid, root: PROJECT_ROOT, saves: savesDirectory }));
       return;
     }
-    saveMiddleware(request, response, () => serveStatic(request, response));
+    saveMiddleware(request, response, () => modMiddleware(request, response, () => serveStatic(request, response)));
   });
 }
 
@@ -345,7 +335,7 @@ function banner(host, port, savesDirectory) {
   console.log(`  存档目录   ${savesDirectory}`);
   console.log(`  构建产物   ${DIST_DIR}`);
   console.log(line);
-  console.log('  存档会以独立 JSON 文件写入上面的存档目录，可在游戏内“读取”界面看到。');
+  console.log('  存档会以独立 .sav 压缩包写入上面的存档目录，可在游戏内“读取”界面看到。');
   console.log('  按 Ctrl+C 停止本地服务（或直接关闭本窗口）。\n');
   return url;
 }
@@ -358,9 +348,7 @@ function shutdown(server) {
   process.on('SIGHUP', close);
 }
 
-// -----------
 // 6. 自检（--check）
-// -----------
 async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
   const results = [];
   const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`  ${ok ? '✓' : '✗'} ${name}${detail ? ` — ${detail}` : ''}`); };
@@ -385,7 +373,9 @@ async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
   const scratch = await mkdtemp(join(tmpdir(), 'qianlin-check-'));
   const service = new FileSaveService(scratch);
   await service.initialize();
-  const server = createLauncherServer(fileSaveMiddleware(service), scratch);
+  const mods = new ModResourceService(join(PROJECT_ROOT, 'userdata/mods'));
+  await mods.initialize();
+  const server = createLauncherServer(fileSaveMiddleware(service), scratch, modResourceMiddleware(mods));
   const port = await listen(server, DEFAULT_HOST, 0);
   const base = `http://${DEFAULT_HOST}:${port}`;
   try {
@@ -411,10 +401,11 @@ async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
     check('POST /api/saves 覆盖同一条存档', updated.status === 200 && updated.data.id === created.data.id);
     const listed = await fetch(`${base}/api/saves`).then(r => r.json());
     check('GET /api/saves 读回 1 条且名称已更新', listed.saves.length === 1 && listed.saves[0].name === '启动器自检(改名)', listed.saves[0]?.name ?? '');
-    const onDisk = (await readdir(scratch)).filter(f => f.endsWith('.json'));
-    check('存档已落盘为独立 JSON 文件', onDisk.length === 1, onDisk.join(', '));
-    const migrated = await post('/api/saves/migrate', { id: 'legacy-check', name: '旧浏览器存档', createdAt: 1, updatedAt: 2, save: makeSave('旧浏览器存档') });
-    check('POST /api/saves/migrate 迁移旧存档', migrated.status === 200 && migrated.data.created === true);
+    const onDisk = (await readdir(scratch)).filter(f => f.endsWith('.sav'));
+    check('存档已落盘为独立 .sav 压缩包', onDisk.length === 1, onDisk.join(', '));
+    const { decodeSaveArchive } = await import('../../src/systems/world/SaveArchive.ts');
+    const archive = decodeSaveArchive(await readFile(resolve(scratch, onDisk[0])));
+    check('压缩存档读回玩家位置', archive.save.player.x === 32.5 && archive.id === created.data.id);
     const bad = await post('/api/saves', { save: { seed: 'x' }, name: '非法存档' });
     check('非法存档被拒绝', bad.status >= 400, bad.data.error ?? '');
   } finally {
@@ -428,9 +419,7 @@ async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
   return failed.length === 0 ? 0 : 1;
 }
 
-// -----------
 // 7. 入口
-// -----------
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) { help(); return 0; }
@@ -454,7 +443,9 @@ async function main() {
 
   const service = new FileSaveService(options.saves);
   await service.initialize();
-  const server = createLauncherServer(fileSaveMiddleware(service), service.directory);
+  const mods = new ModResourceService(join(PROJECT_ROOT, 'userdata/mods'));
+  await mods.initialize();
+  const server = createLauncherServer(fileSaveMiddleware(service), service.directory, modResourceMiddleware(mods));
 
   let port;
   try { port = await listen(server, options.host, options.port); }

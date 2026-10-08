@@ -59,18 +59,14 @@ export class CalendarSystem {
 
   /** 计算时辰信息。 */
   calculateShichen(dayTime: DayTime): ShichenInfo {
-    // 0.0 -> 00:00 (子正), 0.5
-    // 1 hour = 1/24 of a day.
-    // 23:00 - 01:00 is Zi (ind
-    // offset by 1 hour (1/24)
+    // 偏移1小时使23:00-01:00对应子时
     const fracShifted = (dayTime.frac + 1 / 24) % 1;
     const shichenIndex = Math.floor(fracShifted * 12);
     const hourWithinShichen = (fracShifted * 12) % 1; // 0 to 1 (2 hours)
     
-    // half: 0 to 0.5 is Chu (初
+    // 0~0.5对应初，0.5~1对应正
     const half = hourWithinShichen < 0.5 ? '初' : '正';
-    // 1 shichen = 2 hours = 8
-    // Ke index within the half
+    // 1时辰为8刻，每半个时辰4刻
     const ke = Math.floor((hourWithinShichen % 0.5) * 8);
 
     const name = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'][shichenIndex] + '时';
@@ -108,16 +104,15 @@ export class CalendarSystem {
         solarLongitude
       };
     } else {
-      // Real mode (use Chinese c
-      // 315=LiChun, 45=LiXia, 13
+      // 真实模式：取四立节气确定四季边界
       const gregorianYear = snap.gregorian.year;
-      // Get all terms for this y
+      // 汇总前后三年节气表
       let terms = [
         ...this.chinese.solarTermsOfYear(gregorianYear - 1),
         ...this.chinese.solarTermsOfYear(gregorianYear),
         ...this.chinese.solarTermsOfYear(gregorianYear + 1)
       ];
-      // filter out only the seas
+      // 筛选立春、立夏、立秋、立冬
       const seasonStarts = terms.filter(t => t.longitude === 315 || t.longitude === 45 || t.longitude === 135 || t.longitude === 225);
       
       let currentSeasonStart = seasonStarts[0];
@@ -141,8 +136,7 @@ export class CalendarSystem {
       const dayOfSeason = snap.instant.jdn - startJdn + 1;
       const progress = (dayOfSeason - 1 + snap.instant.frac) / daysInSeason;
       
-      // Calculate true solar lon
-      // For a better estimation,
+      // 插值估算当前太阳黄经
       let lastTerm = terms[0];
       let nextTerm = terms[1];
       for (let i = 0; i < terms.length - 1; i++) {

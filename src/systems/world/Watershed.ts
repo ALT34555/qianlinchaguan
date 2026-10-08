@@ -1,9 +1,8 @@
 import { FLOW_DIRECTIONS, effectiveRunoff, liquidRiverAllowed, type DrainageNode } from './Hydrology';
-import {snowLine} from './TerrainLayers';
 import {mergedRiverSize,type RiverSize} from './RiverSize';
 
 const key = (x: number, z: number) => `${x},${z}`;
-/** 相邻粗格水位差超过此值按独立河段处理，否则视为同一水体的内部台�?*/
+/** 相邻水位阶梯阈值，超限算独立河段 */
 const WATER_STEP_LIMIT = 6;
 export interface WatershedCell {
   x: number; z: number; height: number; level: number; distance: number; rank: number;
@@ -16,7 +15,7 @@ export interface WatershedLake { level: number; discharge: number; cells: Readon
 interface Candidate { cell: WatershedCell; parent: WatershedCell | null; level: number; distance: number }
 const before = (a: Candidate, b: Candidate) => a.level - b.level || a.distance - b.distance || a.cell.z - b.cell.z || a.cell.x - b.cell.x;
 
-/** 确定性最小堆；同高边缘以到出口距离和坐标决胜�?*/
+/** 确定性最小堆优先级队列 */
 class FloodQueue {
   private readonly items: Candidate[] = [];
   get length(): number { return this.items.length; }
@@ -68,16 +67,13 @@ export class Watershed {
 
   clear(): void { this.solved.clear(); this.samples.clear(); this.districts.clear(); this.largeLand.clear();this.barriers.clear();this.fineSamples.clear(); }
 
-  /** 液态排水连边不得穿过封冻带或单区块超过256格的 */
+  /** 校验液态排水连边连通性 */
   private passable(a:WatershedCell,b:WatershedCell):boolean{
     const ka=key(a.x,a.z),kb=key(b.x,b.z),k=ka<kb?`${ka}/${kb}`:`${kb}/${ka}`;
     const cached=this.barriers.get(k);if(cached!==undefined)return cached;
     const ar=this.raw(a.x,a.z) as DrainageNode&{plateBase?:number},br=this.raw(b.x,b.z) as DrainageNode&{plateBase?:number};
-    if(ar.height>0&&!liquidRiverAllowed(ar)||br.height>0&&!liquidRiverAllowed(br)){this.barriers.set(k,false);return false;}
-    // 同一精确板块底座的内�?
-    // 只对底座过渡、海岸大落差及临界雪线做细分检�?
-    if((!this.circumference||this.circumference>=4096)&&ar.plateBase!==undefined&&ar.plateBase===br.plateBase&&Math.abs(ar.height-br.height)<128&&
-      ar.height<snowLine(ar.temperature)-160&&br.height<snowLine(br.temperature)-160){this.barriers.set(k,true);return true;}
+    // 同板块内仅过渡与大落差做细分检查
+    if((!this.circumference||this.circumference>=4096)&&ar.plateBase!==undefined&&ar.plateBase===br.plateBase&&Math.abs(ar.height-br.height)<128){this.barriers.set(k,true);return true;}
     let [ax,az]=this.position(a.x,a.z),[bx,bz]=this.position(b.x,b.z);
     if(this.circumference)bx=ax+((bx-ax+this.circumference/2)%this.circumference+this.circumference)%this.circumference-this.circumference/2;
     const steps=Math.max(Math.abs(bx-ax),Math.abs(bz-az));let previous:DrainageNode|null=null,allowed=true;
@@ -86,7 +82,7 @@ export class Watershed {
       if(this.circumference)x=((x+this.circumference/2)%this.circumference+this.circumference)%this.circumference-this.circumference/2;
       const fk=key(x,z);let n=this.fineSamples.get(fk);
       if(!n){n=this.boundarySample(x,z);this.fineSamples.set(fk,n);}
-      if(n.height>0&&!liquidRiverAllowed(n)||previous&&Math.abs(previous.height-n.height)>256){allowed=false;break;}
+      if(previous&&Math.abs(previous.height-n.height)>256){allowed=false;break;}
       previous=n;
     }
     this.barriers.set(k,allowed);return allowed;
@@ -258,7 +254,7 @@ export class Watershed {
       const max = incoming.length ? Math.max(...incoming) : 1;
       c.order = max + (incoming.filter(v => v === max).length > 1 ? 1 : 0);
       // 面积和来水沿 receiver 单调增长
-      const eligible=this.precipitation>0&&liquidRiverAllowed(this.raw(c.x,c.z))&&c.area>=area*4;
+      const eligible=this.precipitation>0&&c.height>0&&c.area>=area*4;
       c.channel = eligible && c.discharge >= this.threshold;
       c.weakChannel=eligible&&c.discharge>=84;
       const size=mergedRiverSize(c.discharge,riverSizes.get(c)??[]);
@@ -276,19 +272,25 @@ export class Watershed {
       if (c.height <= 0) continue;
       const retention = Math.min(18, 4 + Math.sqrt(c.discharge) * .15);
       c.level = Math.min(c.level, c.height + retention);
-      if (c.receiver && c.receiver.height > 0) c.receiver.level = Math.min(c.receiver.level, c.level);
     }
-    // 水面不得高于下游出口；陡坎保留落差，缓坡上的水位反升是同一水体的内部台�?
+    // 局部下切有界，下游回水向上游传播。
+    for(const c of sorted){
+      if(c.height<=0)continue;
+      const floor=c.height-1.2-this.incision(c);
+      c.level=Math.max(c.level,floor,c.receiver?.level??0);
+    }
+    // 陡坎保留落差，缓坡水位平抑至下游
     for (let pass = 0; pass < 3; pass++) for (let i = 0; i < sorted.length; i++) {
       const c = sorted[i];
       if (!c.receiver || c.receiver.height <= 0 || c.height <= 0) continue;
-      if (c.level - c.receiver.level <= WATER_STEP_LIMIT) c.level = c.receiver.level;
+      const floor=c.height-1.2-this.incision(c);
+      if (c.level - c.receiver.level <= WATER_STEP_LIMIT && c.receiver.level>=floor) c.level = c.receiver.level;
     }
     // 同一溢流水位下的连通洼地形成一个静水湖
     const visited = new Set<WatershedCell>();
     for (const c of sorted) {
       const raw=this.raw(c.x,c.z);
-      // 封冻/临界区不靠来水生成河�?
+      // 封冻或临界区不靠来水生成湖泊
       const staticPond=!liquidRiverAllowed(raw)&&raw.moisture>-.2&&this.neighbors(c).every(([x,z])=>this.raw(x,z).height>c.height+.5);
       if (visited.has(c) || c.height <= 0 || c.level - c.height < .5 || c.discharge < this.threshold&&!staticPond) continue;
       const lakeCells = [c]; visited.add(c);

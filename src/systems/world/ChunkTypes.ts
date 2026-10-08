@@ -8,6 +8,7 @@ export interface ChunkTypeDef {
   name: string;
   mapColor: string;
   generate: boolean;
+  artificial?: boolean;
   description: string;
 }
 

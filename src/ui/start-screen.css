@@ -1,7 +1,4 @@
-/* ==========================================================================
-   start-screen.css · 启动界面 / 世界创建器 / 2D 世界图志
-   颜色与字体取自 theme.css 的令牌；内容数据自带的颜色（气候、区块）保留。
-   ========================================================================== */
+/* 启动界面与世界创建器样式。 */
 
 #world-menu {
   position: fixed;
@@ -37,13 +34,13 @@
 }
 
 .planet-fields label {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--ql-ink);
 }
 
 .planet-fields small {
   display: block;
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--ql-ink-3);
   margin: 2px 0 5px;
 }
@@ -75,11 +72,11 @@
 .coverage-setting {
   display: block;
   margin-top: 18px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
 }
 .coverage-setting small, .coverage-labels {
   color: var(--ql-ink-3);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 .coverage-labels {
   display: flex;
@@ -114,7 +111,7 @@
   color: var(--ql-ink);
   text-decoration: none;
   font-family: var(--ql-font-display);
-  font-size: 26px;
+  font-size: calc(26px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-display);
   transition: transform 0.2s ease, color 0.2s ease;
 }
@@ -128,11 +125,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.header-action-btn {
-  padding: 8px 18px;
-  font-size: 13px;
 }
 
 /* 主双栏布局 */
@@ -165,7 +157,7 @@
 }
 
 .world-settings h1 {
-  font-size: 38px;
+  font-size: calc(38px * var(--text-scale, 1));
   margin: 12px 0 14px;
   color: var(--ql-ink);
 }
@@ -175,7 +167,7 @@
 }
 
 .menu-intro {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   line-height: 1.8;
   margin-bottom: 20px;
@@ -188,7 +180,7 @@
 
 .field-label-mini {
   display: block;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--ql-ink-3);
   margin-bottom: 8px;
   letter-spacing: var(--ql-track-label);
@@ -205,7 +197,7 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   margin: 14px 0 8px;
   color: var(--ql-ink);
   font-family: var(--ql-font-display);
@@ -214,7 +206,7 @@
 
 .field-title small {
   color: var(--ql-ink-3);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   font-family: var(--ql-font-body);
   letter-spacing: var(--ql-track-body);
 }
@@ -233,9 +225,7 @@
   box-shadow: 0 0 0 3px rgba(166, 27, 41, .16);
 }
 
-/* 组合输入框：外框由 .seed-field 提供，内部控件去掉自己的框。
-   注意用 background-color 而不是 background 简写 —— 简写会把
-   select 的下指箭头（background-image）一起清掉。 */
+/* 组合输入框样式。 */
 .seed-field input,
 .seed-field select {
   border: 0;
@@ -251,7 +241,7 @@
 
 .seed-field select {
   padding: 10px 28px 10px 14px;
-  /* 重新声明下拉箭头，避免被 appearance:none 抹掉后没有指示 */
+  /* 自定义下拉箭头指示。 */
   background-image:
     linear-gradient(45deg, transparent 50%, var(--ql-ink-2) 50%),
     linear-gradient(135deg, var(--ql-ink-2) 50%, transparent 50%);
@@ -280,7 +270,7 @@
   width: 100%;
   padding: 10px 14px;
   color: var(--ql-ink);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale, 1));
   user-select: text;
 }
 
@@ -296,7 +286,7 @@
   width: 46px;
   padding: 0;
   font-family: var(--ql-font-display);
-  font-size: 19px;
+  font-size: calc(19px * var(--text-scale, 1));
   box-shadow: none;
   background-color: var(--ql-paper-lo);
   color: var(--ql-ink);
@@ -335,7 +325,7 @@
   align-items: center;
   padding: 5px 0;
   gap: 10px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--text-scale, 1));
   color: var(--ql-ink);
 }
 
@@ -351,13 +341,13 @@
 .climate-row input {
   width: 100%;
   padding: 4px 6px;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   text-align: right;
 }
 
 .climate-row output {
   text-align: right;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   font-family: var(--ql-font-mono);
 }
@@ -379,12 +369,12 @@
 .menu-actions button {
   flex: 1;
   padding: 12px 14px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale, 1));
   justify-content: space-between;
 }
 
 .btn-arrow {
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   margin-left: 4px;
   transition: transform 0.15s ease;
 }
@@ -398,9 +388,7 @@ button:hover:not(:disabled) .btn-arrow {
   margin: 16px auto 0;
 }
 
-/* ==========================================================================
-   右侧世界图志面板与 2D 地图视口
-   ========================================================================== */
+/* 图志面板与 2D 地图视口。 */
 
 .atlas-panel {
   min-width: 0;
@@ -427,15 +415,11 @@ button:hover:not(:disabled) .btn-arrow {
   text-align: center;
   padding: 40px 20px;
   border-radius: var(--ql-radius);
-  /* 先铺一层中心提亮的柔光，再叠宣纸底纹；变量展开后是多个 background-image 层 */
+  /* 柔光与宣纸底纹叠加层。 */
   background-color: var(--ql-paper);
   background-image:
     radial-gradient(ellipse at 50% 38%, rgba(255, 253, 246, .7) 0%, rgba(255, 253, 246, 0) 68%),
     var(--ql-paper-weave);
-}
-
-.hero-art-container {
-  margin-bottom: 24px;
 }
 
 .contour-art {
@@ -462,34 +446,180 @@ button:hover:not(:disabled) .btn-arrow {
   transform: scale(1.03);
 }
 
-.placeholder-text-group {
-  max-width: 440px;
+.atlas-placeholder .contour-art {
+  width: 300px;
+  height: 300px;
+  margin-bottom: 26px;
+  opacity: .5;
 }
 
-.placeholder-text-group h3 {
-  font-size: 21px;
-  margin: 0 0 10px;
+.placeholder-caption {
+  margin: 0;
+  font-size: calc(15px * var(--text-scale, 1));
+  font-weight: 400;
+  letter-spacing: var(--ql-track-label);
+  color: var(--ql-ink-2);
+}
+
+.atlas-stale {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.atlas-stale .contour-art {
+  width: min(340px, 58%);
+  height: auto;
+  aspect-ratio: 1;
+  opacity: .5;
+}
+
+.fold-group {
+  margin-top: 18px;
+  background: var(--ql-paper-hi);
+  border: 1px solid var(--ql-line-soft);
+  border-radius: var(--ql-radius);
+}
+
+.fold-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  font-family: var(--ql-font-display);
+  font-size: calc(14px * var(--text-scale, 1));
+  letter-spacing: var(--ql-track-label);
   color: var(--ql-ink);
 }
 
-.placeholder-text-group p {
-  color: var(--ql-ink-2);
-  font-size: 13px;
-  line-height: 1.85;
-  margin: 0 0 24px;
+.fold-group > summary::-webkit-details-marker {
+  display: none;
 }
 
-.hero-browse-btn {
-  display: inline-flex;
+.fold-group > summary:hover .fold-name {
+  color: var(--ql-cinnabar);
+}
+
+.fold-mark {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  border: 1.5px solid var(--ql-cinnabar);
+  transition: background-color .15s ease;
+}
+
+.fold-group > summary > .fold-mark {
+  margin-left: auto;
+}
+
+.fold-group[open] > summary > .fold-mark,
+.color-scheme-toggle[aria-expanded="true"] .fold-mark {
+  background: var(--ql-cinnabar);
+}
+
+.fold-lock,
+.fold-lock-hint {
+  display: none;
+}
+
+.fold-group.locked .fold-lock {
+  display: inline;
+  font-size: calc(11px * var(--text-scale, 1));
+}
+
+.fold-group.locked .fold-lock-hint {
+  display: inline;
+  flex: 1;
+  font-family: var(--ql-font-body);
+  font-size: calc(10.5px * var(--text-scale, 1));
+  letter-spacing: var(--ql-track-body);
+  color: var(--ql-ink-3);
+}
+
+.fold-group.locked > summary {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.fold-body {
+  padding: 2px 16px 16px;
+  border-top: 1px dashed var(--ql-line-faint);
+}
+
+.fold-body > .field-title:first-child,
+.fold-body > .coverage-setting:first-child {
+  margin-top: 12px;
+}
+
+.color-scheme {
+  margin-top: 16px;
+}
+
+.color-scheme-toggle {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 13px 28px;
-  font-size: 14px;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 12px;
+  color: var(--ql-ink);
+  background-color: var(--ql-paper-hi);
+  background-image: none;
+  border: 1px solid var(--ql-line-soft);
+  border-radius: var(--ql-radius);
+  font-family: var(--ql-font-body);
+  font-size: calc(13px * var(--text-scale, 1));
+  letter-spacing: var(--ql-track-body);
+  text-shadow: none;
+  box-shadow: none;
 }
 
-/* ==========================================================================
-   2D 地图界面与右侧控制窗口
-   ========================================================================== */
+.color-scheme-toggle:hover:not(:disabled) {
+  color: var(--ql-cinnabar-deep);
+  background-color: var(--ql-paper-hi);
+  border-color: var(--ql-cinnabar);
+  box-shadow: 0 0 0 3px rgba(166, 27, 41, .12);
+}
+
+.color-scheme-chip {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 24px;
+  padding: 3px;
+  background: #5d3f51;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--ql-line);
+}
+
+.color-scheme-core {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #cb3a56;
+  border-radius: 1.5px;
+}
+
+.color-scheme-name {
+  flex: 1;
+  text-align: left;
+}
+
+.color-scheme-body {
+  padding-top: 4px;
+}
+
+.color-scheme-body .faction-color {
+  margin: 10px 0 0;
+}
+
+/* 2D 地图界面与右侧控制。 */
 
 .atlas-content {
   display: flex;
@@ -514,13 +644,13 @@ button:hover:not(:disabled) .btn-arrow {
 }
 
 .atlas-title-group h2 {
-  font-size: 19px;
+  font-size: calc(19px * var(--text-scale, 1));
   margin: 0;
   color: var(--ql-ink);
 }
 
 .coord-pill {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   background: var(--ql-paper-hi);
   border: 1px solid var(--ql-line-soft);
@@ -538,7 +668,7 @@ button:hover:not(:disabled) .btn-arrow {
 .tool-btn.icon-btn {
   min-width: 30px;
   padding: 5px 8px;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 /* 地图主体工作区：视口 + 右侧控制器 */
@@ -580,14 +710,12 @@ button:hover:not(:disabled) .btn-arrow {
   background: rgba(36, 28, 19, .85);
   border: 1px solid rgba(251, 244, 227, .18);
   border-radius: var(--ql-radius);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   pointer-events: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
 }
 
-/* ==========================================================================
-   右侧控制窗口
-   ========================================================================== */
+/* 右侧控制窗口样式。 */
 
 .atlas-control-panel {
   display: flex;
@@ -619,13 +747,13 @@ button:hover:not(:disabled) .btn-arrow {
   border-bottom: 1px solid var(--ql-line-faint);
   color: var(--ql-ink);
   font-family: var(--ql-font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-label);
 }
 
 .red-line-badge {
   font-family: var(--ql-font-body);
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-body);
   color: var(--ql-cinnabar);
 }
@@ -653,20 +781,18 @@ button:hover:not(:disabled) .btn-arrow {
 
 .toggle-text strong {
   font-family: var(--ql-font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--ql-ink);
   font-weight: 400;
   letter-spacing: var(--ql-track-body);
 }
 
 .toggle-text small {
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--ql-ink-3);
 }
 
-/* 开关：方形滑钮，与印章语言一致。
-   写成 input.switch-input 是为了压过 theme.css 的 input[type="checkbox"] 尺寸，
-   真正的可见控件是后面的 .switch-slider。 */
+/* 方形滑钮开关。 */
 input.switch-input {
   position: absolute;
   opacity: 0;
@@ -724,7 +850,7 @@ input.switch-input {
 }
 
 .climate-tags-title {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   margin-bottom: 6px;
 }
@@ -747,7 +873,7 @@ input.switch-input {
 }
 
 .climate-pill b {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--text-scale, 1));
   opacity: .75;
   font-weight: 400;
 }
@@ -765,7 +891,7 @@ input.switch-input {
 
 .filter-dropdown {
   width: 100%;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .filter-dropdown optgroup {
@@ -788,7 +914,7 @@ input.switch-input {
 
 .filter-match-status {
   padding: 5px 9px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--ql-cinnabar-deep);
   background: rgba(166, 27, 41, .08);
   border: 1px solid rgba(166, 27, 41, .28);
@@ -798,7 +924,7 @@ input.switch-input {
 /* 区块详情卡片 */
 .detail-badge {
   font-family: var(--ql-font-mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   background: var(--ql-paper-hi);
   border: 1px solid var(--ql-line-faint);
@@ -812,7 +938,7 @@ input.switch-input {
 
 .detail-placeholder {
   color: var(--ql-ink-3);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   text-align: center;
   padding: 16px 0;
   line-height: 1.7;
@@ -828,14 +954,14 @@ input.switch-input {
 
 .detail-type-tag {
   color: var(--ql-ink-inv);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
   padding: 3px 9px;
   border-radius: var(--ql-radius);
   text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
 }
 
 .detail-climate-tag {
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   border: 1px solid;
   padding: 2px 8px;
   border-radius: var(--ql-radius-pill);
@@ -845,7 +971,7 @@ input.switch-input {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px 10px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   margin-bottom: 8px;
 }
 
@@ -856,7 +982,7 @@ input.switch-input {
 
 .detail-label {
   color: var(--ql-ink-3);
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
 }
 
 .detail-val {
@@ -866,7 +992,7 @@ input.switch-input {
 }
 
 .detail-desc {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   line-height: 1.6;
   border-top: 1px dashed var(--ql-line-faint);
@@ -882,24 +1008,35 @@ input.switch-input {
 .full-width {
   width: 100%;
   padding: 11px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   justify-content: space-between;
 }
 
 .atlas-footer {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--ql-line-soft);
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale, 1));
   color: var(--ql-ink-3);
 }
 
-/* ==========================================================================
-   响应式适配
-   ========================================================================== */
+.atlas-footer-note {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.footer-enter {
+  flex-shrink: 0;
+  padding: 10px 22px;
+  font-size: calc(13.5px * var(--text-scale, 1));
+}
+
+/* 响应式适配。 */
 
 @media (max-width: 1180px) {
   .atlas-workspace {
@@ -917,7 +1054,7 @@ input.switch-input {
   }
 
   .world-settings h1 {
-    font-size: 32px;
+    font-size: calc(32px * var(--text-scale, 1));
   }
 }
 

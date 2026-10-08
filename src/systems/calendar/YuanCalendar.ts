@@ -57,7 +57,7 @@ export function yuanYearDays(_year?: number): number {
   return YUAN_DAYS_PER_YEAR;
 }
 
-/** 由日序求元历年号（纪元之前为 0 或负数 */
+/** 由日序求元历年号。 */
 export function yuanYearOfJdn(jdn: number): number {
   return Math.floor((jdn - YUAN_EPOCH_JDN) / YUAN_DAYS_PER_YEAR) + 1;
 }

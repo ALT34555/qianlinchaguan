@@ -23,13 +23,13 @@ export interface RockGeometry {
   normals: Float32Array;
   colors: Uint8Array;
   indices: Uint32Array;
-  /** 包围半径（含倾斜后的外伸），用于视锥剔除与 LOD */
+  /** 包围半径，用于剔除与 LOD */
   radius: number;
   /** 几何高度（含顶端伸出部分） */
   height: number;
-  /** 最低点（多数岩石会沉到 0 以下，贴地不悬空） */
+  /** 最低点沉降深度 */
   bottom: number;
-  /** 各材质槽的三角形区间 [start, count) */
+  /** 材质槽三角形索引区间 */
   groups: { mat: RockMaterial; start: number; count: number }[];
   vertexCount: number;
   triangleCount: number;
@@ -37,24 +37,24 @@ export interface RockGeometry {
   coverRatio: Partial<Record<RockMaterial, number>>;
 }
 
-/** 原型推一个面时用的函数：颜色与材质槽都由调用方给定 */
+/** 逐面推入回调函数 */
 export type FacePush = (pos: number[], col: RGB, nrm: V3, mat?: RockMaterial) => void;
 
 /** 覆被方案 */
 export interface CrustSpec {
   /** 覆被占据的材质槽 */
   mat: RockMaterial;
-  /** 覆盖率 0~1：朝上的面按此概率被覆盖 */
+  /** 覆被概率 0~1 */
   amount: number;
-  /** 只覆盖法线 y 大于该值的面（0.42 ≈ 与水平面夹角 65° 以内） */
+  /** 覆被朝上法线阈值 */
   slope: number;
-  /** 判定用的盐值，让同一块石头的不同部位断开 */
+  /** 覆被判定扰动盐值 */
   seed?: number;
 }
 
-/** 与植被 geometry.ts 完全一致的方向明暗阶梯 */
+/** 预烘焙方向明暗阶梯 */
 const SHADE_STEPS = [0.58, 0.7, 0.84, 1.0];
-/** 与植被 geometry.ts 完全一致的太阳方向 */
+/** 烘焙太阳光照方向 */
 const SUN: readonly [number, number, number] = [0.42, 0.84, -0.34];
 /** 顶点色微扰 */
 const COLOR_JITTER = 0.04;
@@ -69,19 +69,19 @@ export function clamp01(v: number): number {
   return clamp(v, 0, 1);
 }
 
-/** 把颜色整体加深（0 = 不变，1 = 全黑） */
+/** 颜色整体加深 */
 export function deepen(c: RGB, depth: number): RGB {
   const k = clamp01(1 - depth);
   return [c[0] * k, c[1] * k, c[2] * k];
 }
 
-/** 把颜色整体提亮（0 = 不变，1 = 全白） */
+/** 颜色整体提亮 */
 export function lighten(c: RGB, amount: number): RGB {
   const k = clamp01(amount);
   return [c[0] + (255 - c[0]) * k, c[1] + (255 - c[1]) * k, c[2] + (255 - c[2]) * k];
 }
 
-/** 两个颜色按比例混合（t = 0 取 a，t = 1 取 b） */
+/** 颜色线性插值混合 */
 export function mix(a: RGB, b: RGB, t: number): RGB {
   const k = clamp01(t);
   return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
@@ -134,7 +134,7 @@ function clampByte(v: number): number {
 /** 岩石构建器 */
 export class RockBuilder {
   private readonly faces: RockFace[] = [];
-  /** 当前默认材质槽（原语/推面未显式指定时用它） */
+  /** 默认材质槽 */
   private currentMat: RockMaterial = 'solid';
   readonly rand: () => number;
 
@@ -161,14 +161,14 @@ export class RockBuilder {
     return this.currentMat;
   }
 
-  /** 取一个逐面推入函数（颜色与材质槽都由调用方给定） */
+  /** 获取面推入函数 */
   pusher(): FacePush {
     return (pos, col, nrm, mat) => {
       this.push(pos, col, nrm, mat ?? this.currentMat);
     };
   }
 
-  /** 推入一个面（顶点顺序需符合外侧逆时针） */
+  /** 推入逆时针面 */
   push(pos: number[], col: RGB, nrm: V3, mat: RockMaterial = this.currentMat, raw = false): void {
     const s = raw ? 1 : shadeOf(nrm[0], nrm[1], nrm[2]);
     const k = 1 + (this.rand() * 2 - 1) * COLOR_JITTER;
@@ -186,13 +186,13 @@ export class RockBuilder {
     this.push([...a, ...b, ...c], color, faceNormal(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]), mat);
   }
 
-  /** 四边形（按 a-b-c-d 拆两个三角形） */
+  /** 四边形拆双三角形 */
   quad(a: V3, b: V3, c: V3, d: V3, color: RGB, mat: RockMaterial = this.currentMat): void {
     this.tri(a, b, c, color, mat);
     this.tri(a, c, d, color, mat);
   }
 
-  /** 把另一个构建器产出的几何整体合并进来（可选换材质） */
+  /** 合并外部构建器几何 */
   bake(geo: PlantGeometry, opts: { mat?: RockMaterial; offset?: V3; scale?: number; tint?: RGB; tintMix?: number } = {}): void {
     const off = opts.offset ?? [0, 0, 0];
     const s = opts.scale ?? 1;
@@ -262,7 +262,7 @@ export class RockBuilder {
     bottomColor?: RGB;
     /** 侧面色，默认等于主体色 */
     sideColor?: RGB;
-    /** 顶点径向抖动 0~1（不规则轮廓，默认 0） */
+    /** 顶点径向抖动量 */
     jitter?: number;
     /** 起始角（弧度） */
     rotY?: number;
@@ -274,7 +274,7 @@ export class RockBuilder {
     radiusScale?: readonly number[] | ((i: number) => number);
     /** 逐顶点沿环面法线的位移倍数（0~1） */
     wobble?: readonly number[] | ((i: number) => number);
-    /** wobble 的幅度（相对壳厚），默认 0 */
+    /** 壳厚抖动幅度 */
     wobbleAmount?: number;
     /** 覆被方案（只作用于顶盖与朝上的侧面） */
     crust?: CrustSpec;
@@ -293,7 +293,7 @@ export class RockBuilder {
     const wob = opts.wobble;
     const wobAmp = (opts.wobbleAmount ?? 0) * thickness * 0.5;
 
-    // 环平面的正交基：取参考轴时避开与 up 平行的情形
+    // 计算正交基避免平行
     const [nx0, ny0, nz0] = normal;
     const nl = Math.hypot(nx0, ny0, nz0) || 1;
     const up: V3 = [nx0 / nl, ny0 / nl, nz0 / nl];
@@ -324,7 +324,7 @@ export class RockBuilder {
       top.push([px + up[0] * (half + lift), py + up[1] * (half + lift), pz + up[2] * (half + lift)]);
       bot.push([px - up[0] * (half - lift), py - up[1] * (half - lift), pz - up[2] * (half - lift)]);
     }
-    // 侧带：阈值乘 0.7，苔藓长在陡壁上但明显更少
+    // 陡壁侧带降低覆被
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       const nrm = faceNormal(
@@ -364,7 +364,7 @@ export class RockBuilder {
     /** 径向分段数 */
     sides: number;
     color: RGB;
-    /** 节间错位量（相对半径），默认 0.12 */
+    /** 节间错位量 */
     skew?: number;
     /** 节间扭转（弧度），默认 0.35 */
     twist?: number;
@@ -372,7 +372,7 @@ export class RockBuilder {
     tipColor?: RGB;
     mat?: RockMaterial;
     jitter?: number;
-    /** 覆被方案（只作用于节末封顶与朝上的侧面） */
+    /** 节末覆被参数配置 */
     crust?: CrustSpec;
     /** 覆被色 */
     crustColor?: RGB;
@@ -442,13 +442,13 @@ export class RockBuilder {
     sides: number;
     /** 倾角（弧度）：板面的翘起量 */
     tilt: number;
-    /** 倾角朝向（弧度，0 = 向 +X 翘） */
+    /** 板岩倾角朝向弧度 */
     bearing?: number;
     color: RGB;
     mat?: RockMaterial;
     jitter?: number;
     rotY?: number;
-    /** 逐顶点沿法线的位移表（板岩的边缘起伏） */
+    /** 沿法线位移边缘起伏 */
     wobble?: readonly number[] | ((i: number) => number);
     /** wobble 幅度（相对板厚） */
     wobbleAmount?: number;
@@ -487,7 +487,7 @@ export class RockBuilder {
   /** 低面球（巨砾 / 鹅卵石） */
   blob(opts: {
     center: V3;
-    /** 半径；给三元组可做三轴压扁（"变形"） */
+    /** 半径或三轴形变 */
     radius: number | V3;
     sides: number;
     color: RGB;
@@ -498,7 +498,7 @@ export class RockBuilder {
     jitter?: number;
     rotY?: number;
     mat?: RockMaterial;
-    /** 覆被方案（blob 的顶盖曲率天然朝上） */
+    /** 顶部覆被参数配置 */
     crust?: CrustSpec;
     /** 覆被色 */
     crustColor?: RGB;
@@ -545,7 +545,7 @@ export class RockBuilder {
       for (let i = 0; i < n; i++) {
         const j = (i + 1) % n;
         const idx = 0x300 + l * 0x40 + i;
-        // 四边形按 a-b-c / a-c-d 两面分别判
+        // 四边形两面分别判定
         face(idx * 2, rows[l][i], rows[l][j], rows[l + 1][j], col);
         face(idx * 2 + 1, rows[l][i], rows[l + 1][j], rows[l + 1][i], col);
       }
@@ -590,7 +590,7 @@ export class RockBuilder {
           normals[(v + i) * 3] = N[0];
           normals[(v + i) * 3 + 1] = N[1];
           normals[(v + i) * 3 + 2] = N[2];
-          // f.col 是单个面级的 RGB 三元组，要铺满该面的每个顶点
+          // 面的单颜色展开到各顶点
           colors[(v + i) * 3] = f.col[0];
           colors[(v + i) * 3 + 1] = f.col[1];
           colors[(v + i) * 3 + 2] = f.col[2];

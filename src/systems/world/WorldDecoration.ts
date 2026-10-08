@@ -8,8 +8,10 @@ import { buildPlantById, scatterablePlants } from './vegetation/Plants';
 import type { ClimateZone, Season } from './vegetation/types';
 import { buildRockById, rocksForChunk } from './rocks/Rocks';
 import type { RockForm } from './rocks/types';
+import { allowsNaturalDecoration } from './artificial/ArtificialState';
 
 export interface DecorationInput {
+  artificialType?: number;
   cx: number;
   cz: number;
   type: number;
@@ -42,7 +44,7 @@ const cache = new Map<string, MeshData>();
 
 export function decorationPlacements(input: DecorationInput): DecorationPlacement[] {
   const { cx, cz, seed, type, temperature } = input;
-  if (type === 0) return [];
+  if (type === 0 || !allowsNaturalDecoration(input.artificialType ?? type)) return [];
   const ox = cx * CHUNK_SIZE, oz = cz * CHUNK_SIZE, padded = CHUNK_SIZE + 2;
   const at = (x: number, z: number) => (Math.floor(z) - oz + 1) * padded + Math.floor(x) - ox + 1;
   const height = (x: number, z: number) => input.heights[at(x, z)];
@@ -97,8 +99,7 @@ export function decorationPlacements(input: DecorationInput): DecorationPlacemen
   return out;
 }
 
-export function buildDecorationMesh(input: DecorationInput): MeshData | null {
-  const placements = decorationPlacements(input);
+export function buildDecorationMesh(input: DecorationInput, placements = decorationPlacements(input)): MeshData | null {
   const pieces = placements.map(p => {
     const key = `${p.kind}:${p.id}:${p.season}:${p.kind === 'rock' ? `${p.form}:${input.type}` : ''}`;
     let geometry = cache.get(key);

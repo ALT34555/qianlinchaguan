@@ -1,0 +1,16 @@
+{
+  "fonts": [
+    {
+      "file": "NanoOldSongA-Regular.ttf",
+      "id": "song",
+      "family": "Qianlin Song",
+      "label": "纳米老宋"
+    },
+    {
+      "file": "ResourceHanRoundedCN-Medium.ttf",
+      "id": "round",
+      "family": "Qianlin Round",
+      "label": "资源圆体"
+    }
+  ]
+}

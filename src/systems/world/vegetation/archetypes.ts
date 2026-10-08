@@ -141,8 +141,7 @@ function flowerAt(b: LowPolyBuilder, def: PlantDef, center: V3, radius: number, 
   const petals = petalCountOf(def);
   const col = tone(def, 'bloom');
   const core = tone(def, 'pollen');
-  // 单瓣做得"短而宽"（宽 ≈ 1.5 倍长）
-  // 宽花瓣彼此搭接，整朵花才是一个有体量的花团。
+  // 宽短单瓣搭接形成花团
   const w = radius * 2.5 * petalWidthRatio(petals);
   const phase = rand() * TAU;
   for (let i = 0; i < petals; i++) {
@@ -262,11 +261,11 @@ function fruitCluster(
 
 /** 单片花瓣的独立几何 */
 export interface PetalShapeSpec {
-  /** 花瓣颜色（#rrggbb），省略为默认花色 */
+  /** 花瓣颜色十六进制，默认继承。 */
   color?: string;
   /** 花瓣长度（格），默认 0.16 */
   length?: number;
-  /** 花瓣宽度（格），默认取长度的 0.55 */
+  /** 花瓣宽度，默认长度0.55倍。 */
   width?: number;
   /** 上扬角（弧度），默认 0.35 */
   pitch?: number;
@@ -296,12 +295,7 @@ function limbTo(b: LowPolyBuilder, start: V3, dir: V3, length: number, radius: n
 }
 
 // 
-// 针叶树：层叠的伞盖 + 尖锐树顶
-//
-// 针叶树是裸子植物
-// 也不调用 bloomCluster
-// 需要"有花"的针叶树观感时
-// 
+// 针叶树：伞盖层叠与尖锐树顶
 function conifer(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -356,9 +350,7 @@ function conifer(b: LowPolyBuilder, def: PlantDef): void {
   }
   if (wantsSnowOn(def, 'top')) snowCap(b, def, [0, topY - span * 0.04, 0], baseRadius * 0.5, 1.2);
 
-  // 花期 = 散粉期
-  // 只在树冠表面撒一层 pollen 色的微小花粉颗
-  // 后续做"花粉过敏"之类的玩法时
+  // 散粉期冠表散布花粉粒子
   const pollenCount = bloomCountFor(def, 0, 20 + Math.round(layers * 8));
   if (pollenCount > 0) pollenGrains(b, def, pollenCount, baseRadius, trunk, topY, rand);
 }
@@ -379,7 +371,7 @@ function pollenGrains(b: LowPolyBuilder, def: PlantDef, count: number, baseRadiu
 }
 
 // 
-// 阔叶树：直立主干 + 数条上扬主枝 + 团簇树冠
+// 阔叶树：主干、分枝与团簇树冠
 // 
 function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
@@ -414,9 +406,7 @@ function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
     limbTips.push(limbTo(b, [crown[0], y, 0], dir, limbLength * (0.8 + rand() * 0.3), trunkR * 0.5, barkLight));
   }
 
-  // 树冠叶团
-  // 主团多一圈纬线（rings:1）
-  // 外围小团保持单圈，省下的面数留给花瓣花与叶片。
+  // 树冠主团双纬线，外围单圈
   const mainR = canopy;
   b.dome([crown[0], cy, 0], mainR, canopyH * 0.62, mainR, sides, tone(def, 'foliage'), { jitter, rand, rings: 1 });
   for (let i = 0; i < blobs; i++) {
@@ -440,7 +430,7 @@ function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
   leafSpray(b, def, [crown[0], cy, 0], mainR * 1.02, Math.round(scalar(p.leafPetals, blobs + 4)), rand,
     { width: 0.4, pitch: 0.14, spreadY: 0.5 });
 
-  // 花与果都挂在冠面外缘：藏在叶团里等于没开花没结果
+  // 花果挂载于冠面外缘
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 6);
   if (bloomCount > 0) {
     bloomCluster(b, def, [crown[0], cy + canopyH * 0.1, 0], mainR * 1.32, bloomCount, rand,
@@ -540,7 +530,7 @@ function palm(b: LowPolyBuilder, def: PlantDef): void {
     }
   }
 
-  // 花：棕榈是单子叶开花植物，花序从冠基叶鞘间抽出
+  // 棕榈花序从叶鞘抽出
   const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 0)), 5);
   if (bloomCount > 0) {
     bloomCluster(b, def, [crown[0], crown[1] + trunkR * 1.2, crown[2]], frondLength * 0.4, bloomCount, rand,
@@ -646,7 +636,7 @@ function baobab(b: LowPolyBuilder, def: PlantDef): void {
     b.dome(tip, r, r * 0.68, r, sides, i % 2 ? fol : folDark, { jitter: jitter * 1.4, rand });
     if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [tip[0], tip[1] + r * 0.25, tip[2]], r * 0.8, 0.9);
   }
-  // 冠面碎叶：稀疏团冠本来就"透"，补几片叶子撑出层次
+  // 冠面补碎叶丰富层次
   leafSpray(b, def, [0, trunk + canopy * 0.2, 0], canopy, Math.round(scalar(p.leafPetals, limbs + 2)), rand,
     { width: 0.42, pitch: 0.12, spreadY: 0.4, len: 0.55 });
   // 花
@@ -885,13 +875,7 @@ function sapling(b: LowPolyBuilder, def: PlantDef): void {
   if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [0, trunk + leafR * 0.6, 0], leafR * 0.9, 0.8);
 }
 
-// 
-// 幼苗
-//
-// 与 sapling 的区别
-// sprout 是**状态形态**
-// 因此它必须对乔木 / 灌木 / 草丛 / 兰花都
-// 
+// 幼苗原型：适配乔灌草与兰花
 function sprout(b: LowPolyBuilder, def: PlantDef): void {
   if (def.params.stateForm === 'orchid') {
     orchid(b, def);
@@ -900,7 +884,7 @@ function sprout(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
   // 幼苗必须比成株矮
-  // 雪线地衣这类"贴地成株"的参数 0.24 倍后仍
+  // 贴地植物参数缩放保护
   const speciesH = scalar(p.height, 0.5);
   const height = Math.min(scalar(p.height, 0.5), Math.max(0.08, speciesH * 0.42));
   const trunk = Math.min(scalar(p.trunk, height * 0.52), height * 0.62);
@@ -926,7 +910,7 @@ function sprout(b: LowPolyBuilder, def: PlantDef): void {
     b.petal([Math.cos(a) * leafR * 0.22, trunk * (0.62 + i * 0.06), Math.sin(a) * leafR * 0.22], a, len, len * 0.52,
       i % 2 ? fol : folDark, { pitch: 0.12 + rand() * 0.3, cup: 0.4, rand });
   }
-  // 顶芽：一枚小圆顶 + 两片嫩叶，读起来是"还在长"
+  // 顶芽包含圆顶与嫩叶
   b.dome([0, trunk + leafR * 0.3, 0], leafR * 0.5, leafR * 0.62, leafR * 0.5, 5, folDark, { jitter: 0.22, rand });
   for (let i = 0; i < 2 + Math.min(2, Math.round(scalar(p.blobs, 2))); i++) {
     const a = i * GOLDEN + rand();
@@ -940,8 +924,7 @@ function sprout(b: LowPolyBuilder, def: PlantDef): void {
 // 
 // 干枯
 //
-// 枯木刻意不引用 bloom / fruit 两个
-// 颜色只走 withered* 与物种色板
+// 枯木不生成花果
 // 
 function withered(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
@@ -990,11 +973,7 @@ function withered(b: LowPolyBuilder, def: PlantDef): void {
 }
 
 // 
-// 花树（梅）
-//
-// 只有开花才好看
-// 花量由 params.bloomCount 决定
-// 
+// 花树：花量由参数控制
 function blossomTree(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
@@ -1053,7 +1032,7 @@ function blossomTree(b: LowPolyBuilder, def: PlantDef): void {
           bloomR * (0.85 + rand() * 0.35), rand);
       }
     }
-    // 主干上部再补几朵，避免"只有枝头有花、树心是空的"
+    // 主干上部补充花簇
     bloomCluster(b, def, [bend * trunk * 0.3, trunk + height * 0.1, 0], height * 0.16,
       Math.max(3, Math.round(bloomCount * 0.5)), rand, { size: bloomR, ySpan: height * 0.16 });
   }
@@ -1061,11 +1040,7 @@ function blossomTree(b: LowPolyBuilder, def: PlantDef): void {
 }
 
 // 
-// 竹：多秆丛生 + **外凸竹节** + 秆顶窄叶
-//
-// 竹节是竹最认得出来的特征
-// 每一节的节环比秆**更粗**（1.36 倍秆径）
-// 而不是贴一圈深色薄片（那是"画上去的节"
+// 竹：多秆丛生、外凸节与顶窄叶
 // 
 function bamboo(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
@@ -1105,16 +1080,14 @@ function bamboo(b: LowPolyBuilder, def: PlantDef): void {
       b.prism([nx, y, z0], rr, rr, 0, nodeH * 0.86, sides, stem, { jitter: jitter * 0.4, rand });
       // 竹节
       // 一节只加一个环
-      // 而外凸本身已经足够读出节 —— 低模里"几何真的
+  // 外凸环强化竹节几何特征
       b.cone([nx, y + nodeH * 0.84, z0], rr * 1.36, rr * 1.36, nodeH * 0.24, sides, node,
         { radiusRatio: 0.8, jitter: 0.05, rand });
     }
     const topX = x0 + lean * h * 0.35 * 1.4;
     tops.push([topX, h, z0]);
   }
-  // 竹叶：只长在秆顶，细长小叶，先扬后垂。
-  // 长度必须跟秆高拉开量级（约 4%~8% 株高）
-  // 沿秆顶三档高度错开挂叶
+  // 秆顶错开挂狭长竹叶
   for (let i = 0; i < blades; i++) {
     const top = tops[Math.floor(rand() * tops.length)];
     const a = rand() * TAU;
@@ -1130,10 +1103,8 @@ function bamboo(b: LowPolyBuilder, def: PlantDef): void {
     b.cone([Math.cos(a) * rad, 0, Math.sin(a) * rad], culmR * 0.9, culmR * 0.9, height * 0.07, 4, stem,
       { jitter: 0.2, rand, cap: true });
   }
-  // 竹花
-  // 花量刻意不随开花态的"花量兜底 7 簇"放大 —
+  // 竹花稀疏三鳞被
   if (def.bloom) {
-    // 竹花：三枚鳞被（petals: 3），稀疏几朵
     const sparse = Math.max(1, Math.round(scalar(p.bloomCount, 2)));
     for (let i = 0; i < sparse; i++) {
       const top = tops[Math.floor(rand() * tops.length)];
@@ -1146,7 +1117,7 @@ function bamboo(b: LowPolyBuilder, def: PlantDef): void {
 }
 
 // 
-// 兰：基生窄叶扇形丛 + 一根弓形花葶 + 疏落小花
+// 兰花：基生叶、花葶与小花
 // 
 function orchid(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
@@ -1211,8 +1182,7 @@ export type ArchetypeName = keyof typeof ARCHETYPES;
 
 /** 每个原型的必备默认参数 */
 export const ARCHETYPE_DEFAULTS: Record<string, Partial<PlantParams>> = {
-  // sides 从 5 提到 6
-  // 是这套低模里最便宜的一次精度提升（每个棱柱多 3
+  // 棱柱精度提升微增面数
   conifer: { height: 12, trunk: 2.6, canopy: 3.1, layers: 5, sides: 6, jitter: 0.14, layerStep: 0.82, spikeCount: 1 },
   broadleaf: { height: 10, trunk: 4.6, canopy: 3.6, blobs: 7, sides: 6, jitter: 0.18, limbCount: 3, branchAngle: 0.75, canopyRatio: 0.42 },
   palm: { height: 11, trunk: 9.4, canopy: 4.6, fronds: 9, frondLength: 4.6, droop: 0.55, segments: 7, sides: 6, lean: 0.16 },
@@ -1221,12 +1191,10 @@ export const ARCHETYPE_DEFAULTS: Record<string, Partial<PlantParams>> = {
   shrub: { height: 1.6, canopy: 0.9, blobs: 4, sides: 6, jitter: 0.22, stems: 3, aspect: 1.15 },
   succulent: { height: 1.2, layers: 3, blobs: 5, spread: 0.6, bloomCount: 3 },
   bramble: { height: 1.25, stems: 6, blobs: 4, spread: 1.1, sides: 5, jitter: 0.3, thorns: 1, bloomCount: 0 },
-  // 草类与作物的"花"是颖花：两枚稃片 = 2 片花瓣
+  // 颖花两枚稃片对应双瓣
   grassClump: { height: 0.72, blades: 7, spread: 0.36, petals: 2 },
   sapling: { height: 1.1, trunk: 0.55, canopy: 0.3, blobs: 3 },
-  // ---- 状态形态与专类形态 ----
-  // sprout / withered 的默认值只是
-  // 正常路径下它们的尺寸由 STATE_DEFAUL
+  // 状态形态与专类形态默认尺寸
   sprout: { height: 0.5, trunk: 0.26, canopy: 0.16, blobs: 2, sides: 4, jitter: 0.16 },
   withered: { height: 4.5, trunk: 1.9, trunkRadius: 0.2, limbCount: 5, sides: 4, jitter: 0.24, blobs: 4 },
   blossomTree: { height: 3.4, trunk: 1.2, trunkRadius: 0.16, limbCount: 5, blobs: 4, sides: 5, jitter: 0.22, lean: 0.18, petals: 5 },

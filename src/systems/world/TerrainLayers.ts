@@ -88,7 +88,7 @@ export class TerrainLayers {
   /** 海床：陆架不动，深海叠加丘陵/海岭/海山/海沟 */
   private seabed(coverage: number, point: SurfacePoint): number {
     const base = Math.max(-160, coverage * 240);
-    // 近岸不动，海岸线与沿岸汇水与旧版逐字一致
+    // 保持近岸深度与海岸线稳定
     const room = Math.max(0, Math.min(1, (-base - 6) / 96));
     if (!room) return base;
     const t = clamp(-coverage / .667), open = smooth(t / .3);

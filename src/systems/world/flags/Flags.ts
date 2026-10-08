@@ -26,14 +26,22 @@ import {
 
 const palettes = palettesJson as FlagPaletteFile;
 
-/** 参数表格式版本由 src/core/version.ts 统一声明，这里不写 */
-
+/** 旗帜与构件色板表 */
 export const FLAG_PALETTES: ReadonlyMap<string, FlagPaletteEntry> = new Map<string, FlagPaletteEntry>([
   ...Object.entries(palettes.cloth ?? {}),
   ...Object.entries(palettes.hardware ?? {}),
 ]);
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
+
+export function resolveFlagColor(value: string): string {
+  if (/^#[0-9a-fA-F]{3}$/.test(value)) return '#' + [...value.slice(1)].map(c => c + c).join('');
+  if (HEX.test(value)) return value;
+  if (value.startsWith('#')) throw new Error(`[Flags] 颜色须为 #RGB 或 #RRGGBB: ${value}`);
+  const color = paletteEntry(value).default;
+  if (!HEX.test(color)) throw new Error(`[Flags] 色板键 ${value} 的色值非法: ${color}`);
+  return color;
+}
 
 function paletteEntry(key: string): FlagPaletteEntry {
   const e = FLAG_PALETTES.get(key);
@@ -65,9 +73,7 @@ export function resolveFlagPalette(base: FlagPalette, unit?: FlagPalette, overri
   for (const slot of FLAG_COLOR_SLOTS) {
     const key = merged[slot];
     if (!key) continue;
-    const value = paletteEntry(key).default;
-    if (!HEX.test(value)) throw new Error(`[Flags] 色板键 ${key} 的色值非法: ${value}`);
-    out[slot] = value;
+    out[slot] = resolveFlagColor(key);
   }
   return out;
 }
@@ -93,7 +99,7 @@ function checkPaletteKeys(id: string, palette: FlagPalette | undefined): void {
     if (!(FLAG_COLOR_SLOTS as readonly string[]).includes(slot)) {
       throw new Error(`[Flags] ${id} 的 palette 槽非法: ${slot}（可用: ${FLAG_COLOR_SLOTS.join(' / ')}）`);
     }
-    paletteEntry(key as string);
+    resolveFlagColor(key as string);
   }
 }
 

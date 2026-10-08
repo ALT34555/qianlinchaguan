@@ -14,7 +14,8 @@ function scalar(value: number | undefined, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-/** 从已解析色板按语义槽取色（槽已在注册表校验过） */function slotColor(def: RockBuildDef, slot: RockColorSlot): RGB {
+/** 按语义槽取色 */
+function slotColor(def: RockBuildDef, slot: RockColorSlot): RGB {
   const hex = def.palette[slot];
   if (!hex) return [127, 127, 127];
   return [
@@ -24,7 +25,7 @@ function scalar(value: number | undefined, fallback: number): number {
   ];
 }
 
-/** 本体色 / 层理色 / 顶面色 / 贴地色的统一 */
+/** 语义槽颜色解析 */
 function tones(def: RockBuildDef): { body: RGB; band: RGB; cap: RGB; base: RGB } {
   return {
     body: slotColor(def, 'body'),
@@ -36,7 +37,7 @@ function tones(def: RockBuildDef): { body: RGB; band: RGB; cap: RGB; base: RGB }
 
 /** 覆被方案 */
 interface CrustPlan {
-  /** 覆被色（RGB），无覆被时为 null */
+  /** 覆被颜色，无则为 null */
   color: RGB | null;
   /** 覆被材质槽 */
   mat: RockMaterial;
@@ -44,14 +45,14 @@ interface CrustPlan {
   amount: number;
   /** 只覆盖法线 y 大于该值的面 */
   slope: number;
-  /** 覆被色与本体色的混合比（0 = 完全替换） */
+  /** 覆被色混合比例 */
   blend: number;
 }
 
 function crustPlan(def: RockBuildDef): CrustPlan {
   const amount = clamp01(scalar(def.params.crust, def.crustMaterial ? 0.75 : 0.16));
   const slope = scalar(def.params.crustSlope, 0.42);
-  // 覆被色由注册表解析成 `#rrggbb` 带进来
+  // 覆被色十六进制解析
   const color = def.crustMaterial && def.crustRgb ? hexToRgb(def.crustRgb) : null;
   if (!color) return { color: null, mat: 'solid', amount: 0, slope, blend: 0 };
   // 苔藓压在本体上（混一点本体色才不会像贴纸）
@@ -59,7 +60,7 @@ function crustPlan(def: RockBuildDef): CrustPlan {
   return { color, mat: def.crustMaterial ?? 'moss', amount, slope, blend };
 }
 
-/** 把覆被方案摊成 RockBuilder 的 crust 参数 */
+/** 展开覆被参数 */
 function crustArgs(plan: CrustPlan): {
   crust?: { mat: RockMaterial; amount: number; slope: number };
   crustColor?: RGB;
@@ -98,7 +99,7 @@ function resolve(def: RockBuildDef): Resolved {
   };
 }
 
-// ---- 叠置档：所有原型共用的一块小石 ----
+// 叠置档共用小石
 
 /** 叠置档的小石 */
 function stackCore(
@@ -129,7 +130,7 @@ function stackCore(
   });
 }
 
-/** 主石的实际顶面高度（把同原型压成 outcrop 试算一次） */
+/** 试算主石顶面高度 */
 function mainSpan(def: RockBuildDef): number {
   try {
     const fn = ROCK_ARCHETYPES[def.archetype];
@@ -142,9 +143,9 @@ function mainSpan(def: RockBuildDef): number {
   }
 }
 
-// ---- 1. boulder 巨砾 ----
+// 1. 巨砾 boulder
 
-/** 生成一张"环的半径抖动表"：正多边形叠正多边形一定是台阶 */
+/** 环半径抖动离散表 */
 function ringRipple(sides: number, layers: number, rand: () => number): number[][] {
   const table: number[][] = [];
   for (let l = 0; l < layers; l++) {
@@ -155,7 +156,7 @@ function ringRipple(sides: number, layers: number, rand: () => number): number[]
   return table;
 }
 
-/** 生成一张"环的沿法线位移表"：让层与层咬合成一整块 */
+/** 环沿法线位移表 */
 function ringWobble(sides: number, layers: number, rand: () => number): number[][] {
   const table: number[][] = [];
   for (let l = 0; l < layers; l++) {
@@ -294,7 +295,7 @@ function block(b: RockBuilder, def: RockBuildDef): void {
   if (wantsStack(def)) stackCore(b, def, t, plan, rand);
 }
 
-// ---- 3. rubble 碎石堆 ----
+// 3. 碎石堆 rubble
 
 /** 碎石堆 */
 function rubble(b: RockBuilder, def: RockBuildDef): void {
@@ -401,7 +402,7 @@ function ledge(b: RockBuilder, def: RockBuildDef): void {
   const tiltX = scalar(p.tiltX, 0.05 + (rand() * 2 - 1) * 0.05);
   const tiltZ = scalar(p.tiltZ, (rand() * 2 - 1) * 0.05);
   const normal: V3 = [Math.sin(tiltZ), Math.cos(tiltZ) * Math.cos(tiltX), Math.sin(tiltX)];
-  // 主台底边压到地下：否则正侧视会读成一块漂着的板
+  // 主台底边下沉贴地
   const sink = scalar(p.sink, 0.34) * height;
   const mainTop = scalar(p.baseFlatten, 0.86) * height;
   const mainThick = mainTop + sink;
@@ -443,7 +444,7 @@ function ledge(b: RockBuilder, def: RockBuildDef): void {
     rotY: rand() * TAU,
     ...crustArgs(plan),
   });
-  // 台面裂纹：抬 0.015 格避免与顶盖共面闪烁
+  // 裂纹抬高微距避免共面
   const capY = mainTop + height * 0.015;
   for (let i = 0; i < 2; i++) {
     b.shell({
@@ -594,7 +595,7 @@ function stub(b: RockBuilder, def: RockBuildDef): void {
   const t = tones(def);
   const plan = crustPlan(def);
   const sink = scalar(p.sink, 0.14) * height;
-  // 底裙：比墩身略宽的薄壳，把墩子与地面的接缝糊住
+  // 底裙遮盖地面接缝
   b.shell({
     center: [0, -sink + height * 0.14, 0],
     rx: (diameter / 2) * (0.9 + rand() * 0.16),
@@ -675,7 +676,7 @@ function floe(b: RockBuilder, def: RockBuildDef): void {
     rx *= taper;
     rz *= taper;
   }
-  // 顶上一两块翘起的薄冰壳：冰面断裂的观感，落座 0.46~0.62 免得成悬空帽子
+  // 顶盖薄冰壳断裂表现
   const plates = Math.max(1, Math.round(scalar(p.plates, 2)));
   const r = diameter / 2;
   for (let i = 0; i < plates; i++) {
@@ -720,7 +721,7 @@ export const ROCK_ARCHETYPES: Record<string, (b: RockBuilder, def: RockBuildDef)
 
 export type RockArchetypeName = keyof typeof ROCK_ARCHETYPES;
 
-/** 每个原型的默认参数（参数表只写与本层默认不同的值） */
+/** 原型默认几何参数 */
 export const ROCK_ARCHETYPE_DEFAULTS: Record<string, RockParams> = {
   boulder: { diameter: 2.1, aspect: 0.78, sides: 7, shells: 5, shellTaper: 0.87, shellSkew: 0.12, shellTwist: 0.5, baseFlatten: 0.95, jitter: 0.22, sink: 0.14 },
   block: { diameter: 1.9, aspect: 0.9, sides: 6, shells: 4, shellTaper: 0.91, shellSkew: 0.13, shellTwist: 0.7, jitter: 0.15, sink: 0.1 },
@@ -733,7 +734,7 @@ export const ROCK_ARCHETYPE_DEFAULTS: Record<string, RockParams> = {
   floe: { diameter: 2.3, aspect: 0.5, sides: 7, shells: 3, shellTaper: 0.86, plates: 2, jitter: 0.16, sink: 0.22 },
 };
 
-/** 岩性族 -> 默认色板映射（参数表没写 palette 时用它） */
+/** 岩性默认色板映射 */
 export const FAMILY_PALETTE: Record<string, Required<RockPalette>> = {
   igneous: { body: 'granite', band: 'graniteDark', cap: 'granitePale', base: 'soil', crust: 'lichen' },
   sedimentary: { body: 'sandstone', band: 'sandstoneDark', cap: 'sandstonePale', base: 'soil', crust: 'dryGrass' },
@@ -751,7 +752,7 @@ export function buildRock(def: RockBuildDef): RockGeometry {
   return b.build();
 }
 
-/** 用植被原语画一个圆锥再拌进岩石几何（原语复用的示范） */
+/** 复用原语混合几何 */
 export function bakeCone(
   b: RockBuilder,
   base: V3,

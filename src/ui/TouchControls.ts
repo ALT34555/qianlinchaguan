@@ -1,5 +1,6 @@
 import type { Input } from '../core/Input';
-import { actionLabel, type GameAction } from '../core/GameSettings';
+import { actionLabel, type GameAction, type GameSettings } from '../core/GameSettings';
+import { icon } from './Icons';
 import { t } from '../i18n';
 
 /** 触控手指事件绑定 */
@@ -9,9 +10,10 @@ export class TouchControls {
   private readonly moveButtons: HTMLButtonElement[] = [];
   private readonly actionButtons: { el: HTMLButtonElement; action: GameAction }[] = [];
   private look: { id: number; x: number; y: number } | null = null;
+  private stickPointer: number | null = null;
   constructor(private readonly input: Input, canvas: HTMLCanvasElement) {
     this.root.className = 'touch-controls hidden';
-    this.root.innerHTML = `<div class="touch-move">${[['forward', '↑'], ['left', '←'], ['back', '↓'], ['right', '→']].map(([action, label]) => `<button data-action="${action}">${label}</button>`).join('')}</div><div class="touch-actions"><button data-action="sprint"></button><button data-action="jump"></button><button data-action="descend"></button></div>`;
+    this.root.innerHTML = `<div class="touch-move"><div class="touch-stick" role="group" aria-label="${t('settings.touchLayout.move')}">${icon('stick-base', 'stick-base')}${icon('stick-knob', 'stick-knob')}</div></div><div class="touch-actions"><button data-action="sprint"></button><button data-action="jump"></button><button data-action="descend"></button></div>`;
     document.body.appendChild(this.root);
     this.moveButtons.push(...this.root.querySelectorAll<HTMLButtonElement>('.touch-move button'));
     this.actionButtons.push(
@@ -20,6 +22,26 @@ export class TouchControls {
       { el: this.root.querySelector<HTMLButtonElement>('.touch-actions [data-action="descend"]')!, action: 'descend' },
     );
     this.applyLocale();
+    const stick = this.root.querySelector<HTMLElement>('.touch-stick')!;
+    const move = (event: PointerEvent) => {
+      if (event.pointerId !== this.stickPointer) return;
+      const rect = stick.getBoundingClientRect(), radius = rect.width * .32;
+      let x = event.clientX - rect.left - rect.width / 2, y = event.clientY - rect.top - rect.height / 2;
+      const length = Math.hypot(x, y);
+      if (length > radius) { x *= radius / length; y *= radius / length; }
+      const knob = this.root.querySelector<HTMLElement>('.stick-knob')!;
+      knob.style.left = `${50 + x / rect.width * 100}%`; knob.style.top = `${50 + y / rect.height * 100}%`;
+      this.input.setVirtualAction('left', x < -radius * .25); this.input.setVirtualAction('right', x > radius * .25);
+      this.input.setVirtualAction('forward', y < -radius * .25); this.input.setVirtualAction('back', y > radius * .25);
+    };
+    stick.addEventListener('pointerdown', event => {
+      if (this.stickPointer !== null) return;
+      event.preventDefault(); this.stickPointer = event.pointerId; stick.setPointerCapture(event.pointerId); move(event);
+    });
+    stick.addEventListener('pointermove', move);
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) stick.addEventListener(type, event => {
+      if ((event as PointerEvent).pointerId === this.stickPointer) this.releaseStick();
+    });
     this.root.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(button => {
       button.addEventListener('pointerdown', event => {
         event.preventDefault(); button.setPointerCapture(event.pointerId);
@@ -35,7 +57,7 @@ export class TouchControls {
     });
     canvas.style.touchAction = 'none';
     canvas.addEventListener('pointerdown', event => {
-      // 显示虚拟按键时不会申请鼠标锁定（按键要留着自己可
+      // 触屏拖动视角，不锁定指针
       // 按住场景拖动转视角
       if (this.root.classList.contains('hidden') || this.look || this.input.pointerLocked) return;
       canvas.setPointerCapture(event.pointerId); this.look = { id: event.pointerId, x: event.clientX, y: event.clientY };
@@ -65,8 +87,25 @@ export class TouchControls {
     });
   }
   private clear(): void {
+    this.releaseStick();
     for (const action of this.held.values()) this.input.setVirtualAction(action, false);
     this.held.clear(); this.look = null;
+  }
+  private releaseStick(): void {
+    this.stickPointer = null;
+    for (const action of ['left', 'right', 'forward', 'back'] as const) this.input.setVirtualAction(action, false);
+    const knob = this.root.querySelector<HTMLElement>('.stick-knob')!;
+    knob.style.left = '50%'; knob.style.top = '50%';
+  }
+  applySettings(settings: GameSettings): void {
+    this.root.style.opacity = String(settings.touchOpacity ?? 1);
+    for (const key of ['move', 'actions'] as const) {
+      const group = this.root.querySelector<HTMLElement>(`.touch-${key}`)!;
+      const point = settings.touchLayout![key];
+      group.style.left = `${point.x}%`; group.style.top = `${point.y}%`;
+      group.style.right = 'auto'; group.style.bottom = 'auto';
+      group.style.transform = `translate(-${point.x}%, -${point.y}%)`;
+    }
   }
   setVisible(visible: boolean): void { this.clear(); this.root.classList.toggle('hidden', !visible); }
 }

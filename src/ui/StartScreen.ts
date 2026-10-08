@@ -1,3 +1,7 @@
+import { MAX_SAVE_BYTES } from '../systems/world/SaveArchive';
+import teacupUrl from '../../content/assets/ui/icons/qianlin_teacup.png?url';
+import { randomSeed } from '../core/math/Random';
+import { renName } from '../entities/PlayerIdentity';
 import { DEFAULT_GENERATION, DEFAULT_PLANET, EARTH_PLANET, type ClimateWeights, type WorldGeneration } from '../systems/world/WorldSettings';
 import { downloadWorldSave, type LocalSave, type SaveStore } from '../systems/world/LocalSaveStore';
 import type { GameSettings } from '../core/GameSettings';
@@ -12,7 +16,7 @@ export type { StartOptions } from './WorldCreator';
 interface MenuServices {
   store: SaveStore;
   getSettings: () => GameSettings;
-  applySettings: (settings: GameSettings) => void;
+  applySettings: (settings: GameSettings, persist?: boolean) => void;
 }
 export class StartScreen {
   private creator: WorldCreator | null = null;
@@ -21,7 +25,7 @@ export class StartScreen {
   /** 当前页面的重绘闭包，用于切换语言后就地刷新。 */
   private rerender: (() => void) | null = null;
   private readonly stopLocaleWatch: () => void;
-  constructor(private readonly root: HTMLElement, private readonly seed: string, private readonly weights: ClimateWeights,
+  constructor(private readonly root: HTMLElement, _seed: string, private readonly weights: ClimateWeights,
     private readonly enter: (options: StartOptions) => void, private readonly generation: WorldGeneration,
     private readonly services: MenuServices) {
     this.stopLocaleWatch = onLocaleChange(this.onLocaleChange);
@@ -48,7 +52,8 @@ export class StartScreen {
   home(): void {
     this.clear();
     this.rerender = () => this.home();
-    this.root.innerHTML = `<section class="simple-home"><h1>${t('app.name')}</h1><nav aria-label="${t('menu.navAria')}"><button data-create>${t('menu.create')}</button><button data-read>${t('menu.read')}</button><button data-settings>${t('menu.settings')}</button></nav><p id="menu-status" class="menu-status" role="status" aria-live="polite"></p></section>`;
+    this.root.innerHTML = `<section class="simple-home"><span class="home-player-name" aria-hidden="true"></span><img class="home-teacup" src="${teacupUrl}" alt="" draggable="false"><h1>${t('app.name')}</h1><nav aria-label="${t('menu.navAria')}"><button data-create>${t('menu.create')}</button><button data-read>${t('menu.read')}</button><button data-settings>${t('menu.settings')}</button></nav><p id="menu-status" class="menu-status" role="status" aria-live="polite"></p></section>`;
+    this.root.querySelector('.home-player-name')!.textContent = renName(this.services.getSettings().ren_ming);
     this.on('[data-create]', () => this.createChoices()); this.on('[data-read]', () => this.read()); this.on('[data-settings]', () => this.preferences());
   }
   private createChoices(): void {
@@ -61,13 +66,13 @@ export class StartScreen {
     this.on('[data-back]', () => this.home());
     this.root.querySelectorAll<HTMLButtonElement>('[data-kind]').forEach(button => this.on(`[data-kind="${button.dataset.kind}"]`, () => this.create(button.dataset.kind!)));
   }
-  private create(kind: string): void {
+  private create(kind: string, seed = String(randomSeed())): void {
     this.clear(); this.root.classList.remove('landing-page'); this.root.classList.add('creator-page');
-    this.rerender = () => this.create(kind);
+    this.rerender = () => this.create(kind, seed);
     const generation = kind === 'plane' ? DEFAULT_GENERATION : { mode: 'planet' as const, planet: { ...(kind === 'earth' ? EARTH_PLANET : DEFAULT_PLANET) }, landRatio: .5 };
     const initial = (kind === 'plane' && this.generation.mode === 'plane') ||
       (kind !== 'plane' && this.generation.mode === 'planet' && this.generation.planet.map === (kind === 'earth' ? 'earth' : 'procedural')) ? this.generation : generation;
-    this.creator = new WorldCreator(this.root, this.seed, this.weights, this.enter, initial, () => this.createChoices());
+    this.creator = new WorldCreator(this.root, seed, this.weights, this.enter, initial, () => this.createChoices(), renName(this.services.getSettings().ren_ming));
   }
   private preferences(): void {
     this.clear(); this.rerender = () => this.preferences();
@@ -77,7 +82,7 @@ export class StartScreen {
   private async read(message = ''): Promise<void> {
     this.clear();
     this.rerender = () => { void this.read(); };
-    this.root.innerHTML = `${this.header()}<section class="menu-page"><div class="panel-heading"><h1>${t('saves.title')}</h1><button class="menu-back" data-back>${t('saves.back')}</button></div><div class="saves-intro"><p class="panel-intro" data-save-location></p><button class="primary" data-import>${t('saves.import')}</button><input data-import-file type="file" accept=".json,application/json" class="hidden"></div><div class="save-list">${t('saves.loading')}</div><p id="menu-status" class="menu-status" role="status" aria-live="polite"></p></section>`;
+    this.root.innerHTML = `${this.header()}<section class="menu-page"><div class="panel-heading"><h1>${t('saves.title')}</h1><button class="menu-back" data-back>${t('saves.back')}</button></div><div class="saves-intro"><p class="panel-intro" data-save-location></p><button class="primary" data-import>${t('saves.import')}</button><input data-import-file type="file" accept=".sav,application/zip" class="hidden"></div><div class="save-list">${t('saves.loading')}</div><p id="menu-status" class="menu-status" role="status" aria-live="polite"></p></section>`;
     this.root.querySelector('[data-save-location]')!.textContent = t('saves.location', { path: this.services.store.locationLabel });
     this.on('[data-back]', () => this.home());
     const status = this.root.querySelector<HTMLElement>('#menu-status')!; status.textContent = message;
@@ -90,9 +95,9 @@ export class StartScreen {
       importButton.disabled = true; status.textContent = t('saves.importing');
       const signal = this.events.signal;
       try {
-        if (file.size > 4 * 1024 * 1024) throw new Error(t('saves.importTooLarge'));
-        const text = await file.text(); if (signal.aborted) return;
-        const item = await this.services.store.import(text, file.name.replace(/\.json$/i, ''));
+        if (file.size > MAX_SAVE_BYTES) throw new Error(t('saves.importTooLarge'));
+        const bytes = new Uint8Array(await file.arrayBuffer()); if (signal.aborted) return;
+        const item = await this.services.store.import(bytes, file.name.replace(/\.sav$/i, ''));
         if (!signal.aborted) void this.read(t('saves.imported', { name: item.name }));
       } catch (error) { if (!signal.aborted) status.textContent = error instanceof Error ? error.message : t('saves.importFailed'); }
       input.value = '';
@@ -128,7 +133,7 @@ export class StartScreen {
       catch (error) { status.textContent = error instanceof Error ? error.message : t('saves.readFailed'); }
     }, { signal: this.events.signal });
     const download = document.createElement('button'); download.className = 'secondary'; download.textContent = t('saves.export');
-    download.addEventListener('click', () => downloadWorldSave(item.save, item.name), { signal: this.events.signal });
+    download.addEventListener('click', () => downloadWorldSave(item.save, item.name, item.id), { signal: this.events.signal });
     actions.append(read, download); card.append(info, actions); return card;
   }
   destroy(): void { this.stopLocaleWatch(); this.rerender = null; this.clear(); }

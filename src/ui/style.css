@@ -1,13 +1,10 @@
-/* ==========================================================================
-   style.css · 全局图层：准星、加载提示、水色滤镜、调试面板
-   颜色与字体一律取自 theme.css 的令牌，本文件不写死色值。
-   ========================================================================== */
+/* 全局图层与提示样式。 */
 
 #app canvas {
   display: block;
 }
 
-/* ---- 准星：纸白点 + 墨线描边，在任何天光下都能看清 ---- */
+/* 准星描边样式。 */
 #crosshair {
   position: fixed;
   left: 50%;
@@ -21,7 +18,7 @@
   pointer-events: none;
 }
 
-/* ---- 入水滤镜：属于画面效果，保留水色，只压低饱和以免跳出配色 ---- */
+/* 入水滤镜样式。 */
 #water-tint {
   position: fixed;
   inset: 0;
@@ -37,7 +34,7 @@
   transform: translateX(-50%);
   padding: 9px 22px;
   font-family: var(--ql-font-display);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-label);
   color: var(--ql-ink);
   background: var(--ql-paper);
@@ -51,24 +48,19 @@
   pointer-events: none;
 }
 
-/* ==========================================================================
-   开始 / 暂停浮层（旧版面板，保留结构以免影响历史调用方）
-   ========================================================================== */
+/* 开始与暂停浮层。 */
 
 #start-screen {
   position: fixed;
   inset: 0;
   z-index: 10010;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  align-items: flex-start;
+  justify-content: flex-end;
   cursor: default;
-  overflow-y: auto;
-  /* 半透明墨色罩，让纸面界面从场景中"浮"出来 */
-  background: rgba(32, 25, 16, .55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  overflow: hidden;
+  pointer-events: none;
+  background: none;
 }
 
 .start-panel {
@@ -85,18 +77,18 @@
 
 .start-panel h1 {
   margin: 0 0 6px;
-  font-size: 25px;
+  font-size: calc(25px * var(--text-scale, 1));
 }
 
 .start-hint {
   margin: 0 0 14px;
   color: var(--ql-cinnabar);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale, 1));
 }
 
 .controls {
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--text-scale, 1));
 }
 
 .controls td {
@@ -109,9 +101,7 @@
   font-family: var(--ql-font-display);
 }
 
-/* ==========================================================================
-   F12 调试面板
-   ========================================================================== */
+/* F12 调试面板。 */
 
 .debug-overlay {
   position: fixed;
@@ -128,7 +118,7 @@
     inset 0 0 0 2px var(--ql-paper),
     inset 0 0 0 3px var(--ql-line),
     var(--ql-shadow);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   pointer-events: auto;
 }
 
@@ -141,7 +131,7 @@
   border-bottom: 1px solid var(--ql-line-soft);
   color: var(--ql-cinnabar);
   font-family: var(--ql-font-display);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-label);
 }
 
@@ -156,7 +146,7 @@
     inset 0 0 0 2px var(--ql-seal-on),
     inset 0 0 0 3px rgba(251, 244, 227, .35);
   font-family: var(--ql-font-body);
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-body);
 }
 
@@ -176,7 +166,7 @@
   margin: 8px 0 4px;
   max-height: 96px;
   overflow-y: auto;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--ql-ink-2);
 }
 
@@ -194,14 +184,22 @@
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid var(--ql-line-soft);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
 }
 
 .debug-info {
   margin-top: 4px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   line-height: 1.55;
+}
+
+.debug-aim {
+  margin-top: 2px;
+  font-size: calc(11px * var(--text-scale, 1));
+  color: var(--ql-ink-2);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 /* ---- 历法控制区（调试面板内） ---- */
@@ -210,7 +208,7 @@
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--ql-line-soft);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .debug-calendar-text {
@@ -231,7 +229,7 @@
 .debug-calendar-row button {
   padding: 3px 8px;
   font-family: var(--ql-font-body);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-body);
   box-shadow:
     inset 0 0 0 1px rgba(251, 244, 227, .7),
@@ -253,5 +251,11 @@
 
 #cal-jump-input {
   padding: 2px 6px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
+}
+
+#cal-jump-date {
+  width: 88px;
+  padding: 2px 6px;
+  font-size: calc(11px * var(--text-scale, 1));
 }

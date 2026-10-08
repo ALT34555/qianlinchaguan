@@ -15,18 +15,18 @@ export interface PlantGeometry {
   normals: Float32Array;
   colors: Uint8Array;
   indices: Uint32Array;
-  /** 包围半径（含叶冠），用于视锥剔除与 LOD */
+  /** 包围半径，用于视锥剔除 */
   radius: number;
   /** 几何高度（含枝顶） */
   height: number;
-  /** 各材质槽的三角形区间 [start, count */
+  /** 材质槽三角形索引区间 */
   groups: { mat: PlantMaterial; start: number; count: number }[];
-  /** 顶点数 / 三角形数，便于诊断与文档统计 */
+  /** 顶点数与三角形数统计 */
   vertexCount: number;
   triangleCount: number;
 }
 
-/** 方向明暗阶梯：预烘焙光照，避免运行时开销 */
+/** 方向明暗预烘焙阶梯 */
 const SHADE_STEPS = [0.58, 0.7, 0.84, 1.0];
 
 /** 太阳方向（标准化为整数权重即可） */
@@ -56,7 +56,7 @@ export class LowPolyBuilder {
     return this.faces.length;
   }
 
-  /** 提交一个面（顶点顺序需符合外侧逆时针） */
+  /** 提交面（外侧逆时针） */
   push(pos: number[], col: [number, number, number], nrm: number[], mat: PlantMaterial = 'solid'): void {
     const s = shadeOf(nrm[0], nrm[1], nrm[2]);
     this.faces.push({
@@ -132,7 +132,7 @@ export class LowPolyBuilder {
       const j = (i + 1) % n;
       this.quad(bot[i], bot[j], topRing[j], topRing[i], color, opts.mat);
     }
-    // 底 / 顶盖：统一按"逆时针环 + 首顶点扇形"拆
+    // 端盖按扇形三角剖分
     if (Math.abs(bottom) > 1e-6) {
       for (let i = 1; i < n - 1; i++) {
         this.triangle(bot[0], bot[i], bot[i + 1], color, opts.mat);
@@ -404,7 +404,7 @@ export class LowPolyBuilder {
     for (let i = 1; i < sides - 1; i++) this.triangle(r1[0], r1[i], r1[i + 1], color, opts.mat);
   }
 
-  /** 把构建结果打包成单株几何，并按材质槽分段 */
+  /** 打包单株几何并按材质槽分段 */
   build(): PlantGeometry {
     let vertexCount = 0;
     let indexCount = 0;
@@ -421,7 +421,7 @@ export class LowPolyBuilder {
     let idx = 0;
     let maxR = 0;
     let maxY = 0;
-    // 以 PLANT_MATERIALS 的顺序输出
+    // 按材质槽顺序输出
     for (const mat of PLANT_MATERIALS) {
       const start = idx;
       for (const f of this.faces) {
@@ -429,8 +429,7 @@ export class LowPolyBuilder {
         const n = f.pos.length / 3;
         positions.set(f.pos, v * 3);
         // 面法线
-        // 注意必须在这里补齐 —— 法线缺省为全 0 时
-        // 会按零向量处理，整株模型会黑掉。
+        // 补全法线避免着色异常
         const N = LowPolyBuilder.normal(
           f.pos[0], f.pos[1], f.pos[2],
           f.pos[3], f.pos[4], f.pos[5],
@@ -441,8 +440,7 @@ export class LowPolyBuilder {
           normals[(v + i) * 3 + 1] = N[1];
           normals[(v + i) * 3 + 2] = N[2];
         }
-        // f.col 是**单个 RGB 三元组**（面的
-        // 因此必须为这个面的每个顶点重复写出一次
+        // 面的单颜色展开到各顶点
         for (let i = 0; i < n; i++) {
           colors[(v + i) * 3] = f.col[0];
           colors[(v + i) * 3 + 1] = f.col[1];
@@ -478,10 +476,10 @@ function clampByte(v: number): number {
   return r < 0 ? 0 : r > 255 ? 255 : r;
 }
 
-/** 形状枚举 -> 构建器方法名（参数表校验与文档生 */
+/** 形状枚举映射构建方法 */
 export const SHAPE_TYPES: readonly ShapeType[] = ['cone', 'prism', 'box', 'dome', 'ico', 'crossQuad', 'petal'];
 
-/** 供导出脚本把 ShapeSpec 转成实际几何 */
+/** 转换 ShapeSpec 为几何 */
 export function shapeMaterial(spec: ShapeSpec): PlantMaterial {
   return spec.material ?? 'solid';
 }

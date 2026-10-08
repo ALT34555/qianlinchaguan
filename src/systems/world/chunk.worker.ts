@@ -2,7 +2,7 @@
 import { buildChunkMeshes, type MeshData } from './ChunkMesher';
 import type { ChunkResultMessage, WorkerRequest } from './ChunkProtocol';
 import { WorldGenerator } from './WorldGenerator';
-import { buildDecorationMesh } from './WorldDecoration';
+import { buildDecorationMesh, decorationPlacements } from './WorldDecoration';
 
 const ctx = self as unknown as Worker;
 let generator: WorldGenerator | null = null;
@@ -26,8 +26,12 @@ ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
     const t0 = performance.now();
     const chunk = generator.generateChunk(msg.cx, msg.cz);
     const meshes = buildChunkMeshes(msg.cx, msg.cz, chunk.heights, chunk.surfaces, generator.seed, chunk.waterLevels, chunk.surfaceColors,chunk.waterField);
-    const decoration = buildDecorationMesh({ ...chunk, cx: msg.cx, cz: msg.cz,
-      seed: generator.seed, temperature: generator.getClimate(msg.cx, msg.cz).temperature });
+    const decorationInput = { ...chunk, cx: msg.cx, cz: msg.cz,
+      artificialType: msg.artificialType,
+      seed: generator.seed, temperature: generator.getClimate(msg.cx, msg.cz).temperature };
+    const placements = decorationPlacements(decorationInput);
+    const decoration = buildDecorationMesh(decorationInput, placements.filter(p => p.kind === 'plant'));
+    const rocks = buildDecorationMesh(decorationInput, placements.filter(p => p.kind === 'rock'));
 
     // 主线程只需要区块内部的高度（去掉外扩一圈）
     const S = Math.sqrt(chunk.surfaces.length);
@@ -55,6 +59,7 @@ ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
       terrain: meshes.terrain,
       water: meshes.water,
       decoration,
+      rocks,
       minimap: meshes.minimap,
       ...(meshes.mist ? { mist: meshes.mist } : {}),
       elapsed: performance.now() - t0,
@@ -64,6 +69,7 @@ ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
     pushBuffers(meshes.terrain, transfer);
     pushBuffers(meshes.water, transfer);
     pushBuffers(decoration, transfer);
+    pushBuffers(rocks, transfer);
     ctx.postMessage(result, transfer);
   }
 };

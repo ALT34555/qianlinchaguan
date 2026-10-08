@@ -2,7 +2,13 @@ node_modules/
 dist/
 *.log
 .vite/
-userdata/
+userdata/*
+!userdata/mods/
+userdata/mods/*
+!userdata/mods/fonts/
+userdata/mods/fonts/*
+!userdata/mods/fonts/NanoOldSongA-Regular.ttf
+!userdata/mods/fonts/ResourceHanRoundedCN-Medium.ttf
+!userdata/mods/fonts/fonts.json
 release/
 platforms/windows/runtime/
-.temp/

@@ -8,11 +8,11 @@ import {CHUNK_SIZE} from '../../core/config';
 import { FLOW_DIRECTIONS, effectiveRunoff, RIVER_THRESHOLD, liquidRiverAllowed, waterfallDrop, splashWetlandDrop, type DrainageNode } from './Hydrology';
 export { FLOW_DIRECTIONS, effectiveRunoff, RIVER_THRESHOLD, type DrainageNode } from './Hydrology';
 const key = (x: number, z: number) => `${x},${z}`;
-/** 非主河格取邻近主河道流向时的最大搜索半径（切比雪夫距离） */
+/** 非主河格流向最大搜索半径 */
 const CORRIDOR_FLOW_RADIUS = 2;
-/** 方向与“主河→本块”连线的最小同向余弦，避免借到反向河道 */
+/** 邻近主河同向余弦阈值 */
 const CORRIDOR_FLOW_ALIGNMENT = .5;
-/** 河槽带按水面真正覆盖到的陆地核心判定，核心从区块边界内收。 */
+/** 陆地核心内收距离判定 */
 function coreDistance(cx: number, cz: number, ax: number, az: number, bx: number, bz: number): number {
   const minX = cx * CHUNK_SIZE + RIVER_BANK_BLEND, maxX = (cx + 1) * CHUNK_SIZE - RIVER_BANK_BLEND;
   const minZ = cz * CHUNK_SIZE + RIVER_BANK_BLEND, maxZ = (cz + 1) * CHUNK_SIZE - RIVER_BANK_BLEND;
@@ -103,7 +103,7 @@ export class RiverNetwork {
           const bridge=riverTurnBridge(p,[cx,cz],next);if(!bridge)continue;
           if(bridge.length===3&&this.rawRoute(...bridge[1])?.main)continue;
           const nodes=bridge.map(([x,z])=>this.node(this.wrap(x),z));
-          if(nodes.some(n=>!liquidRiverAllowed(n))||!liquidRiverAllowed(this.node(cx,cz)))continue;
+          if(nodes.some(n=>n.height<=0)||this.node(cx,cz).height<=0)continue;
           if(nodes.some((n,i)=>i>0&&Math.abs(n.height-nodes[i-1].height)>=16))continue;
           if(Math.abs(this.node(cx,cz).height-nodes[0].height)>=16||Math.abs(this.node(cx,cz).height-nodes.at(-1)!.height)>=16)continue;
           paths.push(bridge);
@@ -151,13 +151,13 @@ export class RiverNetwork {
       (previous,detour,next)=>{
         if(!a.channel)return false;
         const p=this.node(this.wrap(previous[0]),previous[1]),d=this.node(this.wrap(detour[0]),detour[1]),n=this.node(this.wrap(next[0]),next[1]);
-        if(!liquidRiverAllowed(p)||!liquidRiverAllowed(d)||!liquidRiverAllowed(n)||
+        if(p.height<=0||d.height<=0||n.height<=0||
           Math.abs(p.height-d.height)>=16||Math.abs(d.height-n.height)>=16)return false;
         for(const [a,b] of [[previous,detour],[detour,next]]){
           if(a[0]===b[0]||a[1]===b[1])continue;
           for(const [x,z] of [[a[0],b[1]],[b[0],a[1]]]){
             const bank=this.node(this.wrap(x),z);
-            if(!liquidRiverAllowed(bank)||bank.height>Math.min(p.height,d.height,n.height)+16)return false;
+            if(bank.height<=0||bank.height>Math.min(p.height,d.height,n.height)+16)return false;
           }
         }
         return true;
@@ -167,7 +167,7 @@ export class RiverNetwork {
       const [x,z]=points[i],[nextX,nextZ]=points[i+1];
       const direction = FLOW_DIRECTIONS.findIndex(d => d.dx === nextX - x && d.dz === nextZ - z);
       const raw=this.node(this.wrap(x),z),lower=this.node(this.wrap(nextX),nextZ);
-      if(!liquidRiverAllowed(raw)||lower.height>0&&!liquidRiverAllowed(lower)||Math.abs(raw.height-lower.height)>256)continue;
+      if(raw.height<=0||Math.abs(raw.height-lower.height)>256)continue;
       const rawProgress=a.height>b.height?Math.max(0,Math.min(1,(a.height-raw.height)/(a.height-b.height))):i/count;
       progress=Math.max(progress,rawProgress*.85+i/count*.15);
       const originalX=Math.round(ax+(bx-ax)*i/count),originalZ=Math.round(az+(bz-az)*i/count);
@@ -230,7 +230,7 @@ export class RiverNetwork {
     const r=this.route(cx,cz);if(r?.main)return r.widthBlocks??(r.discharge>=2500?2:1);
     this.corridor(cx,cz);return this.corridorBlocks.get(key(this.wrap(cx),cz))??1;
   }
-  /** 河区块流向：非主河格先取指向本块的邻近主河道，再退化为同向的最近主河道。 */
+  /** 计算河区块显示流向 */
   corridorDirection(cx:number,cz:number):number{
     cx=this.wrap(cx);
     const k=key(cx,cz),cached=this.corridorDirs.get(k);if(cached!==undefined)return cached;
@@ -238,7 +238,7 @@ export class RiverNetwork {
     const r=this.route(cx,cz);
     if(r?.main)result=r.direction;
     else {
-      // 1) 指向本块的邻近主河道（原河槽带判据，取流量最大者）
+      // 1. 取指向本块且流量最大的主河
       let strictQ=-1;
       for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){
         const up=this.route(x,z);if(!up?.main||up.displaced)continue;
@@ -246,7 +246,7 @@ export class RiverNetwork {
         if(x+d.dx!==cx||z+d.dz!==cz)continue;
         if(up.discharge>strictQ){strictQ=up.discharge;result=up.direction;}
       }
-      // 2) 仍未定向时取邻近主河道方向，要求方向与连线同向（水面本身就是这么流的）
+      // 2. 回退取同向邻近主河
       if(result<0){
         let bestQ=-1,bestDist=Infinity;
         for(let z=cz-CORRIDOR_FLOW_RADIUS;z<=cz+CORRIDOR_FLOW_RADIUS;z++)for(let x=cx-CORRIDOR_FLOW_RADIUS;x<=cx+CORRIDOR_FLOW_RADIUS;x++){
@@ -265,14 +265,14 @@ export class RiverNetwork {
   corridor(cx:number,cz:number):number{
     cx=this.wrap(cx);const k=key(cx,cz),cached=this.corridors.get(k);if(cached!==undefined)return cached;
     const n=this.node(cx,cz);let discharge=0;
-    if(liquidRiverAllowed(n)&&!this.isChannel(cx,cz)){
+    if(n.height>0&&!this.isChannel(cx,cz)){
       const radius=Math.ceil(MAX_RIVER_RADIUS/CHUNK_SIZE)+1;
       for(let z=cz-radius;z<=cz+radius;z++)for(let x=cx-radius;x<=cx+radius;x++){
         const r=this.route(x,z);if(!r?.main)continue;
         const blocks=r.widthBlocks??(r.discharge>=2500?2:1),width=riverWidth(r.discharge,blocks);
         const d=FLOW_DIRECTIONS[r.direction];
         const dx=cx-x,dz=cz-z,t=Math.max(0,Math.min(1,(dx*d.dx+dz*d.dz)/(d.dx*d.dx+d.dz*d.dz)));
-        // 河槽带同时要求区块紧邻河道，且水面真正覆盖到该块核心
+        // 判定河槽水面覆盖区块核心
         if(Math.hypot(dx-t*d.dx,dz-t*d.dz)*CHUNK_SIZE>width+(d.dx&&d.dz?RIVER_BANK_BLEND*4:0)+1e-6)continue;
         const ax=(x+.5)*CHUNK_SIZE,az=(z+.5)*CHUNK_SIZE;
         if(width<=0||r.discharge<=discharge)continue;
@@ -359,3 +359,5 @@ export class RiverNetwork {
     this.fans.set(k, fan); return fan;
   }
 }
+
+

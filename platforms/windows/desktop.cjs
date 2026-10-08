@@ -10,6 +10,8 @@ else {
     Menu.setApplicationMenu(null);
     const root = app.getAppPath();
     const saves = app.isPackaged ? path.join(app.getPath('userData'), 'saves') : path.join(root, 'userdata', 'saves');
+    const mods = path.join(path.dirname(saves), 'mods');
+    if (app.isPackaged && !fs.existsSync(mods)) fs.cpSync(path.join(root, 'userdata/mods'), mods, { recursive: true });
     const settingsPath = path.join(path.dirname(saves), 'settings.json');
     let settings = null;
     try { settings = fs.readFileSync(settingsPath, 'utf8'); } catch {}
@@ -26,8 +28,7 @@ else {
       } catch (error) { event.returnValue = String(error); }
     });
     const options = { width: 1100, height: 760, minWidth: 640, minHeight: 480, icon: path.join(root, 'platforms/windows/qianlin.ico'), backgroundColor: '#172a20', webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } };
-    // 启动器用纸色打底（与 launcher.css
-    // 游戏窗口保持深色，用来衬托天空与地形。
+    // 启动器用纸色，游戏窗口深色
     launcher = new BrowserWindow({ ...options, title: '茜林茶馆', backgroundColor: '#e5d3aa', webPreferences: { ...options.webPreferences, preload: path.join(root, 'platforms/windows/preload.cjs') } });
     const launcherURL = pathToFileURL(path.join(root, 'platforms/windows/launcher.html')).href;
     const trusted = event => event.sender === launcher?.webContents && event.senderFrame?.url === launcherURL;

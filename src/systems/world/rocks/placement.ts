@@ -10,7 +10,7 @@ export interface SurfaceQuery {
   height(x: number, z: number): number;
   /** 水面高度；未加载区域返回 NaN */
   waterLevel(x: number, z: number): number;
-  /** 表层方块 id；未加载区域返回 0（空气） */
+  /** 表层方块ID */
   surface(x: number, z: number): number;
 }
 
@@ -23,11 +23,11 @@ export interface RockPlacement {
   y: number;
   /** 岩石单位 id */
   rock: string;
-  /** 形态档（露头 / 半埋 / 叠置 / 覆被） */
+  /** 岩石形态档 */
   form: RockForm;
   /** 形态档编号（落盘 / 网络用） */
   formCode: number;
-  /** 0~1 的方位随机：接入时用于绕 Y 轴旋转 */
+  /** 方位随机旋转角 */
   yaw: number;
   /** 0.85~1.2 的尺寸抖动 */
   size: number;
@@ -41,7 +41,7 @@ export function canHostRock(q: SurfaceQuery, x: number, z: number, maxSlope = 3)
   if (!Number.isFinite(h)) return false;
   const wl = q.waterLevel(x, z);
   if (Number.isFinite(wl) && h < wl) return false;
-  // 海平面以下的干地（河床、谷底）允许，只在真的泡在水下时才排除
+  // 仅排除实际淹没点
   let maxDelta = 0;
   for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
     const nh = q.height(x + dx, z + dz);
@@ -67,7 +67,7 @@ const FORM_WEIGHTS_COLD: readonly (readonly [RockForm, number])[] = [
   ['crusted', 0.3],
 ];
 
-/** 按权重挑一个形态档（`r` 为 0~1） */
+/** 按权重选取形态档 */
 function pickForm(r: number, season: Season, snowCrust: boolean): RockForm {
   const cold = season === 'winter' || season === 'autumn';
   const table = cold || snowCrust ? FORM_WEIGHTS_COLD : FORM_WEIGHTS_WARM;

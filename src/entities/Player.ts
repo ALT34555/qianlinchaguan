@@ -22,6 +22,8 @@ const MOUSE_SENSITIVITY = 0.0022;
 
 
 export class Player {
+  readonly ren = '人';
+  ren_ming = '赤';
   /** 脚底中心位置 */
   x = 0;
   y = 0;
@@ -125,9 +127,7 @@ export class Player {
     return probeY < this.world.getWaterLevel(this.x, this.z) && this.world.getHeight(this.x, this.z) <= probeY;
   }
 
-  // -----------
   // 碰撞
-  // -----------
 
   /** 脚底矩形与可见三角面的最高交点。 */
   private maxGroundUnder(x: number, z: number): number {
@@ -178,14 +178,14 @@ export class Player {
     if (this.y >= ground) {
       this.x = nx;
       this.z = nz;
-      // 沿缓坡下行时贴地，跳跃/飞行仍保留各自的竖直运动。
+      // 缓坡下行贴地，跳跃飞行保持竖直运动
       if ((wasGrounded || this.onGround) && !this.flying && this.vy <= 0 && this.y - ground <= STEP_HEIGHT) {
         this.y = ground;
         this.onGround = true;
       }
       return;
     }
-    // 自动上台阶（观景模式
+    // 观景模式自动上台阶
     const rise = ground - this.y;
     if ((wasGrounded || this.onGround || this.inWater || this.flying) && rise <= STEP_HEIGHT) {
       this.x = nx;

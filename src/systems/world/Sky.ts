@@ -59,7 +59,7 @@ export class Sky {
         varying vec3 vDir;
         void main() {
           vec3 dir = normalize(vDir);
-          // 指数 > 1：靠近地平线的一段尽量贴近雾色，与远处地形的雾面接得更自然
+          // 地平线渐变贴近远景雾色
           vec3 color = mix(uHorizon, uZenith, pow(clamp(dir.y, 0.0, 1.0), 1.35));
           // 地平线以下略微压暗，靠近地面时不至于发白
           color = mix(color, uHorizon * 0.92, smoothstep(0.0, -0.14, dir.y));
@@ -215,7 +215,7 @@ export class Sky {
         varying float vSeed;
         const float TAU = 6.28318531;
         void main() {
-          // 漂移量在 CPU 端用双精度取模后传入，这里只加环绕与低频涡动
+          // 叠加环绕与低频涡动偏移
           vec2 xz = aBase.xz + aDrift;
           float amp = 6.0 + 9.0 * aPhase.z;
           xz += vec2(

@@ -7,6 +7,8 @@ import type { LoadedChunk, World } from '../systems/world/World';
 import type { Game } from '../core/Game';
 import { chunkName, seasonName } from '../i18n/content';
 import { t } from '../i18n';
+import { daysInMonth, gregorianToJdn, unixMsFromDayTime } from '../systems/calendar/JulianDay';
+import { yuanCalendar } from '../systems/calendar/YuanCalendar';
 
 const GRID = 5;
 const HALF = Math.floor(GRID / 2);
@@ -28,6 +30,7 @@ export class DebugOverlay {
   private readonly baseCtx: CanvasRenderingContext2D;
   private readonly typeEl: HTMLDivElement;
   private readonly infoEl: HTMLDivElement;
+  private readonly aimEl: HTMLDivElement;
   private readonly titleEl: HTMLDivElement;
   private readonly legendEl: HTMLDivElement;
   private readonly calendarTextEl: HTMLDivElement;
@@ -35,6 +38,7 @@ export class DebugOverlay {
   private readonly jumpButton: HTMLButtonElement;
   private visible = false;
   private dirty = true;
+  private mapStyle = { info: true, colors: false, relief: true };
   private centerCx = Number.NaN;
   private centerCz = Number.NaN;
   private lastTextUpdate = 0;
@@ -48,6 +52,7 @@ export class DebugOverlay {
       <div class="debug-legend"></div>
       <div class="debug-type"></div>
       <div class="debug-info"></div>
+      <div class="debug-aim"></div>
       <div class="debug-calendar">
         <div id="debug-calendar-text" class="debug-calendar-text"></div>
         <div class="debug-calendar-row">
@@ -58,6 +63,7 @@ export class DebugOverlay {
           <button id="cal-64x" data-speed="64">64x</button>
         </div>
         <div class="debug-calendar-row">
+          <input id="cal-jump-date" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" aria-label="YYYY-MM-DD">
           <input id="cal-jump-input" type="time" value="12:00">
           <button id="cal-jump-btn"></button>
         </div>
@@ -68,6 +74,7 @@ export class DebugOverlay {
     this.ctx = this.canvas.getContext('2d')!;
     this.typeEl = this.root.querySelector('.debug-type')!;
     this.infoEl = this.root.querySelector('.debug-info')!;
+    this.aimEl = this.root.querySelector('.debug-aim')!;
     this.titleEl = this.root.querySelector('[data-title]')!;
     this.legendEl = this.root.querySelector('.debug-legend')!;
     this.calendarTextEl = this.root.querySelector('#debug-calendar-text')!;
@@ -107,21 +114,38 @@ export class DebugOverlay {
 
     this.root.querySelector('#cal-jump-btn')!.addEventListener('click', () => {
       const input = this.root.querySelector<HTMLInputElement>('#cal-jump-input')!;
+      const dateInput = this.root.querySelector<HTMLInputElement>('#cal-jump-date')!;
       const parts = input.value.split(':');
       const h = Number(parts[0]);
       const m = Number(parts[1]);
-      if (!isNaN(h) && !isNaN(m)) {
-        const currentFrac = this.game.currentSnapshot.instant.frac;
-        const currentMsSinceMidnight = currentFrac * 86400000;
-        const targetMsSinceMidnight = (h * 3600 + m * 60) * 1000;
-        const diff = targetMsSinceMidnight - currentMsSinceMidnight;
-
-        let newUnixMs = clock.unixMs + diff;
-        if (diff < 0) {
-          newUnixMs += 86400000;
+      if (isNaN(h) || isNaN(m)) return;
+      const dateRaw = dateInput.value.trim();
+      if (dateRaw) {
+        try {
+          const match = /^(\d{1,4})-(\d{1,2})-(\d{1,2})$/.exec(dateRaw);
+          if (!match) throw new Error('bad date');
+          const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
+          const yuan = this.game.calendarType === 'yuan';
+          if (year < 1 || year > 9999 || month < 1 || month > 12 || day < 1 || day > (yuan ? 30 : daysInMonth(year, month))) throw new Error('bad date');
+          const jdn = yuan ? yuanCalendar.toJdn(year, month, day) : gregorianToJdn(year, month, day);
+          clock.setUnixMs(unixMsFromDayTime(jdn, (h * 3600 + m * 60) / 86400, this.game.calendarSystem.utcOffsetMinutes));
+          dateInput.setCustomValidity('');
+        } catch {
+          dateInput.setCustomValidity(t('debug.jump.invalid'));
+          dateInput.reportValidity();
         }
-        clock.setUnixMs(newUnixMs);
+        return;
       }
+      const currentFrac = this.game.currentSnapshot.instant.frac;
+      const currentMsSinceMidnight = currentFrac * 86400000;
+      const targetMsSinceMidnight = (h * 3600 + m * 60) * 1000;
+      const diff = targetMsSinceMidnight - currentMsSinceMidnight;
+
+      let newUnixMs = clock.unixMs + diff;
+      if (diff < 0) {
+        newUnixMs += 86400000;
+      }
+      clock.setUnixMs(newUnixMs);
     });
 
     this.applyLocale();
@@ -133,11 +157,13 @@ export class DebugOverlay {
   /** 语言变更后刷新静态文案（不重建画布 */
   applyLocale(): void {
     this.titleEl.textContent = t('debug.title');
-    this.legendEl.innerHTML = CHUNK_TYPES.filter((def) => def.id !== 0)
-      .map((def) => `<span><i style="background:${def.mapColor}"></i>${formatChunkId(def.id)} ${chunkName(def)}</span>`)
-      .join('');
     this.speedButtons.forEach(({ el, labelKey }) => { if (labelKey) el.textContent = t(labelKey); });
     this.jumpButton.textContent = t('debug.jump');
+    this.dirty = true;
+  }
+
+  setMapStyle(style: { info: boolean; colors: boolean; relief: boolean }): void {
+    this.mapStyle = style;
     this.dirty = true;
   }
 
@@ -181,9 +207,7 @@ export class DebugOverlay {
     ctx.globalCompositeOperation = 'source-over';
     ctx.drawImage(this.base, 0, 0);
 
-    // 小地图不做昼夜调色
-    // 正好是一天里最该看清地图的时候）
-    // 小地图只当地形参考图用
+    // 小地图不做昼夜调色，仅作地形参考
     const px = p.x - (pcx - HALF) * CHUNK_SIZE;
     const pz = p.z - (pcz - HALF) * CHUNK_SIZE;
     // 前方向量 (-sin yaw, -cos yaw)
@@ -215,6 +239,7 @@ export class DebugOverlay {
       this.infoEl.textContent = t('debug.info', {
         cx: pcx, cz: pcz, x: p.x.toFixed(1), y: p.y.toFixed(1), z: p.z.toFixed(1), mode,
       });
+      this.aimEl.textContent = this.aimText();
 
       if (this.game && this.game.currentSnapshot) {
         const snap = this.game.currentSnapshot;
@@ -237,10 +262,29 @@ export class DebugOverlay {
     }
   }
 
+  private aimText(): string {
+    const p = this.player;
+    const cosPitch = Math.cos(p.pitch);
+    const dx = -cosPitch * Math.sin(p.yaw), dy = Math.sin(p.pitch), dz = -cosPitch * Math.cos(p.yaw);
+    for (let d = 1; d <= 256; d += 0.5) {
+      const x = p.x + dx * d, y = p.eyeY + dy * d, z = p.z + dz * d;
+      if (y > 512) break;
+      const ground = this.world.getHeight(x, z);
+      const water = this.world.getWaterLevel(x, z);
+      if (y <= Math.max(ground, water)) {
+        const cx = Math.floor(x / CHUNK_SIZE), cz = Math.floor(z / CHUNK_SIZE);
+        const kind = y <= ground ? t('debug.aim.ground') : t('debug.aim.water');
+        const name = chunkName(getChunkTypeDef(this.world.getChunkType(cx, cz)));
+        return t('debug.aim.hit', { kind, name, cx, cz, distance: d.toFixed(1) });
+      }
+    }
+    return t('debug.aim.none');
+  }
+
   private redrawBase(): void {
     const ctx = this.baseCtx;
-    // 一次性请求流向，避免常规查询也为 displayFlow 付邻近主河查询的代价
-    this.world.generator.displayFlowWanted = true;
+    // 临时请求流向，避免常规查询开销
+    this.world.generator.displayFlowWanted = this.mapStyle.relief;
     try {
       this.drawBase(ctx);
     } finally {
@@ -251,6 +295,7 @@ export class DebugOverlay {
   private drawBase(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = INK_BG;
     ctx.fillRect(0, 0, MAP_PX, MAP_PX);
+    const present = new Set<number>();
 
     for (let gz = 0; gz < GRID; gz++) {
       for (let gx = 0; gx < GRID; gx++) {
@@ -258,8 +303,14 @@ export class DebugOverlay {
         const cz = this.centerCz - HALF + gz;
         const ox = gx * CHUNK_SIZE;
         const oz = gz * CHUNK_SIZE;
+        const typeId = this.world.getChunkType(cx, cz);
+        const def = getChunkTypeDef(typeId);
+        present.add(typeId);
         const chunk = this.world.getChunk(cx, cz);
-        if (chunk) {
+        if (this.mapStyle.colors) {
+          ctx.fillStyle = def.mapColor;
+          ctx.fillRect(ox, oz, CHUNK_SIZE, CHUNK_SIZE);
+        } else if (chunk) {
           ctx.putImageData(chunk.minimap, ox, oz);
         } else {
           ctx.fillStyle = INK_BG_EMPTY;
@@ -272,28 +323,35 @@ export class DebugOverlay {
         }
 
         // 区块类型角标
-        const typeId = this.world.getChunkType(cx, cz);
-        const def = getChunkTypeDef(typeId);
-        const codeStr = formatChunkId(typeId);
-        ctx.fillStyle = 'rgba(0,0,0,0.65)';
-        ctx.fillRect(ox + 2, oz + 2, 28, 15);
-        ctx.fillStyle = def.mapColor;
-        ctx.fillRect(ox + 4, oz + 4, 3, 11);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold 10px ${CANVAS_FONT}`;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(codeStr, ox + 9, oz + 10);
-        const info = this.world.generator.getChunkInfo(cx, cz);
-        if (isRiverType(typeId) && info.displayFlow >= 0) {
-          ctx.font = `bold 22px ${CANVAS_FONT}`;
-          ctx.textAlign = 'center';
-          ctx.strokeStyle = '#164b73'; ctx.lineWidth = 3;
-          ctx.strokeText(FLOW_DIRECTIONS[info.displayFlow].arrow, ox + 32, oz + 35);
-          ctx.fillText(FLOW_DIRECTIONS[info.displayFlow].arrow, ox + 32, oz + 35);
+        if (this.mapStyle.info) {
+          const codeStr = formatChunkId(typeId);
+          ctx.fillStyle = 'rgba(0,0,0,0.65)';
+          ctx.fillRect(ox + 2, oz + 2, 28, 15);
+          ctx.fillStyle = def.mapColor;
+          ctx.fillRect(ox + 4, oz + 4, 3, 11);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold 10px ${CANVAS_FONT}`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(codeStr, ox + 9, oz + 10);
+        }
+        if (this.mapStyle.relief) {
+          const info = this.world.generator.getChunkInfo(cx, cz);
+          if (isRiverType(typeId) && info.displayFlow >= 0) {
+            ctx.font = `bold 22px ${CANVAS_FONT}`;
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = '#164b73'; ctx.lineWidth = 3;
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeText(FLOW_DIRECTIONS[info.displayFlow].arrow, ox + 32, oz + 35);
+            ctx.fillText(FLOW_DIRECTIONS[info.displayFlow].arrow, ox + 32, oz + 35);
+          }
         }
       }
     }
+
+    this.legendEl.innerHTML = CHUNK_TYPES.filter((def) => def.id !== 0 && present.has(def.id))
+      .map((def) => `<span><i style="background:${def.mapColor}"></i>${formatChunkId(def.id)} ${chunkName(def)}</span>`)
+      .join('');
 
     // 区块网格
     ctx.strokeStyle = 'rgba(0,0,0,0.45)';

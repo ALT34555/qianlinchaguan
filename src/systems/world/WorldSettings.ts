@@ -1,4 +1,6 @@
 /** 顺序固定为由热到冷 */
+import { normalizeArtificial, type ArtificialSettings } from './artificial/ArtificialSettings.ts';
+
 export const CLIMATES = [
   { name: '热带', zone: 100, color: '#e7ab64' },
   { name: '亚热带', zone: 200, color: '#aac76c' },
@@ -21,6 +23,7 @@ export interface PlanetSettings {
   tectonicActivity: number;
 }
 export interface WorldGeneration {
+  artificial?: ArtificialSettings;
   mode: 'plane' | 'planet';
   planet: PlanetSettings;
   landRatio?: number;
@@ -63,7 +66,7 @@ export function normalizeGeneration(value: unknown = DEFAULT_GENERATION): WorldG
       Math.abs(precipitation * 10 - Math.round(precipitation * 10)) > 1e-8) {
     throw new Error('降水量须为 0～1，步进为 0.1。');
   }
-  return { mode: g.mode, planet: { ...p, tectonicActivity }, landRatio, precipitation };
+  return { mode: g.mode, planet: { ...p, tectonicActivity }, landRatio, precipitation, artificial: normalizeArtificial(g.artificial) };
 }
 
 /** 区块中心对应经纬度 */

@@ -30,14 +30,14 @@ export class ChunkWorkerPool {
   }
 
   /** 提交任务 */
-  request(cx: number, cz: number): boolean {
+  request(cx: number, cz: number, artificialType?: number): boolean {
     let best = -1;
     for (let i = 0; i < this.workers.length; i++) {
       if (this.inFlight[i] < this.perWorker && (best < 0 || this.inFlight[i] < this.inFlight[best])) best = i;
     }
     if (best < 0) return false;
     this.inFlight[best]++;
-    this.workers[best].postMessage({ kind: 'generate', cx, cz } satisfies WorkerRequest);
+    this.workers[best].postMessage({ kind: 'generate', cx, cz, artificialType } satisfies WorkerRequest);
     return true;
   }
 

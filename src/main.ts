@@ -1,16 +1,19 @@
+import { mountModResources } from './modding_api/Resources';
+import { applyAppearance } from './ui/Appearance';
 import './ui/theme.css';
 import './ui/style.css';
 import './ui/start-screen.css';
 import './ui/menu.css';
 import './ui/simple.css';
-import { DEFAULT_SEED } from './core/config';
+import './ui/preferences.css';
+import './ui/chat.css';
+import { randomSeed } from './core/math/Random';
 import { MIN_RENDER_DISTANCE, MAX_RENDER_DISTANCE } from './core/RenderDistance';
 import { Game } from './core/Game';
 import { StartScreen, type StartOptions } from './ui/StartScreen';
 import { DEFAULT_CLIMATE_WEIGHTS, normalizeClimateWeights, normalizeGeneration } from './systems/world/WorldSettings';
 import { parseWorldSave } from './systems/world/WorldSave';
 import { loadSettings, saveSettings, SETTINGS_KEY } from './core/GameSettings';
-import { LocalSaveStore } from './systems/world/LocalSaveStore';
 import { FileSaveStore } from './systems/world/FileSaveStore';
 import { initI18n, onLocaleChange, t } from './i18n';
 
@@ -37,9 +40,11 @@ onLocaleChange(() => {
   loadingEl.textContent = t('loading.terrain');
 });
 
+await mountModResources();
 let settings = loadSettings(storage);
 if (renderDistanceOverride !== undefined) settings = { ...settings, renderDistance: renderDistanceOverride };
-const saveStore = new FileSaveStore(new LocalSaveStore(storage), fetch, '/api/saves', params.get('saveLocation') ?? 'userdata/saves');
+applyAppearance(settings);
+const saveStore = new FileSaveStore(fetch, '/api/saves', params.get('saveLocation') ?? 'userdata/saves');
 
 function enterWorld(options: StartOptions): void {
   if (started) return;
@@ -49,7 +54,7 @@ function enterWorld(options: StartOptions): void {
     loading: document.getElementById('loading')!,
     waterTint: document.getElementById('water-tint')!,
   }, { ...options, initialPlayer: options.save?.player, showOverlay: params.get('overlay') === '1',
-    settings, saveStore, persistSettings: value => { settings = saveSettings(storage, value); } });
+    settings, saveStore, persistSettings: value => { settings = saveSettings(storage, value); applyAppearance(settings); } });
   started = true;
   menu.destroy();
   menuRoot.classList.add('hidden');
@@ -63,8 +68,11 @@ catch { initialError = t('error.climateParam'); }
 let generation = normalizeGeneration();
 try { if (params.has('generation')) generation = normalizeGeneration(JSON.parse(params.get('generation')!)); }
 catch { initialError = t('error.generationParam'); }
-const menu = new StartScreen(menuRoot, params.get('seed') ?? String(DEFAULT_SEED), weights, enterWorld, generation, {
-  store: saveStore, getSettings: () => settings, applySettings: value => { settings = saveSettings(storage, value); },
+const menu = new StartScreen(menuRoot, String(randomSeed()), weights, enterWorld, generation, {
+  store: saveStore, getSettings: () => settings, applySettings: (value, persist = true) => {
+    applyAppearance(value);
+    if (persist) settings = saveSettings(storage, value);
+  },
 });
 if (params.get('resume') === '1') {
   try {

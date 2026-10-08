@@ -7,7 +7,7 @@ import type {WaterField} from './DynamicWater';
 
 export type WorkerRequest =
   | { kind: 'init'; seed: number; climateWeights: ClimateWeights; generation: WorldGeneration }
-  | { kind: 'generate'; cx: number; cz: number };
+  | { kind: 'generate'; cx: number; cz: number; artificialType?: number };
 
 export interface ChunkResultMessage {
   kind: 'chunk';
@@ -21,6 +21,7 @@ export interface ChunkResultMessage {
   terrain: MeshData | null;
   water: MeshData | null;
   decoration: MeshData | null;
+  rocks?: MeshData | null;
   minimap: Uint8ClampedArray<ArrayBuffer>;
   mist?: Float32Array;
   /** 生成 + 构建网格耗时（毫秒） */

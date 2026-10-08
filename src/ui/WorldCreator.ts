@@ -1,6 +1,10 @@
-import { DEFAULT_SEED } from '../core/config';
-import { hashString } from '../core/math/Random';
-import { WorldGenerator, FLOW_DIRECTIONS, type ChunkInfo } from '../systems/world/WorldGenerator';
+import { icon, iconUrl } from './Icons';
+import { renName } from '../entities/PlayerIdentity';
+import { colorControl, bindColorControls } from './ColorControls';
+import { ArtificialWorld } from '../systems/world/artificial/ArtificialWorld';
+import { DEFAULT_PLAYER_FACTION, hexColor, playerFactionOptions, playerFlagSpawn, type PlayerFactionOptions } from '../systems/world/artificial/PlayerFaction';
+import { hashString, randomSeed } from '../core/math/Random';
+import { WorldGenerator, FLOW_DIRECTIONS } from '../systems/world/WorldGenerator';
 import { getChunkTypeDef, formatChunkId, CHUNK_TYPES } from '../systems/world/ChunkTypes';
 import { CLIMATES, DEFAULT_GENERATION, normalizeClimateWeights, normalizeGeneration, planetCoordinates, type ClimateWeights, type WorldGeneration } from '../systems/world/WorldSettings';
 import type { WorldSave } from '../systems/world/WorldSave';
@@ -8,14 +12,22 @@ import { dateInputValue, todayDate, DEFAULT_YUAN_DATE, startDateUnixMs } from '.
 import { AtlasView, type ViewportStats } from './AtlasView';
 import { chunkDescription, chunkName, climateName } from '../i18n/content';
 import { t } from '../i18n';
+import { DEFAULT_ARTIFICIAL } from '../systems/world/artificial/ArtificialSettings';
+import type { TerritoryChunkInfo } from '../systems/world/artificial/ArtificialWorld';
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+}
 
 export function parseSeed(raw: string): number {
   const value = raw.trim();
-  if (!value) return DEFAULT_SEED;
+  if (!value) return randomSeed();
   return /^-?\d+$/.test(value) ? Number(BigInt.asUintN(32, BigInt(value))) : hashString(value);
 }
 
 export interface StartOptions {
+  ren_ming?: string;
+  playerFaction?: PlayerFactionOptions;
   seed: number;
   climateWeights: ClimateWeights;
   generation: WorldGeneration;
@@ -28,10 +40,12 @@ export interface StartOptions {
 }
 
 export class WorldCreator {
+  private stopColors: () => void = () => {};
   private generator: WorldGenerator | null = null;
   private atlasView: AtlasView | null = null;
   private mapShown = false;
   private isFullscreenMap = false;
+  private spawnClearedByLock = false;
 
   constructor(
     private readonly root: HTMLElement,
@@ -40,8 +54,12 @@ export class WorldCreator {
     private readonly enter: (options: StartOptions) => void,
     generation: WorldGeneration = DEFAULT_GENERATION,
     private readonly back: () => void = () => {},
+    private readonly defaultRenName = '赤',
   ) {
     this.renderLayout();
+    this.input('ren-ming').value = renName(this.defaultRenName);
+    this.stopColors = bindColorControls(this.root);
+    this.updateSchemeChip();
     this.initFormValues(seed, weights);
     this.setGenerationForm(generation);
     this.initEventListeners();
@@ -75,10 +93,16 @@ export class WorldCreator {
 
   private settings(): StartOptions {
     const calSelect = this.el<HTMLSelectElement>('calendar-mode');
+    if (!this.input('world-seed').value.trim()) this.input('world-seed').value = String(randomSeed());
+    const generation = this.generationSettings();
+    const playerFaction = this.playerSettings();
+    if (!generation.artificial?.enabled) playerFaction.spawnAsFlagLand = false;
     return {
+      ren_ming: renName(this.input('ren-ming').value, renName(this.defaultRenName)),
+      playerFaction,
       seed: parseSeed(this.input('world-seed').value),
       climateWeights: this.el<HTMLSelectElement>('generation-mode').value !== 'plane' ? normalizeClimateWeights([20, 20, 20, 20, 20]) : this.weights(),
-      generation: this.generationSettings(),
+      generation,
       calendarType: (calSelect ? calSelect.value : 'real') as 'real' | 'yuan',
       unixMs: this.startUnixMs(),
       utcOffsetMinutes: -new Date().getTimezoneOffset(),
@@ -86,12 +110,20 @@ export class WorldCreator {
     };
   }
 
+  private playerSettings(): PlayerFactionOptions {
+    return playerFactionOptions({ spawnAsFlagLand: this.input('spawn-as-flag').checked,
+      name: this.input('faction-name').value, mainColor: this.input('faction-main-color').value,
+      trimColor: this.input('faction-trim-color').value });
+  }
+
   private generationSettings(): WorldGeneration {
     const number = (id: string) => this.input(id).value.trim() ? Number(this.input(id).value) : NaN;
     const landRatio = number('land-ratio');
     const precipitation = number('precipitation');
-    if (this.el<HTMLSelectElement>('generation-mode').value === 'plane') return normalizeGeneration({...DEFAULT_GENERATION, landRatio, precipitation});
-    return normalizeGeneration({ mode: 'planet', landRatio, precipitation,
+    const artificial = { enabled: this.input('artificial-enabled').checked, expansion: number('natural-expansion'),
+      evolution: number('natural-evolution'), independence: this.input('flag-independence').checked };
+    if (this.el<HTMLSelectElement>('generation-mode').value === 'plane') return normalizeGeneration({...DEFAULT_GENERATION, landRatio, precipitation, artificial});
+    return normalizeGeneration({ mode: 'planet', landRatio, precipitation, artificial,
       planet: { map: this.el<HTMLSelectElement>('generation-mode').value === 'earth' ? 'earth' : 'procedural', poleTemperature: number('pole-temperature'),
         equatorTemperature: number('equator-temperature'), monsoonDirection: number('monsoon-direction'), equatorChunks: number('equator-chunks'),
         tectonicActivity: number('tectonic-activity') } });
@@ -106,6 +138,13 @@ export class WorldCreator {
     this.input('tectonic-activity').value = String(generation.planet.tectonicActivity ?? 5);
     this.input('land-ratio').value = String(generation.landRatio ?? .5);
     this.input('precipitation').value = String(generation.precipitation ?? .5);
+    const artificial = generation.artificial ?? DEFAULT_ARTIFICIAL;
+    this.input('artificial-enabled').checked = artificial.enabled;
+    this.input('natural-expansion').value = String(artificial.expansion);
+    this.input('natural-evolution').max = String(artificial.expansion);
+    this.input('natural-evolution').value = String(artificial.evolution);
+    this.input('flag-independence').checked = artificial.independence;
+    this.updateArtificialFields();
     this.updateGenerationFields();
   }
 
@@ -115,7 +154,7 @@ export class WorldCreator {
     this.el('planet-settings').classList.toggle('hidden', !planet);
     this.el('plane-climates').classList.toggle('hidden', planet);
     this.el('planet-view-tools').classList.toggle('hidden', !planet);
-    this.el('recommended-presets').classList.toggle('hidden', planet);
+    this.el('recommended-presets').classList.toggle('hidden', earth);
     this.input('tectonic-activity').disabled = earth;
     this.input('land-ratio').disabled = earth;
     if (earth) this.input('tectonic-activity').value = '5';
@@ -128,17 +167,14 @@ export class WorldCreator {
         <a class="wordmark" href="./">${t('app.name')}</a>
         <div class="header-right">
           <button id="creator-back" class="menu-back">${t('creator.back')}</button>
-          <button id="header-enter-btn" class="header-action-btn primary hidden">${t('creator.enterWorld')} <span>→</span></button>
         </div>
       </header>
 
       <div class="menu-layout" id="menu-layout-container">
-        <!-- 左侧：世界设置面板 -->
         <section class="world-settings" id="world-settings-panel" aria-labelledby="menu-title">
           <h1 id="menu-title">${t('creator.title')}</h1>
           <p class="menu-intro">${t('creator.intro')}</p>
 
-          <!-- 快速预设 -->
           <div id="recommended-presets" class="presets-section">
             <span class="field-label-mini">${t('creator.presets')}</span>
             <div class="presets-row">
@@ -149,24 +185,18 @@ export class WorldCreator {
             </div>
           </div>
 
+          <label class="field-title" for="world-name">${t('creator.worldName')}</label>
+          <div class="seed-field"><input id="world-name" maxlength="80" value="${t('creator.worldNamePlaceholder')}" autocomplete="off"></div>
+
+          <label class="field-title" for="ren-ming">${t('player.worldName')}</label>
+          <div class="seed-field"><input id="ren-ming" maxlength="40" autocomplete="off"></div>
+
           <label class="field-title" for="generation-mode">${t('creator.generationMode')}</label>
           <select id="generation-mode" class="filter-dropdown">
             <option value="plane">${t('creator.mode.plane')}</option>
             <option value="planet">${t('creator.mode.planet')}</option>
             <option value="earth">${t('creator.mode.earth')}</option>
           </select>
-          <label class="coverage-setting tectonic-setting">
-            <span class="tectonic-heading">${t('creator.landRatio')} <output id="land-ratio-value" for="land-ratio">${t('creator.landRatio.balanced')}</output></span>
-            <small>${t('creator.landRatio.hint')}</small>
-            <input id="land-ratio" aria-label="${t('creator.landRatio')}" type="range" min="0" max="1" step="0.1" value="0.5">
-            <span class="coverage-labels"><span>${t('creator.landRatio.water')}</span><span>${t('creator.landRatio.balanced')}</span><span>${t('creator.landRatio.land')}</span></span>
-          </label>
-          <label class="coverage-setting tectonic-setting">
-            <span class="tectonic-heading">${t('creator.precipitation')} <output id="precipitation-value" for="precipitation">0.5 · ${t('creator.precipitation.balanced')}</output></span>
-            <small>${t('creator.precipitation.hint')}</small>
-            <input id="precipitation" aria-label="${t('creator.precipitation')}" type="range" min="0" max="1" step="0.1" value="0.5">
-            <span class="coverage-labels"><span>${t('creator.precipitation.none')}</span><span>${t('creator.precipitation.balanced')}</span><span>${t('creator.precipitation.rich')}</span></span>
-          </label>
           <div id="planet-settings" class="planet-settings hidden">
             <div class="planet-fields">
               <label>${t('creator.poleTemp')} <small>${t('creator.poleTemp.hint')}</small><input id="pole-temperature" type="number" min="-100" max="100" step="1"></label>
@@ -178,8 +208,6 @@ export class WorldCreator {
             <p class="setting-note">${t('creator.planetNote')}</p>
           </div>
 
-          <label class="field-title" for="world-name">${t('creator.worldName')}</label>
-          <div class="seed-field"><input id="world-name" maxlength="80" value="${t('creator.worldNamePlaceholder')}" autocomplete="off"></div>
           <label class="field-title" for="world-seed">
             ${t('creator.seed')} <small>${t('creator.seed.hint')}</small>
           </label>
@@ -188,43 +216,100 @@ export class WorldCreator {
             <button id="random-seed" title="${t('creator.seed.randomTitle')}" aria-label="${t('creator.seed.randomAria')}">↻</button>
           </div>
 
-          <label class="field-title" for="calendar-mode">
-            ${t('creator.calendar')} <small>${t('creator.calendar.hint')}</small>
-          </label>
-          <div class="seed-field">
-            <select id="calendar-mode" class="calendar-select filter-dropdown">
-              <option value="real">${t('creator.calendar.real')}</option>
-              <option value="yuan">${t('creator.calendar.yuan')}</option>
-            </select>
-          </div>
+          <section class="artificial-settings">
+            <label class="setting-row" for="artificial-enabled"><span>${t('creator.artificial')}</span><input id="artificial-enabled" type="checkbox"></label>
+            <label class="setting-row" for="spawn-as-flag"><span>${t('player.flagSpawn')}</span><input id="spawn-as-flag" type="checkbox" checked></label>
+            <p class="setting-note">${t('creator.artificial.hint')}</p>
+          </section>
 
-          <label class="field-title" for="start-real-date">${t('creator.startDate')} <small>${t('creator.startDate.hint')}</small></label>
-          <div id="real-date-fields" class="seed-field"><input id="start-real-date" type="date" min="0001-01-01" max="9999-12-31" aria-label="${t('creator.startDate.aria')}"></div>
-          <div id="yuan-date-fields" class="date-fields hidden">
-            <label>${t('creator.year')}<input id="start-yuan-year" type="number" min="1" max="9999" step="1"></label>
-            <label>${t('creator.month')}<input id="start-yuan-month" type="number" min="1" max="12" step="1"></label>
-            <label>${t('creator.day')}<input id="start-yuan-day" type="number" min="1" max="30" step="1"></label>
-          </div>
-
-          <div id="plane-climates">
-          <div class="field-title climate-heading">
-            ${t('creator.climate')} <small>${t('creator.climate.hint')}</small>
-          </div>
-          <div class="climate-bar" aria-label="${t('creator.climate.aria')}"></div>
-          <div class="climate-inputs">
-            ${CLIMATES.map((c, i) => `
-              <label class="climate-row">
-                <span><i style="background:${c.color}"></i>${climateName(i)}</span>
-                <input id="climate-${i}" aria-label="${t('creator.climate.weightAria', { name: climateName(i) })}" type="number" min="0" max="1000" step="1">
-                <output id="percent-${i}"></output>
+          <details class="fold-group" id="fold-geo">
+            <summary><span class="fold-name">${t('creator.fold.geo')}</span><span class="fold-mark" aria-hidden="true"></span></summary>
+            <div class="fold-body">
+              <label class="coverage-setting tectonic-setting">
+                <span class="tectonic-heading">${t('creator.landRatio')} <output id="land-ratio-value" for="land-ratio">${t('creator.landRatio.balanced')}</output></span>
+                <small>${t('creator.landRatio.hint')}</small>
+                <input id="land-ratio" aria-label="${t('creator.landRatio')}" type="range" min="0" max="1" step="0.1" value="0.5">
+                <span class="coverage-labels"><span>${t('creator.landRatio.water')}</span><span>${t('creator.landRatio.balanced')}</span><span>${t('creator.landRatio.land')}</span></span>
               </label>
-            `).join('')}
-          </div>
+              <label class="coverage-setting tectonic-setting">
+                <span class="tectonic-heading">${t('creator.precipitation')} <output id="precipitation-value" for="precipitation">0.5 · ${t('creator.precipitation.balanced')}</output></span>
+                <small>${t('creator.precipitation.hint')}</small>
+                <input id="precipitation" aria-label="${t('creator.precipitation')}" type="range" min="0" max="1" step="0.1" value="0.5">
+                <span class="coverage-labels"><span>${t('creator.precipitation.none')}</span><span>${t('creator.precipitation.balanced')}</span><span>${t('creator.precipitation.rich')}</span></span>
+              </label>
+              <div id="plane-climates">
+                <div class="field-title climate-heading">
+                  ${t('creator.climate')} <small>${t('creator.climate.hint')}</small>
+                </div>
+                <div class="climate-bar" aria-label="${t('creator.climate.aria')}"></div>
+                <div class="climate-inputs">
+                  ${CLIMATES.map((c, i) => `
+                    <label class="climate-row">
+                      <span><i style="background:${c.color}"></i>${climateName(i)}</span>
+                      <input id="climate-${i}" aria-label="${t('creator.climate.weightAria', { name: climateName(i) })}" type="number" min="0" max="1000" step="1">
+                      <output id="percent-${i}"></output>
+                    </label>
+                  `).join('')}
+                </div>
+                <p class="setting-note">
+                  ${t('creator.climate.note')}
+                </p>
+              </div>
+            </div>
+          </details>
 
-          <p class="setting-note">
-            ${t('creator.climate.note')}
-          </p>
-          </div>
+          <details class="fold-group" id="fold-sky">
+            <summary><span class="fold-name">${t('creator.fold.sky')}</span><span class="fold-mark" aria-hidden="true"></span></summary>
+            <div class="fold-body">
+              <label class="field-title" for="calendar-mode">
+                ${t('creator.calendar')} <small>${t('creator.calendar.hint')}</small>
+              </label>
+              <div class="seed-field">
+                <select id="calendar-mode" class="calendar-select filter-dropdown">
+                  <option value="real">${t('creator.calendar.real')}</option>
+                  <option value="yuan">${t('creator.calendar.yuan')}</option>
+                </select>
+              </div>
+              <label class="field-title" for="start-real-date">${t('creator.startDate')} <small>${t('creator.startDate.hint')}</small></label>
+              <div id="real-date-fields" class="seed-field"><input id="start-real-date" type="date" min="0001-01-01" max="9999-12-31" aria-label="${t('creator.startDate.aria')}"></div>
+              <div id="yuan-date-fields" class="date-fields hidden">
+                <label>${t('creator.year')}<input id="start-yuan-year" type="number" min="1" max="9999" step="1"></label>
+                <label>${t('creator.month')}<input id="start-yuan-month" type="number" min="1" max="12" step="1"></label>
+                <label>${t('creator.day')}<input id="start-yuan-day" type="number" min="1" max="30" step="1"></label>
+              </div>
+            </div>
+          </details>
+
+          <details class="fold-group" id="fold-human">
+            <summary><span class="fold-name">${t('creator.fold.human')}</span><span class="fold-lock" aria-hidden="true">🔒</span><span class="fold-lock-hint">${t('creator.fold.locked')}</span><span class="fold-mark" aria-hidden="true"></span></summary>
+            <div class="fold-body">
+              <label class="field-title" for="faction-name">${t('player.factionName')}</label>
+              <div class="seed-field"><input id="faction-name" maxlength="40" value="${DEFAULT_PLAYER_FACTION.name}" autocomplete="off"></div>
+              <div class="color-scheme">
+                <button type="button" id="color-scheme-toggle" class="color-scheme-toggle" aria-expanded="false" aria-controls="color-scheme-body">
+                  <span class="color-scheme-chip" id="color-scheme-chip" aria-hidden="true"><span class="color-scheme-core" id="color-scheme-core"></span></span>
+                  <span class="color-scheme-name">${t('creator.colorScheme')}</span>
+                  <span class="fold-mark" aria-hidden="true"></span>
+                </button>
+                <div class="color-scheme-body" id="color-scheme-body" hidden>
+                  ${colorControl('faction-main-color', t('player.mainColor'), DEFAULT_PLAYER_FACTION.mainColor)}
+                  ${colorControl('faction-trim-color', t('player.trimColor'), DEFAULT_PLAYER_FACTION.trimColor)}
+                </div>
+              </div>
+              <div id="artificial-options" class="hidden">
+                <div id="artificial-speeds" class="distance-pair">
+                  <label class="distance-heading distance-heading-world" for="natural-expansion"><span>${t('creator.expansion')}</span><output id="natural-expansion-value"></output></label>
+                  <input id="natural-expansion" type="range" min="0" max="4" step="0.25" value="1">
+                  <span class="distance-connector" aria-hidden="true"></span>
+                  <label class="distance-heading distance-heading-vegetation" for="natural-evolution"><span>${t('creator.evolution')}</span><output id="natural-evolution-value"></output></label>
+                  <div class="distance-vegetation-track"><input id="natural-evolution" type="range" min="0" max="4" step="0.25" value="1"><span class="distance-stop" aria-hidden="true"></span></div>
+                </div>
+                <p class="setting-note">${t('creator.artificial.speedsHint')}</p>
+                <label id="independence-option" class="setting-row" for="flag-independence"><span>${t('creator.independence')}</span><input id="flag-independence" type="checkbox"></label>
+                <p id="independence-hint" class="setting-note">${t('creator.independence.hint')}</p>
+              </div>
+            </div>
+          </details>
 
           <p id="menu-status" class="menu-status" role="status" aria-live="polite"></p>
 
@@ -232,33 +317,17 @@ export class WorldCreator {
             <button id="browse-map" class="secondary">
               <span>${t('creator.browseMap')}</span> <span class="btn-arrow">↗</span>
             </button>
-            <button id="enter-world" class="primary">
-              <span>${t('creator.enterWorld')}</span> <span class="btn-arrow">→</span>
-            </button>
           </div>
 
         </section>
 
-        <!-- 右侧：舆图面板 -->
         <section class="atlas-panel" id="atlas-main-panel" aria-label="${t('atlas.panelAria')}">
-          <!-- 初始未激活状态卡片 -->
           <div id="atlas-placeholder" class="atlas-placeholder">
-            <div class="hero-art-container">
-              <!-- 纯几何等高线，不放"山川"等字样：那是三维世界的名字，放这里会串味 -->
-              <div class="contour-art"></div>
-            </div>
-            <div class="placeholder-text-group">
-              <h3>${t('atlas.previewTitle')}</h3>
-              <p>${t('atlas.previewText')}</p>
-              <button id="placeholder-browse-btn" class="primary hero-browse-btn">
-                <span>${t('atlas.openMap')}</span> <span class="btn-arrow">↗</span>
-              </button>
-            </div>
+            <div class="contour-art"></div>
+            <h3 class="placeholder-caption">${t('atlas.previewTitle')}</h3>
           </div>
 
-          <!-- 舆图主界面 -->
           <div id="atlas-content" class="atlas-content hidden">
-            <!-- 地图顶部操作栏 -->
             <div class="atlas-header-bar">
               <div class="atlas-title-group">
                 <h2>${t('atlas.title')}</h2>
@@ -271,7 +340,7 @@ export class WorldCreator {
                   </select>
                   <button id="map-btn-overview" class="tool-btn" title="${t('atlas.overviewTitle')}">${t('atlas.overview')}</button>
                 </span>
-                <button id="map-btn-spawn" class="tool-btn" title="${t('atlas.spawnTitle')}">${t('atlas.spawn')}</button>
+                <button id="map-btn-spawn" class="tool-btn" title="${t('atlas.spawnTitle')}">${t('atlas.spawn').replace('🎯 ', '')}</button>
                 <button id="map-btn-reset" class="tool-btn" title="${t('atlas.resetTitle')}">${t('atlas.reset')}</button>
                 <button id="map-btn-zoom-in" class="tool-btn icon-btn" title="${t('atlas.zoomInTitle')}">＋</button>
                 <button id="map-btn-zoom-out" class="tool-btn icon-btn" title="${t('atlas.zoomOutTitle')}">－</button>
@@ -279,26 +348,21 @@ export class WorldCreator {
               </div>
             </div>
 
-            <!-- 地图主体工作区：左侧视口 + 右侧控制器窗口 -->
             <div class="atlas-workspace">
-              <!-- 左侧：地图画布视口 -->
               <div class="map-viewport-wrapper" id="map-viewport-container">
                 <canvas id="atlas-canvas" class="atlas-canvas" aria-label="${t('atlas.canvasAria')}"></canvas>
-                <!-- 视口左下角快捷提示 -->
+                <div id="atlas-stale" class="atlas-stale hidden" aria-hidden="true"><div class="contour-art"></div></div>
                 <div class="viewport-tip">
                   <span>${t('atlas.viewportTip')}</span>
                 </div>
               </div>
 
-              <!-- 右侧控制窗口 -->
               <aside class="atlas-control-panel" id="atlas-control-sidebar" aria-label="${t('atlas.controlsAria')}">
-                <!-- 1. 显示与图层控制 -->
                 <div class="ctrl-group">
                   <div class="ctrl-group-title">
                     <span>${t('atlas.layerTitle')}</span>
                   </div>
 
-                  <!-- 控制项 1：显示/隐藏区块信息（编号、类型） -->
                   <label class="ctrl-toggle-row">
                     <span class="toggle-text">
                       <strong>${t('atlas.toggleChunkInfo')}</strong>
@@ -308,7 +372,6 @@ export class WorldCreator {
                     <span class="switch-slider"></span>
                   </label>
 
-                  <!-- 控制项 2：显示/隐藏具体投影 -->
                   <label class="ctrl-toggle-row">
                     <span class="toggle-text"><strong>${t('atlas.toggleChunkColors')}</strong><small>${t('atlas.toggleChunkColors.hint')}</small></span>
                     <input type="checkbox" id="toggle-chunk-colors" class="switch-input"><span class="switch-slider"></span>
@@ -322,7 +385,6 @@ export class WorldCreator {
                     <span class="switch-slider"></span>
                   </label>
 
-                  <!-- 控制项 3：显示气候分类 -->
                   <label class="ctrl-toggle-row">
                     <span class="toggle-text">
                       <strong>${t('atlas.toggleClimate')}</strong>
@@ -332,7 +394,6 @@ export class WorldCreator {
                     <span class="switch-slider"></span>
                   </label>
 
-                  <!-- 气候细分标签与视口占比 -->
                   <div class="climate-tags-panel" id="climate-tags-panel">
                     <div class="climate-tags-title">${t('atlas.climateTags')}</div>
                     <div class="climate-pills-row" id="climate-pills-container">
@@ -347,7 +408,6 @@ export class WorldCreator {
                   </div>
                 </div>
 
-                <!-- 2. 筛选特定区块（红色轮廓线） -->
                 <div class="ctrl-group">
                   <div class="ctrl-group-title">
                     <span>${t('atlas.filterTitle')}</span>
@@ -374,7 +434,6 @@ export class WorldCreator {
                   </div>
                 </div>
 
-                <!-- 3. 选中区块详情卡片 -->
                 <div class="ctrl-group">
                   <div class="ctrl-group-title">
                     <span>${t('atlas.detailTitle')}</span>
@@ -385,23 +444,52 @@ export class WorldCreator {
                   </div>
                 </div>
 
-                <!-- 底部快捷进入世界 -->
-                <div class="sidebar-action-footer">
-                  <button id="sidebar-enter-btn" class="primary full-width">
-                    ${t('atlas.enterThisWorld')} <span>→</span>
-                  </button>
-                </div>
               </aside>
             </div>
           </div>
 
           <footer class="atlas-footer">
-            <span>${t('atlas.footerLeft')}</span>
-            <span>${t('atlas.footerRight')}</span>
+            <span class="atlas-footer-note">${t('atlas.footerRight')}</span>
+            <button id="footer-enter-btn" class="footer-enter">${t('creator.enterWorld')} <span>→</span></button>
           </footer>
         </section>
       </div>
     `;
+    const panel = this.el('world-settings-panel');
+    const scroll = document.createElement('div'); scroll.className = 'creator-scroll';
+    const tabs = document.createElement('div'); tabs.className = 'creator-tabs'; tabs.setAttribute('role', 'tablist');
+    const sections = ['presets', 'custom', 'preview'].map((name, index) => {
+      const section = document.createElement('div'); section.id = `creator-tab-${name}`;
+      section.setAttribute('role', 'tabpanel'); section.setAttribute('aria-labelledby', `creator-tab-button-${name}`);
+      section.hidden = index !== 0; scroll.append(section);
+      const button = document.createElement('button'); button.textContent = t(`creator.tab.${name}`);
+      button.id = `creator-tab-button-${name}`; button.setAttribute('role', 'tab');
+      button.setAttribute('aria-controls', section.id); button.setAttribute('aria-selected', String(index === 0));
+      button.tabIndex = index === 0 ? 0 : -1;
+      button.onclick = () => {
+        sections.forEach((item, i) => { item.hidden = i !== index; });
+        Array.from(tabs.children).forEach((item, i) => { item.setAttribute('aria-selected', String(i === index)); (item as HTMLElement).tabIndex = i === index ? 0 : -1; });
+      };
+      button.onkeydown = event => {
+        if (!['ArrowLeft', 'ArrowRight'].includes(event.code)) return;
+        event.preventDefault(); const next = (index + (event.code === 'ArrowRight' ? 1 : 2)) % 3;
+        const target = tabs.children[next] as HTMLButtonElement; target.click(); target.focus();
+      };
+      tabs.append(button); return section;
+    });
+    const heading = this.el('menu-title'); heading.remove();
+    this.root.querySelector('.menu-header .wordmark')!.textContent = t('creator.title');
+    const intro = panel.querySelector('.menu-intro'); intro?.remove();
+    const children = Array.from(panel.children);
+    const nameLabel = panel.querySelector('[for="world-name"]')!;
+    const nameField = this.input('world-name').parentElement!;
+    sections[0].append(nameLabel, nameField, this.el('recommended-presets'));
+    children.forEach(child => { if (child.parentElement === panel && !child.classList.contains('menu-actions') && child.id !== 'menu-status') sections[1].append(child); });
+    sections[2].append(this.el('atlas-control-sidebar'));
+    panel.prepend(tabs, scroll);
+    this.el('map-btn-spawn').insertAdjacentHTML('afterbegin', icon('flag-pin'));
+    this.el('atlas-main-panel').insertAdjacentHTML('beforeend', `<img class="atlas-compass" src="${iconUrl('compass-rose')}" alt="">`);
+
   }
 
   private generateChunkFilterOptions(): string {
@@ -412,10 +500,11 @@ export class WorldCreator {
       { label: climateName(1), min: 201, max: 208 },
       { label: climateName(3), min: 301, max: 308 },
       { label: climateName(4), min: 401, max: 409 },
+      { label: t('creator.artificial'), min: 9000, max: 9999 },
     ];
 
     return groups.map(g => {
-      const types = CHUNK_TYPES.filter(t2 => t2.generate && t2.id >= g.min && t2.id <= g.max);
+      const types = CHUNK_TYPES.filter(t2 => (t2.generate || t2.artificial) && t2.id >= g.min && t2.id <= g.max);
       if (types.length === 0) return '';
       return `
         <optgroup label="${g.label}">
@@ -444,9 +533,50 @@ export class WorldCreator {
     return startDateUnixMs(mode, { year: parts[0], month: parts[1], day: parts[2] }, -new Date().getTimezoneOffset());
   }
 
-  destroy(): void { this.atlasView?.destroy(); }
+  destroy(): void { this.stopColors(); this.atlasView?.destroy(); }
+
+  private updateArtificialFields(): void {
+    const enabled = this.input('artificial-enabled').checked;
+    const expansion = this.input('natural-expansion').valueAsNumber;
+    const evolution = this.input('natural-evolution');
+    const speed = Math.min(evolution.valueAsNumber, expansion);
+    evolution.max = String(expansion); evolution.value = String(speed);
+    this.el('artificial-speeds').style.setProperty('--distance-limit', String(expansion / 4));
+    this.el('artificial-options').classList.toggle('hidden', !enabled);
+    this.input('natural-expansion').disabled = !enabled;
+    evolution.disabled = !enabled || expansion === 0;
+    this.el('natural-expansion-value').textContent = expansion === 0 ? t('creator.artificial.off') : `×${expansion}`;
+    this.el('natural-evolution-value').textContent = speed === 0 ? t('creator.artificial.off') : `×${speed}`;
+    const independent = enabled && speed > 0;
+    this.el('independence-option').classList.toggle('hidden', !independent);
+    this.el('independence-hint').classList.toggle('hidden', !independent);
+    this.input('flag-independence').disabled = !independent;
+    if (!independent) this.input('flag-independence').checked = false;
+    const spawn = this.input('spawn-as-flag');
+    spawn.disabled = !enabled;
+    if (!enabled) {
+      if (spawn.checked) this.spawnClearedByLock = true;
+      spawn.checked = false;
+    } else if (this.spawnClearedByLock) {
+      spawn.checked = true;
+      this.spawnClearedByLock = false;
+    }
+    const human = this.el<HTMLDetailsElement>('fold-human');
+    human.classList.toggle('locked', !enabled);
+    if (!enabled) human.open = false;
+  }
+
+  private updateSchemeChip(): void {
+    try { this.el('color-scheme-core').style.background = hexColor(this.input('faction-main-color').value); } catch { }
+    try { this.el('color-scheme-chip').style.background = hexColor(this.input('faction-trim-color').value); } catch { }
+  }
+
+  private markStale(): void {
+    this.el('atlas-stale').classList.toggle('hidden', !this.mapShown);
+  }
 
   private updateWeights(): void {
+    this.updateArtificialFields();
     this.el('tectonic-value').textContent = this.input('tectonic-activity').value;
     const ratio = Number(this.input('land-ratio').value);
     const precipitation = Number(this.input('precipitation').value);
@@ -458,9 +588,11 @@ export class WorldCreator {
       : ratio === .5 ? t('creator.landRatio.balanced') : t('creator.landRatio.percent', {value: Math.round(ratio * 100)});
     try {
       this.generationSettings();
+      this.playerSettings();
+      renName(this.input('ren-ming').value, renName(this.defaultRenName));
       // 星球气候由温度与纬度决定，平面权重不参与校验。
       if (this.el<HTMLSelectElement>('generation-mode').value !== 'plane') {
-        this.el('enter-world').removeAttribute('disabled'); this.el('browse-map').removeAttribute('disabled');
+        this.el('footer-enter-btn').removeAttribute('disabled'); this.el('browse-map').removeAttribute('disabled');
         return;
       }
       const weights = this.weights();
@@ -468,7 +600,7 @@ export class WorldCreator {
         const out = this.el(`percent-${i}`);
         if (out) out.textContent = `${(v * 100).toFixed(1)}%`;
       });
-      this.el('enter-world')?.removeAttribute('disabled');
+      this.el('footer-enter-btn')?.removeAttribute('disabled');
       this.el('browse-map')?.removeAttribute('disabled');
       const bar = this.root.querySelector('.climate-bar');
       if (bar) {
@@ -481,7 +613,7 @@ export class WorldCreator {
         const out = this.el(`percent-${i}`);
         if (out) out.textContent = '—';
       });
-      this.el('enter-world')?.setAttribute('disabled', '');
+      this.el('footer-enter-btn')?.setAttribute('disabled', '');
       this.el('browse-map')?.setAttribute('disabled', '');
       this.error(e);
     }
@@ -491,6 +623,7 @@ export class WorldCreator {
     const changed = () => {
       this.status(this.mapShown ? t('creator.changed') : '');
       this.generator = null; this.updateGenerationFields();
+      this.markStale();
     };
     this.el<HTMLSelectElement>('generation-mode').onchange = changed;
     this.el('creator-back').onclick = this.back;
@@ -513,15 +646,28 @@ export class WorldCreator {
         this.generator = null;
         this.status(this.mapShown ? t('creator.changed') : '');
         this.updateWeights();
+        this.markStale();
       });
     });
 
-    // 随机种子按钮
+    this.el('color-scheme-toggle').addEventListener('click', () => {
+      const body = this.el('color-scheme-body');
+      const open = body.hidden;
+      body.hidden = !open;
+      this.el('color-scheme-toggle').setAttribute('aria-expanded', String(open));
+    });
+    this.el('color-scheme-body').addEventListener('input', () => this.updateSchemeChip());
+    this.root.querySelectorAll<HTMLElement>('details.fold-group').forEach(group => {
+      group.querySelector('summary')!.addEventListener('click', event => {
+        if (group.classList.contains('locked')) event.preventDefault();
+      });
+    });
+
     this.el('random-seed').onclick = () => {
       this.input('world-seed').value = String(crypto.getRandomValues(new Uint32Array(1))[0]);
       this.generator = null;
       this.status(t('creator.seed.randomized'));
-      if (this.mapShown) this.preview();
+      this.markStale();
     };
 
     // 快速预设按钮
@@ -532,11 +678,8 @@ export class WorldCreator {
       };
     });
 
-    // 浏览地图按钮
     this.el('browse-map').onclick = () => this.preview();
-    this.el('placeholder-browse-btn')?.addEventListener('click', () => this.preview());
 
-    // 进入世界按钮（支持各处的进入按钮）
     const handleEnter = () => {
       try {
         const options = this.settings();
@@ -545,9 +688,8 @@ export class WorldCreator {
         this.error(e);
       }
     };
-    this.el('enter-world').onclick = handleEnter;
-    this.el('sidebar-enter-btn')?.addEventListener('click', handleEnter);
-    this.el('header-enter-btn')?.addEventListener('click', handleEnter);
+    this.el('footer-enter-btn').onclick = handleEnter;
+
 
     // ---- 舆图右侧窗口控制项绑定 ----
 
@@ -649,14 +791,14 @@ export class WorldCreator {
     };
     const target = presets[preset];
     if (target) {
-      this.setGenerationForm(normalizeGeneration({...DEFAULT_GENERATION, landRatio: target.landRatio}));
+      this.setGenerationForm(normalizeGeneration({...this.generationSettings(), landRatio: target.landRatio}));
       target.weights.forEach((w, i) => {
         this.input(`climate-${i}`).value = String(w);
       });
       this.generator = null;
       this.updateWeights();
       this.status(t('creator.presetApplied', { desc: t(`creator.preset.${preset}.desc`) }));
-      if (this.mapShown) this.preview();
+      this.markStale();
     }
   }
 
@@ -670,16 +812,16 @@ export class WorldCreator {
     this.isFullscreenMap = !this.isFullscreenMap;
     const container = this.el('menu-layout-container');
     const settingsPanel = this.el('world-settings-panel');
-    const headerEnterBtn = this.el('header-enter-btn');
+
 
     if (this.isFullscreenMap) {
       container.classList.add('map-fullscreen');
       settingsPanel.classList.add('collapsed');
-      headerEnterBtn.classList.remove('hidden');
+
     } else {
       container.classList.remove('map-fullscreen');
       settingsPanel.classList.remove('collapsed');
-      headerEnterBtn.classList.add('hidden');
+
     }
 
     setTimeout(() => {
@@ -694,21 +836,25 @@ export class WorldCreator {
         this.generator = new WorldGenerator(options.seed, options.climateWeights, options.generation);
       }
 
+      const artificial = new ArtificialWorld(this.generator, options.unixMs, options.calendarType, options.utcOffsetMinutes);
+      const spawn = playerFlagSpawn(artificial, options.playerFaction!);
       this.mapShown = true;
       this.el('atlas-placeholder').classList.add('hidden');
       this.el('atlas-content').classList.remove('hidden');
+      this.el('atlas-stale').classList.add('hidden');
 
       const canvas = this.el<HTMLCanvasElement>('atlas-canvas');
       if (!this.atlasView) {
         this.atlasView = new AtlasView({
           canvas,
-          generator: this.generator,
+          generator: this.generator, artificial,
           onChunkSelect: (info) => this.showChunkDetail(info),
           onStatsUpdate: (stats) => this.updateViewportStats(stats),
         });
       } else {
-        this.atlasView.setGenerator(this.generator);
+        this.atlasView.setGenerator(this.generator, artificial);
       }
+      this.atlasView.centerAt(spawn.cx, spawn.cz);
       this.atlasView.setShowChunkInfo(this.input('toggle-chunk-info').checked);
       this.atlasView.setShowChunkColors(this.input('toggle-chunk-colors').checked);
       this.atlasView.setShowProjection(this.input('toggle-projection').checked);
@@ -724,7 +870,7 @@ export class WorldCreator {
     }
   }
 
-  private showChunkDetail(info: ChunkInfo): void {
+  private showChunkDetail(info: TerritoryChunkInfo): void {
     const card = this.el('chunk-detail-card');
     const badge = this.el('selected-chunk-badge');
     const def = getChunkTypeDef(info.type);
@@ -785,6 +931,7 @@ export class WorldCreator {
       </div>
 
       <div class="detail-desc">${chunkDescription(def)}</div>
+      ${info.territory ? `<div class="detail-desc">${t('territory.detail', { id: escapeHtml(info.territory.name ?? info.territory.id), level: info.territory.level })}<br><span style="color:${info.territory.mainColor}">■ ${info.territory.mainColor}</span> · <span style="color:${info.territory.trimColor}">■ ${info.territory.trimColor}</span></div>` : ''}
     `;
   }
 

@@ -23,6 +23,8 @@ export function hash2(x: number, z: number, seed: number): number {
 }
 
 /** 字符串 -> 32 位种子（FNV-1a）。 */
+export function randomSeed(): number { return crypto.getRandomValues(new Uint32Array(1))[0]; }
+
 export function hashString(s: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {

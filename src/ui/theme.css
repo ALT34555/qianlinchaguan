@@ -1,40 +1,8 @@
-/* ==========================================================================
-   theme.css · 茜林茶馆 统一视觉基准（古朴中式）
-   --------------------------------------------------------------------------
-   本文件是**唯一**定义颜色、字体、控件外观的地方；其他样式表只引用这里的
-   CSS 变量，不再写死色值。这样"统一 UI 风格"才可持续。
+/* 统一古朴中式视觉基准令牌。 */
 
-   色板（需求指定）：
-     底色 #e5d3aa  ·  正文 #4d4030  ·  强调 #a61b29
-     可用印 #894e54  ·  禁用印 #867e76
+/* 字体 mod 由启动接口注册 */
 
-   字体（content/assets/ui/fonts）：
-     NanoOldSongA-Regular.ttf        纳米老宋 —— 标题、印文（雕版感）
-     ResourceHanRoundedCN-Medium.ttf 资源圆体 —— 正文、表单（清晰易读）
-
-   多语言：排版参数全部走 CSS 变量，`:root:lang(en)` 只覆盖变量，
-   中英文因此共用同一套组件样式。
-   ========================================================================== */
-
-/* ---------- 字体：全部取自 content/assets/ui/fonts ---------- */
-
-@font-face {
-  font-family: 'Qianlin Song';
-  src: url('/content/assets/ui/fonts/NanoOldSongA-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Qianlin Round';
-  src: url('/content/assets/ui/fonts/ResourceHanRoundedCN-Medium.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* ---------- 设计令牌 ---------- */
+/* 设计令牌 */
 
 :root {
   /* 需求指定的五个主色 */
@@ -69,13 +37,13 @@
   --ql-shadow-lg: 0 14px 44px rgba(58, 47, 33, .26);
 
   /* 字体族 */
-  --ql-font-display: 'Qianlin Song', 'Songti SC', 'STSong', 'SimSun', Georgia, serif;
-  --ql-font-body: 'Qianlin Round', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
-  --ql-font-mono: 'Qianlin Round', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --ql-font-display: system-ui, sans-serif;
+  --ql-font-body: system-ui, sans-serif;
+  --ql-font-mono: ui-monospace, monospace;
   /* 兼容旧代码里的 --ui-font 引用 */
   --ui-font: var(--ql-font-body);
 
-  /* 排版参数（随语言切换，见下方 :root:lang(en)） */
+  /* 多语言排版参数。 */
   --ql-track-display: .18em;
   --ql-track-label: .14em;
   --ql-track-body: .02em;
@@ -85,9 +53,7 @@
   --ql-radius-lg: 6px;
   --ql-radius-pill: 999px;
 
-  /* 宣纸底纹：多层柔和渐变 + 正交纤维网。
-     两条纤维必须是 90deg / 0deg —— 之前写成 92deg / 2deg，
-     整片底纹会歪 2°，看着像没对齐。格子取 4px 见方。 */
+  /* 宣纸正交纤维网底纹。 */
   --ql-paper-weave:
     radial-gradient(ellipse at 18% 12%, rgba(255, 253, 246, .55), transparent 58%),
     radial-gradient(ellipse at 84% 86%, rgba(166, 27, 41, .045), transparent 52%),
@@ -96,19 +62,19 @@
     repeating-linear-gradient(0deg, rgba(77, 64, 48, .026) 0 1px, transparent 1px 4px);
 }
 
-/* ---------- 英文排版：只覆盖变量，不改任何组件 ---------- */
+/* 英文排版变量覆盖 */
 
 :root:lang(en) {
   --ql-font-display: 'Qianlin Song', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --ql-font-body: 'Qianlin Round', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  /* 拉丁字母不需要汉字那样的字距，收紧后更接近古籍排印 */
+  /* 拉丁字母字距收紧。 */
   --ql-track-display: .03em;
   --ql-track-label: .06em;
   --ql-track-body: .005em;
   --ql-leading-body: 1.7;
 }
 
-/* ---------- 基础元素 ---------- */
+/* 基础元素 */
 
 *,
 *::before,
@@ -124,7 +90,7 @@ body {
   background: #14100c;
   color: var(--ql-ink);
   font-family: var(--ql-font-body);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-body);
   line-height: var(--ql-leading-body);
   -webkit-font-smoothing: antialiased;
@@ -159,19 +125,18 @@ em,
   font-style: normal;
 }
 
-/* 朱砂小标题：留作可选工具类。界面默认不再放装饰性小标题，
-   原有 .eyebrow 类名已随装饰文字一并移除。 */
+/* 朱砂小标题工具类。 */
 .ql-eyebrow {
   display: inline-block;
   color: var(--ql-cinnabar);
   font-family: var(--ql-font-display);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
   font-weight: 400;
   letter-spacing: var(--ql-track-label);
   text-transform: uppercase;
 }
 
-/* 朱砂双线分隔：一粗一细，像印谱的行栏 */
+/* 朱砂双线分隔。 */
 .ql-rule {
   height: 3px;
   border: 0;
@@ -180,9 +145,9 @@ em,
   margin: 14px 0;
 }
 
-/* ---------- 卷面 / 卡片 / 面板 ---------- */
+/* 卷面与面板容器 */
 
-/* 双线框：线装书的边框，用于主要面板 */
+/* 线装书双线框。 */
 .ql-framed {
   border: 1px solid var(--ql-line);
   border-radius: var(--ql-radius);
@@ -192,17 +157,7 @@ em,
     var(--ql-shadow);
 }
 
-/* ==========================================================================
-   印章按钮
-   --------------------------------------------------------------------------
-   三个层次叠出"印面"观感：
-     1. 印色底 —— 可用 #894e54 ／ 禁用 #867e76
-     2. 三重内边栏 —— 细白线 / 印色留白 / 细白线，形成双框
-     3. 极轻的上下渐变，模拟印泥的厚薄
-
-   默认作用于全站 <button>：新加的按钮自动就是印章，不需要额外加类。
-   需要"非印章"外观时挂 .ql-plain，或由更具体的类覆盖（.text-button 等）。
-   ========================================================================== */
+/* 印章按钮样式。 */
 
 button {
   position: relative;
@@ -271,7 +226,7 @@ button.is-outline:hover:not(:disabled) {
     inset 0 0 0 3px rgba(166, 27, 41, .35);
 }
 
-/* 禁用：一律用 #867e76，并取消一切"可按"的暗示 */
+/* 禁用态印章样式。 */
 button:disabled {
   background-color: var(--ql-seal-off);
   background-image: none;
@@ -285,13 +240,13 @@ button:disabled {
     inset 0 0 0 4px rgba(251, 244, 227, .22);
 }
 
-/* 焦点环用朱砂，键盘可达性不因配色而降低 */
+/* 键盘焦点环。 */
 :focus-visible {
   outline: 2px solid var(--ql-cinnabar);
   outline-offset: 2px;
 }
 
-/* 逃生口：需要中性按钮时使用（例如第三方 Mod 面板） */
+/* 中性按钮类。 */
 button.ql-plain {
   background: none;
   background-image: none;
@@ -302,9 +257,7 @@ button.ql-plain {
   border-radius: var(--ql-radius);
 }
 
-/* ==========================================================================
-   小签 / 芯片：工具条、筛选、快捷预设共用
-   ========================================================================== */
+/* 小签与快捷预设芯片。 */
 
 :is(.preset-pill, .climate-pill, .qf-btn, .tool-btn, .icon-btn, .key-binding) {
   padding: .34em .72em;
@@ -332,7 +285,7 @@ button.ql-plain {
     inset 0 0 0 3px rgba(166, 27, 41, .3);
 }
 
-/* 选中态：翻成阴文印 */
+/* 选中态阴文印。 */
 :is(.preset-pill, .climate-pill, .qf-btn, .tool-btn, .key-binding).active,
 .climate-pill.active,
 .qf-btn.active,
@@ -346,7 +299,7 @@ button.ql-plain {
     inset 0 0 0 3px rgba(251, 244, 227, .42);
 }
 
-/* 选中态悬停时保持"已盖印"的深色，不能被上面的 hover 规则翻回纸色 */
+/* 选中态悬停保持盖印深色。 */
 :is(.preset-pill, .climate-pill, .qf-btn, .tool-btn, .key-binding).active:hover:not(:disabled) {
   color: var(--ql-ink-inv);
   background-color: var(--ql-seal-on-hi);
@@ -356,9 +309,7 @@ button.ql-plain {
     inset 0 0 0 3px rgba(251, 244, 227, .5);
 }
 
-/* ==========================================================================
-   表单控件
-   ========================================================================== */
+/* 表单控件。 */
 
 input,
 select,
@@ -368,8 +319,7 @@ textarea {
   color: var(--ql-ink);
 }
 
-/* `input:not([type])` 也要覆盖：省略 type 的输入框等价于 text，
-   但属性选择器匹配不到，漏掉会让它退回浏览器默认外观。 */
+/* 缺省文本输入框覆盖。 */
 input:not([type]),
 input[type="text"],
 input[type="number"],
@@ -512,19 +462,17 @@ input[type="checkbox"]:checked::after {
   background-clip: content-box;
 }
 
-/* ==========================================================================
-   共用零件
-   ========================================================================== */
+/* 共用零件。 */
 
 .hidden {
   display: none !important;
 }
 
-/* 状态行：默认墨色，出错时才转朱砂 */
+/* 状态行提示。 */
 .ql-status,
 .menu-status {
   color: var(--ql-ink-2);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.7;
   min-height: 1.7em;
 }
@@ -542,7 +490,7 @@ input[type="checkbox"]:checked::after {
   border-left: 3px solid var(--ql-line-seal);
   border-radius: 0 var(--ql-radius) var(--ql-radius) 0;
   padding: 8px 12px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
   line-height: 1.8;
 }
 
@@ -552,7 +500,7 @@ input[type="checkbox"]:checked::after {
   align-items: center;
   gap: .35em;
   padding: 2px 9px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   background: var(--ql-paper-hi);
   border: 1px solid var(--ql-line-soft);
@@ -575,7 +523,7 @@ button.text-button {
   padding: 6px 2px;
   color: var(--ql-ink-2);
   font-family: var(--ql-font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-body);
   text-decoration: underline;
   text-decoration-color: var(--ql-line-seal);

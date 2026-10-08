@@ -1,26 +1,20 @@
 /// <reference types="node" />
 /** Node 本地存档服务实现 */
 import { mkdir, readdir, readFile, lstat, open, rename, unlink } from 'node:fs/promises';
-import { basename, join, resolve } from 'node:path';
-import { createHash, randomUUID } from 'node:crypto';
+import { join, resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { parseWorldSave, type WorldSave } from '../../src/systems/world/WorldSave.ts';
-import { SAVE_FORMAT_VERSION } from '../../src/core/version.ts';
+import { encodeSaveArchive, decodeSaveArchive, saveFilename, MAX_SAVE_BYTES, VALID_SAVE_ID } from '../../src/systems/world/SaveArchive.ts';
 import type { LocalSave, SaveList } from '../../src/systems/world/LocalSaveStore.ts';
 
-const MAX_BYTES = 4 * 1024 * 1024;
-const VALID_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
-/** Node类型擦除兼容错误类 */
+const MAX_BYTES = MAX_SAVE_BYTES;
+const VALID_ID = VALID_SAVE_ID;
 class SaveError extends Error {
   readonly status: number;
   constructor(message: string, status = 400) { super(message); this.status = status; }
 }
 interface DiskEntry { filename: string; item: LocalSave }
-function fileId(filename: string): string {
-  const stem = filename.replace(/\.json$/i, '');
-  return VALID_ID.test(stem) ? stem : `file-${createHash('sha256').update(filename).digest('hex').slice(0, 40)}`;
-}
-
 export class FileSaveService {
   readonly directory: string;
   private queue: Promise<unknown> = Promise.resolve();
@@ -31,17 +25,13 @@ export class FileSaveService {
     const entries: DiskEntry[] = [];
     let unreadable = 0;
     for (const filename of await readdir(this.directory)) {
-      if (!/\.json$/i.test(filename)) continue;
+      if (!/\.sav$/i.test(filename)) continue;
       try {
         const path = join(this.directory, filename), stat = await lstat(path);
         if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_BYTES) throw new Error('不可读的存档文件');
-        const text = await readFile(path, 'utf8');
-        const save = parseWorldSave(text);
-        const data = JSON.parse(text) as { _localSave?: { version: number; createdAt: number; updatedAt: number } };
-        const metadata = data._localSave;
-        if (metadata && (metadata.version !== SAVE_FORMAT_VERSION || !Number.isFinite(metadata.createdAt) || !Number.isFinite(metadata.updatedAt))) throw new Error('存档元数据无效');
-        entries.push({ filename, item: { id: fileId(filename), name: save.worldName || basename(filename).replace(/\.json$/i, '').slice(0, 80),
-          createdAt: metadata?.createdAt ?? stat.birthtimeMs, updatedAt: metadata?.updatedAt ?? stat.mtimeMs, save } });
+        const item = decodeSaveArchive(await readFile(path));
+        if (entries.some(entry => entry.item.id === item.id)) throw new Error('存档编号重复。');
+        entries.push({ filename, item });
       } catch { unreadable++; }
     }
     return { entries, unreadable };
@@ -61,7 +51,7 @@ export class FileSaveService {
     try {
       const file = await open(temporary, 'wx');
       try {
-        await file.writeFile(JSON.stringify({ ...item.save, _localSave: { version: SAVE_FORMAT_VERSION, createdAt: item.createdAt, updatedAt: item.updatedAt } }, null, 2), 'utf8');
+        await file.writeFile(encodeSaveArchive(item));
         await file.sync();
       } finally { await file.close(); }
       await rename(temporary, destination);
@@ -80,27 +70,14 @@ export class FileSaveService {
       const now = Date.now();
       const item: LocalSave = { id: nextId, name: nextName, createdAt: previous?.item.createdAt ?? now, updatedAt: now,
         save: { ...valid, worldName: nextName } };
-      await this.write(previous?.filename ?? `${nextId}.json`, item);
-      return item;
-    });
-  }
-  async migrate(legacy: LocalSave): Promise<{ item: LocalSave; created: boolean }> {
-    if (!legacy || typeof legacy.id !== 'string' || !legacy.id || legacy.id.length > 200 || typeof legacy.name !== 'string' ||
-      !Number.isFinite(legacy.createdAt) || !Number.isFinite(legacy.updatedAt)) throw new SaveError('旧浏览器存档元数据无效。');
-    const save = parseWorldSave(JSON.stringify(legacy.save));
-    const id = `legacy-${createHash('sha256').update(legacy.id).digest('hex').slice(0, 40)}`;
-    return this.serialized(async () => {
-      const { entries } = await this.scan();
-      const existing = entries.find(entry => entry.item.id === id);
-      if (existing) return { item: existing.item, created: false };
-      // 目标损坏时保留原文件防覆盖
-      const filename = `${id}.json`;
-      try { await lstat(join(this.directory, filename)); throw new SaveError('已有迁移存档无法读取，原文件已保留。'); }
-      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
-      const name = legacy.name.trim().slice(0, 80) || '未命名世界';
-      const item = { ...legacy, id, name, save: { ...save, worldName: name } };
+      const filename = saveFilename(nextName, nextId);
+      if (previous?.filename !== filename) {
+        try { await lstat(join(this.directory, filename)); throw new SaveError('目标存档文件已存在，无法覆盖。', 409); }
+        catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+      }
       await this.write(filename, item);
-      return { item, created: true };
+      if (previous && previous.filename !== filename) await unlink(join(this.directory, previous.filename));
+      return item;
     });
   }
 }
@@ -124,7 +101,7 @@ async function readBody(request: IncomingMessage): Promise<Record<string, unknow
 export function fileSaveMiddleware(service: FileSaveService) {
   return (request: IncomingMessage, response: ServerResponse, next: () => void): void => {
     const path = request.url?.split('?')[0];
-    if (path !== '/api/saves' && path !== '/api/saves/migrate') { next(); return; }
+    if (path !== '/api/saves') { next(); return; }
     const send = (status: number, data: unknown) => {
       response.statusCode = status; response.setHeader('Content-Type', 'application/json; charset=utf-8');
       response.setHeader('Cache-Control', 'no-store'); response.setHeader('X-Content-Type-Options', 'nosniff');
@@ -138,8 +115,7 @@ export function fileSaveMiddleware(service: FileSaveService) {
       if (request.method === 'GET' && path === '/api/saves') { send(200, await service.list()); return; }
       if (request.method !== 'POST') { response.setHeader('Allow', 'GET, POST'); throw new SaveError('不支持此存档操作。', 405); }
       const data = await readBody(request);
-      if (path === '/api/saves/migrate') send(200, await service.migrate(data as unknown as LocalSave));
-      else send(200, await service.put(data.save as WorldSave, data.name as string, data.id as string | undefined));
+      send(200, await service.put(data.save as WorldSave, data.name as string, data.id as string | undefined));
     })().catch(error => send(error instanceof SaveError ? error.status : 400, {
       error: (error as NodeJS.ErrnoException).code ? '无法读写 userdata/saves，请检查目录权限和磁盘空间，或先导出存档文件。' : error instanceof Error ? error.message : '本地存档操作失败。',
     }));

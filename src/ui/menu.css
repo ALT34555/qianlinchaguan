@@ -1,16 +1,6 @@
-/* ==========================================================================
-   menu.css · 落地页、存档、设置、游戏内菜单与 2D 地图
-   颜色与字体取自 theme.css 的令牌。
+/* 落地页、存档与菜单样式。 */
 
-   按钮语义（详见 theme.css 的印章按钮一节）：
-     .primary   主按钮 = 实心阴文印 —— 裸 <button> 已是此样式，无需额外声明
-     .secondary 次按钮 = 阳文印（纸面留白、朱线为框）
-     .text-button 纯文字按钮，完全脱离印章外观
-   main.ts 里的引入顺序为 theme → style → start-screen → menu → simple，
-   因此本文件可以覆盖前面各表的同名规则。
-   ========================================================================== */
-
-/* ---------- 落地页 ---------- */
+/* 落地页 */
 
 #world-menu.landing-page {
   background-color: var(--ql-paper);
@@ -33,7 +23,7 @@
 
 .landing-title h1 {
   margin: 15px 0 20px;
-  font-size: clamp(40px, 5vw, 66px);
+  font-size: calc(clamp(40px, 5vw, 66px) * var(--text-scale, 1));
   line-height: 1.2;
   letter-spacing: var(--ql-track-display);
 }
@@ -44,7 +34,7 @@
 
 .landing-title p {
   color: var(--ql-ink-2);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   line-height: 1.9;
   margin: 0;
 }
@@ -105,7 +95,7 @@
   position: absolute;
   left: 20px;
   bottom: 19px;
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-label);
   color: var(--ql-ink-2);
 }
@@ -158,7 +148,7 @@
 
 .card-number {
   display: block;
-  font-size: 10px;
+  font-size: calc(10px * var(--text-scale, 1));
   color: var(--ql-ink-3);
   letter-spacing: var(--ql-track-label);
 }
@@ -167,7 +157,7 @@
   display: block;
   margin: 17px 0 12px;
   font-family: var(--ql-font-display);
-  font-size: 30px;
+  font-size: calc(30px * var(--text-scale, 1));
   font-weight: 400;
   letter-spacing: var(--ql-track-display);
 }
@@ -175,7 +165,7 @@
 .home-card p {
   color: var(--ql-ink-2);
   line-height: 1.85;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   margin: 0;
 }
 
@@ -183,7 +173,7 @@
   position: absolute;
   right: 25px;
   bottom: 25px;
-  font-size: 24px;
+  font-size: calc(24px * var(--text-scale, 1));
   color: var(--ql-cinnabar);
 }
 
@@ -191,7 +181,7 @@
   margin: 20px 0 30px;
 }
 
-/* ---------- 内页通用 ---------- */
+/* 内页通用样式 */
 
 .menu-page {
   max-width: 1120px;
@@ -210,7 +200,7 @@
 .panel-heading h1 {
   margin: 8px 0;
   color: var(--ql-ink);
-  font-size: 34px;
+  font-size: calc(34px * var(--text-scale, 1));
 }
 
 /* 返回键：小号阳文印 */
@@ -222,7 +212,7 @@
   background-image: none;
   text-shadow: none;
   font-family: var(--ql-font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-body);
   box-shadow:
     inset 0 0 0 1px var(--ql-seal-on),
@@ -241,7 +231,7 @@
 
 .panel-intro {
   color: var(--ql-ink-2);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
   line-height: 1.85;
   margin: 0 0 30px;
 }
@@ -255,19 +245,19 @@
   display: block;
   margin-bottom: 24px;
   color: var(--ql-cinnabar);
-  font: 54px var(--ql-font-display);
+  font: calc(54px * var(--text-scale, 1)) var(--ql-font-display);
 }
 
 .creation-card strong {
   display: block;
   font-family: var(--ql-font-display);
-  font-size: 24px;
+  font-size: calc(24px * var(--text-scale, 1));
   font-weight: 400;
   letter-spacing: var(--ql-track-label);
 }
 
 .creation-card p {
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   color: var(--ql-ink-2);
 }
 
@@ -277,7 +267,7 @@
   background: rgba(166, 27, 41, .08);
   border-radius: var(--ql-radius-pill);
   color: var(--ql-cinnabar);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 
 .date-fields {
@@ -288,7 +278,7 @@
 
 .date-fields label {
   color: var(--ql-ink-2);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .date-fields input {
@@ -297,7 +287,7 @@
   margin-top: 6px;
 }
 
-/* ---------- 存档列表 ---------- */
+/* 存档列表 */
 
 .saves-intro {
   display: flex;
@@ -309,7 +299,7 @@
 .saves-intro button {
   white-space: nowrap;
   padding: 12px 24px;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
 }
 
 .save-list {
@@ -335,20 +325,20 @@
 
 .save-info h2 {
   margin: 0 0 8px;
-  font-size: 21px;
+  font-size: calc(21px * var(--text-scale, 1));
   overflow-wrap: anywhere;
 }
 
 .save-info p {
   color: var(--ql-ink-2);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   line-height: 1.75;
   margin: 0 0 5px;
 }
 
 .save-info small {
   color: var(--ql-ink-3);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
 }
 
 .save-actions {
@@ -359,7 +349,7 @@
 
 .save-actions button {
   padding: 10px 16px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
 }
 
 .empty-saves {
@@ -372,18 +362,18 @@
 .empty-saves span {
   display: block;
   font-family: var(--ql-font-display);
-  font-size: 25px;
+  font-size: calc(25px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-display);
   color: var(--ql-ink);
 }
 
 .empty-saves p {
   color: var(--ql-ink-2);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
   line-height: 1.85;
 }
 
-/* ---------- 设置面板 ---------- */
+/* 设置面板 */
 
 .settings-grid {
   display: grid;
@@ -404,7 +394,7 @@
 .settings-group h2 {
   margin: 0 0 16px;
   color: var(--ql-cinnabar);
-  font-size: 18px;
+  font-size: calc(18px * var(--text-scale, 1));
 }
 
 .setting-row {
@@ -415,7 +405,7 @@
   padding: 17px 0;
   border-bottom: 1px dashed var(--ql-line-faint);
   color: var(--ql-ink);
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
 }
 
 .setting-row:last-of-type {
@@ -425,7 +415,7 @@
 .setting-row small {
   display: block;
   color: var(--ql-ink-3);
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale, 1));
   line-height: 1.6;
   margin-top: 5px;
 }
@@ -434,7 +424,7 @@
 .setting-row select {
   width: 122px;
   min-width: 122px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale, 1));
 }
 
 /* 语言选择器给足宽度，避免英文语言名被截断 */
@@ -458,7 +448,7 @@
   border-bottom: 1px dashed var(--ql-line-faint);
   padding: 9px 0;
   color: var(--ql-ink);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
 }
 
 .key-row:last-of-type {
@@ -478,37 +468,40 @@
 
 .settings-actions button {
   padding: 11px 24px;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
 }
 
-/* ---------- 暂停面板（游戏内 ESC） ---------- */
+/* 游戏内暂停面板 */
 
 .pause-panel {
-  width: min(460px, 100%);
-  max-height: calc(100dvh - 48px);
+  width: min(520px, 100%);
   overflow-y: auto;
-  padding: 32px;
+  overscroll-behavior: contain;
+  padding: 26px 34px 30px;
+  pointer-events: auto;
   color: var(--ql-ink);
   background: var(--ql-paper);
   background-image: var(--ql-paper-weave);
   border: 1px solid var(--ql-line);
-  border-radius: var(--ql-radius);
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: var(--ql-radius-lg) 0 0 0;
   box-shadow:
     inset 0 0 0 2px var(--ql-paper),
     inset 0 0 0 3px var(--ql-line),
-    var(--ql-shadow-lg);
+    -16px 0 40px rgba(58, 47, 33, .28);
 }
 
 .pause-panel h1 {
   margin: 13px 0;
   color: var(--ql-ink);
-  font-size: 23px;
+  font-size: calc(23px * var(--text-scale, 1));
 }
 
 .pause-description {
   color: var(--ql-ink-2);
-  font-size: 12px;
-  margin: 0 0 21px;
+  font-size: calc(12px * var(--text-scale, 1));
+  margin: 4px 0 8px;
 }
 
 .pause-panel .field-title {
@@ -517,7 +510,7 @@
 
 .pause-panel>input {
   width: 100%;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale, 1));
 }
 
 .pause-actions {
@@ -529,31 +522,23 @@
 .pause-actions button {
   width: 100%;
   padding: 12px 16px;
-  font-size: 14px;
-}
-
-.pause-note {
-  display: block;
-  margin-top: 12px;
-  font-size: 10.5px;
-  line-height: 1.85;
-  color: var(--ql-ink-3);
+  font-size: calc(14px * var(--text-scale, 1));
 }
 
 .pause-settings {
-  width: min(1020px, 100%);
+  width: min(880px, 100%);
 }
 
 .pause-settings .panel-intro {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   margin-bottom: 20px;
 }
 
 .pause-settings .panel-heading h1 {
-  font-size: 28px;
+  font-size: calc(28px * var(--text-scale, 1));
 }
 
-/* ---------- 游戏内顶栏 ---------- */
+/* 游戏内顶栏 */
 
 .game-bar {
   position: fixed;
@@ -565,7 +550,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 22px;
+  padding: 12px 84px 12px 22px;
   min-height: 68px;
   color: var(--ql-ink);
   background: var(--ql-paper);
@@ -581,7 +566,7 @@
 .game-identity strong {
   display: block;
   font-family: var(--ql-font-display);
-  font-size: 17px;
+  font-size: calc(17px * var(--text-scale, 1));
   font-weight: 400;
   letter-spacing: var(--ql-track-label);
   white-space: nowrap;
@@ -592,33 +577,64 @@
 .game-identity span {
   display: block;
   margin-top: 4px;
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   font-family: var(--ql-font-mono);
 }
 
-.game-tools {
+.game-corner {
+  position: fixed;
+  z-index: 10002;
+  top: max(10px, var(--safe-y));
+  right: max(12px, var(--safe-x));
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex-shrink: 0;
+  gap: 10px;
 }
 
-.game-tools>span {
-  font-size: 11px;
-  color: var(--ql-ink-2);
+.corner-menu {
+  width: 44px;
+  height: 44px;
+  padding: 7px;
+  color: var(--ql-ink);
+  background-color: var(--ql-paper-hi);
+  background-image: none;
+  text-shadow: none;
+  box-shadow:
+    inset 0 0 0 1px var(--ql-seal-on),
+    inset 0 0 0 2px var(--ql-paper-hi),
+    inset 0 0 0 3px var(--ql-line-seal),
+    var(--ql-shadow);
 }
 
-.game-tools button {
-  padding: 8px 16px;
-  font-size: 12px;
+.corner-menu img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-/* ---------- 游戏内 2D 地图 ---------- */
+.corner-menu:hover:not(:disabled) {
+  background-color: #f8eeda;
+  box-shadow:
+    inset 0 0 0 1px var(--ql-cinnabar),
+    inset 0 0 0 2px #f8eeda,
+    inset 0 0 0 3px rgba(166, 27, 41, .32),
+    var(--ql-shadow);
+}
+
+.corner-back {
+  box-shadow:
+    inset 0 0 0 1px var(--ql-seal-on),
+    inset 0 0 0 2px var(--ql-paper-hi),
+    inset 0 0 0 3px var(--ql-line-seal),
+    var(--ql-shadow);
+}
+
+/* 游戏内 2D 地图 */
 
 .game-map {
   position: fixed;
-  inset: 68px 0 0;
+  inset: var(--game-bar-h, 68px) 0 0;
   display: flex;
   flex-direction: column;
   color: var(--ql-ink);
@@ -639,7 +655,7 @@
 
 .map-mode-label {
   font-family: var(--ql-font-display);
-  font-size: 15px;
+  font-size: calc(15px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-label);
 }
 
@@ -654,7 +670,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--ql-ink-2);
 }
 
@@ -662,7 +678,7 @@
 .map-buttons button {
   padding: 6px 12px;
   font-family: var(--ql-font-body);
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-body);
   box-shadow:
     inset 0 0 0 1px rgba(251, 244, 227, .7),
@@ -671,7 +687,7 @@
 }
 
 .map-buttons select {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   padding: 6px 26px 6px 10px;
 }
 
@@ -695,7 +711,7 @@
   left: 16px;
   padding: 7px 13px;
   border-radius: var(--ql-radius);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale, 1));
   color: var(--ql-paper);
   background: rgba(36, 28, 19, .85);
   border: 1px solid rgba(251, 244, 227, .18);
@@ -705,16 +721,14 @@
 .game-map-detail {
   padding: 11px 20px;
   min-height: 42px;
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale, 1));
   color: var(--ql-ink-2);
   background: var(--ql-paper-hi);
   border-top: 1px solid var(--ql-line-soft);
   font-family: var(--ql-font-mono);
 }
 
-/* ==========================================================================
-   响应式适配
-   ========================================================================== */
+/* 响应式适配 */
 
 @media (max-width: 760px) {
   #world-menu.landing-page {
@@ -736,11 +750,11 @@
   }
 
   .landing-title h1 {
-    font-size: 38px;
+    font-size: calc(38px * var(--text-scale, 1));
   }
 
   .landing-title p {
-    font-size: 12px;
+    font-size: calc(12px * var(--text-scale, 1));
   }
 
   .home-options,
@@ -762,16 +776,16 @@
   }
 
   .home-card strong {
-    font-size: 23px;
+    font-size: calc(23px * var(--text-scale, 1));
     margin: 0;
   }
 
   .home-card p {
-    font-size: 11px;
+    font-size: calc(11px * var(--text-scale, 1));
   }
 
   .card-arrow {
-    font-size: 19px;
+    font-size: calc(19px * var(--text-scale, 1));
     right: 16px;
     bottom: 21px;
   }
@@ -785,11 +799,11 @@
   }
 
   .panel-heading h1 {
-    font-size: 27px;
+    font-size: calc(27px * var(--text-scale, 1));
   }
 
   .menu-back {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
     padding: 9px 11px;
   }
 
@@ -801,11 +815,11 @@
   .creation-symbol {
     float: right;
     margin: 0;
-    font-size: 46px;
+    font-size: calc(46px * var(--text-scale, 1));
   }
 
   .creation-card strong {
-    font-size: 21px;
+    font-size: calc(21px * var(--text-scale, 1));
   }
 
   .settings-grid {
@@ -836,11 +850,7 @@
   }
 
   .game-bar {
-    padding-inline: 14px;
-  }
-
-  .game-tools>span {
-    display: none;
+    padding-inline: 14px 84px;
   }
 
   .game-map-tools {
@@ -849,10 +859,10 @@
   }
 
   .game-map-detail {
-    font-size: 10px;
+    font-size: calc(10px * var(--text-scale, 1));
   }
 
   .game-map-tip {
-    font-size: 9px;
+    font-size: calc(9px * var(--text-scale, 1));
   }
 }

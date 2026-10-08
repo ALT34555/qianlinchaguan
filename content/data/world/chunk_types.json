@@ -412,5 +412,25 @@
     "mapColor": "#f0ffff",
     "generate": true,
     "description": "冰封雪原"
+  },
+  {
+    "id": 9000,
+    "code": "9000",
+    "key": "owned_land",
+    "name": "有主之地",
+    "mapColor": "#b48a50",
+    "generate": false,
+    "description": "属于某个阵营的土地，保留自然植被和岩石。",
+    "artificial": true
+  },
+  {
+    "id": 9001,
+    "code": "9001",
+    "key": "flag_land",
+    "name": "置旗地",
+    "mapColor": "#c99b58",
+    "generate": false,
+    "description": "新阵营的置旗之地，不自然生成植被和岩石。",
+    "artificial": true
   }
 ]

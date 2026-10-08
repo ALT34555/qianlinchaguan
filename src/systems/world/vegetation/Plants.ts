@@ -134,7 +134,7 @@ export const PLANT_FILES: readonly { file: string; data: PlantFile }[] = [
   { file: 'herbaceous/hua.ju.json', data: asPlantFile(huaJu) },
 ];
 
-/** 参数表格式版本由 src/core/version.ts 统一声明 */
+/** 参数表格式版本声明 */
 
 const paletteData = palettesJson as PaletteFile;
 
@@ -170,7 +170,7 @@ const ARCHETYPE_PALETTE_KEYS: Record<string, readonly PaletteKey[]> = {
   orchid: ['bamboo', 'foliage', 'foliageDeep', 'bloom', 'pollen'],
 };
 
-/** 干枯状态额外需要的色键（withered 原型 */
+/** 枯萎态色板键 */
 const WITHERED_PALETTE_KEYS: readonly PaletteKey[] = [
   'withered', 'witheredDark', 'witheredStem', 'witheredNeedle',
 ];
@@ -191,7 +191,7 @@ export function canBloom(archetype: string): boolean {
   return BLOOM_ARCHETYPES.includes(archetype);
 }
 
-/** 该原型是否支持结实版本（枯木 / 幼苗 / 兰花 */
+/** 是否支持结实形态 */
 export function canFruit(archetype: string): boolean {
   return FRUIT_ARCHETYPES.includes(archetype);
 }
@@ -256,7 +256,7 @@ function paletteKeysOf(variant: PlantVariantDef, state: PlantState): readonly st
 
 const BASE_ID = /@[a-z]+$/;
 
-/** 从 "shu.qinggang@seedling */
+/** 拆分物种ID与状态后缀 */
 export function baseIdOf(id: string): string {
   return id.replace(BASE_ID, '');
 }
@@ -265,15 +265,15 @@ export function baseIdOf(id: string): string {
 interface SpeciesEntry {
   base: PlantVariantDef;
   byState: Map<PlantState, PlantVariantDef>;
-  /** 该物种完整的状态清单（按 PLANT_STATE */
+  /** 完整生命周期状态清单 */
   states: PlantState[];
 }
 
 // 
-// 生命周期状态：六态如何从"成熟健株"的物种参数派生
+// 成熟株参数派生生命周期六态
 // 
 
-/** 幼苗相对成株的尺寸：只影响尺寸，不改变物种比例 */
+/** 幼苗相对成株尺寸倍率 */
 const SEEDLING_SCALE = 0.24;
 /** 亚成相对成株的尺寸 */
 const SUBADULT_SCALE = 0.55;
@@ -323,8 +323,7 @@ export const STATE_DEFAULTS: PlantStateTable = {
     code: 4,
     bloomMode: 'force',
     fruitMode: 'none',
-    // 只给"花量"兜底
-    // 否则小灌木也会得到 1 格大的花。
+  // 仅为花量兜底，不放大灌木花朵
     paramPatch: { bloomCount: 7 },
   },
   fruiting: {
@@ -387,7 +386,7 @@ interface ResolvedState {
   fruit: boolean;
 }
 
-/** 把物种参数与状态派生叠在一起（不做四层默认值合并 */
+/** 叠加物种参数与状态派生 */
 function resolveState(variant: PlantVariantDef, state: PlantState): ResolvedState {
   const def = stateDef(state);
   const base: PlantParams = { ...variant.params };
@@ -403,13 +402,12 @@ function resolveState(variant: PlantVariantDef, state: PlantState): ResolvedStat
   }
   if (def.paramPatch) Object.assign(params, def.paramPatch);
   if (def.stateForm) params.stateForm = def.stateForm;
-  // 枯木不积雪：雪落在枯枝上没有意义，也会掩盖枯枝剪影
+  // 枯木保持剪影不积雪
   if (state === 'withered') params.snow = 0;
 
   const speciesBloom = Math.round(params.bloomCount ?? 0) > 0;
   const speciesFruit = Math.round(params.fruitCount ?? 0) > 0;
-  // flowerless / fruitless
-  // 于是开花/结实态不会去凑花凑果
+  // 无花果类型不派生花果态
   const bloom = !params.flowerless
     && (def.bloomMode === 'force' || (def.bloomMode === 'species' && speciesBloom)) && canBloom(archetype);
   const fruit = !params.fruitless
@@ -431,14 +429,14 @@ export function mergeParams(variant: PlantVariantDef, state: PlantState = 'norma
   return { ...GLOBAL_DEFAULTS, ...climate, ...archetype, ...resolved.params };
 }
 
-/** 把参数表的一条定义装配成可直接生成的 Plant */
+/** 装配植物生成定义 */
 export function toPlantDef(variant: PlantVariantDef, season: Season, bloom?: PlantBloomOptions): PlantDef {
   const seed = variant.seed ?? 0;
   const asked: PlantState = bloom?.state ?? (bloom?.bloom ? 'flowering' : 'normal');
-  // 先过"只有接口的状态"这道闸（0 种植 -> 1
+  // 过滤仅接口占位状态
   const requested = effectiveState(asked);
   const species = speciesOf(variant);
-  // 状态与原型不相容时（针叶树的花期/果期）退回普通态
+  // 原型与状态不兼容时退回普通态
   const allowed = species ? supportedStates(species) : [requested];
   const declared: PlantState = allowed.includes(requested) ? requested : 'normal';
   const probe = resolveState(variant, declared);
@@ -469,7 +467,7 @@ export function toPlantDef(variant: PlantVariantDef, season: Season, bloom?: Pla
   };
 }
 
-/** 尺寸倍率：物种 scale 缺省为 1 */
+/** 尺寸倍率，默认 1 */
 function buildOptionsOf(variant: PlantVariantDef): { scale: number } {
   const raw = variant.scale;
   const scale = typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : 1;
@@ -482,7 +480,7 @@ function buildOptionsOf(variant: PlantVariantDef): { scale: number } {
 
 /** 第一遍 */
 const speciesById = new Map<string, SpeciesEntry>();
-/** 全部条目（成株 + 状态），id 唯一 */
+/** 全部植物条目，ID 唯一 */
 const allVariants: PlantVariantDef[] = [];
 
 function speciesOf(variant: PlantVariantDef): SpeciesEntry | undefined {
@@ -494,7 +492,7 @@ for (const { file, data } of PLANT_FILES) {
   if (!Array.isArray(data.plants) || data.plants.length === 0) {
     throw new Error(`[Vegetation] ${file} 缺少 plants 数组`);
   }
-  // 成株条目先入册，保证同文件内的状态条目一定能继承到
+  // 成株条目优先入册供继承
   for (const p of data.plants) {
     if (p.state) continue;
     const base: PlantVariantDef = { ...p, source: file };
@@ -544,7 +542,7 @@ for (const species of speciesById.values()) {
     if (seen.has(s)) throw new Error(`[Vegetation] 物种 ${species.base.id} 的状态清单有重复项: ${s}`);
     seen.add(s);
     ordered.push(s);
-    // 0 种植这类"只有接口没有模型"的状态不需要参数
+    // 纯接口状态无需参数
     if (s !== 'normal' && !stateDef(s).modeless && !species.byState.has(s)) {
       throw new Error(`[Vegetation] 物种 ${species.base.id} 声明了状态 ${s}，但参数表里没有 ${species.base.id}@${s} 条目`);
     }
@@ -556,14 +554,14 @@ for (const species of speciesById.values()) {
   }
   // 归一化到固定顺序
   species.states = ordered;
-  // 状态条目的 archetype 缺省时补成成株原型
+  // 缺省原型继承成株原型
   for (const [s, v] of species.byState) {
     if (!v.archetype) throw new Error(`[Vegetation] 物种 ${species.base.id} 的状态 ${s} 缺少 archetype`);
   }
 }
 
 // 
-// 校验：原型存在、生长带合法、色板键存在、状态可派生
+// 校验原型、气候带、色板与状态
 // 
 
 const byId = new Map<string, PlantVariantDef>();
@@ -581,9 +579,7 @@ for (const v of allVariants) {
         throw new Error(`[Vegetation] 植物 ${v.id} 声明了未知状态: ${state}（可用: ${PLANT_STATES.join(', ')}）`);
       }
     }
-    // 注意
-    // 原型不支持时（如针叶树没有结实态）
-    // 数据里多写一个状态不会让整个植被系统加载失败。
+  // 原型不兼容时容错跳过
   }
   validateOverrideKeys(v);
   byId.set(v.id, v);
@@ -634,7 +630,7 @@ export function plantStatesOf(id: string): readonly PlantState[] {
   return PLANT_STATES;
 }
 
-/** 该物种在参数表里实际写了条目 / 声明的状态（六 */
+/** 物种显式声明的状态集合 */
 export function modeledStatesOf(id: string): readonly PlantState[] {
   const species = speciesById.get(baseIdOf(id));
   if (!species) return [];
@@ -648,21 +644,21 @@ export function supportsState(id: string, state: PlantState): boolean {
   return plantStatesOf(id).includes(state);
 }
 
-/** 全部物种 id（不含状态条目），参数表顺序 */
+/** 全部物种ID列表 */
 export const PLANT_SPECIES_IDS: readonly string[] = [...speciesById.keys()];
 
-/** 全部植物 id（含各状态条目），参数表顺序 */
+/** 全部植物ID（含状态） */
 export const PLANT_IDS: readonly string[] = allVariants.map((v) => v.id);
 
-/** 全部植物定义（含状态条目，未按季节解析色板前） */
+/** 全部植物原始定义 */
 export const PLANT_VARIANTS: readonly PlantVariantDef[] = allVariants;
 
-/** 按生长带筛选物种（直接读参数表的 climate */
+/** 按生长带筛选物种 */
 export function plantsByClimate(climate: ClimateZone): readonly PlantVariantDef[] {
   return [...speciesById.values()].map((s) => s.base).filter((v) => v.climate === climate);
 }
 
-/** 按标签筛选物种（如 'conifer'、'flo */
+/** 按标签筛选物种 */
 export function plantsByTag(tag: string): readonly PlantVariantDef[] {
   return [...speciesById.values()].map((s) => s.base).filter((v) => (v.tags ?? []).includes(tag));
 }
@@ -687,7 +683,7 @@ export function buildPlantById(id: string, season: Season = 'summer', bloom?: Pl
   return geo;
 }
 
-/** 该物种开花版本实际使用的花色（#rrggbb） */
+/** 物种开花实际花色十六进制 */
 export function bloomColorOf(variant: PlantVariantDef, season: Season = 'spring'): string | null {
   if (!canBloom(variant.archetype)) return null;
   const species = speciesById.get(baseIdOf(variant.id));
@@ -704,18 +700,18 @@ export function scaleGeometry(geo: PlantGeometry, scale: number): void {
   geo.height *= scale;
 }
 
-/** 生成时的完整选项（供导出脚本按季节/状态批量产出） */
+/** 批量生成导出完整选项 */
 export function buildOptions(season: Season, bloom?: PlantBloomOptions): PlantBuildOptions {
   return { seed: 0, season, state: bloom?.state ?? 'normal', bloom: bloom?.bloom, bloomColor: bloom?.bloomColor };
 }
 
-/** 诊断：统计物种数、几何面数与各材质槽三角形数 */
+/** 统计物种与几何面数诊断 */
 export interface PlantStat {
   id: string;
   name: string;
   archetype: string;
   climate: ClimateZone;
-  /** 请求的状态（可能是"只有接口"的 0 种植） */
+  /** 请求的植物状态 */
   state: PlantState;
   /** 实际生成用的形态状态 */
   renderedAs: PlantState;
@@ -746,13 +742,13 @@ export function statOf(id: string, season: Season = 'summer', state: PlantState 
   };
 }
 
-/** 物种 × 状态的对照表（清单 / 文档 / 校验 */
+/** 物种与状态对照表 */
 export function stateMatrixOf(): readonly {
   id: string;
   name: string;
   archetype: string;
   climate: ClimateZone;
-  /** 参数表里实际写了条目的状态（六种有模型的状态） */
+  /** 参数表显式配置的状态 */
   states: readonly PlantState[];
   /** 统一七态契约（含 0 种植） */
   allStates: readonly PlantState[];
@@ -767,7 +763,7 @@ export function stateMatrixOf(): readonly {
   }));
 }
 
-/** 一个物种的全部状态几何（导出与预览遍历用） */
+/** 物种全状态几何集合 */
 export function buildAllStates(id: string, season: Season = 'summer'): readonly { state: PlantState; geometry: PlantGeometry }[] {
   return plantStatesOf(id)
     .filter((s) => !stateDef(s).modeless)

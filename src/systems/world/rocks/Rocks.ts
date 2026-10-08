@@ -22,7 +22,7 @@ import {
   type RockPaletteFile, type RockPaletteKey, type RockParams, type Season,
 } from './types';
 
-/** 岩性色板的五个语义槽，用于校验参数表的 palette 槽名 */
+/** 岩性色板语义槽 */
 const PALETTE_SLOTS: readonly string[] = ['body', 'band', 'cap', 'base', 'crust'];
 
 /** 参数表清单 */
@@ -42,13 +42,13 @@ export const ROCK_FILES: readonly { file: string; data: RockFile }[] = [
   { file: 'rock.floe.json', data: asRockFile(rockFloe) },
 ];
 
-/** 参数表格式版本由 src/core/version.ts 统一声明，这里不写 */
+/** 参数表格式版本统一声明 */
 
 const paletteData = palettesJson as RockPaletteFile;
 
 // ---- 色板 ----
 
-/** 已注册色板键 -> 色阶（岩性 + 覆被） */
+/** 已注册色板映射表 */
 export const ROCK_PALETTES: ReadonlyMap<string, RockPaletteEntry> = new Map<string, RockPaletteEntry>([
   ...Object.entries(paletteData.stone ?? {}),
   ...Object.entries(paletteData.cover ?? {}),
@@ -88,7 +88,7 @@ export function resolveRockPalette(def: RockDef, season: Season, chunkType?: num
   return out;
 }
 
-// ---- 区块类型：标签校验与"这个区块用什么岩性" ----
+// 区块岩性标签校验
 
 interface ChunkTypeLike {
   id: number;
@@ -99,14 +99,14 @@ interface ChunkTypeLike {
 
 const CHUNK_TYPES = chunkTypesJson as unknown as ChunkTypeLike[];
 
-/** 区块 key -> id（供 `chunk:<key>` 标签解析） */
+/** 区块标识映射表 */
 const CHUNK_ID_BY_KEY = new Map<string, number>(CHUNK_TYPES.map((c) => [c.key, c.id]));
 /** 区块 id -> 区块定义 */
 const CHUNK_BY_ID = new Map<number, ChunkTypeLike>(CHUNK_TYPES.map((c) => [c.id, c]));
-/** 可生成区块（`generate !== false`，虚空不放置岩石） */
+/** 可生成区块有效集合 */
 export const ROCK_CHUNK_IDS: readonly number[] = CHUNK_TYPES.filter((c) => c.generate !== false).map((c) => c.id);
 
-/** 把 `chunk:*` 标签解析成区块 id 集合 */
+/** 解析区块标签集合 */
 function chunkIdsOfTags(id: string, tags: readonly string[] | undefined): { chunks: number[]; others: string[] } {
   const chunks: number[] = [];
   const others: string[] = [];
@@ -116,7 +116,7 @@ function chunkIdsOfTags(id: string, tags: readonly string[] | undefined): { chun
       continue;
     }
     const raw = tag.slice('chunk:'.length);
-    // 同时接受 `chunk:103` 与 `chunk:hill`：key 便于人读，id 不怕以后调整
+    // 支持按键名或ID匹配区块
     const byKey = CHUNK_ID_BY_KEY.get(raw);
     const byId = /^\d+$/.test(raw) ? CHUNK_BY_ID.get(Number(raw)) : undefined;
     const found = byKey ?? byId?.id;
@@ -133,11 +133,11 @@ function chunkIdsOfTags(id: string, tags: readonly string[] | undefined): { chun
 
 // ---- 装配 ----
 
-/** 装配后的岩石单位（`chunkPalette` 已校验） */
+/** 装配后的岩石单位 */
 export interface RockUnitDef extends RockDef {
   /** 参数表文件名 */
   source: string;
-  /** 该单位适用的区块 id（由 `chunk:*` 标签反推） */
+  /** 适用区块ID列表 */
   chunks: readonly number[];
   /** 非区块标签（语义标签） */
   labels: readonly string[];
@@ -182,7 +182,7 @@ for (const { file, data } of ROCK_FILES) {
   }
 }
 
-/** 岩石单位 id 常量表：代码里引用具体岩石时用这里 */
+/** 岩石单位ID常量表 */
 export const Rock = Object.freeze(
   Object.fromEntries(units.map((u) => [u.id, u.id])) as Record<string, string>,
 );
@@ -196,7 +196,7 @@ export const ROCK_DEFS: readonly RockUnitDef[] = units;
 /** 全部岩石单位 id */
 export const ROCK_IDS: readonly string[] = units.map((u) => u.id);
 
-/** 区块 -> 可用岩石单位 的速查表（由参数表标签反推，不手写第二份） */
+/** 区块可用岩石速查表 */
 export const ROCKS_BY_CHUNK: ReadonlyMap<number, readonly string[]> = (() => {
   const map = new Map<number, string[]>();
   for (const def of units) {
@@ -214,12 +214,12 @@ export function getRockDef(id: string): RockUnitDef | undefined {
   return byId.get(id);
 }
 
-/** 按语义标签筛选（如 `hard`、`wet`、`cold`） */
+/** 按语义标签筛选单位 */
 export function rocksByTag(tag: string): readonly RockUnitDef[] {
   return units.filter((u) => (u.tags ?? []).includes(tag));
 }
 
-/** 某个区块可用的岩石单位（未登记任何单位时返回空数组） */
+/** 获取区块可用岩石单位 */
 export function rocksForChunk(chunkType: number): readonly RockUnitDef[] {
   const ids = ROCKS_BY_CHUNK.get(chunkType);
   if (!ids) return [];
@@ -228,7 +228,7 @@ export function rocksForChunk(chunkType: number): readonly RockUnitDef[] {
 
 // ---- 参数分层合并 ----
 
-/** 所有单位的公共默认值（原型默认之上再兜一层） */
+/** 全局通用默认参数 */
 export const ROCK_GLOBAL_DEFAULTS: RockParams = Object.freeze({
   aspect: 0.62,
   sides: 6,
@@ -237,7 +237,7 @@ export const ROCK_GLOBAL_DEFAULTS: RockParams = Object.freeze({
   variant: true,
 });
 
-/** 三层合并：通用默认 -> 原型默认 -> 单位参数 */
+/** 三层参数合并解析 */
 export function mergeRockParams(def: RockDef): RockParams {
   const archetype = ROCK_ARCHETYPE_DEFAULTS[def.archetype];
   if (!archetype) throw new Error(`[Rocks] 岩石 ${def.id} 的原型 "${def.archetype}" 未登记默认参数`);
@@ -251,9 +251,9 @@ export interface ResolvedRockForm {
   form: RockForm;
   /** 追加到 params 上的覆盖 */
   patch: RockParams;
-  /** 覆被材质槽（关闭覆被时为 undefined） */
+  /** 覆被材质槽 */
   crustMaterial?: RockMaterial;
-  /** 覆被色板键（关闭覆被时为 undefined） */
+  /** 覆被色板键名 */
   crustColor?: RockPaletteKey;
   /** 是否叠置第二块小石 */
   stacked: boolean;
@@ -264,7 +264,7 @@ export function defaultCrustKey(def: RockDef): RockPaletteKey {
   return (def.palette?.crust ?? FAMILY_PALETTE[def.family]?.crust ?? 'moss') as RockPaletteKey;
 }
 
-/** 把形态档 + 季节 + 岩性折成一次生成用的参数 */
+/** 折叠形态档生成参数 */
 export function resolveRockForm(def: RockDef, options: RockBuildOptions = {}): ResolvedRockForm {
   const form: RockForm = options.form ?? 'outcrop';
   if (!(ROCK_FORMS as readonly string[]).includes(form)) {
@@ -277,7 +277,7 @@ export function resolveRockForm(def: RockDef, options: RockBuildOptions = {}): R
     ? undefined
     : { crustMaterial, crustColor: crustKey };
   switch (form) {
-    // 半埋：横放大竖缩小、sink 再加深 0.15 格
+    // 半埋：横向放大纵向下沉
     case 'buried':
       return {
         form,
@@ -333,7 +333,7 @@ export function buildRockById(id: string, season: Season = 'summer', options: Ro
   const resolved = resolveRockForm(def, { ...options, season });
   const finalParams: RockParams = { ...mergeRockParams(def), ...resolved.patch };
   const palette = resolveRockPalette(def, season, options.chunkType);
-  // 覆被色可能不是 palette.crust，单独取一次
+  // 单独解析覆被颜色
   const crustRgb = resolved.crustColor ? entryColor(paletteEntry(resolved.crustColor), season) : undefined;
   const build: RockBuildDef = {
     id: def.id,
@@ -349,7 +349,7 @@ export function buildRockById(id: string, season: Season = 'summer', options: Ro
     crustRgb,
     params: finalParams,
     palette,
-    // 形态种子：由原型与单位 id 派生，与世界坐标无关
+    // 形态种子由原型与单位派生
     buildSeed: hashString(`${def.archetype}:${def.id}:${def.seed ?? 0}`),
     season,
     // 只有覆被材质槽是雪时才挂雪
@@ -361,7 +361,7 @@ export function buildRockById(id: string, season: Season = 'summer', options: Ro
   return geo;
 }
 
-/** 就地缩放几何（含包围半径与高度、最低点） */
+/** 就地缩放几何与包围盒 */
 export function scaleGeometry(geo: RockGeometry, scale: number): void {
   if (scale === 1) return;
   for (let i = 0; i < geo.positions.length; i++) geo.positions[i] *= scale;
@@ -370,7 +370,7 @@ export function scaleGeometry(geo: RockGeometry, scale: number): void {
   geo.bottom *= scale;
 }
 
-/** 一块岩石的四个形态档（导出与预览遍历用） */
+/** 四形态档几何集合 */
 export function buildAllForms(id: string, season: Season = 'summer', options: RockBuildOptions & { chunkType?: number } = {}): readonly { form: RockForm; geometry: RockGeometry }[] {
   return ROCK_FORMS.map((form) => ({ form, geometry: buildRockById(id, season, { ...options, form }) }));
 }
@@ -401,7 +401,7 @@ export interface RockStat {
   vertices: number;
   /** 材质槽面数构成 */
   materials: string;
-  /** 覆被（苔藓 / 雪 / 冰）占全部三角形的比例 */
+  /** 覆被三角形占比 */
   coverRatio: number;
   /** 实际使用的岩性色板（校验用） */
   palette: ResolvedRockPalette;
@@ -439,7 +439,7 @@ export function statOf(id: string, season: Season = 'summer', form: RockForm = '
   };
 }
 
-/** 单位 × 形态档的对照表（清单 / 文档 / 校验用） */
+/** 单位与形态档对照表 */
 export function formMatrixOf(): readonly {
   id: string;
   name: string;

@@ -1,5 +1,5 @@
 import { SEA_LEVEL } from '../../core/config';
-import {freezeState} from './TerrainLayers';
+import {freezeState, snowLine, smooth, SNOW_MARGIN} from './TerrainLayers';
 
 export const FLOW_DIRECTIONS = [
   { dx: 0, dz: -1, arrow: '↑' }, { dx: 1, dz: -1, arrow: '↗' },
@@ -15,6 +15,10 @@ export const waterfallDrop=(drop:number):boolean=>drop>=16&&drop<=256;
 export const splashWetlandDrop=(drop:number):boolean=>drop>=64&&drop<=256;
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
 
+/** 水源在封冻边界之前连续减弱。 */
+export const sourceThaw = (n: DrainageNode): number =>
+  1 - smooth((n.height - snowLine(n.temperature) + SNOW_MARGIN * 2) / SNOW_MARGIN);
+
 /** 每平方区块的长期有效径流 */
 export function effectiveRunoff(n: DrainageNode, precipitation = .8): number {
   if (!liquidRiverAllowed(n) || precipitation === 0) return 0;
@@ -23,5 +27,5 @@ export function effectiveRunoff(n: DrainageNode, precipitation = .8): number {
   const rainfall = .12 + 3.2 * wet ** 1.7;
   const evaporation = (.12 + .65 * clamp((temperature + 5) / 40)) * (1 - wet);
   const melt = .55 + .45 * clamp((temperature + 15) / 20);
-  return rainfall * (1 - evaporation) * melt * precipitation / .8;
+  return rainfall * (1 - evaporation) * melt * sourceThaw(n) * precipitation / .8;
 }

@@ -6,7 +6,7 @@ import { t } from '../../i18n';
 export type CalendarHudPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 export interface CalendarHudOptions {
-  /** 挂载的父节点，默认 document.body。 */
+  /** 挂载容器，默认 body。 */
   parent?: HTMLElement;
   /** 停靠位置，默认左上角。 */
   position?: CalendarHudPosition;
@@ -16,7 +16,7 @@ export interface CalendarHudOptions {
   hotkey?: string;
   /** 是否显示节气行，默认显示。 */
   showSolarTerm?: boolean;
-  /** 是否显示时刻 / 旬信息行，默认显示。 */
+  /** 是否显示时刻信息行，默认显示。 */
   showClock?: boolean;
   /** 是否注入内置样式，默认注入。 */
   injectStyles?: boolean;
@@ -27,7 +27,7 @@ export interface CalendarHudOptions {
 const STYLE_ID = 'calendar-hud-style';
 
 const HUD_CSS = `
-/* 配色引用 theme.css 的令牌，因此自动跟随"古朴中式"主题与语言切换。 */
+/* 配色使用 theme.css 变量令牌 */
 .calendar-hud {
   position: fixed;
   z-index: 20;

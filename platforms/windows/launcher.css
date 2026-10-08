@@ -5,28 +5,8 @@
    因此这里**镜像**了一份 src/ui/theme.css 的设计令牌与印章按钮规则。
    改动配色 / 字体 / 按钮观感时，请与 src/ui/theme.css 同步修改这两处。
 
-   与游戏内 UI 的差异只有两点，都是刻意的：
-     · 字体用相对路径 —— file:// 下根绝对路径 /content/... 会指向磁盘根目录；
-     · 不引入 theme.css 的 html,body{overflow:hidden} —— 启动器要能滚动。
+   启动器使用系统字体，支持独立滚动。
    ========================================================================== */
-
-/* ---------- 字体：与游戏同源，来自工程 content/assets/ui/fonts/ ---------- */
-
-@font-face {
-  font-family: 'Qianlin Song';
-  src: url('../../content/assets/ui/fonts/NanoOldSongA-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Qianlin Round';
-  src: url('../../content/assets/ui/fonts/ResourceHanRoundedCN-Medium.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
 
 /* ---------- 设计令牌（镜像 src/ui/theme.css） ---------- */
 
@@ -54,8 +34,8 @@
   --ql-shadow-sm: 0 1px 2px rgba(77, 64, 48, .16);
   --ql-shadow: 0 4px 14px rgba(77, 64, 48, .16);
 
-  --ql-font-display: 'Qianlin Song', 'Songti SC', 'STSong', 'SimSun', Georgia, serif;
-  --ql-font-body: 'Qianlin Round', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+  --ql-font-display: system-ui, sans-serif;
+  --ql-font-body: system-ui, sans-serif;
 
   --ql-track-display: .18em;
   --ql-track-label: .14em;

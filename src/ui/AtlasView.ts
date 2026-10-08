@@ -1,3 +1,4 @@
+import { iconUrl } from './Icons';
 import { WorldGenerator, FLOW_DIRECTIONS, type ChunkInfo } from '../systems/world/WorldGenerator';
 import { snowLine } from '../systems/world/TerrainLayers';
 import { getChunkTypeDef, formatChunkId, isRiverType } from '../systems/world/ChunkTypes';
@@ -9,6 +10,8 @@ import { CHUNK_SIZE } from '../core/config';
 import { MAX_BRAID_OFFSET, MAX_MOUTH_LENGTH, MAX_RIVER_RADIUS } from '../systems/world/RiverChannels';
 import {MAX_RIVER_BEND} from '../systems/world/RiverGeometry';
 import {AtlasSurfaceCache} from './AtlasSurfaceCache';
+import { ArtificialWorld, type TerritoryChunkInfo } from '../systems/world/artificial/ArtificialWorld';
+import { drawTerritories } from './TerritoryAtlas';
 
 /** 画布配色 */
 const INK_BG = '#241c13';
@@ -31,17 +34,22 @@ export interface ViewportStats {
 }
 
 export interface AtlasViewOptions {
+  artificial?: ArtificialWorld;
   canvas: HTMLCanvasElement;
   generator: WorldGenerator;
-  onChunkActivate?: (info: ChunkInfo) => void;
-  onChunkSelect?: (info: ChunkInfo) => void;
+  onChunkActivate?: (info: TerritoryChunkInfo) => void;
+  onChunkSelect?: (info: TerritoryChunkInfo) => void;
   onStatsUpdate?: (stats: ViewportStats) => void;
 }
 
 export class AtlasView {
+  private readonly icons = new Map<string, HTMLImageElement>();
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
   private generator: WorldGenerator;
+  private artificial: ArtificialWorld;
+  private territoryDiscovery: Generator<void> | null = null;
+  private territoryDiscoveryKey = '';
 
   // 视图控制：以中心区块坐标与像素偏移
   private centerCx = 0;
@@ -76,8 +84,8 @@ export class AtlasView {
   private lastDragY = 0;
   private hasMoved = false;
 
-  private onChunkSelect?: (info: ChunkInfo) => void;
-  private onChunkActivate?: (info: ChunkInfo) => void;
+  private onChunkSelect?: (info: TerritoryChunkInfo) => void;
+  private onChunkActivate?: (info: TerritoryChunkInfo) => void;
   private onStatsUpdate?: (stats: ViewportStats) => void;
   private resizeObserver: ResizeObserver | null = null;
   private renderScheduled = false;
@@ -87,8 +95,13 @@ export class AtlasView {
 
   constructor(options: AtlasViewOptions) {
     this.canvas = options.canvas;
+    for (const name of ['flag-pin', 'flow-e', 'flow-ne', 'flow-n', 'flow-nw', 'flow-w', 'flow-sw', 'flow-s', 'flow-se']) {
+      const image = new Image(); image.onload = () => { if (!this.destroyed) this.requestRender(); };
+      image.src = iconUrl(name); this.icons.set(name, image);
+    }
     this.ctx = this.canvas.getContext('2d')!;
     this.generator = options.generator;
+    this.artificial = options.artificial ?? new ArtificialWorld(this.generator);
     this.planetLayer = new PlanetAtlasLayer(this.generator);
     this.surfaceCache=new AtlasSurfaceCache(this.generator,()=>{if(this.active)this.requestRender();});
     this.onChunkSelect = options.onChunkSelect;
@@ -101,9 +114,11 @@ export class AtlasView {
     if (this.isPlanet) { this.planetView = 'globe'; this.showOverview(); }
   }
 
-  setGenerator(generator: WorldGenerator): void {
+  setGenerator(generator: WorldGenerator, artificial?: ArtificialWorld): void {
     const view = this.planetView;
     this.generator = generator;
+    this.artificial = artificial ?? new ArtificialWorld(generator);
+    this.territoryDiscovery = null; this.territoryDiscoveryKey = '';
     this.planetLayer.setGenerator(generator);
     this.surfaceCache.setGenerator(generator);
     this.centerSpawn();
@@ -112,7 +127,7 @@ export class AtlasView {
   }
 
   centerSpawn(): void {
-    const spawn = this.generator.findSpawnChunk();
+    const spawn = (this.artificial.playerFactionId ? this.artificial.territories.get(this.artificial.playerFactionId) : undefined) ?? this.generator.findSpawnChunk();
     this.centerAt(spawn.cx, spawn.cz);
   }
 
@@ -125,7 +140,7 @@ export class AtlasView {
     this.panY = 0;
     this.selectedChunk = { cx, cz };
     if (this.onChunkSelect) {
-      this.onChunkSelect(this.generator.getChunkInfo(cx, cz));
+      this.onChunkSelect(this.artificial.info(cx, cz));
     }
     this.requestRender();
   }
@@ -290,7 +305,7 @@ export class AtlasView {
 
   getSelectedChunk(): ChunkInfo | null {
     if (!this.selectedChunk) return null;
-    return this.generator.getChunkInfo(this.selectedChunk.cx, this.selectedChunk.cz);
+    return this.artificial.info(this.selectedChunk.cx, this.selectedChunk.cz);
   }
 
   getScalePercent(): number {
@@ -422,9 +437,9 @@ export class AtlasView {
     const isFiltering = this.filterTypeId !== null || this.filterCategory !== null;
 
     // 收集可视区块
-    const visibleChunks: { info: ChunkInfo; sx: number; sy: number }[] = [];
+    const visibleChunks: { info: TerritoryChunkInfo; sx: number; sy: number }[] = [];
 
-    // 收集可见区块时顺带请求流向，之后的绘制不再触发邻近主河查询
+    // 预先批量请求可见区块流向
     const wantFlow = this.showProjection;
     if (wantFlow) this.generator.displayFlowWanted = true;
     try {
@@ -438,7 +453,7 @@ export class AtlasView {
           continue;
         }
 
-        const info = this.generator.getChunkInfo(cx, cz);
+        const info = this.artificial.info(cx, cz);
         visibleChunks.push({ info, sx, sy });
 
         visibleCount++;
@@ -488,10 +503,10 @@ export class AtlasView {
         const cz = info.cz;
 
         // 计算相邻区块的高程差
-        const eastH = this.generator.getChunkInfo(cx + 1, cz).elevation;
-        const westH = this.generator.getChunkInfo(cx - 1, cz).elevation;
-        const southH = this.generator.getChunkInfo(cx, cz + 1).elevation;
-        const northH = this.generator.getChunkInfo(cx, cz - 1).elevation;
+        const eastH = this.artificial.info(cx + 1, cz).elevation;
+        const westH = this.artificial.info(cx - 1, cz).elevation;
+        const southH = this.artificial.info(cx, cz + 1).elevation;
+        const northH = this.artificial.info(cx, cz - 1).elevation;
 
         const dx = (eastH - westH) * 0.5;
         const dz = (southH - northH) * 0.5;
@@ -561,7 +576,11 @@ export class AtlasView {
         ctx.shadowBlur = 3;
         ctx.font = `bold ${Math.max(10, Math.round(cellSize * .36))}px ${CANVAS_FONT}`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(FLOW_DIRECTIONS[info.displayFlow].arrow, sx + cellSize * .5, sy + cellSize * .5);
+        const flow = FLOW_DIRECTIONS[info.displayFlow];
+        const name = `flow-${flow.dz < 0 ? 'n' : flow.dz > 0 ? 's' : ''}${flow.dx < 0 ? 'w' : flow.dx > 0 ? 'e' : ''}`;
+        const image = this.icons.get(name), size = Math.max(12, Math.min(48, cellSize * .6));
+        if (image?.complete && image.naturalWidth) ctx.drawImage(image, sx + (cellSize-size)/2, sy + (cellSize-size)/2, size, size);
+        else ctx.fillText(flow.arrow, sx + cellSize * .5, sy + cellSize * .5);
       }
       ctx.restore();
     }
@@ -572,7 +591,7 @@ export class AtlasView {
         const { info, sx, sy } = item;
         const def = getChunkTypeDef(info.type);
         const code = formatChunkId(info.type);
-        const name = chunkName(def);
+        const name = chunkName(def) + (info.territory ? ` Lv.${info.territory.level}` : '');
 
         const midX = sx + cellSize * 0.5;
         const midY = sy + cellSize * 0.5;
@@ -674,11 +693,13 @@ export class AtlasView {
       }
     }
 
+    this.drawTerritoryLayer(ctx, width, height, cellSize);
+
     // 7. 出生点标记（金色罗盘星）
-    const spawn = this.generator.findSpawnChunk();
+    const spawn = (this.artificial.playerFactionId ? this.artificial.territories.get(this.artificial.playerFactionId) : undefined) ?? this.generator.findSpawnChunk();
     const spX = halfW + this.panX + (spawn.cx - this.centerCx) * cellSize + cellSize * 0.5;
     const spY = halfH + this.panY + (spawn.cz - this.centerCz) * cellSize + cellSize * 0.5;
-    if (spX >= 0 && spX <= width && spY >= 0 && spY <= height) {
+    if (!this.artificial.playerFactionId && spX >= 0 && spX <= width && spY >= 0 && spY <= height) {
       ctx.save();
       ctx.fillStyle = AMBER_MARK;
       ctx.strokeStyle = '#241c13';
@@ -687,6 +708,8 @@ export class AtlasView {
       ctx.arc(spX, spY, Math.max(3, cellSize * 0.14), 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      const pin = this.icons.get('flag-pin');
+      if (pin?.complete && pin.naturalWidth) ctx.drawImage(pin, spX - 16, spY - 30, 32, 32);
       ctx.restore();
     }
 
@@ -772,6 +795,7 @@ export class AtlasView {
         ctx.lineTo(sx, Math.min(height, height / 2 + this.panY + (size / 4 - this.centerCz) * cell)); ctx.stroke();
       }
     }
+    this.drawTerritoryLayer(ctx, width, height, cell);
     ctx.fillStyle = PAPER_TEXT; ctx.font = `13px ${CANVAS_FONT}`; ctx.textAlign = 'left';
     ctx.fillText(this.isGlobe ? t('atlas.canvas.globeHint') : t('atlas.canvas.projectionHint'), 20, 28);
     const center = this.getCenterCoordinates();
@@ -866,7 +890,7 @@ export class AtlasView {
           const chunk = this.getChunkAtPoint(e.clientX - rect.left, e.clientY - rect.top);
           if (!chunk) return;
           this.selectedChunk = chunk;
-          const info = this.generator.getChunkInfo(chunk.cx, chunk.cz);
+          const info = this.artificial.info(chunk.cx, chunk.cz);
           if (this.onChunkSelect) {
             this.onChunkSelect(info);
           }
@@ -891,11 +915,11 @@ export class AtlasView {
       if (!this.active) return;
       const rect = canvas.getBoundingClientRect(), chunk = this.getChunkAtPoint(e.clientX - rect.left, e.clientY - rect.top);
       if (!chunk) return;
-      if (this.onChunkActivate) { this.onChunkActivate(this.generator.getChunkInfo(chunk.cx, chunk.cz)); return; }
+      if (this.onChunkActivate) { this.onChunkActivate(this.artificial.info(chunk.cx, chunk.cz)); return; }
       if (!this.isPlanet) return;
       this.centerCx = chunk.cx; this.centerCz = chunk.cz; this.panX = 0; this.panY = 0;
       this.planetView = 'projection'; this.scale = 1;
-      this.selectedChunk = chunk; this.onChunkSelect?.(this.generator.getChunkInfo(chunk.cx, chunk.cz));
+      this.selectedChunk = chunk; this.onChunkSelect?.(this.artificial.info(chunk.cx, chunk.cz));
       this.requestRender();
     }, { signal: this.events.signal });
 
@@ -962,7 +986,7 @@ export class AtlasView {
           const chunk = this.getChunkAtPoint(t.clientX - rect.left, t.clientY - rect.top);
           if (chunk) {
             this.selectedChunk = chunk;
-            const info = this.generator.getChunkInfo(chunk.cx, chunk.cz);
+            const info = this.artificial.info(chunk.cx, chunk.cz);
             if (this.onChunkSelect) this.onChunkSelect(info);
             const now = performance.now();
             if (lastTap && now - lastTap.time < 350 && Math.hypot(t.clientX - lastTap.x, t.clientY - lastTap.y) < 24) {
@@ -983,6 +1007,37 @@ export class AtlasView {
   }
 
   // 像素坐标转换为区块坐标 (cx, cz)
+  private drawTerritoryLayer(ctx: CanvasRenderingContext2D, width: number, height: number, cell: number): void {
+    if (!this.artificial.settings.enabled && !this.artificial.playerFactionId) return;
+    const size = this.generator.generation.planet.equatorChunks;
+    const s = this.artificial.generator.cellSize;
+    const bounds = this.isGlobe ? [-size / 2, -size / 4, size / 2 - 1, size / 4 - 1]
+      : [this.centerCx + (-width / 2 - this.panX) / cell, this.centerCz + (-height / 2 - this.panY) / cell,
+        this.centerCx + (width / 2 - this.panX) / cell, this.centerCz + (height / 2 - this.panY) / cell];
+    const key = bounds.map(n => Math.floor(n / s)).join(',');
+    if (key !== this.territoryDiscoveryKey) {
+      this.territoryDiscoveryKey = key;
+      this.territoryDiscovery = this.artificial.discoverRegion(bounds[0], bounds[1], bounds[2], bounds[3]);
+    }
+    if (this.territoryDiscovery) {
+      if (this.territoryDiscovery.next().done) this.territoryDiscovery = null;
+      else this.requestRender();
+    }
+    const center = planetCoordinates(this.centerCx, this.centerCz, size);
+    const rad = Math.PI / 180, origin = center.latitude * rad;
+    drawTerritories(ctx, this.artificial, (x, z) => {
+      if (this.isGlobe) {
+        const phi = -z / size * Math.PI * 2, dl = x / size * Math.PI * 2 - center.longitude * rad;
+        const depth = Math.sin(origin) * Math.sin(phi) + Math.cos(origin) * Math.cos(phi) * Math.cos(dl);
+        if (depth < 0) return null;
+        return [width / 2 + this.globeRadius * Math.cos(phi) * Math.sin(dl),
+          height / 2 - this.globeRadius * (Math.cos(origin) * Math.sin(phi) - Math.sin(origin) * Math.cos(phi) * Math.cos(dl))];
+      }
+      const dx = this.isPlanet ? this.artificial.generator.wrap(x - this.centerCx) : x - this.centerCx;
+      return [width / 2 + this.panX + dx * cell, height / 2 + this.panY + (z - this.centerCz) * cell];
+    }, width, height, cell >= 20 && !this.showChunkInfo);
+  }
+
   private getChunkAtPoint(px: number, py: number): { cx: number; cz: number } | null {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const width = this.canvas.width / dpr;

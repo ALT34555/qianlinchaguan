@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import { ModResourceService, modResourceMiddleware } from './platforms/mods/resources.ts';
 import { resolve } from 'node:path';
 import { FileSaveService, fileSaveMiddleware } from './platforms/saves/local-saves.ts';
 
@@ -11,11 +12,17 @@ function userdataSaves(): Plugin {
       const service = new FileSaveService(resolve(root, 'userdata/saves'));
       await service.initialize();
       server.middlewares.use(fileSaveMiddleware(service));
+      const mods = new ModResourceService(resolve(root, 'userdata/mods'));
+      await mods.initialize();
+      server.middlewares.use(modResourceMiddleware(mods));
     },
     async configurePreviewServer(server) {
       const service = new FileSaveService(resolve(root, 'userdata/saves'));
       await service.initialize();
       server.middlewares.use(fileSaveMiddleware(service));
+      const mods = new ModResourceService(resolve(root, 'userdata/mods'));
+      await mods.initialize();
+      server.middlewares.use(modResourceMiddleware(mods));
     },
   };
 }

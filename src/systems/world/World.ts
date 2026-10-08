@@ -13,6 +13,9 @@ import { WaterMaterial, decodeSurfaceColors } from './WaterMaterial';
 import { waterHeightAt } from './WaterSurface';
 import type {WaterField} from './DynamicWater';
 import { WaterfallMist } from './WaterfallMist';
+import { ArtificialWorld } from './artificial/ArtificialWorld';
+import { allowsNaturalDecoration } from './artificial/ArtificialState';
+import { territoryFlag } from './artificial/TerritoryFlag';
 
 export interface LoadedChunk {
   cx: number;
@@ -27,8 +30,10 @@ export interface LoadedChunk {
   terrain: THREE.Mesh | null;
   water: THREE.Mesh | null;
   decoration: THREE.Mesh | null;
+  rocks: THREE.Mesh | null;
   mist: THREE.Points | null;
   mistEmitters: Float32Array | null;
+  flag: THREE.Mesh | null;
 }
 
 const chunkKey = (cx: number, cz: number) => `${cx},${cz}`;
@@ -37,6 +42,8 @@ const chunkKey = (cx: number, cz: number) => `${cx},${cz}`;
 const UPLOADS_PER_FRAME = 4;
 
 export class World {
+  readonly artificial: ArtificialWorld;
+  private artificialRevision = -1;
   readonly generator: WorldGenerator;
   private readonly chunks = new Map<string, LoadedChunk>();
   private readonly pending = new Set<string>();
@@ -52,12 +59,14 @@ export class World {
   /** 以距离排序的加载偏移表（圆形范围） */
   private offsets: [number, number][] = [];
   private renderDistance = 0;
+  private vegetationDistance = 16;
   private centerCx = Number.NaN;
   private centerCz = Number.NaN;
   private readonly listeners: ((c: LoadedChunk) => void)[] = [];
 
-  constructor(scene: THREE.Scene, readonly seed: number, renderDistance: number, climateWeights: ClimateWeights, generation?: WorldGeneration) {
+  constructor(scene: THREE.Scene, readonly seed: number, renderDistance: number, climateWeights: ClimateWeights, generation?: WorldGeneration, artificial?: ArtificialWorld) {
     this.generator = new WorldGenerator(seed, climateWeights, generation);
+    this.artificial = artificial ?? new ArtificialWorld(this.generator);
     this.terrainMaterial.onBeforeCompile = decodeSurfaceColors;
     this.decorationMaterial.onBeforeCompile = decodeSurfaceColors;
     this.lighting = new WorldLighting(scene);
@@ -102,6 +111,11 @@ export class World {
     this.centerCx = Number.NaN; // 强制重新评估卸载
   }
 
+  setVegetationDistance(distance: number): void {
+    this.vegetationDistance = distance;
+    for (const chunk of this.chunks.values()) this.updateChunkVisibility(chunk);
+  }
+
   onChunkLoaded(fn: (c: LoadedChunk) => void): void {
     this.listeners.push(fn);
   }
@@ -123,7 +137,7 @@ export class World {
   }
 
   getChunkType(cx: number, cz: number): number {
-    return this.getChunk(cx, cz)?.type ?? this.generator.getChunkType(cx, cz);
+    return this.artificial.getClaim(cx, cz)?.type ?? this.getChunk(cx, cz)?.type ?? this.generator.getChunkType(cx, cz);
   }
 
   /** 原始格中心高度：仅供连续地表的公共插值规则采样。 */
@@ -159,6 +173,10 @@ export class World {
   }
 
   update(playerX: number, playerZ: number): void {
+    if (this.artificialRevision !== this.artificial.revision) {
+      for (const chunk of this.chunks.values()) this.updateTerritory(chunk);
+      this.artificialRevision = this.artificial.revision;
+    }
     const pcx = Math.floor(playerX / CHUNK_SIZE);
     const pcz = Math.floor(playerZ / CHUNK_SIZE);
 
@@ -175,7 +193,7 @@ export class World {
         const cz = pcz + dz;
         const key = chunkKey(cx, cz);
         if (this.chunks.has(key) || this.pending.has(key)) continue;
-        if (!this.pool.request(cx, cz)) break;
+        if (!this.pool.request(cx, cz, this.artificial.getClaim(cx, cz)?.type)) break;
         this.pending.add(key);
       }
     }
@@ -206,8 +224,10 @@ export class World {
     const visible = this.inRange(chunk.cx, chunk.cz, 0);
     if (chunk.terrain) chunk.terrain.visible = visible;
     if (chunk.water) chunk.water.visible = visible;
-    if (chunk.decoration) chunk.decoration.visible = visible;
+    if (chunk.decoration) chunk.decoration.visible = visible && (chunk.cx - this.centerCx) ** 2 + (chunk.cz - this.centerCz) ** 2 <= (this.vegetationDistance + .5) ** 2;
+    if (chunk.rocks) chunk.rocks.visible = visible;
     if (chunk.mist) chunk.mist.visible = visible;
+    if (chunk.flag) chunk.flag.visible = visible;
   }
 
   private buildMesh(data: MeshData, material: THREE.Material, cx: number, cz: number): THREE.Mesh {
@@ -245,10 +265,13 @@ export class World {
       terrain: msg.terrain ? this.buildMesh(msg.terrain, this.terrainMaterial, msg.cx, msg.cz) : null,
       water: msg.water ? this.buildMesh(msg.water, this.waterMaterial, msg.cx, msg.cz) : null,
       decoration: msg.decoration ? this.buildMesh(msg.decoration, this.decorationMaterial, msg.cx, msg.cz) : null,
+      rocks: msg.rocks ? this.buildMesh(msg.rocks, this.decorationMaterial, msg.cx, msg.cz) : null,
       mist: null,
+      flag: null,
       mistEmitters: msg.mist ?? null,
     };
     if (chunk.terrain) this.group.add(chunk.terrain);
+    if (chunk.rocks) this.group.add(chunk.rocks);
     if (chunk.decoration) {
       chunk.decoration.name = `decoration:${key}`;
       this.group.add(chunk.decoration);
@@ -262,12 +285,13 @@ export class World {
       if (chunk.mist) this.group.add(chunk.mist);
     }
     this.chunks.set(key, chunk);
+    this.updateTerritory(chunk);
     this.updateChunkVisibility(chunk);
     for (const fn of this.listeners) fn(chunk);
   }
 
   private disposeChunk(c: LoadedChunk): void {
-    for (const m of [c.terrain, c.water, c.decoration]) {
+    for (const m of [c.terrain, c.water, c.decoration, c.rocks, c.flag]) {
       if (!m) continue;
       this.group.remove(m);
       m.geometry.dispose();
@@ -288,5 +312,25 @@ export class World {
     this.mist.dispose();
     this.lighting.dispose();
     this.group.removeFromParent();
+  }
+
+  private updateTerritory(chunk: LoadedChunk): void {
+    const claim = this.artificial.getClaim(chunk.cx, chunk.cz);
+    if (!claim) return;
+    chunk.type = claim.type;
+    if (!allowsNaturalDecoration(claim.type)) {
+      for (const name of ['decoration', 'rocks'] as const) {
+        const mesh = chunk[name];
+        if (mesh) { this.group.remove(mesh); mesh.geometry.dispose(); chunk[name] = null; }
+      }
+    }
+    const t = this.artificial.territories.get(claim.faction)!;
+    if (!chunk.flag && t.cx === this.artificial.generator.wrap(chunk.cx) && t.cz === chunk.cz) {
+      const h = this.getHeight(chunk.cx * CHUNK_SIZE + CHUNK_SIZE / 2 + .5, chunk.cz * CHUNK_SIZE + CHUNK_SIZE / 2 + .5);
+      chunk.flag = this.buildMesh(territoryFlag(t, h), this.decorationMaterial, chunk.cx, chunk.cz);
+      chunk.flag.name = `territory:${t.id}`;
+      this.group.add(chunk.flag);
+    }
+    this.updateChunkVisibility(chunk);
   }
 }

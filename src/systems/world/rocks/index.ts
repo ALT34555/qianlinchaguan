@@ -1,4 +1,4 @@
-/** 岩石系统入口：逐个列出导出，rolldown 打包更稳 */
+/** 岩石系统导出入口 */
 
 export {
   ROCK_COLOR_SLOTS, ROCK_FORMS, ROCK_FORM_CODES, ROCK_MATERIALS, ROCK_MATERIAL_FAMILIES,

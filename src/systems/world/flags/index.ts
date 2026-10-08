@@ -36,7 +36,7 @@ export {
   assemblyMatrixOf, assemblySocketsOf, assemblyStatOf, buildFlagAssembly, buildFlagById, buildFlagpoleById,
   defaultMountOf, emblemsByTag, flagsByShape, flagsByTag, getEmblemDef, getFlagDef, getFlagpoleDef,
   mountsOf, poleStatOf, polesByKind, polesByTag, resolveFlagClothDef, resolveFlagPalette,
-  resolveFlagpoleParams, statOf,
+  resolveFlagpoleParams, resolveFlagColor, statOf,
 } from './Flags';
 export { CONTENT_DATA_VERSION } from '../../../core/version';
 export type {
