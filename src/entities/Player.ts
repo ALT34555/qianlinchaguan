@@ -10,9 +10,9 @@ const EYE_HEIGHT = 1.62;
 const GRAVITY = 32;
 const JUMP_VELOCITY = 9;
 const TERMINAL_VELOCITY = 78;
-const WALK_SPEED = 4.3;
-const SPRINT_SPEED = 5.6;
-const SWIM_SPEED = 2.6;
+export const WALK_SPEED = 4.3;
+export const SPRINT_SPEED = 5.6;
+export const SWIM_SPEED = 2.6;
 const FLY_SPEED = 12;
 const FLY_SPRINT_SPEED = 36;
 const FLY_VERTICAL_SPEED = 10;
@@ -35,6 +35,7 @@ export class Player {
   pitch = 0;
   onGround = false;
   flying = false;
+  flightAllowed = true;
   inWater = false;
   /** 自动上台阶时的镜头平滑偏移 */
   private stepOffset = 0;
@@ -58,6 +59,7 @@ export class Player {
   resetInputGestures(): void { this.lastSpaceTap = -Infinity; }
 
   private onSpaceTap(t: number): void {
+    if (!this.flightAllowed) return;
     if (t - this.lastSpaceTap <= DOUBLE_TAP_MS) {
       this.flying = !this.flying;
       this.vy = 0;
@@ -68,6 +70,7 @@ export class Player {
   }
 
   update(dt: number): void {
+    if (!this.flightAllowed) this.flying = false;
     const input = this.input;
 
     // ---- 视角
@@ -174,6 +177,7 @@ export class Player {
     if (dx === 0 && dz === 0) return;
     const nx = this.x + dx;
     const nz = this.z + dz;
+    if(!this.world.hasGroundAround(nx,nz))return;
     const ground = this.maxGroundUnder(nx, nz);
     if (this.y >= ground) {
       this.x = nx;

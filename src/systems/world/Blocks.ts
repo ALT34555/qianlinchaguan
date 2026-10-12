@@ -1,4 +1,5 @@
 /** 方块注册表 */
+import { parseHexRgb } from '../../core/math/Color';
 import blockDefs from '../../../content/data/world/blocks.json';
 
 export const Block = {
@@ -54,11 +55,6 @@ export const BLOCK_RGB = new Uint8Array(MAX_BLOCKS * 3);
 export const BLOCK_FILLER = new Uint32Array(MAX_BLOCKS);
 export const BLOCK_BASE = new Uint32Array(MAX_BLOCKS);
 
-function parseHex(hex: string): [number, number, number] {
-  const v = parseInt(hex.slice(1), 16);
-  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-}
-
 for (const [constName, id] of Object.entries(Block)) {
   const def = defs.find((d) => d.id === id);
   if (!def || def.key !== constName.toLowerCase()) {
@@ -77,7 +73,7 @@ for (const def of defs) {
   }
   byId.set(def.id, def);
   if (def.color) {
-    const [r, g, b] = parseHex(def.color);
+    const [r, g, b] = parseHexRgb(def.color);
     BLOCK_RGB[def.id * 3] = r;
     BLOCK_RGB[def.id * 3 + 1] = g;
     BLOCK_RGB[def.id * 3 + 2] = b;

@@ -1,4 +1,7 @@
 /** 低多边形几何构建器（植物专用） */
+import { clampByte, hexToRgb } from '../../../core/math/Color';
+import { faceNormal } from '../../../core/math/Geometry';
+import { shadeOf } from '../LowPolyShading';
 import { PLANT_MATERIALS, type PlantMaterial, type ShapeSpec, type ShapeType } from './types';
 
 /** 单个多边形面 */
@@ -26,27 +29,10 @@ export interface PlantGeometry {
   triangleCount: number;
 }
 
-/** 方向明暗预烘焙阶梯 */
-const SHADE_STEPS = [0.58, 0.7, 0.84, 1.0];
-
-/** 太阳方向（标准化为整数权重即可） */
-const SUN: readonly [number, number, number] = [0.42, 0.84, -0.34];
-
 const TAU = Math.PI * 2;
 
 export function parseColor(hex: string, fallback: readonly [number, number, number] = [255, 0, 255]): [number, number, number] {
-  const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex).trim());
-  if (!m) return [fallback[0], fallback[1], fallback[2]];
-  const v = parseInt(m[1], 16);
-  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-}
-
-/** 方向明暗 */
-function shadeOf(nx: number, ny: number, nz: number): number {
-  const d = nx * SUN[0] + ny * SUN[1] + nz * SUN[2];
-  const t = (d + 1) / 2;
-  const i = Math.round(t * (SHADE_STEPS.length - 1));
-  return SHADE_STEPS[i < 0 ? 0 : i > SHADE_STEPS.length - 1 ? SHADE_STEPS.length - 1 : i];
+  return hexToRgb(hex, fallback);
 }
 
 export class LowPolyBuilder {
@@ -73,15 +59,7 @@ export class LowPolyBuilder {
     bx: number, by: number, bz: number,
     cx: number, cy: number, cz: number,
   ): [number, number, number] {
-    const ux = bx - ax, uy = by - ay, uz = bz - az;
-    const vx = cx - ax, vy = cy - ay, vz = cz - az;
-    let nx = uy * vz - uz * vy;
-    let ny = uz * vx - ux * vz;
-    let nz = ux * vy - uy * vx;
-    const len = Math.hypot(nx, ny, nz);
-    if (len < 1e-9) return [0, 1, 0];
-    nx /= len; ny /= len; nz /= len;
-    return [nx, ny, nz];
+    return faceNormal(ax, ay, az, bx, by, bz, cx, cy, cz);
   }
 
   /** 三角面：自动求法线 */
@@ -469,11 +447,6 @@ export class LowPolyBuilder {
       triangleCount: indexCount / 3,
     };
   }
-}
-
-function clampByte(v: number): number {
-  const r = Math.round(v);
-  return r < 0 ? 0 : r > 255 ? 255 : r;
 }
 
 /** 形状枚举映射构建方法 */

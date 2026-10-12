@@ -4,7 +4,13 @@ import earth from '../../../content/maps/earth/land.json';
 import { planetCoordinates, type PlanetSettings } from './WorldSettings';
 import { ContinentFragments } from './ContinentFragments';
 import { TerrainLayers, spherePoint, clamp, smooth, type TerrainSample } from './TerrainLayers';
-import {plateUplift} from './PlateUplift';
+import {
+  earthMountainsRelief,
+  earthMacroPlate,
+  earthBasinDepression,
+  earthRiverSample,
+  earthMoistureField,
+} from './EarthGeography';
 
 const RAD = Math.PI / 180;
 let coastBytes: Uint8Array | undefined;
@@ -20,36 +26,6 @@ export function earthCoastDistance(longitude: number, latitude: number): number 
     (read(0, 1) * (1 - tx) + read(1, 1) * tx) * ty) * .5;
 }
 
-// 仅模拟主要山系位置与宽度
-const BELTS = [
-  { points: [[-150, 62], [-125, 48], [-110, 33], [-99, 19]], width: 4, height: 125 },
-  { points: [[-76, 8], [-78, -5], [-71, -23], [-72, -45]], width: 3, height: 180 },
-  { points: [[-9, 32], [5, 46], [25, 43], [47, 34], [70, 35], [88, 29], [103, 29]], width: 3, height: 175 },
-  { points: [[35, 11], [37, -5], [30, -20]], width: 3, height: 85 },
-  { points: [[140, -18], [149, -28], [146, -39]], width: 3, height: 65 },
-  { points: [[130, 45], [140, 38], [143, 32]], width: 2, height: 85 },
-  { points: [[7, 59], [20, 69]], width: 3, height: 75 },
-];
-
-function earthUplift(lon: number, lat: number): number {
-  let uplift = 0;
-  for (const belt of BELTS) {
-    let contribution = 0;
-    for (let i = 1; i < belt.points.length; i++) {
-      const [ax, ay] = belt.points[i - 1], [bx, by] = belt.points[i];
-      const cos = Math.max(.25, Math.cos(lat * RAD));
-      const dx = (bx - ax) * cos, dy = by - ay;
-      const px = (lon - ax) * cos, py = lat - ay;
-      const t = clamp((px * dx + py * dy) / (dx * dx + dy * dy));
-      const distance = Math.hypot(px - dx * t, py - dy * t);
-      contribution = Math.max(contribution, belt.height * Math.exp(-((distance / belt.width) ** 2)));
-    }
-    // 同一条山系的线段不重复计高
-    uplift += contribution;
-  }
-  return Math.min(256,uplift);
-}
-
 export class PlanetTerrain {
   readonly layers: TerrainLayers;
   private readonly fragments: ContinentFragments | null;
@@ -63,47 +39,73 @@ export class PlanetTerrain {
       : (p: [number, number, number]) => p.reduce((sum, value, i) => sum + value * axis[i], 0) +
         noise(p[0] * 3 + 17.3, p[1] * 3 - 8.1, p[2] * 3 + 3.7) * .06;
     this.layers = new TerrainLayers(seed, true, settings.map === 'earth' ? .5 : landRatio,
-      density, settings.map === 'earth' ? 0 : undefined);
+      density, settings.map === 'earth' ? 0 : undefined, settings.equatorChunks * 64 / (2 * Math.PI));
     const activity = settings.tectonicActivity;
     const strength = activity <= 5 ? activity * 3 / 5 : 3 + (activity - 5) * 3 / 4;
     this.fragments = settings.map !== 'earth' && activity > 0 && landRatio > 0 && landRatio < 1
       ? new ContinentFragments(axis, this.layers.deformation, seed, strength) : null;
   }
 
-  private terrain(lon: number, lat: number): TerrainSample {
+  private terrain(lon: number, lat: number,heightOnly=false): TerrainSample {
     const point = spherePoint(lon, lat), activity = this.settings.map === 'earth' ? 0 : this.settings.tectonicActivity;
+    const temperature = this.temperatureAt(lat);
     let sample: TerrainSample;
     if (this.fragments) {
       const mapped = this.fragments.map(point, p => this.layers.islandCoverage(p, undefined, activity));
-      sample = this.layers.sample(mapped.point, activity, mapped.distance);
-      // 漂移后的浅海补充游离小岛
+      sample = this.layers.sample(mapped.point, activity, temperature, mapped.distance,heightOnly);
       const coast = this.layers.islandCoverage(point, sample.coverage, activity);
-      if (coast > sample.coverage) sample = this.layers.sample(mapped.point, activity, coast);
-    } else sample = this.layers.sample(point, activity);
+      if (coast > sample.coverage) sample = this.layers.sample(mapped.point, activity, temperature, coast,heightOnly);
+    } else sample = this.layers.sample(point, activity, temperature,undefined,heightOnly);
+
     if (this.settings.map === 'earth' && sample.coverage > 0) {
-      const extra = earthUplift(lon, lat) * smooth(sample.coverage / .12);
-      // 地球第五层只修正板块底座与相对山系
-      const tibet=plateUplift(Math.min(Math.max(0,1-(((lon-88)/15)**2+((lat-34)/8)**2))*.79,.14+Math.max(0,sample.coverage)));
-      const coast=smooth(sample.coverage/.12),base=Math.max(sample.plateBase,tibet.base);
-      const hills=Math.min(256,sample.hillRelief+extra);
-      sample={...sample,height:sample.height+(base-sample.plateBase)*coast+(hills-sample.hillRelief)*coast,
-        uplift:base*coast,plateBase:base,elevationTier:Math.max(tibet.tier,sample.elevationTier) as TerrainSample['elevationTier'],hillRelief:hills};
+      const coast = smooth(sample.coverage / .12);
+      const macro = earthMacroPlate(lon, lat);
+      const sink = earthBasinDepression(lon, lat);
+      const mtn = earthMountainsRelief(lon, lat);
+      const base = Math.max(0, Math.max(sample.plateBase * .1, macro.base - sink));
+      const river = earthRiverSample(lon, lat);
+      let height = (base + mtn + sample.hillRelief * .2) * coast;
+      if (river.inValley) {
+        height = Math.max(0, height - (height - river.bedElevation) * river.valleyFactor * .75);
+      }
+      if (river.incision > 0) {
+        height = Math.max(0, height - river.incision * 3.5);
+      }
+      const tier = (base >= 1800 ? 3 : base >= 900 ? 2 : base >= 450 ? 1 : 0) as TerrainSample['elevationTier'];
+      sample = {
+        ...sample,
+        height,
+        uplift: base * coast,
+        plateBase: base,
+        elevationTier: Math.max(sample.elevationTier, tier) as TerrainSample['elevationTier'],
+        hillRelief: Math.min(256, sample.hillRelief * .2 + mtn),
+        mountainRelief: mtn,
+      };
     }
     return sample;
+  }
+
+  private temperatureAt(lat: number): number {
+    const p = this.settings, blend = Math.max(0, Math.cos(lat * RAD)) ** 1.4;
+    return p.poleTemperature + (p.equatorTemperature - p.poleTemperature) * blend;
   }
 
   sample(cx: number, cz: number, rainfall = true): TerrainSample {
     const {longitude: lon, latitude: lat} = planetCoordinates(cx, cz, this.settings.equatorChunks);
     const terrain = this.terrain(lon, lat);
-    // 大尺度干旱带先成片
-    const arid=Math.exp(-(((Math.abs(lat)-27)/12)**2));
+    if (this.settings.map === 'earth') {
+      let moisture = earthMoistureField(lon, lat);
+      const river = earthRiverSample(lon, lat);
+      if (river.inValley) moisture = Math.min(1, moisture + .35 * river.valleyFactor);
+      if (rainfall && terrain.height > 0) {
+        const arid = Math.exp(-(((Math.abs(lat) - 27) / 12) ** 2));
+        moisture += .08 * (1 - arid * .8);
+      }
+      return {...terrain, moisture: clamp(moisture, -1, 1)};
+    }
+    const arid = Math.exp(-(((Math.abs(lat) - 27) / 12) ** 2));
     let moisture = this.layers.field(spherePoint(lon, lat), 1.8, 2, 79) * .38 + .38 * Math.cos(lat * RAD * 2);
     moisture -= .95 * arid;
-    if (this.settings.map === 'earth') {
-      for (const [x, y, sx, sy] of [[20, 24, 35, 13], [48, 24, 16, 12], [133, -25, 17, 12], [85, 43, 28, 10]]) {
-        moisture -= .5 * Math.exp(-(((lon - x) / sx) ** 2 + ((lat - y) / sy) ** 2));
-      }
-    }
     if (rainfall && terrain.height > 0) {
       const angle = this.settings.monsoonDirection * RAD;
       let ocean = 0, barrier = terrain.height;
@@ -113,8 +115,13 @@ export class PlanetTerrain {
         if (source.height < 0) ocean += .22;
         barrier = Math.max(barrier, source.height);
       }
-      moisture += ocean*(1-arid*.75) - Math.min(.45, (barrier - terrain.height) / 1024);
+      moisture += ocean * (1 - arid * .75) - Math.min(.45, (barrier - terrain.height) / 1024);
     }
     return {...terrain, moisture: clamp(moisture, -1, 1)};
+  }
+
+  boundaryHeight(cx:number,cz:number):number {
+    const {longitude,latitude}=planetCoordinates(cx,cz,this.settings.equatorChunks);
+    return this.terrain(longitude,latitude,this.settings.map!=='earth').height;
   }
 }

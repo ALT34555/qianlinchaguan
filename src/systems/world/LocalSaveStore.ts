@@ -1,10 +1,12 @@
-import type { StorageLike } from '../../core/GameSettings';
+import type { StorageLike } from '../../core/StorageLike';
 import { parseWorldSave, type WorldSave } from './WorldSave';
-import { encodeSaveArchive, decodeSaveArchive, saveFilename } from './SaveArchive';
+import { decodeSaveArchive, saveFilename } from './SaveArchive';
+import { WorldDataStore } from './WorldDataStore';
+import { encodeArchive } from './ArchiveWorker';
 
 export const SAVES_KEY = 'qianlin.saves.v1';
-export interface LocalSave { id: string; name: string; createdAt: number; updatedAt: number; save: WorldSave }
-export interface SaveList { saves: LocalSave[]; unreadable: number; message?: string }
+export interface LocalSave { id: string; name: string; createdAt: number; updatedAt: number; save: WorldSave;worldData?:Record<string,Uint8Array> }
+export interface SaveList { saves: LocalSave[]; unreadable: number; message?: string; supportsPlayModes?: boolean }
 export interface SaveStore {
   readonly locationLabel: string;
   list(): SaveList | Promise<SaveList>;
@@ -33,7 +35,7 @@ export class LocalSaveStore implements SaveStore {
         saves.push({ ...item, save: parseWorldSave(JSON.stringify(item.save)) });
       } catch { unreadable++; }
     }
-    return { saves: saves.sort((a, b) => b.updatedAt - a.updatedAt), unreadable };
+    return { saves: saves.sort((a, b) => b.updatedAt - a.updatedAt), unreadable, supportsPlayModes: true };
   }
   put(save: WorldSave, name: string, id?: string, now = Date.now()): LocalSave {
     const valid = parseWorldSave(JSON.stringify(save));
@@ -49,9 +51,10 @@ export class LocalSaveStore implements SaveStore {
   }
   import(bytes: Uint8Array, name: string): LocalSave { const item = decodeSaveArchive(bytes); return this.put(item.save, item.name || name); }
 }
-export function downloadWorldSave(save: WorldSave, name: string, id: string = crypto.randomUUID()): void {
+export async function downloadWorldSave(save: WorldSave, name: string, id: string = crypto.randomUUID()): Promise<void> {
   const now = Date.now();
-  const bytes = encodeSaveArchive({ id, name, createdAt: now, updatedAt: now, save });
+  const worldData=save.worldKey?await new WorldDataStore(save.worldKey).entries():{};
+  const bytes = await encodeArchive({ id, name, createdAt: now, updatedAt: now, save },worldData);
   const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/zip' }));
   const link = document.createElement('a');
   link.href = url;

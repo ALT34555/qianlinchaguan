@@ -1,4 +1,7 @@
 /** 植物原型库 */
+import { clamp } from '../../../core/math/Scalar';
+import { clampColor, type RGB } from '../../../core/math/Color';
+import type { V3 } from '../../../core/math/Geometry';
 import { mulberry32 } from '../../../core/math/Random';
 import { LowPolyBuilder, parseColor, type PlantGeometry } from './geometry';
 import {
@@ -6,18 +9,11 @@ import {
   type PlantParams, type SnowTarget,
 } from './types';
 
-type RGB = [number, number, number];
-type V3 = [number, number, number];
-
 const TAU = Math.PI * 2;
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 
 function scalar(value: number | undefined, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function clamp(value: number, lo: number, hi: number): number {
-  return value < lo ? lo : value > hi ? hi : value;
 }
 
 /** 枯叶键集合 */
@@ -56,11 +52,7 @@ function tone(def: PlantDef, key: PaletteKey | undefined, scale = 1): RGB {
     base = def.palette[witherKey(key)] ?? def.palette[key];
   } else base = key ? def.palette[key] : undefined;
   const rgb = parseColor(base ?? '#ff00ff');
-  return [clampByte(rgb[0] * scale), clampByte(rgb[1] * scale), clampByte(rgb[2] * scale)];
-}
-
-function clampByte(v: number): number {
-  return v < 0 ? 0 : v > 255 ? 255 : v;
+  return [clampColor(rgb[0] * scale), clampColor(rgb[1] * scale), clampColor(rgb[2] * scale)];
 }
 
 /** 按半径向心收缩 */
@@ -69,7 +61,7 @@ function deepen(c: RGB, depth: number): RGB {
   const outer = 1;
   const inner = 0.52;
   const k = outer + (inner - outer) * clamp(depth, 0, 1);
-  return [clampByte(c[0] * k), clampByte(c[1] * k), clampByte(c[2] * k)];
+  return [clampColor(c[0] * k), clampColor(c[1] * k), clampColor(c[2] * k)];
 }
 
 function hasSnow(def: PlantDef): boolean {
@@ -921,36 +913,116 @@ function sprout(b: LowPolyBuilder, def: PlantDef): void {
   if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [0, trunk + leafR * 0.5, 0], leafR * 0.8, 0.7);
 }
 
-// 
-// 干枯
-//
-// 枯木不生成花果
-// 
+// 干枯原型：区分草本残埂、多秆折秆、灌木残枝与乔木枯桩
 function withered(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);
+  const baseArch = def.baseArchetype ?? def.params.baseArchetype;
   const height = scalar(p.height, 4);
-  const trunk = Math.max(0.25, scalar(p.trunk, height * 0.42) * 0.42);
-  const trunkR = Math.max(0.06, scalar(p.trunkRadius, Math.max(0.18, height * 0.035)));
   const wood = tone(def, 'witheredDark');
   const stem = tone(def, 'withered');
   const dryLeaf = tone(def, 'witheredStem');
   const sides = Math.round(clamp(scalar(p.sides, 5), 3, 8));
   const jitter = scalar(p.jitter, 0.2);
-  const limbs = Math.max(3, Math.round(scalar(p.limbCount, 4)) + 1);
+
+  const isGroundHerb =
+    baseArch === 'grassClump' ||
+    baseArch === 'waterweed' ||
+    baseArch === 'floatingPad' ||
+    baseArch === 'succulent' ||
+    baseArch === 'orchid' ||
+    (def.tags.includes('ground') && height < 1.3) ||
+    (height < 1.0 && (def.tags.includes('crop') || def.tags.includes('flowering')));
+
+  const isReedOrBamboo = (baseArch === 'reed' || baseArch === 'bamboo') && !isGroundHerb;
+  const isShrub = (baseArch === 'shrub' || baseArch === 'bramble') && !isGroundHerb;
+
+  if (isGroundHerb) {
+    const spread = scalar(p.spread, Math.max(0.18, height * 0.45));
+    const ridgeH = Math.min(0.14, Math.max(0.025, height * 0.25));
+    const ridgeR = Math.max(0.06, spread * 0.5);
+
+    b.dome([0, 0, 0], ridgeR, ridgeH * 0.6, ridgeR * 0.9, Math.max(4, sides), wood, {
+      floor: false, jitter: jitter * 0.3, rand,
+    });
+
+    const stubCount = Math.max(3, Math.min(6, Math.round(scalar(p.blades, scalar(p.blobs, 5)) * 0.6)));
+    for (let i = 0; i < stubCount; i++) {
+      const a = (i / stubCount) * TAU + (rand() - 0.5) * 0.5;
+      const stubLen = Math.max(0.05, Math.min(spread * 0.45, height * 0.4));
+      const stubW = Math.max(0.02, stubLen * 0.28);
+      const bx = Math.cos(a) * ridgeR * 0.35;
+      const bz = Math.sin(a) * ridgeR * 0.35;
+      const col = i % 2 === 0 ? stem : dryLeaf;
+      b.petal([bx, ridgeH * 0.45, bz], a, stubLen, stubW, col, {
+        pitch: -0.04 + rand() * 0.12,
+        cup: 0.25,
+        rand,
+      });
+    }
+    return;
+  }
+
+  if (isReedOrBamboo) {
+    const culms = Math.max(2, Math.min(5, Math.round(scalar(p.culms, 4))));
+    const spread = scalar(p.spread, height * 0.18);
+    const culmR = Math.max(0.02, Math.min(0.08, scalar(p.trunkRadius, height * 0.025)));
+    for (let c = 0; c < culms; c++) {
+      const a = (c / culms) * TAU + rand() * 0.8;
+      const rad = spread * (0.2 + rand() * 0.8);
+      const cx = Math.cos(a) * rad;
+      const cz = Math.sin(a) * rad;
+      const h = height * (0.28 + rand() * 0.18);
+      const lean = (rand() - 0.5) * 0.12;
+      b.prism([cx, 0, cz], culmR, culmR, 0, h, 4, wood, { rand, jitter: 0.1 });
+      const leafLen = h * 0.45;
+      b.petal([cx + lean * h, h * 0.85, cz], a + rand() * 0.5, leafLen, leafLen * 0.2, dryLeaf, {
+        pitch: -0.4 + rand() * 0.2,
+        cup: 0.3,
+        rand,
+      });
+    }
+    return;
+  }
+
+  if (isShrub) {
+    const stems = Math.max(3, Math.min(6, Math.round(scalar(p.stems, 4))));
+    const spread = scalar(p.spread, height * 0.4);
+    const branchR = Math.max(0.025, Math.min(0.06, height * 0.03));
+    for (let i = 0; i < stems; i++) {
+      const a = (i / stems) * TAU + rand() * 0.6;
+      const up = 0.25 + rand() * 0.45;
+      const dir: V3 = [Math.cos(a) * Math.cos(up), Math.sin(up), Math.sin(a) * Math.cos(up)];
+      const bx = Math.cos(a) * spread * 0.15;
+      const bz = Math.sin(a) * spread * 0.15;
+      const len = height * (0.28 + rand() * 0.18);
+      limbTo(b, [bx, 0.02, bz], dir, len, branchR, stem);
+    }
+    for (let i = 0; i < 3; i++) {
+      const a = rand() * TAU;
+      const rad = spread * 0.3;
+      const len = height * 0.12;
+      b.petal([Math.cos(a) * rad, 0.04, Math.sin(a) * rad], a, len, len * 0.45, dryLeaf, {
+        pitch: 0.1, cup: 0.3, rand,
+      });
+    }
+    return;
+  }
+
+  const trunk = Math.min(scalar(p.trunk, height * 0.42) * 0.42, height * 0.52);
+  const trunkR = Math.min(Math.max(0.06, scalar(p.trunkRadius, height * 0.04)), height * 0.1);
+  const limbs = Math.max(2, Math.min(5, Math.round(scalar(p.limbCount, 4))));
   const lean = scalar(p.lean, 0.06);
 
-  // 断头主干：两截，顶端收口（不再往上长）
   b.prism([0, 0, 0], trunkR * 1.4, trunkR * 1.4, 0, trunk * 0.3, sides, wood, { jitter: jitter * 0.5, rand });
   b.prism([lean * trunk * 0.2, trunk * 0.22, 0], trunkR * 1.05, trunkR * 1.05, 0, trunk * 0.62, sides, stem, { jitter, rand });
 
-  // 歪枝
   for (let i = 0; i < limbs; i++) {
     const a = (i / limbs) * TAU + rand() * 0.8;
     const up = 0.28 + rand() * 0.75;
     const dir: V3 = [Math.cos(a) * Math.cos(up), Math.sin(up), Math.sin(a) * Math.cos(up)];
     const y = trunk * (0.3 + rand() * 0.5);
-    const len = height * (0.2 + rand() * 0.24);
+    const len = Math.min(height * (0.2 + rand() * 0.2), height * 0.35);
     const tip = limbTo(b, [lean * trunk * 0.2, y, 0], dir, len, trunkR * (0.34 + rand() * 0.24), stem);
     if (rand() < 0.65) {
       const a2 = a + (rand() - 0.5) * 1.4;
@@ -959,13 +1031,12 @@ function withered(b: LowPolyBuilder, def: PlantDef): void {
       limbTo(b, tip, dir2, len * (0.35 + rand() * 0.3), trunkR * 0.22, wood);
     }
   }
-  // 零星枯叶
-  // 用花瓣片（叶）而不是小圆团
+
   const clumps = Math.max(2, Math.min(5, Math.round(scalar(p.blobs, 3) * 0.5)));
   for (let i = 0; i < clumps; i++) {
     const a = i * GOLDEN + def.buildSeed * 0.0017;
-    const rad = height * (0.12 + rand() * 0.22);
-    const len = height * 0.085 * (0.8 + rand() * 0.5);
+    const rad = Math.min(height * (0.12 + rand() * 0.22), trunkR * 3);
+    const len = Math.min(height * 0.085 * (0.8 + rand() * 0.5), 0.5);
     b.petal([Math.cos(a) * rad, trunk * (0.6 + rand() * 0.6), Math.sin(a) * rad],
       a + (rand() - 0.5) * 0.8, len, len * 0.5, deepen(dryLeaf, rand() * 0.3),
       { pitch: -0.25 + rand() * 0.4, cup: 0.5, rand });
@@ -1159,6 +1230,369 @@ function orchid(b: LowPolyBuilder, def: PlantDef): void {
   }
 }
 
+// 芦苇与芦苇丛原型
+function reed(b: LowPolyBuilder, def: PlantDef): void {
+  const p = def.params;
+  const rand = mulberry32(def.buildSeed);
+  const height = scalar(p.height, 2.6);
+  const spread = scalar(p.spread, 0.6);
+  const culmCount = Math.max(1, Math.round(scalar(p.culms, 6)));
+  const nodeStep = Math.max(0.3, scalar(p.nodeStep, 0.52));
+  const plumeRadius = scalar(p.bloomRadius, 0.2);
+
+  const culmCol = tone(def, 'reedCulm', 1);
+  const culmDark = deepen(culmCol, 0.25);
+  const leafCol = tone(def, 'foliage');
+  const leafDark = tone(def, 'foliageDark', 1);
+  const plumeCol = tone(def, 'bloom') ?? tone(def, 'reedPlume') ?? tone(def, 'pollen');
+
+  const culmLayouts: { pos: V3; h: number; windBias: number }[] = [];
+  if (culmCount <= 2) {
+    for (let i = 0; i < culmCount; i++) {
+      const a = rand() * TAU;
+      const r = i === 0 ? 0 : spread * (0.3 + rand() * 0.7);
+      culmLayouts.push({
+        pos: [Math.cos(a) * r, 0, Math.sin(a) * r],
+        h: height * (0.88 + rand() * 0.25),
+        windBias: (rand() - 0.5) * 0.2,
+      });
+    }
+  } else if (culmCount <= 8) {
+    const coreCount = Math.min(2, Math.floor(culmCount * 0.3));
+    for (let i = 0; i < coreCount; i++) {
+      const a = rand() * TAU;
+      const r = spread * 0.2 * rand();
+      culmLayouts.push({
+        pos: [Math.cos(a) * r, 0, Math.sin(a) * r],
+        h: height * (1.0 + rand() * 0.15),
+        windBias: (rand() - 0.5) * 0.15,
+      });
+    }
+    for (let i = coreCount; i < culmCount; i++) {
+      const a = (i / (culmCount - coreCount)) * TAU + (rand() - 0.5) * 0.6;
+      const r = spread * (0.45 + rand() * 0.55);
+      culmLayouts.push({
+        pos: [Math.cos(a) * r, 0, Math.sin(a) * r],
+        h: height * (0.7 + rand() * 0.35),
+        windBias: (rand() - 0.5) * 0.25,
+      });
+    }
+  } else {
+    const centers: [number, number, number, number, number][] = [
+      [0, 0, Math.ceil(culmCount * 0.45), 0.9, 1.15],
+      [spread * 0.55, spread * 0.3, Math.ceil(culmCount * 0.3), 0.75, 0.95],
+      [-spread * 0.45, -spread * 0.35, culmCount - Math.ceil(culmCount * 0.45) - Math.ceil(culmCount * 0.3), 0.55, 0.8],
+    ];
+    for (const [cx, cz, cnt, hMin, hMax] of centers) {
+      const subRadius = spread * 0.38;
+      for (let j = 0; j < cnt; j++) {
+        const a = rand() * TAU;
+        const r = subRadius * Math.sqrt(rand());
+        culmLayouts.push({
+          pos: [cx + Math.cos(a) * r, 0, cz + Math.sin(a) * r],
+          h: height * (hMin + rand() * (hMax - hMin)),
+          windBias: (rand() - 0.5) * 0.3,
+        });
+      }
+    }
+  }
+
+  const baseWind = 0.55;
+
+  for (const layout of culmLayouts) {
+    const { pos, h, windBias } = layout;
+    const windAngle = baseWind + windBias;
+    const windDirX = Math.cos(windAngle);
+    const windDirZ = Math.sin(windAngle);
+
+    const baseR = Math.max(0.02, h * 0.014);
+    const topR = baseR * 0.4;
+    const numSegs = Math.max(3, Math.min(6, Math.floor(h / nodeStep)));
+    const segH = h / numSegs;
+
+    let curP: V3 = [pos[0], pos[1], pos[2]];
+
+    for (let s = 0; s < numSegs; s++) {
+      const t0 = s / numSegs;
+      const t1 = (s + 1) / numSegs;
+      const lean1 = Math.pow(t1, 1.8) * 0.28 * h;
+
+      const nextP: V3 = [
+        pos[0] + windDirX * lean1,
+        pos[1] + segH * (s + 1),
+        pos[2] + windDirZ * lean1,
+      ];
+
+      const r0 = baseR * (1 - t0 * 0.6);
+      const r1 = baseR * (1 - t1 * 0.6);
+      const dir: V3 = [nextP[0] - curP[0], nextP[1] - curP[1], nextP[2] - curP[2]];
+      const len = Math.hypot(dir[0], dir[1], dir[2]);
+      const normDir: V3 = [dir[0] / len, dir[1] / len, dir[2] / len];
+
+      b.limb(curP, normDir, len, r0, culmCol, { sides: 3, tipRatio: r1 / r0 });
+
+      if (s < numSegs - 1) {
+        b.limb(nextP, normDir, Math.max(0.015, len * 0.08), r1 * 1.3, culmDark, { sides: 3, tipRatio: 1.0 });
+
+        if (s >= 1) {
+          const leafAlternation = s % 2 === 0 ? 1 : -1;
+          const leafAngle = windAngle + (leafAlternation * Math.PI) / 2.3 + (rand() - 0.5) * 0.35;
+          const leafLen = Math.max(0.3, h * (0.16 + 0.08 * t1));
+          const leafWid = baseR * (1.6 + rand() * 0.5);
+          const rise = leafLen * 0.24;
+          const drop = leafLen * 0.55;
+          const lCol = s % 2 === 0 ? leafCol : leafDark;
+          bentLeaf(b, nextP, leafAngle, leafLen, leafWid, rise, drop, lCol, rand);
+        }
+      }
+
+      curP = nextP;
+    }
+
+    const plumeH = Math.max(0.3, h * 0.22);
+    const plumeDir: V3 = [windDirX * 0.45, 0.88, windDirZ * 0.45];
+    const isFlowering = def.bloom;
+    const isWithered = def.state === 'withered';
+    const mat: PlantMaterial = isFlowering ? 'bloom' : 'solid';
+
+    b.limb(curP, plumeDir, plumeH, topR * 1.2, plumeCol, { sides: 3, tipRatio: 0.2, mat });
+
+    const fluffCount = isFlowering ? 8 : (isWithered ? 3 : 5);
+    for (let f = 0; f < fluffCount; f++) {
+      const ft = f / fluffCount;
+      const fBase: V3 = [
+        curP[0] + plumeDir[0] * plumeH * ft * 0.85,
+        curP[1] + plumeDir[1] * plumeH * ft * 0.85,
+        curP[2] + plumeDir[2] * plumeH * ft * 0.85,
+      ];
+      const fAngle = windAngle + (f % 2 === 0 ? 0.3 : -0.3) + (rand() - 0.5) * 0.5;
+      const fLen = plumeRadius * (1.1 - ft * 0.4);
+      const fWid = plumeRadius * 0.32;
+      b.petal(fBase, fAngle, fLen, fWid, plumeCol, {
+        pitch: 0.6 + (rand() - 0.5) * 0.2,
+        cup: 0.15,
+        mat,
+        rand,
+      });
+    }
+  }
+
+  if (wantsSnowOn(def, 'ground')) {
+    b.dome([0, 0.02, 0], spread * 0.8, height * 0.08, spread * 0.8, 5, snowColor(def), {
+      floor: false, jitter: 0.3, rand, mat: 'snow',
+    });
+  }
+}
+
+// 沉水与挺水草类原型
+function waterweed(b: LowPolyBuilder, def: PlantDef): void {
+  const p = def.params;
+  const rand = mulberry32(def.buildSeed);
+  const height = scalar(p.height, 0.9);
+  const spread = scalar(p.spread, 0.4);
+  const tags = def.tags ?? [];
+  const isSword = tags.includes('sword') || (!tags.includes('submerged') && scalar(p.blades, 10) <= 9);
+  const isFeather = tags.includes('feather') || scalar(p.layers, 1) > 2;
+
+  const colFoliage = tone(def, 'foliage');
+  const colDark = tone(def, 'foliageDark', 1);
+  const colPale = tone(def, 'foliageDeep', 1);
+
+  if (isSword) {
+    const blades = Math.max(6, Math.round(scalar(p.blades, 8)));
+    for (let i = 0; i < blades; i++) {
+      const fanIdx = i % 2;
+      const fanOffset = fanIdx === 0 ? 0 : Math.PI;
+      const posInFan = Math.floor(i / 2) / Math.max(1, Math.floor(blades / 2) - 1);
+      const fanAngle = fanOffset + (posInFan - 0.5) * 0.75 + (rand() - 0.5) * 0.15;
+      const bH = height * (0.7 + posInFan * 0.45);
+      const bW = Math.max(0.04, height * 0.055);
+      const tilt = (posInFan - 0.5) * 0.35;
+      const col = i % 2 === 0 ? colFoliage : colDark;
+
+      const bx = (rand() - 0.5) * spread * 0.18;
+      const bz = (rand() - 0.5) * spread * 0.18;
+      const tipX = bx + Math.cos(fanAngle) * tilt * bH;
+      const tipZ = bz + Math.sin(fanAngle) * tilt * bH;
+
+      const p0: V3 = [bx - Math.sin(fanAngle) * bW * 0.5, 0, bz + Math.cos(fanAngle) * bW * 0.5];
+      const p1: V3 = [bx + Math.sin(fanAngle) * bW * 0.5, 0, bz - Math.cos(fanAngle) * bW * 0.5];
+      const m0: V3 = [bx * 0.5 + tipX * 0.5 - Math.sin(fanAngle) * bW * 0.45, bH * 0.6, bz * 0.5 + tipZ * 0.5 + Math.cos(fanAngle) * bW * 0.45];
+      const m1: V3 = [bx * 0.5 + tipX * 0.5 + Math.sin(fanAngle) * bW * 0.45, bH * 0.6, bz * 0.5 + tipZ * 0.5 - Math.cos(fanAngle) * bW * 0.45];
+      const tip: V3 = [tipX, bH, tipZ];
+
+      b.quad(p0, p1, m1, m0, col);
+      b.triangle(m0, m1, tip, col);
+    }
+    const spadixCount = Math.max(1, Math.round(scalar(p.bloomCount, 1)));
+    const spadixCol = tone(def, 'bloom') ?? tone(def, 'fruit') ?? [0.48, 0.38, 0.22];
+    for (let k = 0; k < spadixCount; k++) {
+      const sa = k * 1.8 + rand() * 0.4;
+      const sH = height * 0.5;
+      const dir: V3 = [Math.cos(sa) * 0.45, 0.88, Math.sin(sa) * 0.45];
+      b.limb([0, sH * 0.35, 0], dir, height * 0.32, height * 0.038, spadixCol, { sides: 4, tipRatio: 0.65, mat: def.bloom ? 'bloom' : 'solid' });
+    }
+  } else if (isFeather) {
+    const stemCount = Math.max(3, Math.round(scalar(p.culms, 4)));
+    const whorls = Math.max(4, Math.round(scalar(p.layers, 5)));
+    const flowAngle = 0.35;
+
+    for (let s = 0; s < stemCount; s++) {
+      const sa = (s / stemCount) * TAU + (rand() - 0.5) * 0.5;
+      const sDist = spread * (0.2 + rand() * 0.5);
+      const sBase: V3 = [Math.cos(sa) * sDist, 0, Math.sin(sa) * sDist];
+      const stemH = height * (0.75 + rand() * 0.35);
+
+      let curP: V3 = [sBase[0], sBase[1], sBase[2]];
+      for (let w = 0; w < whorls; w++) {
+        const wt1 = (w + 1) / whorls;
+        const drift = Math.pow(wt1, 1.4) * spread * 0.8;
+        const nextP: V3 = [
+          sBase[0] + Math.cos(flowAngle) * drift + (rand() - 0.5) * 0.05,
+          stemH * wt1,
+          sBase[2] + Math.sin(flowAngle) * drift + (rand() - 0.5) * 0.05,
+        ];
+        const dir: V3 = [nextP[0] - curP[0], nextP[1] - curP[1], nextP[2] - curP[2]];
+        const dLen = Math.hypot(dir[0], dir[1], dir[2]);
+        b.limb(curP, [dir[0] / dLen, dir[1] / dLen, dir[2] / dLen], dLen, 0.02, colDark, { sides: 3, tipRatio: 0.6 });
+
+        const leaflets = 4;
+        for (let l = 0; l < leaflets; l++) {
+          const la = (l / leaflets) * TAU + w * 0.6;
+          const lLen = spread * 0.35 * (1 - wt1 * 0.3);
+          const lWid = 0.028;
+          b.petal(nextP, la, lLen, lWid, wt1 > 0.6 ? colPale : colFoliage, { pitch: 0.15, cup: 0.2, rand });
+        }
+        curP = nextP;
+      }
+    }
+  } else {
+    const blades = Math.max(6, Math.round(scalar(p.blades, 12)));
+    const flowAngle = 0.28;
+    const pebbleCol = tone(def, 'soil') ?? [0.4, 0.35, 0.3];
+
+    b.ico([0, 0.02, 0], [spread * 0.3, 0.035, spread * 0.25], 4, pebbleCol, { jitter: 0.2, rand });
+
+    for (let i = 0; i < blades; i++) {
+      const a0 = rand() * TAU;
+      const r0 = spread * 0.25 * Math.sqrt(rand());
+      const root: V3 = [Math.cos(a0) * r0, 0.02, Math.sin(a0) * r0];
+      const bladeH = height * (0.7 + rand() * 0.5);
+      const bladeW = Math.max(0.04, spread * 0.16 * (0.8 + rand() * 0.4));
+      const col = i % 2 === 0 ? colFoliage : colPale;
+
+      const lateralSway = (rand() - 0.5) * spread * 0.35;
+      const p1: V3 = [
+        root[0] + Math.cos(flowAngle) * bladeH * 0.3,
+        bladeH * 0.45,
+        root[2] + Math.sin(flowAngle) * bladeH * 0.3 + lateralSway * 0.5,
+      ];
+      const p2: V3 = [
+        root[0] + Math.cos(flowAngle) * bladeH * 0.75,
+        bladeH * 0.6,
+        root[2] + Math.sin(flowAngle) * bladeH * 0.75 + lateralSway,
+      ];
+      const tip: V3 = [
+        root[0] + Math.cos(flowAngle) * bladeH * 1.1,
+        bladeH * 0.45,
+        root[2] + Math.sin(flowAngle) * bladeH * 1.1 + lateralSway * 1.2,
+      ];
+
+      const normalX = -Math.sin(flowAngle) * bladeW * 0.5;
+      const normalZ = Math.cos(flowAngle) * bladeW * 0.5;
+
+      const v0L: V3 = [root[0] - normalX, root[1], root[2] - normalZ];
+      const v0R: V3 = [root[0] + normalX, root[1], root[2] + normalZ];
+      const v1L: V3 = [p1[0] - normalX * 0.9, p1[1], p1[2] - normalZ * 0.9];
+      const v1R: V3 = [p1[0] + normalX * 0.9, p1[1], p1[2] + normalZ * 0.9];
+      const v2L: V3 = [p2[0] - normalX * 0.7, p2[1], p2[2] - normalZ * 0.7];
+      const v2R: V3 = [p2[0] + normalX * 0.7, p2[1], p2[2] + normalZ * 0.7];
+
+      b.quad(v0L, v0R, v1R, v1L, col);
+      b.quad(v1L, v1R, v2R, v2L, col);
+      b.triangle(v2L, v2R, tip, col);
+    }
+  }
+
+  if (wantsSnowOn(def, 'ground')) {
+    b.dome([0, 0.02, 0], spread * 0.5, height * 0.1, spread * 0.5, 4, snowColor(def), {
+      floor: false, jitter: 0.3, rand, mat: 'snow',
+    });
+  }
+}
+
+// 浮叶水生植物原型
+function floatingPad(b: LowPolyBuilder, def: PlantDef): void {
+  const p = def.params;
+  const rand = mulberry32(def.buildSeed);
+  const spread = scalar(p.spread, 0.65);
+  const padCount = Math.max(4, Math.round(scalar(p.blobs, 7)));
+  const leafCol = tone(def, 'foliage');
+  const leafDark = tone(def, 'foliageDark', 1);
+  const stemCol = tone(def, 'foliageDeep', 1);
+  const flowerCol = tone(def, 'bloom') ?? [0.95, 0.78, 0.22];
+  const flowerCenterCol = tone(def, 'pollen') ?? [0.97, 0.91, 0.67];
+
+  for (let i = 0; i < padCount; i++) {
+    const a = (i / padCount) * TAU + (rand() - 0.5) * 0.45;
+    const r = spread * (0.35 + rand() * 0.65);
+    const padX = Math.cos(a) * r;
+    const padZ = Math.sin(a) * r;
+    const padY = 0.015 + rand() * 0.01;
+    const padR = spread * (0.22 + rand() * 0.12);
+    const col = i % 2 === 0 ? leafCol : leafDark;
+
+    b.limb([0, 0, 0], [padX, padY, padZ], Math.hypot(padX, padY, padZ), 0.012, stemCol, { sides: 3, tipRatio: 1.0 });
+
+    const notchAngle = a + Math.PI + (rand() - 0.5) * 0.4;
+    const sides = 5;
+    const arcSpan = TAU * 0.85;
+    const startAngle = notchAngle + (TAU - arcSpan) * 0.5;
+    const center: V3 = [padX, padY, padZ];
+    const ringPts: V3[] = [];
+
+    for (let s = 0; s <= sides; s++) {
+      const sa = startAngle + (s / sides) * arcSpan;
+      ringPts.push([
+        padX + Math.cos(sa) * padR,
+        padY,
+        padZ + Math.sin(sa) * padR,
+      ]);
+    }
+    for (let s = 0; s < sides; s++) {
+      b.triangle(center, ringPts[s], ringPts[s + 1], col);
+    }
+  }
+
+  const bloomCount = bloomCountFor(def, Math.round(scalar(p.bloomCount, 1)), 2);
+  if (bloomCount > 0) {
+    for (let f = 0; f < bloomCount; f++) {
+      const fa = rand() * TAU;
+      const fr = spread * (0.2 + rand() * 0.35);
+      const flX = Math.cos(fa) * fr;
+      const flZ = Math.sin(fa) * fr;
+      const flH = 0.14 + rand() * 0.06;
+
+      b.limb([flX, 0, flZ], [0, 1, 0], flH, 0.014, stemCol, { sides: 3, tipRatio: 0.8 });
+
+      const petals = 5;
+      const cupR = 0.065;
+      const cupBase: V3 = [flX, flH, flZ];
+      for (let pIdx = 0; pIdx < petals; pIdx++) {
+        const pa = (pIdx / petals) * TAU;
+        b.petal(cupBase, pa, cupR, cupR * 0.55, flowerCol, {
+          pitch: 0.65, cup: 0.35, mat: 'bloom', rand,
+        });
+      }
+      b.ico([flX, flH + 0.02, flZ], [cupR * 0.35, cupR * 0.25, cupR * 0.35], 4, flowerCenterCol, { mat: 'bloom', rand });
+    }
+  }
+
+  if (wantsSnowOn(def, 'ground')) {
+    b.dome([0, 0.02, 0], spread * 0.7, 0.05, spread * 0.7, 5, snowColor(def), { floor: false, jitter: 0.2, rand, mat: 'snow' });
+  }
+}
+
 /** 原型注册表 */
 export const ARCHETYPES: Record<string, (b: LowPolyBuilder, def: PlantDef) => void> = {
   conifer,
@@ -1174,6 +1608,9 @@ export const ARCHETYPES: Record<string, (b: LowPolyBuilder, def: PlantDef) => vo
   blossomTree,
   bamboo,
   orchid,
+  reed,
+  waterweed,
+  floatingPad,
   sprout,
   withered,
 };
@@ -1201,6 +1638,9 @@ export const ARCHETYPE_DEFAULTS: Record<string, Partial<PlantParams>> = {
   // 一丛 4 秆（原 5）
   bamboo: { height: 6, culms: 4, trunkRadius: 0.12, spread: 1, nodeStep: 1.1, blades: 14, frondLength: 1, sides: 5, jitter: 0.1, lean: 0.08, petals: 3 },
   orchid: { height: 0.6, blades: 9, frondLength: 0.66, spread: 0.2, bloomCount: 5, sides: 5, petals: 6 },
+  reed: { height: 2.8, culms: 6, spread: 0.6, nodeStep: 0.55, blades: 5, bloomCount: 4, petals: 6 },
+  waterweed: { height: 0.9, blades: 10, spread: 0.4 },
+  floatingPad: { height: 0.35, blobs: 7, spread: 0.65, bloomCount: 2, petals: 5 },
 };
 
 /** 生长带默认参数 */

@@ -1,10 +1,11 @@
 import { mountedFonts } from '../modding_api/Resources';
 import { icon } from './Icons';
 import { SettingsConfirmation } from './SettingsConfirmation';
-import { ACTIONS, actionLabel, defaultSettings, keyLabel, validateSettings, validBinding, type GameAction, type GameSettings } from '../core/GameSettings';
+import { ACTIONS, actionLabel, defaultSettings, graphicsPreset, frameRateStops, keyLabel, validateSettings, validBinding, type GameAction, type GameSettings } from '../core/GameSettings';
 import { availableLocales, getLocale, onLocaleChange, setLocale, t } from '../i18n';
 import { CHUNK_SIZE } from '../core/config';
 import { MIN_RENDER_DISTANCE, MAX_RENDER_DISTANCE, renderChunkOffsets } from '../core/RenderDistance';
+import { displayRefreshRate } from './DisplayRefresh';
 
 /** 开始界面与 ESC 菜单共用 */
 export class SettingsPanel {
@@ -16,7 +17,7 @@ export class SettingsPanel {
   private activeTab = 0;
   private status!: HTMLElement;
   private readonly stopLocaleWatch: () => void;
-  constructor(private readonly root: HTMLElement, current: GameSettings, private readonly apply: (value: GameSettings, persist?: boolean) => void, private readonly back: () => void, private readonly options: { headingBack?: boolean; worldActive?: boolean } = {}) {
+  constructor(private readonly root: HTMLElement, current: GameSettings, private readonly apply: (value: GameSettings, persist?: boolean) => void, private readonly back: () => void, private readonly options: { headingBack?: boolean; worldActive?: boolean; hideMystery?: boolean } = {}) {
     this.draft = validateSettings(current);
     if (this.draft.font !== 'system' && !mountedFonts().some(font => font.id === this.draft.font)) this.draft.font = 'system';
     this.saved = validateSettings(current);
@@ -48,6 +49,9 @@ export class SettingsPanel {
         ${this.slider('uiScale', 'settings.uiScale', .25, 4, .05, '×')}
       </section>
       <section class="settings-group"><h2>${t('settings.graphics')}</h2>
+        <label class="setting-row"><span>${t('settings.graphicsPreset')}</span><select data-graphics-preset>${['balanced','low','minimal'].map(p=>`<option value="${p}">${t('settings.graphicsPreset.'+p)}</option>`).join('')}</select></label>
+        <p class="setting-note">${t('settings.graphicsPreset.hint')}</p>
+        <label class="setting-row"><span>${t('settings.antialias')}</span><input data-antialias type="checkbox"></label>
         <label class="setting-row"><span>${t('settings.fov')}</span><input data-fov type="number" min="30" max="120" step="1"></label>
         <div class="distance-pair">
           <label class="distance-heading distance-heading-world" for="settings-render-distance"><span>${t('settings.renderDistance')}</span><output data-distance-value></output></label>
@@ -59,7 +63,11 @@ export class SettingsPanel {
         <p class="setting-note" data-render-budget aria-live="polite"></p>
         <label class="setting-row"><span>${t('settings.showTopBar')}</span><input data-top-bar type="checkbox"></label>
         <label class="setting-row"><span>${t('settings.particles')}</span><input data-particles type="checkbox"></label>
+        <label class="setting-row"><span>${t('settings.advancedVisuals')}</span><input data-advanced-visuals type="checkbox"></label>
+        <p class="setting-note">${t('settings.advancedVisuals.hint')}</p>
         <label class="setting-row"><span>${t('settings.resolution')}</span><select data-extra="resolution"><option value="auto">${t('settings.resolution.auto')}</option>${['320x240', '640x480', '960x540', '1280x720', '1920x1080', '2560x1440'].map(n => `<option value="${n}">${n.replace('x', ' × ')}</option>`).join('')}</select></label>
+        <label class="setting-row slider-row"><span>${t('settings.frameRate')} <output data-fps-output></output></span><input aria-label="${t('settings.frameRate')}" data-max-fps type="range" min="0" step="1"></label>
+        <div class="fps-stops" data-fps-stops aria-hidden="true"></div>
       </section>
       <section class="settings-group"><h2>${t('settings.controls')}</h2>
         <label class="setting-row"><span>${t('settings.touch')}</span><input data-touch type="checkbox"></label>
@@ -71,7 +79,7 @@ export class SettingsPanel {
         <h3>${t('settings.touchLayout')}</h3><p class="setting-note">${t('settings.touchLayout.hint')}</p>
         <div class="touch-layout-editor"><button class="layout-handle layout-move" data-layout="move" aria-label="${t('settings.touchLayout.move')}">${icon('stick-base')}${icon('stick-knob')}</button><button class="layout-handle layout-actions" data-layout="actions" aria-label="${t('settings.touchLayout.actions')}">↑ ◇ ↓</button></div>
       </section>
-      <section class="settings-group"><h2>${t('settings.mystery')}</h2><p class="setting-note">${t(this.options.worldActive ? 'settings.mystery.current' : 'settings.mystery.unavailable')}</p><fieldset data-mystery-fields style="border:0;padding:0;margin:0;min-width:0" ${this.options.worldActive ? '' : 'disabled'}>
+      <section class="settings-group" data-mystery-group><h2>${t('settings.mystery')}</h2><p class="setting-note">${t(this.options.worldActive ? 'settings.mystery.current' : 'settings.mystery.unavailable')}</p><fieldset data-mystery-fields style="border:0;padding:0;margin:0;min-width:0" ${this.options.worldActive ? '' : 'disabled'}>
         <label class="setting-row"><span>${t('settings.speed')} <small>${t('settings.speed.hint')}</small></span><input data-speed type="number" min="0" max="86400" step="0.5"></label>
         <div class="speed-presets">${[0, 1, 72, 360].map(n => `<button data-speed-preset="${n}">${n === 0 ? t('settings.speed.pause') : `${n}×`}</button>`).join('')}</div>
         <label class="setting-row"><span>${t('settings.menuAutoPause')}</span><input data-menu-auto-pause type="checkbox"></label></fieldset>
@@ -88,7 +96,15 @@ export class SettingsPanel {
       this.status.textContent = t('settings.status.reset');
     }, { signal });
     this.root.querySelector('[data-apply]')!.addEventListener('click', () => this.submit(), { signal });
+    this.field<HTMLSelectElement>('[data-graphics-preset]').addEventListener('change', event => {
+      this.readDraft();
+      this.draft = { ...this.draft, ...graphicsPreset((event.currentTarget as HTMLSelectElement).value as NonNullable<GameSettings['graphicsPreset']>) };
+      this.renderValues();
+    }, { signal });
     this.field<HTMLInputElement>('[data-render-distance]').addEventListener('input', () => { this.updateDistanceLimit(); this.renderBudget(); }, { signal });
+    this.field<HTMLInputElement>('[data-max-fps]').addEventListener('input', () => {
+      this.field<HTMLOutputElement>('[data-fps-output]').value = this.frameRateText(this.readFrameRate());
+    }, { signal });
     this.root.querySelector<HTMLSelectElement>('[data-locale]')!.addEventListener('change', event => {
       this.readDraft();
       // setLocale 会触发 onLocaleCh
@@ -107,10 +123,40 @@ export class SettingsPanel {
   }
 
   private field<T extends HTMLElement>(selector: string): T { return this.root.querySelector<T>(selector)!; }
+  private frameRateOptions(): number[] { return frameRateStops(displayRefreshRate()); }
+  private frameRateIndex(options: number[], value: number): number {
+    const exact = options.indexOf(value);
+    if (exact >= 0) return exact;
+    for (let i = options.length - 1; i >= 0; i--) if (options[i] !== 0 && options[i] <= value) return i;
+    return options.length - 1;
+  }
+  private frameRateText(value: number): string {
+    return value === 0 ? t('settings.frameRate.unlimited') : `${value} fps`;
+  }
+  private renderFrameRate(): void {
+    const options = this.frameRateOptions();
+    const slider = this.field<HTMLInputElement>('[data-max-fps]');
+    slider.max = String(options.length - 1);
+    slider.value = String(this.frameRateIndex(options, this.draft.frameRate ?? 0));
+    this.field<HTMLOutputElement>('[data-fps-output]').value = this.frameRateText(options[Number(slider.value)]);
+    const stops = this.field<HTMLElement>('[data-fps-stops]');
+    stops.innerHTML = options.map(value => `<span>${value === 0 ? t('settings.frameRate.unlimited') : value}</span>`).join('');
+  }
+  private readFrameRate(): number {
+    const options = this.frameRateOptions();
+    const index = Number(this.field<HTMLInputElement>('[data-max-fps]').value);
+    return options[Math.max(0, Math.min(options.length - 1, index))];
+  }
   private renderTabs(): void {
     const tabs = document.createElement('div'); tabs.className = 'creator-tabs settings-tabs';
     tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', t('settings.title'));
+    if (this.options.hideMystery) {
+      const mystery = this.field<HTMLElement>('[data-mystery-group]');
+      mystery.classList.remove('settings-group'); mystery.hidden = true;
+      this.field<HTMLFieldSetElement>('[data-mystery-fields]').disabled = true;
+    }
     const groups = Array.from(this.root.querySelectorAll<HTMLElement>('.settings-group'));
+    tabs.style.gridTemplateColumns = `repeat(${groups.length}, minmax(0, 1fr))`;
     const names = ['interface', 'graphics', 'controls', 'mystery'];
     const select = (index: number) => {
       this.activeTab = index;
@@ -129,7 +175,7 @@ export class SettingsPanel {
       button.onkeydown = event => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.code)) return;
         event.preventDefault(); event.stopPropagation();
-        const next = event.code === 'Home' ? 0 : event.code === 'End' ? 3 : (i + (event.code === 'ArrowRight' ? 1 : 3)) % 4;
+        const next = event.code === 'Home' ? 0 : event.code === 'End' ? groups.length - 1 : (i + (event.code === 'ArrowRight' ? 1 : groups.length - 1)) % groups.length;
         select(next); (tabs.children[next] as HTMLElement).focus();
       };
       tabs.append(button);
@@ -137,6 +183,8 @@ export class SettingsPanel {
     this.field<HTMLElement>('.settings-scroll').before(tabs); select(this.activeTab);
   }
   private renderValues(): void {
+    this.field<HTMLSelectElement>('[data-graphics-preset]').value = this.draft.graphicsPreset!;
+    this.field<HTMLInputElement>('[data-antialias]').checked = this.draft.antialias !== false;
     this.field<HTMLInputElement>('[data-default-name]').value = this.draft.ren_ming ?? '';
     this.field<HTMLInputElement>('[data-fov]').value = String(this.draft.fov);
     this.field<HTMLInputElement>('[data-render-distance]').value = String(this.draft.renderDistance);
@@ -144,12 +192,14 @@ export class SettingsPanel {
     this.field<HTMLInputElement>('[data-speed]').value = String(this.draft.timeSpeed);
     this.field<HTMLInputElement>('[data-touch]').checked = !!this.draft.touchControls;
     this.field<HTMLInputElement>('[data-particles]').checked = this.draft.particles !== false;
+    this.field<HTMLInputElement>('[data-advanced-visuals]').checked = this.draft.advancedVisuals !== false;
     this.field<HTMLInputElement>('[data-top-bar]').checked = this.draft.showTopBar !== false;
     this.field<HTMLInputElement>('[data-menu-auto-pause]').checked = !!this.draft.menuAutoPause;
     this.root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-extra]').forEach(field => {
       field.value = String(this.draft[field.dataset.extra as keyof GameSettings]);
     });
     this.updateDistanceLimit(); this.renderBudget();
+    this.renderFrameRate();
     this.updateOutputs(); this.renderLayoutHandles();
     this.renderKeys();
   }
@@ -182,10 +232,14 @@ export class SettingsPanel {
     this.draft = { ...this.draft, ...extra, ren_ming: this.field<HTMLInputElement>('[data-default-name]').value,
       fov: this.field<HTMLInputElement>('[data-fov]').valueAsNumber,
       renderDistance: this.field<HTMLInputElement>('[data-render-distance]').valueAsNumber,
+      frameRate: this.readFrameRate(),
+      graphicsPreset: this.field<HTMLSelectElement>('[data-graphics-preset]').value as NonNullable<GameSettings['graphicsPreset']>,
+      antialias: this.field<HTMLInputElement>('[data-antialias]').checked,
       timeSpeed: this.field<HTMLInputElement>('[data-speed]').valueAsNumber,
       touchControls: this.field<HTMLInputElement>('[data-touch]').checked,
       showTopBar: this.field<HTMLInputElement>('[data-top-bar]').checked,
       particles: this.field<HTMLInputElement>('[data-particles]').checked,
+      advancedVisuals: this.field<HTMLInputElement>('[data-advanced-visuals]').checked,
       menuAutoPause: this.field<HTMLInputElement>('[data-menu-auto-pause]').checked };
   }
   private renderLayoutHandles(): void {
@@ -265,7 +319,7 @@ export class SettingsPanel {
         showTopBar: this.field<HTMLInputElement>('[data-top-bar]').checked,
       particles: this.field<HTMLInputElement>('[data-particles]').checked,
       menuAutoPause: this.field<HTMLInputElement>('[data-menu-auto-pause]').checked });
-      const guarded: (keyof GameSettings)[] = ['font', 'textScale', 'safeX', 'safeY', 'uiScale', 'resolution', 'renderDistance', 'vegetationDistance'];
+      const guarded: (keyof GameSettings)[] = ['font', 'textScale', 'safeX', 'safeY', 'uiScale', 'resolution', 'renderDistance', 'vegetationDistance', 'antialias', 'graphicsPreset'];
       if (guarded.some(key => value[key] !== this.saved[key])) {
         this.confirmation = new SettingsConfirmation(() => {
           this.confirmation = null;

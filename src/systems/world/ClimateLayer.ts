@@ -1,6 +1,7 @@
 import { createNoise2D } from 'simplex-noise';
 import { mulberry32 } from '../../core/math/Random';
 import { planetCoordinates, temperatureClimate, type ClimateWeights, type WorldGeneration } from './WorldSettings';
+import { earthMacroPlate, earthMountainsRelief, earthTemperatureField } from './EarthGeography';
 
 export class ClimateLayer {
   private readonly warp;
@@ -15,7 +16,14 @@ export class ClimateLayer {
   sample(cx: number, cz: number): {index: number; temperature: number} {
     if (this.generation.mode === 'planet') {
       const p = this.generation.planet;
-      const {latitude} = planetCoordinates(cx, cz, p.equatorChunks);
+      const {longitude, latitude} = planetCoordinates(cx, cz, p.equatorChunks);
+      if (p.map === 'earth') {
+        const macro = earthMacroPlate(longitude, latitude);
+        const mtn = earthMountainsRelief(longitude, latitude);
+        const elevation = macro.base + mtn * .5;
+        const temperature = earthTemperatureField(longitude, latitude, elevation);
+        return {index: temperatureClimate(temperature), temperature};
+      }
       const blend = Math.max(0, Math.cos(latitude * Math.PI / 180)) ** 1.4;
       const temperature = p.poleTemperature + (p.equatorTemperature - p.poleTemperature) * blend;
       return {index: temperatureClimate(temperature), temperature};

@@ -1,4 +1,6 @@
 /** 植物注册表 */
+import { scaleGeometry } from '../Geometry';
+export { scaleGeometry } from '../Geometry';
 import palettesJson from '../../../../content/data/world/plants/palettes.json';
 // 寒带乔木
 import shuYunshan from '../../../../content/data/world/plants/woody/shu.yunshan.json';
@@ -46,6 +48,13 @@ import caoShamo from '../../../../content/data/world/plants/herbaceous/cao.shamo
 import caoHanji from '../../../../content/data/world/plants/herbaceous/cao.hanji.json';
 import shuiPucao from '../../../../content/data/world/plants/herbaceous/shui.pucao.json';
 import shuiLian from '../../../../content/data/world/plants/herbaceous/shui.lian.json';
+import shuiLuwei from '../../../../content/data/world/plants/herbaceous/shui.luwei.json';
+import shuiLuweicong from '../../../../content/data/world/plants/herbaceous/shui.luweicong.json';
+import shuiLuweidang from '../../../../content/data/world/plants/herbaceous/shui.luweidang.json';
+import shuiKucao from '../../../../content/data/world/plants/herbaceous/shui.kucao.json';
+import shuiHuwei from '../../../../content/data/world/plants/herbaceous/shui.huwei.json';
+import shuiChangpu from '../../../../content/data/world/plants/herbaceous/shui.changpu.json';
+import shuiPingpeng from '../../../../content/data/world/plants/herbaceous/shui.pingpeng.json';
 // 中国特色经济作物
 import nongDao from '../../../../content/data/world/plants/herbaceous/nong.dao.json';
 import nongMai from '../../../../content/data/world/plants/herbaceous/nong.mai.json';
@@ -62,12 +71,12 @@ import { assertNoTableVersion } from '../../../core/version';
 import { ARCHETYPES, ARCHETYPE_DEFAULTS, CLIMATE_DEFAULTS, GLOBAL_DEFAULTS, buildPlant } from './archetypes';
 import type { PlantGeometry } from './geometry';
 import {
-  CLIMATE_ZONES, DEFAULT_BLOOM_COLOR, PLANT_MODELED_STATES, PLANT_STATES, SEASONS,
-  type ClimateZone, type PaletteEntry, type PaletteFile, type PaletteKey, type PlantBloomOptions,
-  type PlantBuildOptions, type PlantDef, type PlantFile, type PlantParams, type PlantState,
-  type PlantStateDef, type PlantStateTable, type PlantVariantDef,
-  type ResolvedPalette, type Season,
+  CLIMATE_ZONES, DEFAULT_BLOOM_COLOR, PLANT_MODELED_STATES, PLANT_STATES, type ClimateZone, type PaletteEntry,
+  type PaletteFile, type PaletteKey, type PlantBloomOptions, type PlantBuildOptions, type PlantDef,
+  type PlantFile, type PlantParams, type PlantState, type PlantStateDef, type PlantStateTable,
+  type PlantVariantDef, type ResolvedPalette,
 } from './types';
+import { SEASONS, type Season } from '../Season';
 
 /** 参数表清单（显式导入而不做目录扫描 */
 function asPlantFile(data: unknown): PlantFile {
@@ -121,6 +130,13 @@ export const PLANT_FILES: readonly { file: string; data: PlantFile }[] = [
   { file: 'herbaceous/cao.hanji.json', data: asPlantFile(caoHanji) },
   { file: 'herbaceous/shui.pucao.json', data: asPlantFile(shuiPucao) },
   { file: 'herbaceous/shui.lian.json', data: asPlantFile(shuiLian) },
+  { file: 'herbaceous/shui.luwei.json', data: asPlantFile(shuiLuwei) },
+  { file: 'herbaceous/shui.luweicong.json', data: asPlantFile(shuiLuweicong) },
+  { file: 'herbaceous/shui.luweidang.json', data: asPlantFile(shuiLuweidang) },
+  { file: 'herbaceous/shui.kucao.json', data: asPlantFile(shuiKucao) },
+  { file: 'herbaceous/shui.huwei.json', data: asPlantFile(shuiHuwei) },
+  { file: 'herbaceous/shui.changpu.json', data: asPlantFile(shuiChangpu) },
+  { file: 'herbaceous/shui.pingpeng.json', data: asPlantFile(shuiPingpeng) },
   // ---- 中国特色经济作物 ----
   { file: 'herbaceous/nong.dao.json', data: asPlantFile(nongDao) },
   { file: 'herbaceous/nong.mai.json', data: asPlantFile(nongMai) },
@@ -168,6 +184,9 @@ const ARCHETYPE_PALETTE_KEYS: Record<string, readonly PaletteKey[]> = {
   blossomTree: ['barkDark', 'barkLight', 'foliage', 'foliageDark', 'bloom', 'pollen', 'snow'],
   bamboo: ['bamboo', 'bambooCulm', 'foliageDeep', 'bloom', 'pollen', 'snow'],
   orchid: ['bamboo', 'foliage', 'foliageDeep', 'bloom', 'pollen'],
+  reed: ['reedCulm', 'reedPlume', 'foliage', 'foliageDark', 'foliageDeep', 'bloom', 'pollen', 'snow', 'withered', 'witheredStem'],
+  waterweed: ['waterweed', 'waterweedPale', 'foliage', 'foliageDark', 'foliageDeep', 'spadix', 'bloom', 'pollen', 'fruit', 'soil', 'snow'],
+  floatingPad: ['foliage', 'foliageDark', 'foliageDeep', 'bloom', 'bloomGold', 'pollen', 'soil', 'snow'],
 };
 
 /** 枯萎态色板键 */
@@ -178,12 +197,12 @@ const WITHERED_PALETTE_KEYS: readonly PaletteKey[] = [
 /** 会开花的原型 */
 export const BLOOM_ARCHETYPES: readonly string[] = [
   'broadleaf', 'palm', 'acacia', 'baobab', 'shrub', 'succulent', 'bramble', 'grassClump', 'sapling',
-  'blossomTree', 'bamboo', 'orchid', 'conifer',
+  'blossomTree', 'bamboo', 'orchid', 'conifer', 'reed', 'waterweed', 'floatingPad',
 ];
 
 /** 会结果的原型 */
 export const FRUIT_ARCHETYPES: readonly string[] = [
-  'broadleaf', 'palm', 'acacia', 'baobab', 'shrub', 'succulent', 'bramble', 'grassClump',
+  'broadleaf', 'palm', 'acacia', 'baobab', 'shrub', 'succulent', 'bramble', 'grassClump', 'reed', 'waterweed', 'floatingPad',
 ];
 
 /** 该原型是否支持开花版本（针叶树支持 */
@@ -391,7 +410,7 @@ function resolveState(variant: PlantVariantDef, state: PlantState): ResolvedStat
   const def = stateDef(state);
   const base: PlantParams = { ...variant.params };
   const archetype = def.archetype ?? variant.archetype;
-  const params: PlantParams = { ...base };
+  const params: PlantParams = { ...base, baseArchetype: variant.archetype };
   if (def.paramScale !== undefined && def.paramScale !== 1) {
     for (const key of SCALED_PARAM_KEYS) {
       const value = params[key];
@@ -449,6 +468,7 @@ export function toPlantDef(variant: PlantVariantDef, season: Season, bloom?: Pla
   return {
     id: variant.id,
     archetype: resolved.archetype,
+    baseArchetype: species?.base.archetype ?? variant.archetype,
     climate: variant.climate,
     name: variant.name,
     latin: variant.latin,
@@ -690,14 +710,6 @@ export function bloomColorOf(variant: PlantVariantDef, season: Season = 'spring'
   if (species && !species.states.includes('flowering')) return null;
   const flowering = species?.byState.get('flowering') ?? variant;
   return cachedPalette(flowering, season, 'flowering').bloom ?? DEFAULT_BLOOM_COLOR;
-}
-
-/** 就地缩放几何（含包围半径与高度） */
-export function scaleGeometry(geo: PlantGeometry, scale: number): void {
-  if (scale === 1) return;
-  for (let i = 0; i < geo.positions.length; i++) geo.positions[i] *= scale;
-  geo.radius *= scale;
-  geo.height *= scale;
 }
 
 /** 批量生成导出完整选项 */

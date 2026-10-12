@@ -1,12 +1,15 @@
 /// <reference types="node" />
 /** Node 本地存档服务实现 */
-import { mkdir, readdir, readFile, lstat, open, rename, unlink } from 'node:fs/promises';
+import { mkdir, readdir, lstat, open, rename, unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { parseWorldSave, type WorldSave } from '../../src/systems/world/WorldSave.ts';
-import { encodeSaveArchive, decodeSaveArchive, saveFilename, MAX_SAVE_BYTES, VALID_SAVE_ID } from '../../src/systems/world/SaveArchive.ts';
+import { encodeSaveArchive, saveFilename, MAX_SAVE_BYTES, VALID_SAVE_ID } from '../../src/systems/world/SaveArchive.ts';
 import type { LocalSave, SaveList } from '../../src/systems/world/LocalSaveStore.ts';
+import { FileWorldData, MAX_WORLD_ENTRY } from './world-data';
+import { decodeWorldData } from '../../src/systems/world/WorldDataCodec';
+import { readSaveMetadata, streamSaveArchive } from './archive';
 
 const MAX_BYTES = MAX_SAVE_BYTES;
 const VALID_ID = VALID_SAVE_ID;
@@ -16,9 +19,10 @@ class SaveError extends Error {
 }
 interface DiskEntry { filename: string; item: LocalSave }
 export class FileSaveService {
+  readonly worldData:FileWorldData;
   readonly directory: string;
   private queue: Promise<unknown> = Promise.resolve();
-  constructor(directory: string) { this.directory = resolve(directory); }
+  constructor(directory: string) { this.directory = resolve(directory);this.worldData=new FileWorldData(join(this.directory,'world-data')); }
   async initialize(): Promise<void> { await mkdir(this.directory, { recursive: true }); }
   private async scan(): Promise<{ entries: DiskEntry[]; unreadable: number }> {
     await this.initialize();
@@ -27,9 +31,7 @@ export class FileSaveService {
     for (const filename of await readdir(this.directory)) {
       if (!/\.sav$/i.test(filename)) continue;
       try {
-        const path = join(this.directory, filename), stat = await lstat(path);
-        if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_BYTES) throw new Error('不可读的存档文件');
-        const item = decodeSaveArchive(await readFile(path));
+        const item = await readSaveMetadata(join(this.directory,filename));
         if (entries.some(entry => entry.item.id === item.id)) throw new Error('存档编号重复。');
         entries.push({ filename, item });
       } catch { unreadable++; }
@@ -38,7 +40,11 @@ export class FileSaveService {
   }
   async list(): Promise<SaveList> {
     const { entries, unreadable } = await this.scan();
-    return { saves: entries.map(entry => entry.item).sort((a, b) => b.updatedAt - a.updatedAt), unreadable };
+    return { saves: entries.map(entry => entry.item).sort((a, b) => b.updatedAt - a.updatedAt), unreadable, supportsPlayModes: true };
+  }
+  async exportEntry(id:string):Promise<{item:LocalSave;path:string}|undefined> {
+    const entry=(await this.scan()).entries.find(entry=>entry.item.id===id);
+    return entry?{item:entry.item,path:join(this.directory,entry.filename)}:undefined;
   }
   private serialized<T>(action: () => Promise<T>): Promise<T> {
     const result = this.queue.then(action);
@@ -101,7 +107,7 @@ async function readBody(request: IncomingMessage): Promise<Record<string, unknow
 export function fileSaveMiddleware(service: FileSaveService) {
   return (request: IncomingMessage, response: ServerResponse, next: () => void): void => {
     const path = request.url?.split('?')[0];
-    if (path !== '/api/saves') { next(); return; }
+    if (path !== '/api/saves'&&!path?.startsWith('/api/world-data')&&!path?.startsWith('/api/saves/export/')) { next(); return; }
     const send = (status: number, data: unknown) => {
       response.statusCode = status; response.setHeader('Content-Type', 'application/json; charset=utf-8');
       response.setHeader('Cache-Control', 'no-store'); response.setHeader('X-Content-Type-Options', 'nosniff');
@@ -112,12 +118,35 @@ export function fileSaveMiddleware(service: FileSaveService) {
       if (!remote || !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote)) throw new SaveError('存档服务仅接受本机访问。', 403);
       const origin = request.headers.origin;
       if ((origin && new URL(origin).host !== request.headers.host) || request.headers['sec-fetch-site'] === 'cross-site') throw new SaveError('不接受其他网站的存档请求。', 403);
+      if(path==='/api/world-data'&&request.method==='GET'){send(200,{worldData:true});return;}
+      if(path?.startsWith('/api/world-data/')){
+        const parts=path.slice('/api/world-data/'.length).split('/');
+        if(parts.length===1&&request.method==='GET'){send(200,await service.worldData.keys(parts[0]));return;}
+        if(parts.length!==2)throw new SaveError('世界数据路径无效');
+        const [world,key]=parts;
+        if(request.method==='GET'){
+          const bytes=await service.worldData.get(world,key);
+          if(!bytes){send(404,{error:'缓存不存在'});return;}
+          response.setHeader('Content-Type','application/octet-stream');response.setHeader('Cache-Control','no-store');response.end(bytes);return;
+        }
+        if(request.method!=='PUT')throw new SaveError('世界数据操作无效',405);
+        if(Number(request.headers['content-length'])>MAX_WORLD_ENTRY)throw new SaveError('世界数据过大',413);
+        const buffers:Buffer[]=[];let size=0;
+        for await(const chunk of request){size+=chunk.length;if(size>MAX_WORLD_ENTRY)throw new SaveError('世界数据过大',413);buffers.push(Buffer.from(chunk));}
+        const bytes=Buffer.concat(buffers);decodeWorldData(bytes);
+        await service.worldData.put(world,key,bytes);send(200,{saved:true});return;
+      }
+      if(path?.startsWith('/api/saves/export/')&&request.method==='GET'){
+        const id=path.slice('/api/saves/export/'.length),entry=await service.exportEntry(id);
+        if(!entry)throw new SaveError('存档不存在',404);
+        await streamSaveArchive(response,entry.item,service.worldData,entry.path);return;
+      }
       if (request.method === 'GET' && path === '/api/saves') { send(200, await service.list()); return; }
       if (request.method !== 'POST') { response.setHeader('Allow', 'GET, POST'); throw new SaveError('不支持此存档操作。', 405); }
       const data = await readBody(request);
       send(200, await service.put(data.save as WorldSave, data.name as string, data.id as string | undefined));
-    })().catch(error => send(error instanceof SaveError ? error.status : 400, {
+    })().catch(error => { if(response.headersSent){response.destroy();return;}send(error instanceof SaveError ? error.status : 400, {
       error: (error as NodeJS.ErrnoException).code ? '无法读写 userdata/saves，请检查目录权限和磁盘空间，或先导出存档文件。' : error instanceof Error ? error.message : '本地存档操作失败。',
-    }));
+    });});
   };
 }

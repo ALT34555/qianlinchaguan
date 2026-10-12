@@ -5,6 +5,7 @@ import {riverWidth,MAX_RIVER_RADIUS} from './RiverChannels';
 import {RIVER_BANK_BLEND} from './RiverGeometry';
 import {mergedRiverSize} from './RiverSize';
 import {CHUNK_SIZE} from '../../core/config';
+import {trimMap, trimSet} from '../../core/TableCache';
 import { FLOW_DIRECTIONS, effectiveRunoff, RIVER_THRESHOLD, liquidRiverAllowed, waterfallDrop, splashWetlandDrop, type DrainageNode } from './Hydrology';
 export { FLOW_DIRECTIONS, effectiveRunoff, RIVER_THRESHOLD, type DrainageNode } from './Hydrology';
 const key = (x: number, z: number) => `${x},${z}`;
@@ -72,6 +73,14 @@ export class RiverNetwork {
     this.corridorDirs.clear();
     this.wetlands.clear();this.falls.clear();
     this.watershed.clear();
+  }
+  /** 超限时按插入顺序淘汰最旧缓存；流域可重解，结果与整表清空一致 */
+  trim(keep = .75): void {
+    trimMap(this.routes, keep); trimMap(this.turns, keep); trimMap(this.rounded, keep);
+    trimMap(this.corridors, keep); trimMap(this.corridorBlocks, keep); trimMap(this.corridorDirs, keep);
+    trimMap(this.fans, keep); trimMap(this.wetlands, keep); trimMap(this.falls, keep);
+    trimSet(this.reaches, keep); trimSet(this.queried, keep);
+    this.watershed.trim(keep);
   }
   private wrap(x: number): number {
     if (!this.circumference) return x;
@@ -346,7 +355,8 @@ export class RiverNetwork {
       let upstreamGrade = 0;
       for (const d of FLOW_DIRECTIONS) {
         const n = this.watershed.cell(a.x + d.dx, a.z + d.dz);
-        if (n.receiver === a && n.channel) upstreamGrade = Math.max(upstreamGrade,
+        const receiver=n.receiver;
+        if (receiver?.x === a.x && receiver.z === a.z && n.channel) upstreamGrade = Math.max(upstreamGrade,
           (n.level - a.level) / (this.watershed.step * 64 * Math.hypot(d.dx, d.dz)));
       }
       if (grade >= 0 && grade < .16 && (upstreamGrade > Math.max(.035, grade * 1.7) || b.height <= 0)) {

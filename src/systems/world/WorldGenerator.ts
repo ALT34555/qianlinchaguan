@@ -1,28 +1,36 @@
+import { DEFAULT_WATER_FREEZE_RULES, validateWaterFreezeRules, type WaterFreezeRules } from './WaterFreezing';
+import { resolveWaterAppearance, validateWaterAppearance, type WaterAppearanceEntry, type WaterAppearanceOverride, type WaterAppearanceUpdate, type ChunkWaterAppearance } from './WaterAppearance';
 import { createNoise2D, type NoiseFunction2D } from 'simplex-noise';
 import { CHUNK_SIZE, SEA_LEVEL, WORLD_MAX_Y, WORLD_MIN_Y } from '../../core/config';
+import { trimMap } from '../../core/TableCache';
 import { mulberry32 } from '../../core/math/Random';
 import { Block, BLOCK_RGB } from './Blocks';
 import {applyGeology, geologicalRelief} from './Geology';
-import {WaterKind, flowSpeed, ChunkWaterBoundaries, type WaterField, type WaterState} from './DynamicWater';
+import {WaterKind, flowSpeed, ChunkWaterBoundaries, type WaterField, type WaterSample} from './DynamicWater';
 import { isRiverType } from './ChunkTypes';
-import { mixTerrainProfiles, overlayTerrain, type TerrainWeight, type TerrainProfile } from './TerrainBlend';
-import { CLIMATES, DEFAULT_CLIMATE_WEIGHTS, normalizeClimateWeights, normalizeGeneration, type ClimateWeights, type WorldGeneration } from './WorldSettings';
+import { mixTerrainProfiles, terrainRoughness, overlayTerrain, type TerrainWeight, type TerrainProfile } from './TerrainBlend';
+import { CLIMATES, DEFAULT_CLIMATE_WEIGHTS, normalizeClimateWeights, normalizeGeneration, planetCoordinates, type ClimateWeights, type WorldGeneration } from './WorldSettings';
+import { earthRiverSample } from './EarthGeography';
 import { PlanetTerrain } from './PlanetTerrain';
 import { BasinLakes, type BasinLake } from './BasinLakes';
 import { ClimateLayer } from './ClimateLayer';
 import { TerrainLayers, CONTINENT_SCALE, altitudeSnow, freezeState, clamp, smooth, type TerrainSample } from './TerrainLayers';
 import type {PlateTier} from './PlateUplift';
 import { RiverNetwork, FLOW_DIRECTIONS, type AlluvialFan } from './RiverNetwork';
+import type { WatershedSamples, WatershedState } from './Watershed';
 import {riverGuide,riverCurve,MAX_RIVER_BEND,RIVER_NODE_NOISE,RIVER_BANK_BLEND} from './RiverGeometry';
+import {cascadeFall} from './Hydrology';
 import {wetlandPond} from './WetlandSurface';
-import {riverFreezeAmount, riverIceCover, riverBedProtection} from './RiverFreezing';
+import {riverIceCover, riverBedProtection} from './RiverFreezing';
 import { MAX_BRAID_OFFSET, MAX_MOUTH_LENGTH, MAX_RIVER_RADIUS, RIVER_BED_CORE,
-  riverBankShape, riverBedFlat, riverDepth, riverFloodplain, riverInfluence, riverInfluenceMargin, riverShore, riverWidth,
+  riverBankShape, riverBedFlat, riverBedShape, riverDepth, riverFloodplain, riverInfluence, riverInfluenceMargin, riverShore, riverWidth, steepWidthFactor,
   RIVER_EDGE_NOISE, RIVER_LAKE_EDGE_NOISE, type RiverPoint } from './RiverChannels';
 export type { RiverPoint } from './RiverChannels';
 export { FLOW_DIRECTIONS } from './RiverNetwork';
 
 export const PADDED_SIZE = CHUNK_SIZE + 2;
+/** 舆图粗预览每边采样格数 */
+export const PREVIEW_SIZE = 16;
 const MAX_VALLEY_SHOULDER = 192;
 /** 大瀑布判定落差阈值 */
 const FALL_CONCENTRATION_DROP = 64;
@@ -31,6 +39,12 @@ const RIVER_SEARCH_RADIUS = Math.ceil((riverInfluence(MAX_RIVER_RADIUS * 1.18) +
 const VALLEY_PROBES: readonly (readonly [number, number])[] = [[-128, 0], [128, 0], [0, -128], [0, 128]];
 /** 邻域无地势支撑时仍保留的分级下切比例 */
 const RIVER_BED_MIN_SHARE = .6;
+/** 节点表上限：超过即分批淘汰最旧缓存 */
+const CACHE_LIMIT = 120000;
+/** 出生点跨实例缓存上限：创建器预览与进入世界共用同一次搜索 */
+const SPAWN_CACHE_LIMIT = 8;
+interface SpawnRecord { cx: number; cz: number; radius: number; height: number; water: number }
+const SPAWN_CACHE = new Map<string, SpawnRecord>();
 const key = (x: number, z: number) => `${x},${z}`;
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 // Catmull–Rom
@@ -44,14 +58,14 @@ export interface ChunkInfo {
   elevation: number; flow: number; discharge: number; riverWidth: number; riverDepth: number;riverBlocks:number;
   lakeLevel: number | null;
   elevationTier: PlateTier; largeLandmass: boolean;
-  plateBase:number;hillRelief:number;highlandRelief:number;waterfallDrop:number;wetland:number;
+  plateBase:number;hillRelief:number;highlandRelief:number;mountainRelief:number;waterfallDrop:number;wetland:number;
   downstream: { cx: number; cz: number } | null;
   /** 舆图与调试显示用流向 */
   displayFlow: number;
   /** 内部走廊值，供流向补算 */
   courseVal: number;
 }
-interface ColumnSample { height: number; water: number; bank: number; channel: number; flowGrade: number; mouth: number; alluvium: number; kind: number; vx: number; vz: number; discharge: number;staticSurface:number;weights:TerrainWeight[] }
+interface ColumnSample { height: number; water: number; bank: number; channel: number; flowGrade: number; mouth: number; alluvium: number; kind: number; vx: number; vz: number; discharge: number;staticSurface:number;iceCoverage:number;bedLevel:number;iceLevel:number;iceBottomLevel:number;waterSurfaceLevel:number;weights:TerrainWeight[] }
 interface RiverSegment {
   ax: number; az: number; bx: number; bz: number;
   aLevel: number; bLevel: number; aWidth: number; bWidth: number;
@@ -73,14 +87,30 @@ export interface ChunkGenResult {
   waterLevels: Float32Array;
   waterField: WaterField;
 }
+/** 稀疏采样结果：供舆图平均色与粗预览，无外扩圈 */
+export interface PreviewChunk {
+  cx: number; cz: number;
+  /** 采样边长（格） */
+  size: number;
+  /** 采样步长（格） */
+  step: number;
+  heights: Float32Array;
+  waterLevels: Float32Array;
+  surfaceColors: Uint8Array;
+}
 
 export class WorldGenerator {
+  private hydrologySnapshot?: WatershedState;
+  private lastColumn?:{x:number;z:number;value:ColumnSample};
   readonly seed: number;
   /** 启用显示流向邻近主河查询 */
   displayFlowWanted = false;
   readonly climateWeights: ClimateWeights;
   readonly generation: WorldGeneration;
   readonly waterBoundaries = new ChunkWaterBoundaries();
+  private waterFreezeRules: WaterFreezeRules = {...DEFAULT_WATER_FREEZE_RULES};
+  private readonly waterAppearances = new Map<string, WaterAppearanceOverride>();
+  private readonly naturalWaterAppearances = new Map<string, ChunkWaterAppearance>();
   private readonly planet: PlanetTerrain | null;
   private readonly warp: NoiseFunction2D;
   private readonly detail: NoiseFunction2D;
@@ -100,6 +130,10 @@ export class WorldGenerator {
   private readonly pondLevels=new Map<string,number>();
   private readonly waterMargins = new Map<string, number>();
   private readonly basinDepths = new Map<string, number>();
+  /** 节点表上限，超过即分批淘汰，可下调以便测试 */
+  cacheLimit = CACHE_LIMIT;
+  /** 本实例已解出的出生点 */
+  private readonly spawnCache = new Map<string, SpawnRecord>();
 
   constructor(seed: number, climateWeights: ClimateWeights = DEFAULT_CLIMATE_WEIGHTS, generation?: WorldGeneration) {
     this.seed = seed >>> 0;
@@ -111,12 +145,19 @@ export class WorldGenerator {
     this.warp = make(); this.detail = make();
     this.climate = new ClimateLayer(this.seed, this.climateWeights, this.generation);
     this.layers = this.planet?.layers ?? new TerrainLayers(this.seed, false, this.generation.landRatio ?? .5);
-    // 大尺度流域先求解
+    // 大尺度流域先求解；样本带 plateBase 以启用同板块快速通路
     this.rivers = new RiverNetwork((x, z) => ({...this.getTerrainSample(x, z), temperature: this.getClimate(x, z).temperature}),
       this.generation.precipitation, this.planet ? this.generation.planet.equatorChunks : undefined,
-      (x, z) => this.periodic(this.warp, x / 32, z / 32, 32) * .7 + this.periodic(this.detail, x / 96, z / 96, 96) * .3,
-      (x,z)=>({...this.getTerrainSample(x,z,false),temperature:this.getClimate(x,z).temperature}),this.seed);
-    this.lakes = new BasinLakes(this.rivers);
+      (x, z) => {
+        if (this.generation.planet?.map === 'earth') {
+          const {longitude: lon, latitude: lat} = planetCoordinates(x, z, this.generation.planet.equatorChunks);
+          const river = earthRiverSample(lon, lat);
+          if (river.inValley) return river.incision * 1.5;
+        }
+        return this.periodic(this.warp, x / 32, z / 32, 32) * .7 + this.periodic(this.detail, x / 96, z / 96, 96) * .3;
+      },
+      (x,z)=>({height:this.planet?.boundaryHeight(x,z)??this.getTerrainSample(x,z,false).height,moisture:0,temperature:0}),this.seed);
+    this.lakes = new BasinLakes(this.rivers,(cx,cz)=>this.node(cx,cz).height);
   }
 
   getClimate(cx: number, cz: number): {index: number; temperature: number} {
@@ -124,7 +165,8 @@ export class WorldGenerator {
   }
 
   getTerrainSample(cx: number, cz: number, rainfall = true): TerrainSample {
-    return this.planet?.sample(cx, cz, rainfall) ?? this.layers.sample([cx / CONTINENT_SCALE, 0, cz / CONTINENT_SCALE]);
+    return this.planet?.sample(cx, cz, rainfall) ??
+      this.layers.sample([cx / CONTINENT_SCALE, 0, cz / CONTINENT_SCALE], 0, this.getClimate(cx, cz).temperature);
   }
 
   private node(cx: number, cz: number): LandNode {
@@ -136,17 +178,8 @@ export class WorldGenerator {
   }
 
   getChunkInfo(cx: number, cz: number): ChunkInfo {
-    // 在完整查询之间释放缓存
-    if (this.nodes.size > 120000) {
-      this.nodes.clear(); this.rivers.clear(); this.infos.clear();
-      this.segments.clear(); this.patches.clear(); this.profileCells.clear(); this.hydraulicNodes.clear();
-      this.riverPositions.clear();
-      this.lakes.clear();
-      this.channelPaths.clear();
-      this.fanCells.clear();
-      this.pondLevels.clear();
-      this.waterMargins.clear(); this.basinDepths.clear();
-    }
+    // 分批淘汰超限缓存，避免整表清空
+    if (this.nodes.size > this.cacheLimit) this.trimCaches();
     const k = key(cx, cz);
     const cached = this.infos.get(k);
     if (cached) {
@@ -185,7 +218,7 @@ export class WorldGenerator {
     else if(climate.temperature>=10&&n.moisture<-.32)type=104;
     else if (n.rift > 0.65 && this.waterMargin(cx, cz) > .5) type = 9;
     else if (n.plateau > 0.5) type = prefix + 8;
-    else if (n.hillRelief > 32) type = prefix + 3;
+    else if (n.hillRelief > 32 || n.mountainRelief > 32) type = prefix + 3;
     else if (n.valley > 0.5) type = prefix + 7;
     else if (basic) type = n.moisture < -0.28 ? 4 : n.moisture > 0.22 ? 6 : 1;
     else if (zone === 100) type = n.height < 14 && n.moisture > 0.15 ? 105 : n.moisture < -0.35 ? 104 : n.moisture < 0 ? 101 : n.moisture < 0.35 ? 109 : 106;
@@ -194,11 +227,14 @@ export class WorldGenerator {
     const d = flow < 0 ? null : FLOW_DIRECTIONS[flow];
     // 河槽带沿用相邻主河流向
     const courseFlow = main ? flow : this.displayFlowWanted && course > 0 && type !== 11 && isRiverType(type) ? this.rivers.corridorDirection(cx, cz) : -1;
+    // 实际河宽随陡坡收窄（同 centerRiverPath）
+    const steepNarrow = main && d ? steepWidthFactor((this.rivers.level(cx, cz) - this.rivers.level(cx + d.dx, cz + d.dz)) /
+      (CHUNK_SIZE * Math.hypot(d.dx, d.dz))) : 1;
     const info = {
       cx, cz, type, climate: climate.index, temperature: climate.temperature,
       elevation: n.height, elevationTier: n.elevationTier, largeLandmass: n.largeLandmass, flow: main && !lake ? flow : -1, discharge, lakeLevel: lake?.level ?? null,
-      plateBase:n.plateBase,hillRelief:n.hillRelief,highlandRelief:n.highlandRelief,waterfallDrop:fall,wetland,
-      riverWidth: lake ? riverWidth(lake.discharge) * 2 : river ? riverWidth(discharge,riverBlocks) * 2 : 0,
+      plateBase:n.plateBase,hillRelief:n.hillRelief,highlandRelief:n.highlandRelief,mountainRelief:n.mountainRelief,waterfallDrop:fall,wetland,
+      riverWidth: lake ? riverWidth(lake.discharge) * 2 : river ? riverWidth(discharge,riverBlocks) * 2 * steepNarrow : 0,
       riverDepth: river && !lake ? this.bedDepth(discharge, riverBlocks, (cx + .5) * CHUNK_SIZE, (cz + .5) * CHUNK_SIZE, this.rivers.level(cx, cz)) : 0,riverBlocks,
       downstream: main&&d ? { cx: cx + d.dx, cz: cz + d.dz } : null,
       displayFlow: courseFlow,
@@ -206,6 +242,20 @@ export class WorldGenerator {
     };
     this.infos.set(k, info);
     return info;
+  }
+
+  /** 只读缓存：供界面分帧生成时判断可否直接取用 */
+  cachedChunkInfo(cx: number, cz: number): ChunkInfo | null {
+    return this.infos.get(key(cx, cz)) ?? null;
+  }
+
+  /** 缓存超限：各表按插入顺序淘汰最旧的四分之一，保留多数热数据 */
+  private trimCaches(): void {
+    trimMap(this.nodes); trimMap(this.infos); trimMap(this.patches);
+    trimMap(this.hydraulicNodes); trimMap(this.riverPositions); trimMap(this.channelPaths);
+    trimMap(this.profileCells); trimMap(this.segments); trimMap(this.fanCells);
+    trimMap(this.pondLevels); trimMap(this.waterMargins); trimMap(this.basinDepths);
+    this.rivers.trim(); this.lakes.trim();
   }
 
   getChunkType(cx: number, cz: number): number { return this.getChunkInfo(cx, cz).type; }
@@ -217,7 +267,7 @@ export class WorldGenerator {
     const type = n.height <= 0 ? zone + 2 : freezeState(n.height,c.temperature)==='frozen'?409
       :c.temperature>=10&&n.moisture<-.32?104:n.hillRelief>32?zone+3:n.plateau>.5?zone+8:n.moisture>.2?zone+6:zone+1;
     return { cx, cz, type, climate: c.index, temperature: c.temperature, elevation: n.height,
-      elevationTier: n.elevationTier, largeLandmass: n.largeLandmass,plateBase:n.plateBase,hillRelief:n.hillRelief,highlandRelief:n.highlandRelief,waterfallDrop:0,wetland:0,
+      elevationTier: n.elevationTier, largeLandmass: n.largeLandmass,plateBase:n.plateBase,hillRelief:n.hillRelief,highlandRelief:n.highlandRelief,mountainRelief:n.mountainRelief,waterfallDrop:0,wetland:0,
       flow: -1, discharge: 0, riverWidth: 0, riverDepth: 0,riverBlocks:0, lakeLevel: null, downstream: null, displayFlow: -1, courseVal: 0 };
   }
 
@@ -283,6 +333,11 @@ export class WorldGenerator {
     return this.getRiverPaths(cx, cz)[0] ?? [];
   }
 
+  /** 河道几何是否已算过：未算会牵动邻块生成 */
+  hasRiverPaths(cx: number, cz: number): boolean {
+    return this.channelPaths.has(key(cx, cz));
+  }
+
   /** 一个河段可有多条分汊 */
   getRiverPaths(cx: number, cz: number): readonly (readonly RiverPoint[])[] {
     const k = key(cx, cz), cached = this.channelPaths.get(k);
@@ -318,6 +373,8 @@ export class WorldGenerator {
     const fallDrop = aLevel - bLevel;
     const fallBand = a.type === 10 && fallDrop >= FALL_CONCENTRATION_DROP
       ? clamp(fallDrop / (CHUNK_SIZE * 2.4), .3, .6) : 0;
+    // 急流河段整段收窄为峡谷，缓坡河段不受影响
+    const steepNarrow = steepWidthFactor(grade);
     const points: RiverPoint[] = [];
     for (let i = 0; i <= 32; i++) {
       const t = i / 32;
@@ -332,7 +389,7 @@ export class WorldGenerator {
         ...position,
         level: i === 0 ? aLevel : i === 32 ? bLevel : mix(aLevel, bLevel,
           fallBand ? smooth((t - .5) / fallBand + .5) : receiver ? 1 - (1 - t) ** 2 : t),
-        width: this.corridorWidth(position.x,position.z,Math.min(MAX_RIVER_RADIUS, width * (1 + estuary * .5))),
+        width: this.corridorWidth(position.x,position.z,Math.min(MAX_RIVER_RADIUS, width * steepNarrow * (1 + estuary * .5))),
         depth: mix(depth, Math.max(1.2, depth * .45 + .8), estuary) * (receiver && a.type === 10 ? 1 + mouth * .15 : 1),
         discharge, mouth: estuary,
       });
@@ -537,8 +594,20 @@ export class WorldGenerator {
     return Math.tanh((regional * .56 + reach * .26 + bar * .12 + ripple * .06) * 2.4);
   }
 
+  private bedCharacter(x: number, z: number): number {
+    const reach = this.periodic(this.warp, x / 157 - 83, z / 157 + 127, 157, true);
+    const bar = this.periodic(this.detail, x / 61 + 47, z / 61 - 103, 61, true);
+    return Math.tanh((reach * .72 + bar * .28) * 2.8);
+  }
+
   /** 河槽之外生成独立浅潭与露滩。 */
   private column(wx: number, wz: number): ColumnSample {
+    const x=this.wrapBlockX(Math.floor(wx)),z=Math.floor(wz),cached=this.lastColumn;
+    if(cached?.x===x&&cached.z===z)return cached.value;
+    const value=this.sampleColumn(x,z);this.lastColumn={x,z,value};return value;
+  }
+
+  private sampleColumn(wx: number, wz: number): ColumnSample {
     const x = this.wrapBlockX(Math.floor(wx)), z = Math.floor(wz);
     const fx = (x + .5) / CHUNK_SIZE - .5, fz = (z + .5) / CHUNK_SIZE - .5;
     const ix = Math.floor(fx), iz = Math.floor(fz), tx = fx - ix, tz = fz - iz;
@@ -546,13 +615,13 @@ export class WorldGenerator {
     const row = (i: number) => cubic(rows[i][0], rows[i][1], rows[i][2], rows[i][3], tx);
     // 缓存权重供地表与地质层复用
     const weights = this.getTerrainWeights(x, z);
-    const blend = mixTerrainProfiles(weights);
+    const roughness = terrainRoughness(weights);
     const regional = this.periodic(this.warp,x/1536+29,z/1536-19,1536,true);
     const strata = this.periodic(this.detail,x/384-61,z/384+37,384,true);
     const macroHeight = cubic(row(0), row(1), row(2), row(3), tz);
     const weather = this.periodic(this.detail,x/73-16,z/73+63,73,true);
     const baseHeight = macroHeight + geologicalRelief(regional,strata,macroHeight,weather) * Math.sin(Math.PI*tx)**2*Math.sin(Math.PI*tz)**2 +
-      this.periodic(this.detail, x / 44, z / 44, 44, true) * blend.roughness * Math.sin(Math.PI * tx) ** 2 * Math.sin(Math.PI * tz) ** 2;
+      this.periodic(this.detail, x / 44, z / 44, 44, true) * roughness * Math.sin(Math.PI * tx) ** 2 * Math.sin(Math.PI * tz) ** 2;
     let height = baseHeight, alluvium = 0;
     const interpolate = (sample: (cx: number, cz: number) => number) =>
       mix(mix(sample(ix, iz), sample(ix + 1, iz), smooth(tx)),
@@ -565,7 +634,6 @@ export class WorldGenerator {
       const clearance = interpolate((cx, cz) => this.waterMargin(cx, cz));
       height -= Math.min(64, baseHeight - 1) * smooth((rift - .65) / .3) * clearance;
     }
-    const temperature=this.getClimate((x+.5)/CHUNK_SIZE-.5,(z+.5)/CHUNK_SIZE-.5).temperature;
     const wetland=this.rivers.wetland(Math.floor(x/CHUNK_SIZE),Math.floor(z/CHUNK_SIZE));
     // 出山口由窄谷展开为缓坡扇面
     for (const fan of this.getAlluvialFans(Math.floor(x / CHUNK_SIZE), Math.floor(z / CHUNK_SIZE))) {
@@ -582,7 +650,8 @@ export class WorldGenerator {
     let water = baseHeight < 0 ? SEA_LEVEL : -Infinity;
     let kind: number = baseHeight < 0 ? WaterKind.SEA : WaterKind.DRY, vx=0, vz=0, discharge=0;
     const floodplainHeight=height;
-    let nearest = Infinity, bank = 0, channel = 0, flowGrade = 0, mouth = 0, deposition = -Infinity, limitWeight = 0, activeWidth = 0;
+    let nearest = Infinity, bank = 0, channel = 0, flowGrade = 0, mouth = 0, deposition = -Infinity, limitWeight = 0;
+    let supportDistance = Infinity, supportLevel = -Infinity, supportGrade = 0, activeSupportGrade = 0;
     const beds: {height:number;level:number}[] = [];
     const px = x + .5, pz = z + .5;
     const localInfo=this.getChunkInfo(Math.floor(x/CHUNK_SIZE),Math.floor(z/CHUNK_SIZE));
@@ -592,6 +661,7 @@ export class WorldGenerator {
     const coreWeight=landCore?smooth((edgeDistance-RIVER_BANK_BLEND*.5)/(RIVER_BANK_BLEND*.5)):0;
     const noise = this.periodic(this.detail, x / 37 + 21, z / 37 - 31, 37, true);
     let shape: ReturnType<typeof riverBankShape> | undefined;
+    let bedCharacter: number | undefined;
     for (const reach of this.riverSegments(Math.floor(x / CHUNK_SIZE), Math.floor(z / CHUNK_SIZE))) {
       let chosen: RiverSegment | null = null, distance = Infinity, t = 0;
       // 每条曲线只使用最近投影
@@ -604,7 +674,6 @@ export class WorldGenerator {
       }
       if (!chosen) continue;
       const s = chosen;
-      // 岸形只作用于断面外侧，深槽与水位不动
       shape ??= riverBankShape(this.bankCharacter(x, z));
       const targetWidth = mix(s.aWidth, s.bWidth, t) *
         (1 + noise * (s.lake ? RIVER_LAKE_EDGE_NOISE : RIVER_EDGE_NOISE) + shape.edgeShift);
@@ -621,12 +690,18 @@ export class WorldGenerator {
         if (d >= radius) continue;
         level = mix(level, node.level, (1 - smooth(d / radius)) * (node.confluence?1:.35));
       }
+      const reachGrade = Math.max(s.grade, (reach.start.level - reach.end.level) /
+        Math.max(1, Math.hypot(reach.end.x - reach.start.x, reach.end.z - reach.start.z)));
+      if (distance < width + shore * 2 && distance < supportDistance) {
+        supportDistance = distance; supportLevel = level; supportGrade = reachGrade;
+      }
       const depth = mix(s.aDepth, s.bDepth, t);
       const r = distance / width;
-      // 圆弧形深槽逐渐抬升至浅滩
+      if (!s.lake) bedCharacter ??= this.bedCharacter(x, z);
+      const {core, flat} = s.lake ? {core: RIVER_BED_CORE, flat: riverBedFlat(width)} : riverBedShape(width, bedCharacter!);
       let bed: number;
-      if (r < RIVER_BED_CORE) {
-        const flat = riverBedFlat(width), rise = smooth(clamp((r - flat) / (RIVER_BED_CORE - flat)));
+      if (r < core) {
+        const rise = smooth(clamp((r - flat) / (core - flat)));
         // 河床地形：深潭浅滩、深泓偏移、床面沙丘
         const pool = this.periodic(this.warp, x / 210 + 61, z / 210 - 43, 210, true) * .85 +
           this.periodic(this.detail, x / 76 - 29, z / 76 + 83, 76, true) * .15;
@@ -636,9 +711,9 @@ export class WorldGenerator {
         // 深潭与沙脊只抬升床面，分级深度上限永不被突破
         const relief = clamp(Math.max(0, pool * .3 + swirl * .15) - Math.min(0, dune) * .06, 0, .5);
         const groove = Math.max(.85, depth * (1 - relief));
-        bed = level - .85 - (groove - .85) * (1 - rise);
+        bed = level - .85 - (groove - .85) * (1 - rise) ** (s.lake ? 1 : 1.35);
       }
-      else if (r < 1) bed = level - .85 + 1.35 * smooth((r - RIVER_BED_CORE) / (1 - RIVER_BED_CORE));
+      else if (r < 1) bed = level - .85 + 1.35 * smooth((r - core) / (1 - core));
       else {
         const bankT = clamp((distance - width) / shore);
         const crest = 1.3 * shape.crestScale;
@@ -649,7 +724,7 @@ export class WorldGenerator {
       height = Math.min(height, bed);
       // 汇流取深槽，保护只补偿水位差
       beds.push({height:bed,level});
-      limitWeight += riverBedProtection(distance, riverShore(width) + 1);
+      limitWeight += riverBedProtection(Math.max(0, distance - width), shore + 1);
       // 湿地是真实浅缓河岸
       if(wetland>.12&&r>.75&&distance<width+shore+floodplain){
         const weight=wetland*(1-smooth((distance-width)/Math.max(1,shore+floodplain)));
@@ -659,10 +734,11 @@ export class WorldGenerator {
       bank = Math.max(bank, 1 - smooth((distance - width * .75) / (shore + width * .5)));
       // 最近中心线提供唯一水位
       if (coreWeight<1&&distance < width && (distance < nearest - 1e-6 || Math.abs(distance - nearest) < 1e-6 && level < water)) {
-        nearest = distance; water = level; channel = clamp(1 - r); flowGrade = s.grade; activeWidth = width;
+        nearest = distance; water = level; channel = clamp(1 - r); flowGrade = s.grade;
+        activeSupportGrade = reachGrade;
         const length = Math.sqrt(s.length2), speed = flowSpeed(s.grade,s.discharge,width);
         vx = length ? (s.bx-s.ax)/length*speed : 0; vz = length ? (s.bz-s.az)/length*speed : 0;
-        discharge = s.discharge; kind = s.grade > 2 ? WaterKind.FALL : WaterKind.RIVER;
+        discharge = s.discharge; kind = cascadeFall(s.grade, localInfo.waterfallDrop) ? WaterKind.FALL : WaterKind.RIVER;
         mouth = mix(s.aMouth, s.bMouth, t);
         // 河口两侧形成水下沉积浅滩
         deposition = baseHeight < level && mouth > 0 && r > .2
@@ -671,11 +747,14 @@ export class WorldGenerator {
       }
     }
     // 低水位侵入渐退，同水位深槽不填高
-    if(limitWeight>0&&Number.isFinite(water)){
-      let floor=floodplainHeight;
+    if(limitWeight>0&&(Number.isFinite(water)||Number.isFinite(supportLevel))){
+      let floor=Infinity;
       const protection=clamp(limitWeight);
-      for(const bed of beds)floor=Math.min(floor,bed.height+Math.max(0,water-bed.level)*protection);
-      height=Math.max(height,Math.min(floor,water-.6));
+      const level = Number.isFinite(water) ? water : supportLevel;
+      for(const bed of beds)floor=Math.min(floor,bed.height+Math.max(0,level-bed.level)*protection);
+      const grade = channel > 0 ? activeSupportGrade : supportGrade;
+      floor = Math.min(floor, floodplainHeight) + Math.max(0, floor - floodplainHeight) * smooth(grade / .3) * protection;
+      height=Math.max(height,Number.isFinite(water)?Math.min(floor,water-.6):floor);
     }
     if(localInfo.type===11){
       const cover=smooth((wetland-.12)/.4)*smooth(edgeDistance/8);
@@ -702,7 +781,7 @@ export class WorldGenerator {
     for (const lake of patch.lakes) {
       const mask = (dx: number, dz: number) => this.lakes.contains(lake, ix + dx, iz + dz) ? 1 : 0;
       const coverage = mix(mix(mask(0, 0), mask(1, 0), tx), mix(mask(0, 1), mask(1, 1), tx), tz);
-      if (coverage <= 0 || baseHeight >= lake.level || channel > 0 && water < lake.level - 1e-6) continue;
+      if (coverage <= 0 || baseHeight >= lake.level || Number.isFinite(water) && water < lake.level - 1e-6) continue;
       let level = lake.level;
       for (let dz = 0; dz <= 1; dz++) for (let dx = 0; dx <= 1; dx++) {
         if (!mask(dx, dz)) continue;
@@ -722,37 +801,72 @@ export class WorldGenerator {
     // 保留连续高度（Float32）
     height = Math.fround(clamp(height, WORLD_MIN_Y + 1, WORLD_MAX_Y));
     if (height < SEA_LEVEL && water < SEA_LEVEL) {water=SEA_LEVEL;kind=WaterKind.SEA;vx=0;vz=0;discharge=0;}
-    let staticSurface=0;
-    const waterPhase=freezeState(Number.isFinite(water)?water:height,temperature);
-    if(channel>0&&Number.isFinite(water)&&height<water){
-      const frozen=riverFreezeAmount(water,temperature,discharge,activeWidth,flowGrade);
-      const ice=riverIceCover(frozen,channel);
-      vx*=1-frozen*.85;vz*=1-frozen*.85;
-      if(ice>0){
-        staticSurface=Block.ICE;
-        height=Math.fround(mix(height,water,ice));
-        if(ice===1){water=-Infinity;kind=WaterKind.DRY;vx=0;vz=0;discharge=0;}
-      }
-    }else if(waterPhase!=='liquid'){
-      vx=0;vz=0;discharge=0;
-      if(Number.isFinite(water)&&height<water){
-        staticSurface=waterPhase==='frozen'||noise>.15?Block.ICE:Block.WATER;
-        if(staticSurface===Block.ICE){height=Math.fround(water);water=-Infinity;kind=WaterKind.DRY;}
-        else kind=WaterKind.STATIC;
-      }else if(waterPhase==='frozen')staticSurface=Block.SNOW;
+    const appearance = this.getChunkWaterAppearance(Math.floor(x / CHUNK_SIZE), Math.floor(z / CHUNK_SIZE));
+    const boundary = this.waterBoundaries.resolve(Math.floor(x/CHUNK_SIZE),Math.floor(z/CHUNK_SIZE),appearance.form === 3 ? -Infinity : height,{level:water,kind,vx,vz,discharge});
+    water = boundary.level; kind = boundary.kind; vx = boundary.vx; vz = boundary.vz; discharge = boundary.discharge;
+    const bedLevel = height;
+    let staticSurface=0, iceCoverage=0, iceLevel=-Infinity, iceBottomLevel=-Infinity;
+    if (Number.isFinite(water)) {
+      if (appearance.form === 1) water -= .6;
+      else if (appearance.form === 2) water = -Infinity;
+      else if (appearance.form === 3) water += 2;
     }
-    const state=this.waterBoundaries.resolve(Math.floor(x/CHUNK_SIZE),Math.floor(z/CHUNK_SIZE),height,{level:water,kind,vx,vz,discharge});
-    return { height, water:state.level, bank, channel, flowGrade, mouth, alluvium, kind:state.kind,vx:state.vx,vz:state.vz,discharge:state.discharge,staticSurface,weights };
+    const waterSurfaceLevel = height < water - .12 && Number.isFinite(water) ? water : -Infinity;
+    if (Number.isFinite(waterSurfaceLevel)) {
+      vx *= appearance.flowScale; vz *= appearance.flowScale; discharge *= appearance.flowScale;
+      iceCoverage = appearance.freezing === 2 ? 1 : appearance.freezing === 1
+        ? channel > 0 ? riverIceCover(appearance.iceAmount, channel) : appearance.iceAmount : 0;
+      if (appearance.freezing > 0) {
+        const lx=(x%CHUNK_SIZE+CHUNK_SIZE)%CHUNK_SIZE,lz=(z%CHUNK_SIZE+CHUNK_SIZE)%CHUNK_SIZE;
+        let edge=1, edgeCoverage=iceCoverage;
+        for(const [dx,dz,distance] of [[-1,0,lx+.5],[1,0,CHUNK_SIZE-lx-.5],[0,-1,lz+.5],[0,1,CHUNK_SIZE-lz-.5]]) {
+          const neighbour=this.getChunkWaterAppearance(Math.floor(x/CHUNK_SIZE)+dx,Math.floor(z/CHUNK_SIZE)+dz);
+          if(neighbour.freezing < appearance.freezing) {
+            const blend=smooth(distance/8);
+            edge=Math.min(edge,blend);
+            edgeCoverage=Math.min(edgeCoverage,neighbour.iceAmount+(iceCoverage-neighbour.iceAmount)*blend);
+          }
+        }
+        if (appearance.freezing === 1 || edge < 1) {
+          const broad=this.periodic(this.detail,x/8+31,z/8-23,8,true);
+          const shards=this.periodic(this.detail,x/2-11,z/2+17,2,true);
+          const patch=clamp(.5+broad*.5+shards*(.12+(1-edge)*.3));
+          iceCoverage=iceCoverage>0&&edge>0 ? clamp((edgeCoverage-patch)/.18+.5) : 0;
+        }
+      }
+      iceLevel = Math.fround(water);
+      iceBottomLevel = Math.fround(Math.max(bedLevel, water - appearance.iceThickness));
+      if (iceCoverage >= .5) {
+        height = iceLevel;
+        water = iceBottomLevel;
+        staticSurface = Block.ICE;
+        kind = WaterKind.STATIC;
+        vx = 0; vz = 0; discharge = 0;
+      }
+    }
+    const state=(staticSurface ? bedLevel >= water : bedLevel >= water - .12) || !Number.isFinite(water)
+      ? {level:-Infinity,kind:WaterKind.DRY,vx:0,vz:0,discharge:0} : {level:water,kind,vx,vz,discharge};
+    return { height, water:state.level, bank, channel, flowGrade, mouth, alluvium, kind:state.kind,vx:state.vx,vz:state.vz,discharge:state.discharge,staticSurface,iceCoverage,bedLevel,iceLevel,iceBottomLevel,waterSurfaceLevel,weights };
   }
 
   getHeight(wx: number, wz: number): number { return this.column(wx, wz).height; }
   getWaterLevel(wx: number, wz: number): number { return this.column(wx, wz).water; }
-  getWaterState(wx: number, wz: number): WaterState {
-    const c=this.column(wx,wz);return {level:c.water,kind:c.kind,vx:c.vx,vz:c.vz,discharge:c.discharge};
+  getWaterState(wx: number, wz: number): WaterSample {
+    const c = this.column(wx, wz);
+    const state = this.getChunkWaterState(Math.floor(wx / CHUNK_SIZE), Math.floor(wz / CHUNK_SIZE));
+    return {level:c.water,kind:c.kind,vx:c.vx,vz:c.vz,discharge:c.discharge,
+      form:state.form,freezing:state.freezing,temperature:state.temperature,
+      hasWater:Number.isFinite(c.waterSurfaceLevel),frozen:c.iceCoverage >= .5,
+      iceCoverage:c.iceCoverage,iceLevel:c.iceCoverage >= .5 ? c.iceLevel : -Infinity,iceBottomLevel:c.iceCoverage >= .5 ? c.iceBottomLevel : -Infinity,
+      iceThickness:c.iceCoverage >= .5 ? c.iceLevel-c.iceBottomLevel : 0,bedLevel:c.bedLevel,
+      liquidDepth:Number.isFinite(c.water) ? c.water-c.bedLevel : 0,hasLiquidWater:Number.isFinite(c.water),waterSurfaceLevel:c.waterSurfaceLevel};
   }
 
   findSpawnChunk(maxRadius = 64): { cx: number; cz: number } {
     if (this.generation.landRatio === 0 && (this.generation.mode === 'plane' || this.generation.planet.map !== 'earth')) return {cx: 0, cz: 0};
+    const fingerprint = `${this.seed}|${this.climateWeights.join('/')}|${JSON.stringify(this.generation)}`;
+    const remembered = this.spawnCache.get(fingerprint) ?? SPAWN_CACHE.get(fingerprint);
+    if (remembered && maxRadius >= remembered.radius) { this.spawnCache.set(fingerprint, remembered); return {cx: remembered.cx, cz: remembered.cz}; }
     // 地球从东亚附近寻找出生点
     let originX = 0, originZ = 0;
     if (!this.planet && this.getOverviewInfo(0, 0).elevation < 8) {
@@ -774,77 +888,252 @@ export class WorldGenerator {
     for (let r = 0; r <= maxRadius; r++) for (let z = -r; z <= r; z++) for (let x = -r; x <= r; x++) {
       if (Math.max(Math.abs(x), Math.abs(z)) !== r) continue;
       const cx = x + originX, cz = z + originZ;
+      // 海面用全览信息判定即可，避免为整片海域触发流域求解
+      if (this.getOverviewInfo(cx, cz).elevation <= 0) continue;
       const info=this.getChunkInfo(cx,cz);
       // 出生安全以真实坡面和水体判断
       if(info.elevation<=0||info.riverWidth>0||info.lakeLevel!==null||info.type===11)continue;
       const wx = (cx + 0.5) * CHUNK_SIZE + 0.5, wz = (cz + 0.5) * CHUNK_SIZE + 0.5;
       const h = this.getHeight(wx, wz);
-      if (h > this.getWaterLevel(wx, wz) && Math.abs(h - this.getHeight(wx + 2, wz)) <= 1 &&
-          Math.abs(h - this.getHeight(wx, wz + 2)) <= 1) return { cx, cz };
+      const water = this.getWaterLevel(wx, wz);
+      if (h > water && Math.abs(h - this.getHeight(wx + 2, wz)) <= 1 &&
+          Math.abs(h - this.getHeight(wx, wz + 2)) <= 1) {
+        // 同种子同参数只解一次：创建器预览与进入世界共用，地表与水位一并记录
+        const found: SpawnRecord = {cx, cz, radius: maxRadius, height: h, water};
+        this.spawnCache.set(fingerprint, found);
+        if (SPAWN_CACHE.size >= SPAWN_CACHE_LIMIT) SPAWN_CACHE.delete(SPAWN_CACHE.keys().next().value!);
+        SPAWN_CACHE.set(fingerprint, found);
+        return { cx, cz };
+      }
     }
     throw new Error('未找到安全出生点，请更换种子。');
   }
+
+  /** 出生点缓存中的地表与水位；命中即免去首次陆地水文求解 */
+  spawnSurface(cx: number, cz: number): { height: number; water: number } | null {
+    for (const table of [this.spawnCache, SPAWN_CACHE]) for (const found of table.values()) {
+      if (found.cx === cx && found.cz === cz) return {height: found.height, water: found.water};
+    }
+    return null;
+  }
+
+  setWaterAppearance(cx: number, cz: number, appearance: WaterAppearanceUpdate | null): void {
+    this.lastColumn=undefined;
+    if (!Number.isInteger(cx) || !Number.isInteger(cz)) throw new Error('水体坐标须为整数区块');
+    const k = key(this.wrapBlockX(cx * CHUNK_SIZE) / CHUNK_SIZE, cz);
+    if (!appearance) { this.waterAppearances.delete(k); return; }
+    const next = {...this.waterAppearances.get(k)};
+    for (const field of ['form', 'freezing', 'temperature'] as const) {
+      if (appearance[field] === null) delete next[field];
+      else if (appearance[field] !== undefined) Object.assign(next, {[field]: appearance[field]});
+    }
+    if (appearance.colors === null) delete next.colors;
+    else if (appearance.colors) next.colors = {...next.colors, ...appearance.colors};
+    this.waterAppearances.set(k, validateWaterAppearance(next));
+  }
+
+  getWaterAppearanceOverrides(): WaterAppearanceEntry[] {
+    return [...this.waterAppearances].map(([k, appearance]) => {
+      const [cx, cz] = k.split(',').map(Number);
+      return { cx, cz, appearance: validateWaterAppearance(appearance) };
+    });
+  }
+
+  replaceWaterAppearanceOverrides(entries: readonly WaterAppearanceEntry[]): void {
+    this.lastColumn=undefined;
+    this.waterAppearances.clear();
+    for (const { cx, cz, appearance } of entries) this.setWaterAppearance(cx, cz, appearance);
+  }
+
+  setWaterFreezeRules(rules: Partial<WaterFreezeRules>): void {
+    const next = validateWaterFreezeRules({...this.waterFreezeRules, ...rules});
+    if ((Object.keys(next) as (keyof WaterFreezeRules)[]).every(k => next[k] === this.waterFreezeRules[k])) return;
+    this.waterFreezeRules = next;
+    this.lastColumn=undefined;
+    this.naturalWaterAppearances.clear();
+  }
+
+  getWaterFreezeRules(): WaterFreezeRules { return {...this.waterFreezeRules}; }
+
+  /** 导出已解粗格样本，供 Worker 复用同一份地形采样 */
+  exposeCoarseSamples(): WatershedSamples { return this.rivers.watershed.exposeSamples(); }
+
+  /** 取用外部粗格样本，跳过重复的地形采样 */
+  adoptCoarseSamples(batch: WatershedSamples): void { this.lastColumn=undefined;this.rivers.watershed.adoptSamples(batch); }
+  exposeHydrology(refresh=false): WatershedState {
+    if(refresh)this.hydrologySnapshot=undefined;
+    return this.hydrologySnapshot ??= this.rivers.watershed.exportState();
+  }
+  get hydrologyCellCount():number{return this.rivers.watershed.solvedCells;}
+  setHydrologySnapshot(state: WatershedState): void { this.hydrologySnapshot = state; }
+  adoptHydrology(state: WatershedState): void { this.lastColumn=undefined;this.rivers.watershed.adoptState(state); this.hydrologySnapshot = state; }
+  adoptMapSummary(info: ChunkInfo, paths: readonly (readonly RiverPoint[])[]): void {
+    const k = key(info.cx,info.cz); this.infos.set(k,info); this.channelPaths.set(k,paths);
+    if(this.infos.size>this.cacheLimit)trimMap(this.infos);
+    if(this.channelPaths.size>this.cacheLimit)trimMap(this.channelPaths);
+  }
+  restoreHydrology(state: WatershedState): Generator<void> { return this.rivers.watershed.restoreState(state); }
+
+  /** 预热粗网格求解：进入世界前按帧推进，避免首帧冻结 */
+  startCoarseWarm(): void {
+    for (const table of [this.spawnCache, SPAWN_CACHE])
+      for (const found of table.values()) { const ws=this.rivers.watershed;ws.startWarmGrid(...ws.coordinates(found.cx,found.cz)); return; }
+  }
+
+  /** 前期扫描出生点海陆，顺带把流域预热起点定在搜索原点 */
+  findSpawnOrigin(): { cx: number; cz: number } {
+    if (this.generation.landRatio === 0 && (this.generation.mode === 'plane' || this.generation.planet.map !== 'earth')) return { cx: 0, cz: 0 };
+    const fingerprint = `${this.seed}|${this.climateWeights.join('/')}|${JSON.stringify(this.generation)}`;
+    const remembered = this.spawnCache.get(fingerprint) ?? SPAWN_CACHE.get(fingerprint);
+    if (remembered) return { cx: remembered.cx, cz: remembered.cz };
+    let originX = 0, originZ = 0;
+    if (!this.planet && this.getOverviewInfo(0, 0).elevation < 8) {
+      search: for (let r = 1; r <= 32; r++) for (let z = -r; z <= r; z++) for (let x = -r; x <= r; x++) {
+        if (Math.max(Math.abs(x), Math.abs(z)) !== r) continue;
+        if (this.getOverviewInfo(x * 64, z * 64).elevation > 16) { originX = x * 64; originZ = z * 64; break search; }
+      }
+    }
+    if (this.planet) {
+      const size = this.generation.planet.equatorChunks;
+      if (this.generation.planet.map === 'earth') { originX = Math.round(size * 115 / 360); originZ = Math.round(-size * 30 / 360); }
+      else if (this.getOverviewInfo(0, 0).elevation < 8) {
+        search: for (let z = -size / 8; z <= size / 8; z += size / 32) for (let x = -size / 2; x < size / 2; x += size / 32) {
+          const cx = Math.round(x), cz = Math.round(z);
+          if (this.getOverviewInfo(cx, cz).elevation > 15) { originX = cx; originZ = cz; break search; }
+        }
+      }
+    }
+    return { cx: originX, cz: originZ };
+  }
+
+  /** 从前面定下的原点启动流域预热 */
+  startSpawnWarm(): void {
+    const origin = this.findSpawnOrigin();
+    const ws=this.rivers.watershed;
+    ws.startWarmGrid(...ws.coordinates(origin.cx,origin.cz));
+  }
+
+  /** 预热是否已完成（无需预热时恒为真） */
+  get coarseWarmDone(): boolean { return this.rivers.watershed.warmDone; }
+
+  /** 推进预热，返回是否已完成 */
+  pumpCoarseWarm(budgetMs: number): boolean { return this.rivers.watershed.pumpWarm(budgetMs); }
+
+  getChunkWaterState(cx: number, cz: number): ChunkWaterAppearance {
+    cx = this.wrapBlockX(cx * CHUNK_SIZE) / CHUNK_SIZE;
+    const k = key(cx, cz);
+    let natural = this.naturalWaterAppearances.get(k);
+    if (!natural) {
+      const info = this.getChunkInfo(cx, cz);
+      const path = this.getRiverPath(cx, cz);
+      const level = info.lakeLevel ?? path[Math.floor(path.length / 2)]?.level ?? Math.max(0, info.elevation);
+      natural = resolveWaterAppearance(info.temperature - Math.max(0, level) * this.waterFreezeRules.altitudeLapseRate, undefined, this.waterFreezeRules);
+      if (this.naturalWaterAppearances.size > 8192) this.naturalWaterAppearances.clear();
+      this.naturalWaterAppearances.set(k, natural);
+    }
+    const override = this.waterAppearances.get(k);
+    return override ? resolveWaterAppearance(natural.temperature, override, this.waterFreezeRules) : natural;
+  }
+
+  getChunkWaterAppearance(cx: number, cz: number): ChunkWaterAppearance { return this.getChunkWaterState(cx, cz); }
 
   generateChunk(cx: number, cz: number): ChunkGenResult {
     const S = CHUNK_SIZE, P = PADDED_SIZE;
     const heights = new Float32Array(P * P), waterLevels = new Float32Array(P * P);
     const surfaces = new Uint32Array(S * S), surfaceColors = new Uint8Array(P * P * 3);
-    const waterField: WaterField = {levels:waterLevels,kinds:new Uint8Array(P*P),velocities:new Float32Array(P*P*2),discharge:new Float32Array(P*P)};
+    const waterField: WaterField = {appearance:this.getChunkWaterAppearance(cx,cz),levels:waterLevels,bedLevels:new Float32Array(P*P),iceLevels:new Float32Array(P*P),iceBottomLevels:new Float32Array(P*P),iceCoverages:new Float32Array(P*P),kinds:new Uint8Array(P*P),velocities:new Float32Array(P*P*2),discharge:new Float32Array(P*P)};
     const samples: ColumnSample[] = [];
     for (let z = -1; z <= S; z++) for (let x = -1; x <= S; x++) {
       const column = this.column(cx * S + x, cz * S + z), i = (z + 1) * P + x + 1;
       heights[i] = column.height; waterLevels[i] = column.water; samples[i] = column;
+      waterField.iceCoverages![i]=column.iceCoverage;waterField.bedLevels![i]=column.bedLevel;waterField.iceLevels![i]=column.iceLevel;waterField.iceBottomLevels![i]=column.iceBottomLevel;
       waterField.kinds[i]=column.kind;waterField.velocities[i*2]=column.vx;waterField.velocities[i*2+1]=column.vz;waterField.discharge[i]=column.discharge;
     }
     const heightAt = (x: number, z: number) => x >= -1 && x <= S && z >= -1 && z <= S
-      ? heights[(z + 1) * P + x + 1] : this.getHeight(cx * S + x, cz * S + z);
+      ? waterField.bedLevels![(z + 1) * P + x + 1] : this.getWaterState(cx * S + x, cz * S + z).bedLevel;
+    const cell = [0, 0, 0];
     for (let z = -1; z <= S; z++) for (let x = -1; x <= S; x++) {
       const wx = this.wrapBlockX(cx * S + x), wz = cz * S + z, i = (z + 1) * P + x + 1;
-      const sample = samples[i], h = sample.height;
+      const sample = samples[i], h = sample.bedLevel;
       const slope = Math.max(Math.abs(h - heightAt(x - 1, z)), Math.abs(h - heightAt(x + 1, z)),
         Math.abs(h - heightAt(x, z - 1)), Math.abs(h - heightAt(x, z + 1)));
-      const blend = mixTerrainProfiles(sample.weights);
-      const rock = smooth((slope - 1) / 4);
-      overlayTerrain(blend, rock, [129, 132, 122], [[Block.STONE, .8], [Block.GRAVEL, .2]]);
-      const climate = this.getClimate((wx + .5) / S - .5, (wz + .5) / S - .5);
-      const cold = 1 - smooth((climate.temperature + 3) / 6);
-      const snow = Math.max(cold, altitudeSnow(h, climate.temperature)) * (1 - rock * .65);
-      overlayTerrain(blend, snow, [226, 234, 226], [[Block.SNOW, 1]]);
-      // 河岸、海岸、湖岸也采用同一环境层混合
-      const coast = h < 5 ? 1 - smooth(Math.max(0, h) / 5) : 0;
-      const shore = Math.max(sample.bank, coast);
-      const wet = blend.wetness;
-      const sediment: [number, number, number] = [mix(186, 127, wet), mix(174, 134, wet), mix(127, 99, wet)];
-      overlayTerrain(blend, shore * .75 * (1 - snow * .65), sediment,
-        [[Block.SAND, .45 * (1 - wet)], [Block.GRAVEL, .25], [Block.MUD, .3 + wet * .45]]);
-      overlayTerrain(blend, sample.alluvium * .65 * (1 - snow), [165, 164, 113],
-        [[Block.GRASS, .4], [Block.MUD, .35], [Block.SAND, .15], [Block.GRAVEL, .1]]);
-      if (h < sample.water) {
-        const coarse = smooth(sample.flowGrade / .25);
-        const depth = sample.water - h;
-        overlayTerrain(blend, .9, [mix(156, 116, coarse), mix(148, 124, coarse), mix(116, 119, coarse)],
-          [[Block.SAND, (1 - coarse) * .6], [Block.MUD, (1 - coarse) * .4], [Block.GRAVEL, coarse]]);
-        overlayTerrain(blend, sample.mouth * .65, [170, 157, 117], [[Block.SAND, .7], [Block.MUD, .3]]);
-        const darken = 1 - Math.min(.16, depth * .018);
-        blend.color = blend.color.map(v => v * darken) as TerrainProfile['color'];
-      }
-      const variation = 1 + this.periodic(this.detail, wx / 11 + 19, wz / 11, 11, true) * .035;
-      const province=this.periodic(this.warp,wx/1536+29,wz/1536-19,1536,true), strata=this.periodic(this.detail,wx/384-61,wz/384+37,384,true);
-      applyGeology(blend,sample.weights,province,strata,h,slope,h<sample.water,snow);
-      if(sample.staticSurface){const id=sample.staticSurface;overlayTerrain(blend,1,[BLOCK_RGB[id*3],BLOCK_RGB[id*3+1],BLOCK_RGB[id*3+2]],[[id,1]]);}
-      const materialColor=[0,0,0];
-      for(const [id,weight] of blend.materials) for(let c=0;c<3;c++) materialColor[c]+=BLOCK_RGB[id*3+c]*weight;
-      for (let c = 0; c < 3; c++) surfaceColors[i * 3 + c] = clamp(Math.round((blend.color[c]*.4+materialColor[c]*.6) * variation), 0, 255);
-      if (x >= 0 && x < S && z >= 0 && z < S) {
-        const pick = clamp(.5 + this.periodic(this.detail, wx / 6 - 17, wz / 6 + 33, 6, true) * .48);
-        let cumulative = 0, block = Block.GRASS as number;
-        for (const [id,weight] of blend.materials) {
-          cumulative += weight;
-          if (pick <= cumulative && weight > 0) { block = id; break; }
-        }
-        surfaces[z * S + x] = block;
-      }
+      const inner = x >= 0 && x < S && z >= 0 && z < S;
+      const block = this.surfaceCell(wx, wz, {...sample,height:sample.bedLevel,staticSurface:0}, slope, cell, inner);
+      for (let c = 0; c < 3; c++) surfaceColors[i * 3 + c] = cell[c];
+      if (inner) surfaces[z * S + x] = sample.staticSurface || block;
     }
     return { cx, cz, type: this.getChunkType(cx, cz), heights, surfaces, waterLevels, surfaceColors,waterField };
+  }
+
+  /** 稀疏采样地表色，供舆图平均色与粗预览 */
+  generatePreviewChunk(cx: number, cz: number, size = PREVIEW_SIZE): PreviewChunk {
+    const S = CHUNK_SIZE, step = S / size, half = (step - 1) / 2;
+    const heights = new Float32Array(size * size), waterLevels = new Float32Array(size * size);
+    const surfaceColors = new Uint8Array(size * size * 3), samples: ColumnSample[] = new Array(size * size);
+    const wxAt = (x: number) => this.wrapBlockX(cx * S + x * step + half), wzAt = (z: number) => cz * S + z * step + half;
+    for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) {
+      const i = z * size + x, column = this.column(wxAt(x), wzAt(z));
+      heights[i] = column.height; waterLevels[i] = column.water; samples[i] = column;
+    }
+    const cell = [0, 0, 0], last = size - 1;
+    for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) {
+      const i = z * size + x, h = heights[i];
+      // 坡度按采样步长归一化，与逐格口径一致
+      const slope = Math.max(Math.abs(h - heights[z * size + Math.max(0, x - 1)]),
+        Math.abs(h - heights[z * size + Math.min(last, x + 1)]),
+        Math.abs(h - heights[Math.max(0, z - 1) * size + x]),
+        Math.abs(h - heights[Math.min(last, z + 1) * size + x])) / step;
+      this.surfaceCell(wxAt(x), wzAt(z), samples[i], slope, cell, false);
+      for (let c = 0; c < 3; c++) surfaceColors[i * 3 + c] = cell[c];
+    }
+    return { cx, cz, size, step, heights, waterLevels, surfaceColors };
+  }
+
+  /** 单格地表混合色写入 out，可选返回顶层方块 */
+  private surfaceCell(wx: number, wz: number, sample: ColumnSample, slope: number, out: number[], pickBlock: boolean): number {
+    const h = sample.height, blend = mixTerrainProfiles(sample.weights);
+    const rock = smooth((slope - 1) / 4);
+    overlayTerrain(blend, rock, [129, 132, 122], [[Block.STONE, .8], [Block.GRAVEL, .2]]);
+    const climate = this.getClimate((wx + .5) / CHUNK_SIZE - .5, (wz + .5) / CHUNK_SIZE - .5);
+    const cold = 1 - smooth((climate.temperature + 3) / 6);
+    const snow = Math.max(cold, altitudeSnow(h, climate.temperature)) * (1 - rock * .65);
+    overlayTerrain(blend, snow, [226, 234, 226], [[Block.SNOW, 1]]);
+    // 河岸、海岸、湖岸也采用同一环境层混合
+    const coast = h < 5 ? 1 - smooth(Math.max(0, h) / 5) : 0;
+    const shore = Math.max(sample.bank, coast);
+    const wet = blend.wetness;
+    const sediment: [number, number, number] = [mix(186, 127, wet), mix(174, 134, wet), mix(127, 99, wet)];
+    overlayTerrain(blend, shore * .75 * (1 - snow * .65), sediment,
+      [[Block.SAND, .45 * (1 - wet)], [Block.GRAVEL, .25], [Block.MUD, .3 + wet * .45]]);
+    overlayTerrain(blend, sample.alluvium * .65 * (1 - snow), [165, 164, 113],
+      [[Block.GRASS, .4], [Block.MUD, .35], [Block.SAND, .15], [Block.GRAVEL, .1]]);
+    if (h < sample.water) {
+      const coarse = smooth(sample.flowGrade / .25);
+      const depth = sample.water - h;
+      overlayTerrain(blend, .9, [mix(156, 116, coarse), mix(148, 124, coarse), mix(116, 119, coarse)],
+        [[Block.SAND, (1 - coarse) * .6], [Block.MUD, (1 - coarse) * .4], [Block.GRAVEL, coarse]]);
+      overlayTerrain(blend, sample.mouth * .65, [170, 157, 117], [[Block.SAND, .7], [Block.MUD, .3]]);
+      const darken = 1 - Math.min(.16, depth * .018);
+      blend.color = blend.color.map(v => v * darken) as TerrainProfile['color'];
+    }
+    const variation = 1 + this.periodic(this.detail, wx / 11 + 19, wz / 11, 11, true) * .035;
+    const province=this.periodic(this.warp,wx/1536+29,wz/1536-19,1536,true), strata=this.periodic(this.detail,wx/384-61,wz/384+37,384,true);
+    applyGeology(blend,sample.weights,province,strata,h,slope,h<sample.water,snow);
+    if(sample.staticSurface){const id=sample.staticSurface;overlayTerrain(blend,1,[...this.getChunkWaterAppearance(Math.floor(wx/CHUNK_SIZE),Math.floor(wz/CHUNK_SIZE)).colors.ice],[[id,1]]);}
+    const materialColor=[0,0,0];
+    for(const [id,weight] of blend.materials) for(let c=0;c<3;c++) materialColor[c]+=BLOCK_RGB[id*3+c]*weight;
+    for (let c = 0; c < 3; c++) out[c] = clamp(Math.round((blend.color[c]*.4+materialColor[c]*.6) * variation), 0, 255);
+    if (sample.staticSurface === Block.ICE) {
+      const ice = this.getChunkWaterAppearance(Math.floor(wx / CHUNK_SIZE), Math.floor(wz / CHUNK_SIZE)).colors.ice;
+      for (let c = 0; c < 3; c++) out[c] = clamp(Math.round(ice[c] * variation), 0, 255);
+    }
+    if (!pickBlock) return 0;
+    const pick = clamp(.5 + this.periodic(this.detail, wx / 6 - 17, wz / 6 + 33, 6, true) * .48);
+    let cumulative = 0;
+    for (const [id,weight] of blend.materials) {
+      cumulative += weight;
+      if (pick <= cumulative && weight > 0) return id;
+    }
+    return Block.GRASS;
   }
 }

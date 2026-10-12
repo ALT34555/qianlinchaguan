@@ -281,6 +281,41 @@
       "default": "#a9b451",
       "autumn": "#b8a94a"
     },
+    "reedCulm": {
+      "default": "#829c55",
+      "spring": "#98b564",
+      "summer": "#7e994e",
+      "autumn": "#b3a862",
+      "winter": "#8a7c4f"
+    },
+    "reedPlume": {
+      "default": "#c7bc9d",
+      "spring": "#9a9a6f",
+      "summer": "#b2a578",
+      "autumn": "#dfd8c4",
+      "winter": "#a8976b"
+    },
+    "waterweed": {
+      "default": "#3f7a4e",
+      "spring": "#4fa562",
+      "summer": "#3a7548",
+      "autumn": "#507246",
+      "winter": "#354e38"
+    },
+    "waterweedPale": {
+      "default": "#5ba370",
+      "spring": "#6cc585",
+      "summer": "#5ba370",
+      "autumn": "#6b8f5c",
+      "winter": "#44634a"
+    },
+    "spadix": {
+      "default": "#7c633a",
+      "spring": "#8c7b4a",
+      "summer": "#755930",
+      "autumn": "#6d4f28",
+      "winter": "#5c4524"
+    },
     "witheredNeedle": {
       "default": "#8a7f52",
       "autumn": "#8f7f4c",

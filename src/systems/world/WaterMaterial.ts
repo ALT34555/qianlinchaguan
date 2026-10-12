@@ -12,6 +12,7 @@ export function decodeSurfaceColors(shader: { fragmentShader: string }): void {
 
 /** 原创程序水面 */
 export class WaterMaterial extends THREE.MeshStandardMaterial {
+  private advanced = true;
   private readonly waterUniforms = {
     uWaterTime: { value: 0 }, uWaterDaylight: { value: 1 }, uWaterNight: { value: 0 },
     uWaterHorizon: { value: new THREE.Color() }, uWaterZenith: { value: new THREE.Color() },
@@ -23,8 +24,11 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
       side: THREE.DoubleSide, roughness: .24, metalness: .08 });
     this.onBeforeCompile = shader => {
       decodeSurfaceColors(shader);
+      if (!this.advanced) return;
       Object.assign(shader.uniforms, this.waterUniforms);
       shader.vertexShader = `
+        attribute vec3 waterFoam;
+        varying vec3 vWaterFoam;
         attribute float waterDepth;
         attribute vec2 waterFlow;
         attribute float waterFall;
@@ -38,11 +42,13 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         #include <worldpos_vertex>
         vWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
         vWaterLocal = transformed;
+        vWaterFoam = waterFoam;
         vWaterDepth = waterDepth;
         vWaterFlow = waterFlow;
         vWaterFall = waterFall;
       `);
       shader.fragmentShader = `
+        varying vec3 vWaterFoam;
         uniform float uWaterTime;
         uniform float uWaterDaylight;
         uniform float uWaterNight;
@@ -98,8 +104,8 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
           streak=smoothstep(.05,.9,thread1*.6+thread2*.4);
           streak*=.55+.45*sin(across*.7+vWaterWorld.y*.045+rush*.35+2.0);
           float foam=smoothstep(.55,.95,thread1*.5+thread2*.5);
-          vec3 fallColor=mix(vec3(.55,.72,.78),vec3(.97,1.0,1.0),streak)*(.28+uWaterDaylight*.72);
-          fallColor+=vec3(.9,.96,1.0)*foam*.3*(.2+uWaterDaylight*.8);
+          vec3 fallColor=mix(diffuseColor.rgb,sRGBTransferEOTF(vec4(vWaterFoam,1.0)).rgb,streak)*(.28+uWaterDaylight*.72);
+          fallColor+=sRGBTransferEOTF(vec4(vWaterFoam,1.0)).rgb*foam*.3*(.2+uWaterDaylight*.8);
           outgoingLight=mix(outgoingLight,fallColor,falling*(.4+streak*.6));
         }
         diffuseColor.a = clamp(0.18 + 0.58 * (1.0 - exp(-vWaterDepth * 0.32)) + reflectionWeight * 0.25, 0.18, 0.9);
@@ -109,7 +115,13 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
     };
   }
 
-  override customProgramCacheKey(): string { return 'qianlin-water-v4-falls-mist'; }
+  setAdvancedVisuals(enabled: boolean): void {
+    if (this.advanced === enabled) return;
+    this.advanced = enabled;
+    this.needsUpdate = true;
+  }
+
+  override customProgramCacheKey(): string { return `qianlin-water-palette-${this.advanced}`; }
 
   update(time: number, lighting: WorldLighting, daylight: number, night: number): void {
     // 周期远大于一次游玩

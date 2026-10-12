@@ -22,20 +22,24 @@ export class Input {
   private mouseDX = 0;
   private mouseDY = 0;
   pointerLocked = false;
+  private readonly events=new AbortController();
 
-  constructor(private readonly target: HTMLElement) {
-    window.addEventListener('keydown', this.onKeyDown, { capture: true });
-    window.addEventListener('keyup', this.onKeyUp, { capture: true });
-    window.addEventListener('blur', () => { this.down.clear(); this.virtual.clear(); });
-    document.addEventListener('mousemove', this.onMouseMove);
+  constructor(private target: HTMLElement) {
+    const signal=this.events.signal;
+    window.addEventListener('keydown', this.onKeyDown, { capture: true,signal });
+    window.addEventListener('keyup', this.onKeyUp, { capture: true,signal });
+    window.addEventListener('blur', () => { this.down.clear(); this.virtual.clear(); },{signal});
+    document.addEventListener('mousemove', this.onMouseMove,{signal});
     document.addEventListener('pointerlockchange', () => {
       this.pointerLocked = document.pointerLockElement === this.target;
-    });
+    },{signal});
   }
 
   requestPointerLock(): Promise<void> {
     return this.pointerLocked ? Promise.resolve() : Promise.resolve(this.target.requestPointerLock());
   }
+  setTarget(target:HTMLElement):void { this.target=target;this.pointerLocked=false;this.enabled=this.enabledValue; }
+  dispose():void {this.events.abort();this.enabled=false;}
 
   set enabled(value: boolean) {
     this.enabledValue = value;

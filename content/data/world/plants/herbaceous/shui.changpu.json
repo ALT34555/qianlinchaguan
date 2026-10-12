@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shui.changpu","archetype":"waterweed","climate":"temperate","name":"水菖蒲","latin":"shuichangpu","seed":706,"tags":["water","wet","riparian","ground","sword"],"params":{"height":1.25,"blades":9,"spread":0.35,"layers":1,"bloomCount":2},"palette":{"foliage":"foliage","foliageDark":"foliageDeep","fruit":"spadix","bloom":"spadix"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shui.changpu@seedling","state":"seedling"},
+    {"id":"shui.changpu@subadult","state":"subadult"},
+    {"id":"shui.changpu@flowering","state":"flowering"},
+    {"id":"shui.changpu@fruiting","state":"fruiting"},
+    {"id":"shui.changpu@withered","state":"withered"}
+  ]
+}

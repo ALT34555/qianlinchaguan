@@ -1,13 +1,20 @@
 /** 岩石低模构建器 */
+import { clamp01 } from '../../../core/math/Scalar';
+export { clamp, clamp01 } from '../../../core/math/Scalar';
+import { deepen, lighten, mix, clampByte } from '../../../core/math/Color';
+export { deepen, lighten, mix, hexToRgb } from '../../../core/math/Color';
+import { faceNormal } from '../../../core/math/Geometry';
+export { faceNormal, rotateY } from '../../../core/math/Geometry';
+import { shadeOf } from '../LowPolyShading';
+export { shadeOf } from '../LowPolyShading';
+import type { RGB } from '../../../core/math/Color';
+import type { V3 } from '../../../core/math/Geometry';
+export type { RGB } from '../../../core/math/Color';
+export type { V3 } from '../../../core/math/Geometry';
 
 import type { PlantGeometry } from '../vegetation/geometry';
 import { hash2 } from '../../../core/math/Random';
 import { ROCK_MATERIALS, type RockMaterial } from './types';
-
-/** RGB 三元组（0~255） */
-export type RGB = [number, number, number];
-/** 三维向量 / 顶点 */
-export type V3 = [number, number, number];
 
 /** 一个多边形面 */
 export interface RockFace {
@@ -52,84 +59,10 @@ export interface CrustSpec {
   seed?: number;
 }
 
-/** 预烘焙方向明暗阶梯 */
-const SHADE_STEPS = [0.58, 0.7, 0.84, 1.0];
-/** 烘焙太阳光照方向 */
-const SUN: readonly [number, number, number] = [0.42, 0.84, -0.34];
 /** 顶点色微扰 */
 const COLOR_JITTER = 0.04;
 
 const TAU = Math.PI * 2;
-
-export function clamp(v: number, lo: number, hi: number): number {
-  return v < lo ? lo : v > hi ? hi : v;
-}
-
-export function clamp01(v: number): number {
-  return clamp(v, 0, 1);
-}
-
-/** 颜色整体加深 */
-export function deepen(c: RGB, depth: number): RGB {
-  const k = clamp01(1 - depth);
-  return [c[0] * k, c[1] * k, c[2] * k];
-}
-
-/** 颜色整体提亮 */
-export function lighten(c: RGB, amount: number): RGB {
-  const k = clamp01(amount);
-  return [c[0] + (255 - c[0]) * k, c[1] + (255 - c[1]) * k, c[2] + (255 - c[2]) * k];
-}
-
-/** 颜色线性插值混合 */
-export function mix(a: RGB, b: RGB, t: number): RGB {
-  const k = clamp01(t);
-  return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
-}
-
-/** 十六进制取色 */
-export function hexToRgb(hex: string | undefined, fallback: RGB = [127, 127, 127]): RGB {
-  const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex ?? '').trim());
-  if (!m) return [fallback[0], fallback[1], fallback[2]];
-  const v = parseInt(m[1], 16);
-  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-}
-
-/** 方向明暗 */
-export function shadeOf(nx: number, ny: number, nz: number): number {
-  const d = nx * SUN[0] + ny * SUN[1] + nz * SUN[2];
-  const t = (d + 1) / 2;
-  const i = Math.round(t * (SHADE_STEPS.length - 1));
-  return SHADE_STEPS[i < 0 ? 0 : i > SHADE_STEPS.length - 1 ? SHADE_STEPS.length - 1 : i];
-}
-
-/** 单位化三角面法线 */
-export function faceNormal(
-  ax: number, ay: number, az: number,
-  bx: number, by: number, bz: number,
-  cx: number, cy: number, cz: number,
-): V3 {
-  const ux = bx - ax, uy = by - ay, uz = bz - az;
-  const vx = cx - ax, vy = cy - ay, vz = cz - az;
-  let nx = uy * vz - uz * vy;
-  let ny = uz * vx - ux * vz;
-  let nz = ux * vy - uy * vx;
-  const len = Math.hypot(nx, ny, nz);
-  if (len < 1e-9) return [0, 1, 0];
-  return [nx / len, ny / len, nz / len];
-}
-
-/** 绕 Y 轴旋转一个水平向量 */
-export function rotateY(x: number, z: number, angle: number): [number, number] {
-  const c = Math.cos(angle);
-  const s = Math.sin(angle);
-  return [x * c - z * s, x * s + z * c];
-}
-
-function clampByte(v: number): number {
-  const r = Math.round(v);
-  return r < 0 ? 0 : r > 255 ? 255 : r;
-}
 
 /** 岩石构建器 */
 export class RockBuilder {

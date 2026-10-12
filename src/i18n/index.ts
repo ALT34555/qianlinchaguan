@@ -1,7 +1,8 @@
 /** 多语言（i18n）核心 */
 import { zhCN } from './locales/zh-CN';
 import { en } from './locales/en';
-import type { LocaleCode, LocaleListener, LocaleLoader, LocaleMeta, MessageParams, Messages, StorageLike } from './types';
+import type { LocaleCode, LocaleListener, LocaleLoader, LocaleMeta, MessageParams, Messages } from './types';
+import type { StorageLike } from '../core/StorageLike';
 
 export type { LocaleCode, LocaleListener, LocaleLoader, LocaleMeta, MessageParams, Messages, StorageLike };
 

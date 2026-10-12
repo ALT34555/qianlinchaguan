@@ -653,19 +653,26 @@
   border-bottom: 1px solid var(--ql-line);
 }
 
-.map-mode-label {
-  font-family: var(--ql-font-display);
-  font-size: calc(15px * var(--text-scale, 1));
-  letter-spacing: var(--ql-track-label);
-}
-
-.map-buttons {
+/* 浏览选项贴左 */
+.map-options {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
+/* 操作按钮贴右，换行后仍靠右 */
+.map-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.map-options label,
 .map-buttons label {
   display: flex;
   align-items: center;

@@ -34,7 +34,7 @@ export const DEFAULT_PLANET: PlanetSettings = {
   map: 'procedural', poleTemperature: -25, equatorTemperature: 30,
   monsoonDirection: 90, equatorChunks: 4096, tectonicActivity: 5,
 };
-export const EARTH_PLANET: PlanetSettings = { ...DEFAULT_PLANET, map: 'earth', poleTemperature: -30 };
+export const EARTH_PLANET: PlanetSettings = { ...DEFAULT_PLANET, map: 'earth', poleTemperature: -30, equatorChunks: 2048 };
 export const DEFAULT_GENERATION: WorldGeneration = { mode: 'plane', planet: DEFAULT_PLANET, landRatio: .5, precipitation: .5 };
 
 export function normalizeGeneration(value: unknown = DEFAULT_GENERATION): WorldGeneration {

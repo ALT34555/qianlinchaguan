@@ -1,18 +1,11 @@
 /** 岩石散布 */
+import type { SurfaceQuery } from '../SurfaceQuery';
+export type { SurfaceQuery } from '../SurfaceQuery';
 import { hash2 } from '../../../core/math/Random';
 import { CHUNK_SIZE, SEA_LEVEL } from '../../../core/config';
 import { rocksForChunk } from './Rocks';
-import { ROCK_FORM_CODES, type RockForm, type Season } from './types';
-
-/** 与植被同名接口 */
-export interface SurfaceQuery {
-  /** 地表顶面高度；未加载区域返回 NaN */
-  height(x: number, z: number): number;
-  /** 水面高度；未加载区域返回 NaN */
-  waterLevel(x: number, z: number): number;
-  /** 表层方块ID */
-  surface(x: number, z: number): number;
-}
+import { ROCK_FORM_CODES, type RockForm } from './types';
+import { type Season } from '../Season';
 
 /** 一次岩石摆放 */
 export interface RockPlacement {

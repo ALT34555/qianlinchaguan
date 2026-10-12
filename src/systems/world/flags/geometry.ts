@@ -1,6 +1,18 @@
 /** 旗帜低模构建器 */
+export { clamp, clamp01 } from '../../../core/math/Scalar';
+import { deepen, lighten, mix, clampByte } from '../../../core/math/Color';
+export { deepen, lighten, mix, hexToRgb } from '../../../core/math/Color';
+import { faceNormal, rotateY, rotateZ, rotateX, subV3, scaleV3, normV3, crossV3 } from '../../../core/math/Geometry';
+export {
+  faceNormal, rotateY, rotateZ, rotateX, addV3, subV3, scaleV3, normV3, crossV3, lerpV3,
+} from '../../../core/math/Geometry';
+import { shadeOf } from '../LowPolyShading';
+export { shadeOf } from '../LowPolyShading';
+export { scaleGeometry } from '../Geometry';
 
-import { FLAG_MATERIALS, type FlagMaterial, type RGB, type V3 } from './types';
+import { FLAG_MATERIALS, type FlagMaterial } from './types';
+import { type RGB } from '../../../core/math/Color';
+import { type V3 } from '../../../core/math/Geometry';
 
 export interface FlagFace {
   pos: number[];
@@ -23,112 +35,9 @@ export interface FlagGeometry {
   materialRatio: Partial<Record<FlagMaterial, number>>;
 }
 
-const SHADE_STEPS = [0.58, 0.7, 0.84, 1.0];
-const SUN: readonly [number, number, number] = [0.42, 0.84, -0.34];
 const COLOR_JITTER = 0.03;
 const TAU = Math.PI * 2;
 const EPS = 1e-9;
-
-export function clamp(v: number, lo: number, hi: number): number {
-  return v < lo ? lo : v > hi ? hi : v;
-}
-
-export function clamp01(v: number): number {
-  return clamp(v, 0, 1);
-}
-
-export function deepen(c: RGB, depth: number): RGB {
-  const k = clamp01(1 - depth);
-  return [c[0] * k, c[1] * k, c[2] * k];
-}
-
-export function lighten(c: RGB, amount: number): RGB {
-  const k = clamp01(amount);
-  return [c[0] + (255 - c[0]) * k, c[1] + (255 - c[1]) * k, c[2] + (255 - c[2]) * k];
-}
-
-export function mix(a: RGB, b: RGB, t: number): RGB {
-  const k = clamp01(t);
-  return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
-}
-
-export function hexToRgb(hex: string | undefined, fallback: RGB = [127, 127, 127]): RGB {
-  const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex ?? '').trim());
-  if (!m) return [fallback[0], fallback[1], fallback[2]];
-  const v = parseInt(m[1], 16);
-  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-}
-
-export function shadeOf(nx: number, ny: number, nz: number): number {
-  const d = nx * SUN[0] + ny * SUN[1] + nz * SUN[2];
-  const t = (d + 1) / 2;
-  const i = Math.round(t * (SHADE_STEPS.length - 1));
-  return SHADE_STEPS[i < 0 ? 0 : i > SHADE_STEPS.length - 1 ? SHADE_STEPS.length - 1 : i];
-}
-
-export function faceNormal(ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number): V3 {
-  const ux = bx - ax, uy = by - ay, uz = bz - az;
-  const vx = cx - ax, vy = cy - ay, vz = cz - az;
-  let nx = uy * vz - uz * vy;
-  let ny = uz * vx - ux * vz;
-  let nz = ux * vy - uy * vx;
-  const len = Math.hypot(nx, ny, nz);
-  if (len < EPS) return [0, 1, 0];
-  return [nx / len, ny / len, nz / len];
-}
-
-export function rotateY(x: number, z: number, angle: number): [number, number] {
-  const c = Math.cos(angle);
-  const s = Math.sin(angle);
-  return [x * c - z * s, x * s + z * c];
-}
-
-export function rotateZ(x: number, y: number, angle: number): [number, number] {
-  const c = Math.cos(angle);
-  const s = Math.sin(angle);
-  return [x * c - y * s, x * s + y * c];
-}
-
-export function rotateX(y: number, z: number, angle: number): [number, number] {
-  const c = Math.cos(angle);
-  const s = Math.sin(angle);
-  return [y * c - z * s, y * s + z * c];
-}
-
-export function addV3(a: V3, b: V3): V3 {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-}
-
-export function subV3(a: V3, b: V3): V3 {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-
-export function scaleV3(a: V3, k: number): V3 {
-  return [a[0] * k, a[1] * k, a[2] * k];
-}
-
-export function normV3(a: V3): V3 {
-  const len = Math.hypot(a[0], a[1], a[2]);
-  if (len < EPS) return [0, 1, 0];
-  return [a[0] / len, a[1] / len, a[2] / len];
-}
-
-export function crossV3(a: V3, b: V3): V3 {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0],
-  ];
-}
-
-export function lerpV3(a: V3, b: V3, t: number): V3 {
-  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-}
-
-function clampByte(v: number): number {
-  const r = Math.round(v);
-  return r < 0 ? 0 : r > 255 ? 255 : r;
-}
 
 export interface RodOptions {
   radius2?: number;
@@ -446,12 +355,4 @@ export class FlagBuilder {
       materialRatio: ratio,
     };
   }
-}
-
-export function scaleGeometry(geo: FlagGeometry, scale: number): void {
-  if (scale === 1) return;
-  for (let i = 0; i < geo.positions.length; i++) geo.positions[i] *= scale;
-  geo.radius *= scale;
-  geo.height *= scale;
-  geo.bottom *= scale;
 }

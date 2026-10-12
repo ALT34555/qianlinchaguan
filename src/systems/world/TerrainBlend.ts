@@ -52,6 +52,19 @@ for (const def of CHUNK_TYPES.filter(d => d.generate)) {
   TERRAIN_PROFILES.set(def.id, { color, materials, roughness: recipe.roughness, wetness: recipe.wetness });
 }
 
+export function terrainRoughness(weights: readonly TerrainWeight[]): number {
+  let value = 0, sum = 0;
+  for (const { type, weight } of weights) {
+    if (!Number.isFinite(weight) || weight < 0) throw new Error('地形混合权重必须有限且非负');
+    if (weight === 0) continue;
+    const profile = TERRAIN_PROFILES.get(type);
+    if (!profile) throw new Error(`不支持混合的地形 ${type}`);
+    value += profile.roughness * weight; sum += weight;
+  }
+  if (sum <= 0) throw new Error('地形混合权重之和必须大于零');
+  return value / sum;
+}
+
 export function mixTerrainProfiles(weights: readonly TerrainWeight[]): TerrainProfile {
   const result: TerrainProfile = { color: [0, 0, 0], materials: new Map(), roughness: 0, wetness: 0 };
   let sum = 0;

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { WEATHER, weatherDayRatio, weatherPrecipitation, type WeatherId } from './Weather';
 
 export const CAMERA_LIGHT_RADIUS = 8;
 const smooth = (a: number, b: number, x: number) => THREE.MathUtils.smoothstep(x, a, b);
@@ -37,7 +38,8 @@ export class WorldLighting {
     scene.add(this.group);
   }
 
-  update(dayRatio: number, season: number, camera: THREE.Vector3): ReturnType<typeof daylightAt> {
+  update(dayRatio: number, season: number, camera: THREE.Vector3, weather: WeatherId = 0, flash = 0, precipitation = weatherPrecipitation(weather)): ReturnType<typeof daylightAt> {
+    dayRatio = weatherDayRatio(weather, dayRatio);
     const state = daylightAt(dayRatio);
     const { daylight, dusk, night, sunHeight } = state;
     const angle = (dayRatio + .5) * Math.PI * 2;
@@ -58,6 +60,24 @@ export class WorldLighting {
     this.fogColor.set(0x111c34).lerp(FOG_DAY, daylight);
     this.fogColor.lerp(FOG_DUSK, dusk * .38);
     this.zenithColor.set(0x0d1730).lerp(ZENITH_DAY, daylight);
+    const effect = WEATHER[weather];
+    this.sun.intensity *= 1 - effect.dim * .85;
+    this.hemisphere.intensity *= 1 - effect.dim * .45;
+    this.hemisphere.intensity += flash * 2;
+    this.fogColor.lerp(new THREE.Color(effect.color).multiplyScalar(.25 + daylight * .75), Math.max(effect.dim, 1 - effect.fog));
+    this.zenithColor.lerp(this.fogColor, effect.dim);
+    const storm = new THREE.Color('#68727c').multiplyScalar(.2 + daylight * .8);
+    this.fogColor.lerp(storm, precipitation * .65);
+    this.zenithColor.lerp(storm, precipitation * .85);
+    if (weather === 900) {
+      this.fogColor.set('#6e4d7e'); this.zenithColor.copy(this.fogColor);
+      this.sunDirection.set(.4, .55, -.75).normalize();
+      this.moonDirection.set(-.4, .55, -.75).normalize();
+      this.sun.position.copy(camera).addScaledVector(this.sunDirection, 200);
+      this.moon.position.copy(camera).addScaledVector(this.moonDirection, 200);
+      this.moon.intensity = .4;
+    }
+    this.fogColor.lerp(new THREE.Color('#e6edff'), flash);
     return state;
   }
 

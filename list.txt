@@ -1,5 +1,5 @@
-content\assets\ui\fonts\NanoOldSongA-Regular.ttf - https://github.com/Hansha2011/NanoOldSong
-content\assets\ui\fonts\ResourceHanRoundedCN-Medium.ttf - https://github.com/CyanoHao/Resource-Han-Rounded
+userdata\mods\fonts\NanoOldSongA-Regular.ttf - https://github.com/Hansha2011/NanoOldSong
+userdata\mods\fonts\ResourceHanRoundedCN-Medium.ttf - https://github.com/CyanoHao/Resource-Han-Rounded
 content\maps\earth\land.json (Natural Earth 1:110m land 海岸距离场) - https://github.com/nvkelso/natural-earth-vector
 node_modules\three - https://github.com/mrdoob/three.js
 node_modules\simplex-noise - https://github.com/jwagner/simplex-noise.js

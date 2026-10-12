@@ -1,18 +1,19 @@
 .chat-panel {
-  --chat-top: 0px;
-  --chat-available: 100vw;
+  --chat-top: var(--safe-y);
+  --chat-available: var(--safe-width);
   position: fixed;
-  inset: var(--chat-top) auto auto 0;
+  inset: var(--chat-top) auto auto var(--safe-x);
   z-index: 10009;
   width: min(370px, var(--chat-available));
-  max-height: calc(100dvh - var(--chat-top));
+  max-height: calc(100dvh - var(--safe-y) - var(--chat-top));
   pointer-events: none;
   color: var(--ql-ink-inv);
   font-size: calc(16px * var(--text-scale, 1));
 }
-body:has(.game-bar:not(.hidden)) .chat-panel { --chat-top: var(--game-bar-h, 68px); }
+body:has(.game-bar:not(.hidden)) .chat-panel { --chat-top: calc(var(--safe-y) + var(--game-bar-h, 68px)); }
+body .chat-panel.chat-atlas:not(.sidebar-open) { --chat-top: var(--chat-atlas-top, calc(var(--safe-y) + var(--game-bar-h, 68px) + 80px)); }
 .chat-history {
-  height: min(460px, calc(75dvh - var(--chat-top)));
+  height: max(0px, min(460px, calc(var(--safe-height) * .75 - var(--chat-top) + var(--safe-y))));
   padding: 16px;
   overflow: hidden;
   background: rgba(36, 28, 19, .46);
@@ -22,9 +23,9 @@ body:has(.game-bar:not(.hidden)) .chat-panel { --chat-top: var(--game-bar-h, 68p
 .chat-player { color: var(--ql-ink-inv); -webkit-text-stroke: .5px white; paint-order: stroke fill; text-shadow: 0 0 1px white; }
 .chat-composer, .chat-clear, .chat-idle:not(.sidebar-open) { display: none; }
 .chat-panel.sidebar-open {
-  --chat-available: max(0px, calc(100vw - min(520px * var(--ui-scale), 100vw)));
+  --chat-available: max(0px, calc(var(--safe-width) - var(--safe-drawer-width)));
   width: min(370px, var(--chat-available));
-  height: calc(100dvh - var(--chat-top));
+  height: calc(100dvh - var(--safe-y) - var(--chat-top));
   padding: 60px 16px 16px;
   background: var(--ql-paper);
   background-image: var(--ql-paper-weave);
@@ -33,8 +34,9 @@ body:has(.game-bar:not(.hidden)) .chat-panel { --chat-top: var(--game-bar-h, 68p
   pointer-events: auto;
 }
 body:has(#start-screen:not(.hidden) .pause-settings) .chat-panel.sidebar-open {
-  --chat-available: max(0px, calc(100vw - min(880px * var(--ui-scale), 100vw)));
+  --chat-available: max(0px, calc(var(--safe-width) - var(--safe-settings-width)));
 }
+.chat-panel.sidebar-open::before { content: ''; position: fixed; z-index: -1; inset: var(--chat-top) auto 0 0; width: calc(var(--safe-x) + min(370px, var(--chat-available))); background: var(--ql-paper); background-image: var(--ql-paper-weave); pointer-events: none; }
 .sidebar-open .chat-history { flex: 1; min-height: 0; height: auto; overflow-y: auto; mask-image: none; background: #4d4030; }
 .sidebar-open .chat-message { opacity: 1; }
 .sidebar-open .chat-composer {
@@ -50,7 +52,8 @@ body:has(#start-screen:not(.hidden) .pause-settings) .chat-panel.sidebar-open {
 .chat-composer input { width: 100%; height: 100%; padding: 10px 16px; border: 0; border-radius: 0; background: transparent; color: var(--ql-ink); font-size: calc(16px * var(--text-scale, 1)); }
 .sidebar-open .chat-clear { display: block; flex-shrink: 0; width: 100%; padding: 6px 8px; }
 @media (max-width: 600px) {
-  .chat-panel { width: min(280px, 75vw); }
-  .chat-panel.sidebar-open { --chat-available: 100vw !important; inset: auto auto 0 0; z-index: 10013; width: 100%; height: 36dvh; padding-top: 44px; }
+  .chat-panel { width: min(280px, var(--safe-width)); }
+  .chat-panel.sidebar-open { --chat-available: var(--safe-width) !important; inset: auto auto var(--safe-y) var(--safe-x); z-index: 10013; width: var(--safe-width); height: calc(var(--safe-height) * .36); max-height: var(--safe-height); padding-top: 44px; }
   .sidebar-open .chat-composer { height: 44px; }
+  .chat-panel.sidebar-open::before { inset: auto 0 0; width: 100vw; height: calc(var(--safe-y) + var(--safe-height) * .36); }
 }

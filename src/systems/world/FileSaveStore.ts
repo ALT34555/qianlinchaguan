@@ -1,6 +1,7 @@
 import { type LocalSave, type SaveList, type SaveStore } from './LocalSaveStore';
 import { parseWorldSave, type WorldSave } from './WorldSave';
-import { decodeSaveArchive } from './SaveArchive';
+import { decodeArchive } from './ArchiveWorker';
+import { WorldDataStore } from './WorldDataStore';
 
 export class FileSaveStore implements SaveStore {
   private readonly request: typeof fetch;
@@ -27,13 +28,25 @@ export class FileSaveStore implements SaveStore {
     if (!response.ok) throw new Error((data as { error?: string })?.error ?? '本地存档操作失败。');
     return data;
   }
-  async list(): Promise<SaveList> { return await this.call() as SaveList; }
+  async list(): Promise<SaveList> {
+    const list = await this.call() as SaveList;
+    if (list.supportsPlayModes !== true) {
+      throw new Error('存档服务尚未更新，无法安全读写生存/悠游模式。请先导出当前世界备份，再完全退出游戏和启动器后重新启动。');
+    }
+    return list;
+  }
   async put(save: WorldSave, name: string, id?: string): Promise<LocalSave> {
     const valid = parseWorldSave(JSON.stringify(save));
+    await this.list();
     return await this.call('', { save: valid, name, id }) as LocalSave;
   }
   async import(bytes: Uint8Array, name: string): Promise<LocalSave> {
-    const item = decodeSaveArchive(bytes);
+    const item = await decodeArchive(bytes);
+    if(item.worldData){
+      item.save.worldKey=crypto.randomUUID();
+      const store=new WorldDataStore(item.save.worldKey);
+      for(const [key,data] of Object.entries(item.worldData))await store.put(key,data);
+    }
     return this.put(item.save, item.name || name);
   }
 }

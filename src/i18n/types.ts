@@ -1,4 +1,5 @@
 /** 多语言基础设施的公共类型 */
+export type { StorageLike } from '../core/StorageLike';
 
 /** 语言标识（精简 BCP 47 */
 export type LocaleCode = string;
@@ -26,9 +27,3 @@ export type LocaleLoader = () => Promise<Messages>;
 
 /** 语言变更回调。 */
 export type LocaleListener = (code: LocaleCode, meta: LocaleMeta) => void;
-
-/** 最小存储接口 */
-export interface StorageLike {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-}

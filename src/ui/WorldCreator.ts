@@ -1,8 +1,10 @@
+import { parseCreationTimeSpeed, type PlayMode } from '../core/PlayMode';
+import { worldPreset } from './WorldPresets';
 import { icon, iconUrl } from './Icons';
 import { renName } from '../entities/PlayerIdentity';
 import { colorControl, bindColorControls } from './ColorControls';
 import { ArtificialWorld } from '../systems/world/artificial/ArtificialWorld';
-import { DEFAULT_PLAYER_FACTION, hexColor, playerFactionOptions, playerFlagSpawn, type PlayerFactionOptions } from '../systems/world/artificial/PlayerFaction';
+import { DEFAULT_PLAYER_FACTION, hexColor, playerFactionOptions, type PlayerFactionOptions } from '../systems/world/artificial/PlayerFaction';
 import { hashString, randomSeed } from '../core/math/Random';
 import { WorldGenerator, FLOW_DIRECTIONS } from '../systems/world/WorldGenerator';
 import { getChunkTypeDef, formatChunkId, CHUNK_TYPES } from '../systems/world/ChunkTypes';
@@ -12,6 +14,7 @@ import { dateInputValue, todayDate, DEFAULT_YUAN_DATE, startDateUnixMs } from '.
 import { AtlasView, type ViewportStats } from './AtlasView';
 import { chunkDescription, chunkName, climateName } from '../i18n/content';
 import { t } from '../i18n';
+import { prepareWorld } from '../systems/world/PrepareWorld';
 import { DEFAULT_ARTIFICIAL } from '../systems/world/artificial/ArtificialSettings';
 import type { TerritoryChunkInfo } from '../systems/world/artificial/ArtificialWorld';
 
@@ -26,6 +29,9 @@ export function parseSeed(raw: string): number {
 }
 
 export interface StartOptions {
+  worldKey?:string;
+  playMode?: PlayMode;
+  creationTimeSpeed?: number;
   ren_ming?: string;
   playerFaction?: PlayerFactionOptions;
   seed: number;
@@ -40,6 +46,9 @@ export interface StartOptions {
 }
 
 export class WorldCreator {
+  private previewBusy=false;
+  private previewKey=crypto.randomUUID();
+  private previewArtificial?:ArtificialWorld;
   private stopColors: () => void = () => {};
   private generator: WorldGenerator | null = null;
   private atlasView: AtlasView | null = null;
@@ -55,6 +64,7 @@ export class WorldCreator {
     generation: WorldGeneration = DEFAULT_GENERATION,
     private readonly back: () => void = () => {},
     private readonly defaultRenName = '赤',
+    private readonly playMode: PlayMode = 'leisure',
   ) {
     this.renderLayout();
     this.input('ren-ming').value = renName(this.defaultRenName);
@@ -98,6 +108,8 @@ export class WorldCreator {
     const playerFaction = this.playerSettings();
     if (!generation.artificial?.enabled) playerFaction.spawnAsFlagLand = false;
     return {
+      playMode: this.playMode,
+      creationTimeSpeed: parseCreationTimeSpeed(this.input('creation-time-speed').value.trim() ? Number(this.input('creation-time-speed').value) : NaN),
       ren_ming: renName(this.input('ren-ming').value, renName(this.defaultRenName)),
       playerFaction,
       seed: parseSeed(this.input('world-seed').value),
@@ -148,16 +160,24 @@ export class WorldCreator {
     this.updateGenerationFields();
   }
 
+  private updateEarthPrecisionPills(): void {
+    const current = Number(this.input('equator-chunks').value);
+    this.root.querySelectorAll<HTMLButtonElement>('[data-earth-precision]').forEach(btn => {
+      btn.classList.toggle('active', this.el<HTMLSelectElement>('generation-mode').value === 'earth' && Number(btn.dataset.earthPrecision) === current);
+    });
+  }
+
   private updateGenerationFields(): void {
     const planet = this.el<HTMLSelectElement>('generation-mode').value !== 'plane';
     const earth = this.el<HTMLSelectElement>('generation-mode').value === 'earth';
     this.el('planet-settings').classList.toggle('hidden', !planet);
     this.el('plane-climates').classList.toggle('hidden', planet);
     this.el('planet-view-tools').classList.toggle('hidden', !planet);
-    this.el('recommended-presets').classList.toggle('hidden', earth);
+
     this.input('tectonic-activity').disabled = earth;
     this.input('land-ratio').disabled = earth;
     if (earth) this.input('tectonic-activity').value = '5';
+    this.updateEarthPrecisionPills();
     this.updateWeights();
   }
 
@@ -175,14 +195,16 @@ export class WorldCreator {
           <h1 id="menu-title">${t('creator.title')}</h1>
           <p class="menu-intro">${t('creator.intro')}</p>
 
-          <div id="recommended-presets" class="presets-section">
-            <span class="field-label-mini">${t('creator.presets')}</span>
-            <div class="presets-row">
-              <button class="preset-pill" data-preset="balanced">${t('creator.preset.balanced')}</button>
-              <button class="preset-pill" data-preset="islands">${t('creator.preset.islands')}</button>
-              <button class="preset-pill" data-preset="mountains">${t('creator.preset.mountains')}</button>
-              <button class="preset-pill" data-preset="arctic">${t('creator.preset.arctic')}</button>
-            </div>
+          <div id="recommended-presets" class="world-preset-columns">
+            <section class="preset-column"><h2>${t('creator.category.plane')}</h2><div class="presets-row">
+              ${['balanced', 'islands', 'mountains', 'arctic'].map(id => `<button class="preset-pill" data-preset="${id}">${t(`creator.preset.${id}`)}</button>`).join('')}
+            </div></section>
+            <section class="preset-column"><h2>${t('creator.category.planet')}</h2><div class="presets-row">
+              ${['primordial', 'frozen', 'habitable', 'archipelago', 'redhot'].map(id => `<button class="preset-pill" data-preset="${id}">${t(`creator.preset.${id}`)}</button>`).join('')}
+            </div></section>
+            <section id="earth-precision-section" class="preset-column"><h2>${t('creator.category.earth')}</h2><div class="presets-row">
+              ${[2048, 4096, 8192].map(size => `<button class="preset-pill" data-preset="earth-${size}" data-earth-precision="${size}"><span>${size}</span><span>${t(`creator.earthPrecision.${size}`).replace(/^[^·]+·\s*/, '')}</span></button>`).join('')}
+            </div></section><p class="setting-note preset-note">${t('creator.earthPrecision.hint')}</p>
           </div>
 
           <label class="field-title" for="world-name">${t('creator.worldName')}</label>
@@ -261,6 +283,8 @@ export class WorldCreator {
           <details class="fold-group" id="fold-sky">
             <summary><span class="fold-name">${t('creator.fold.sky')}</span><span class="fold-mark" aria-hidden="true"></span></summary>
             <div class="fold-body">
+              <label class="field-title" for="creation-time-speed">${t('settings.speed')} <small>${t('settings.speed.hint')}</small></label>
+              <div class="seed-field"><input id="creation-time-speed" type="number" min="0" max="86400" step="0.5" value="72"></div>
               <label class="field-title" for="calendar-mode">
                 ${t('creator.calendar')} <small>${t('creator.calendar.hint')}</small>
               </label>
@@ -458,12 +482,14 @@ export class WorldCreator {
     const panel = this.el('world-settings-panel');
     const scroll = document.createElement('div'); scroll.className = 'creator-scroll';
     const tabs = document.createElement('div'); tabs.className = 'creator-tabs'; tabs.setAttribute('role', 'tablist');
+    if(this.playMode === 'survival')tabs.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
     const sections = ['presets', 'custom', 'preview'].map((name, index) => {
       const section = document.createElement('div'); section.id = `creator-tab-${name}`;
       section.setAttribute('role', 'tabpanel'); section.setAttribute('aria-labelledby', `creator-tab-button-${name}`);
       section.hidden = index !== 0; scroll.append(section);
       const button = document.createElement('button'); button.textContent = t(`creator.tab.${name}`);
       button.id = `creator-tab-button-${name}`; button.setAttribute('role', 'tab');
+      button.hidden = name === 'preview' && this.playMode === 'survival';
       button.setAttribute('aria-controls', section.id); button.setAttribute('aria-selected', String(index === 0));
       button.tabIndex = index === 0 ? 0 : -1;
       button.onclick = () => {
@@ -472,13 +498,15 @@ export class WorldCreator {
       };
       button.onkeydown = event => {
         if (!['ArrowLeft', 'ArrowRight'].includes(event.code)) return;
-        event.preventDefault(); const next = (index + (event.code === 'ArrowRight' ? 1 : 2)) % 3;
-        const target = tabs.children[next] as HTMLButtonElement; target.click(); target.focus();
+        event.preventDefault();
+        const visible = Array.from(tabs.children).filter(item => !(item as HTMLElement).hidden) as HTMLButtonElement[];
+        const next = (visible.indexOf(button) + (event.code === 'ArrowRight' ? 1 : visible.length - 1)) % visible.length;
+        const target = visible[next]; target.click(); target.focus();
       };
       tabs.append(button); return section;
     });
     const heading = this.el('menu-title'); heading.remove();
-    this.root.querySelector('.menu-header .wordmark')!.textContent = t('creator.title');
+    this.root.querySelector('.menu-header .wordmark')!.textContent = `${t('creator.title')} · ${t(`mode.${this.playMode}`)}`;
     const intro = panel.querySelector('.menu-intro'); intro?.remove();
     const children = Array.from(panel.children);
     const nameLabel = panel.querySelector('[for="world-name"]')!;
@@ -533,7 +561,7 @@ export class WorldCreator {
     return startDateUnixMs(mode, { year: parts[0], month: parts[1], day: parts[2] }, -new Date().getTimezoneOffset());
   }
 
-  destroy(): void { this.stopColors(); this.atlasView?.destroy(); }
+  destroy(): void { this.previewArtificial?.dispose();this.stopColors(); this.atlasView?.destroy(); }
 
   private updateArtificialFields(): void {
     const enabled = this.input('artificial-enabled').checked;
@@ -577,6 +605,7 @@ export class WorldCreator {
 
   private updateWeights(): void {
     this.updateArtificialFields();
+    this.updateEarthPrecisionPills();
     this.el('tectonic-value').textContent = this.input('tectonic-activity').value;
     const ratio = Number(this.input('land-ratio').value);
     const precipitation = Number(this.input('precipitation').value);
@@ -588,6 +617,7 @@ export class WorldCreator {
       : ratio === .5 ? t('creator.landRatio.balanced') : t('creator.landRatio.percent', {value: Math.round(ratio * 100)});
     try {
       this.generationSettings();
+      parseCreationTimeSpeed(this.input('creation-time-speed').value.trim() ? Number(this.input('creation-time-speed').value) : NaN);
       this.playerSettings();
       renName(this.input('ren-ming').value, renName(this.defaultRenName));
       // 星球气候由温度与纬度决定，平面权重不参与校验。
@@ -683,7 +713,7 @@ export class WorldCreator {
     const handleEnter = () => {
       try {
         const options = this.settings();
-        this.enter(options);
+        this.enter({...options,worldKey:this.previewKey});
       } catch (e) {
         this.error(e);
       }
@@ -783,23 +813,15 @@ export class WorldCreator {
 
   private applyPreset(preset?: string): void {
     if (!preset) return;
-    const presets: Record<string, { weights: ClimateWeights; landRatio: number }> = {
-      balanced: { weights: [20, 20, 20, 20, 20], landRatio: .5 },
-      islands: { weights: [45, 35, 15, 5, 0], landRatio: .2 },
-      mountains: { weights: [10, 15, 35, 30, 10], landRatio: .8 },
-      arctic: { weights: [0, 5, 15, 35, 45], landRatio: .5 },
-    };
-    const target = presets[preset];
-    if (target) {
-      this.setGenerationForm(normalizeGeneration({...this.generationSettings(), landRatio: target.landRatio}));
-      target.weights.forEach((w, i) => {
-        this.input(`climate-${i}`).value = String(w);
-      });
-      this.generator = null;
-      this.updateWeights();
-      this.status(t('creator.presetApplied', { desc: t(`creator.preset.${preset}.desc`) }));
-      this.markStale();
-    }
+    const target = worldPreset(preset, this.generationSettings());
+    if (!target) return;
+    this.setGenerationForm(target.generation);
+    target.weights.forEach((w, i) => { this.input(`climate-${i}`).value = String(w); });
+    this.generator = null;
+    this.root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach(button => button.classList.toggle('active', button.dataset.preset === preset));
+    this.updateWeights();
+    this.status(t('creator.presetApplied', { desc: preset.startsWith('earth-') ? t(`creator.earthPrecision.${preset.slice(6)}`) : t(`creator.preset.${preset}`) }));
+    this.markStale();
   }
 
   private updateQuickFilterActive(activeQf: string): void {
@@ -829,30 +851,37 @@ export class WorldCreator {
     }, 120);
   }
 
-  private preview(): void {
+  private async preview(): Promise<void> {
+    if(this.previewBusy)return;
+    this.previewBusy=true;
     try {
       const options = this.settings();
-      if (!this.generator) {
-        this.generator = new WorldGenerator(options.seed, options.climateWeights, options.generation);
-      }
-
-      const artificial = new ArtificialWorld(this.generator, options.unixMs, options.calendarType, options.utcOffsetMinutes);
-      const spawn = playerFlagSpawn(artificial, options.playerFaction!);
+      const prepared=await prepareWorld({...options,worldKey:this.previewKey},message=>this.status(message));
+      if(!this.root.isConnected)return;
+      this.generator=prepared.generator;
+      const artificial = new ArtificialWorld(this.generator, options.unixMs, options.calendarType, options.utcOffsetMinutes,prepared.artificialState);
+      if(this.playMode==='survival')artificial.useCachedQueries();
+      const spawn = prepared.spawn;
+      this.previewArtificial?.dispose();this.previewArtificial=artificial;
+      if(artificial.settings.enabled&&this.playMode!=='survival')artificial.enableBackground(
+        new Worker(new URL('../systems/world/artificial/artificial.worker.ts',import.meta.url),{type:'module'}),
+        options.unixMs??0,spawn.cx,spawn.cz,this.generator.exposeHydrology(),()=>this.atlasView?.requestRender());
       this.mapShown = true;
       this.el('atlas-placeholder').classList.add('hidden');
       this.el('atlas-content').classList.remove('hidden');
       this.el('atlas-stale').classList.add('hidden');
 
       const canvas = this.el<HTMLCanvasElement>('atlas-canvas');
-      if (!this.atlasView) {
+      this.atlasView?.destroy();
+      {
         this.atlasView = new AtlasView({
           canvas,
+          survivalPreview:this.playMode==='survival',
+          worldKey:this.previewKey,initialCenter:spawn,
           generator: this.generator, artificial,
           onChunkSelect: (info) => this.showChunkDetail(info),
           onStatsUpdate: (stats) => this.updateViewportStats(stats),
         });
-      } else {
-        this.atlasView.setGenerator(this.generator, artificial);
       }
       this.atlasView.centerAt(spawn.cx, spawn.cz);
       this.atlasView.setShowChunkInfo(this.input('toggle-chunk-info').checked);
@@ -867,7 +896,7 @@ export class WorldCreator {
       this.status(t('creator.mapReady', { seed: options.seed }));
     } catch (e) {
       this.error(e);
-    }
+    }finally{this.previewBusy=false;}
   }
 
   private showChunkDetail(info: TerritoryChunkInfo): void {

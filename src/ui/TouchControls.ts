@@ -11,6 +11,7 @@ export class TouchControls {
   private readonly actionButtons: { el: HTMLButtonElement; action: GameAction }[] = [];
   private look: { id: number; x: number; y: number } | null = null;
   private stickPointer: number | null = null;
+  private readonly events=new AbortController();
   constructor(private readonly input: Input, canvas: HTMLCanvasElement) {
     this.root.className = 'touch-controls hidden';
     this.root.innerHTML = `<div class="touch-move"><div class="touch-stick" role="group" aria-label="${t('settings.touchLayout.move')}">${icon('stick-base', 'stick-base')}${icon('stick-knob', 'stick-knob')}</div></div><div class="touch-actions"><button data-action="sprint"></button><button data-action="jump"></button><button data-action="descend"></button></div>`;
@@ -61,18 +62,18 @@ export class TouchControls {
       // 按住场景拖动转视角
       if (this.root.classList.contains('hidden') || this.look || this.input.pointerLocked) return;
       canvas.setPointerCapture(event.pointerId); this.look = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    });
+    },{signal:this.events.signal});
     canvas.addEventListener('pointermove', event => {
       if (this.look?.id !== event.pointerId) return;
       this.input.addLook(event.clientX - this.look.x, event.clientY - this.look.y);
       this.look.x = event.clientX; this.look.y = event.clientY;
-    });
+    },{signal:this.events.signal});
     const end = (event: PointerEvent) => { if (this.look?.id === event.pointerId) this.look = null; };
-    canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
-    canvas.addEventListener('lostpointercapture', end);
+    canvas.addEventListener('pointerup', end,{signal:this.events.signal}); canvas.addEventListener('pointercancel', end,{signal:this.events.signal});
+    canvas.addEventListener('lostpointercapture', end,{signal:this.events.signal});
     // 鼠标锁定接手视角后
-    document.addEventListener('pointerlockchange', () => { if (this.input.pointerLocked) this.look = null; });
-    window.addEventListener('blur', () => this.clear());
+    document.addEventListener('pointerlockchange', () => { if (this.input.pointerLocked) this.look = null; },{signal:this.events.signal});
+    window.addEventListener('blur', () => this.clear(),{signal:this.events.signal});
   }
   /** 方向键是符号 */
   applyLocale(): void {
@@ -108,4 +109,5 @@ export class TouchControls {
     }
   }
   setVisible(visible: boolean): void { this.clear(); this.root.classList.toggle('hidden', !visible); }
+  dispose():void {this.events.abort();this.setVisible(false);this.root.remove();}
 }

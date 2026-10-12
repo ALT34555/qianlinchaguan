@@ -7,8 +7,18 @@ import { DAY_MS, parseArtificialState, type ArtificialState } from './artificial
 import { parsePlayerState, type PlayerState } from '../../entities/PlayerState.ts';
 import { parseMysterySettings, type MysterySettings } from '../../core/MysterySettings.ts';
 
+import { parsePlayMode, parseCreationTimeSpeed, type PlayMode } from '../../core/PlayMode.ts';
+import type { ExplorationSnapshot } from './Exploration';
+import { validWorldKey } from './WorldDataStore';
+
 export interface PlayerPosition { x: number; y: number; z: number; yaw: number; pitch: number }
+export interface AtlasDisplayState {info:boolean;colors:boolean;relief:boolean;rainClouds:boolean}
 export interface WorldSave {
+  atlasDisplay?:AtlasDisplayState;
+  worldKey?:string;
+  exploration?:ExplorationSnapshot;
+  playMode?: PlayMode;
+  creationTimeSpeed?: number;
   playerState?: PlayerState;
   mystery?: MysterySettings;
   ren?: '人';
@@ -35,6 +45,25 @@ export function parseWorldSave(text: string): WorldSave {
   if (!data || !isSupportedGeneratorVersion(data.generatorVersion)) {
     throw new Error('此存档使用旧版或不支持的生成算法。请使用其中的种子新建世界；新版地形无法还原旧版位置。');
   }
+  if(data.worldKey!==undefined&&(typeof data.worldKey!=='string'||!validWorldKey(data.worldKey)))throw new Error('世界存储编号无效。');
+  let atlasDisplay:AtlasDisplayState|undefined;
+  if(data.atlasDisplay!==undefined){
+    const value=data.atlasDisplay;
+    if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('舆图显示设置无效。');
+    const keys=['info','colors','relief','rainClouds'] as const;
+    if(keys.some(k=>value[k]!==undefined&&typeof value[k]!=='boolean'))throw new Error('舆图显示开关无效。');
+    atlasDisplay={info:value.info??false,colors:value.colors??false,relief:value.relief??false,rainClouds:value.rainClouds??false};
+  }
+  const exploration=data.exploration as ExplorationSnapshot|undefined;
+  if(exploration){
+    if(!Array.isArray(exploration.regions)||exploration.regions.length>32768)throw new Error('探索记录无效。');
+    const keys=new Set<string>();
+    for(const r of exploration.regions){
+      if(!Number.isInteger(r.x)||!Number.isInteger(r.z)||Math.abs(r.x)>1000000||Math.abs(r.z)>1000000||
+        !Array.isArray(r.bits)||r.bits.length!==128||r.bits.some(v=>!Number.isInteger(v)||v<0||v>255)||keys.has(`${r.x},${r.z}`))throw new Error('探索区域无效。');
+      keys.add(`${r.x},${r.z}`);
+    }
+  }
   if (!Number.isInteger(data.seed) || data.seed < 0 || data.seed > 0xffffffff) throw new Error('存档种子无效。');
   if (data.calendarType !== undefined && data.calendarType !== 'real' && data.calendarType !== 'yuan') throw new Error('存档中的历法无效。');
   const climateWeights = normalizeClimateWeights(data.climateWeights);
@@ -47,7 +76,9 @@ export function parseWorldSave(text: string): WorldSave {
     factions: owned ? [{ id: owned.id, relationship: 'owned', mainColor: owned.mainColor, trimColor: owned.trimColor }] : [],
     ...(owned ? { activeFactionId: owned.id } : {}) });
   const ren_ming = playerState.name;
-  const mystery = parseMysterySettings(data.mystery);
+  const playMode = parsePlayMode(data.playMode);
+  const creationTimeSpeed = parseCreationTimeSpeed(data.creationTimeSpeed);
+  const mystery = playMode === 'survival' ? { timeSpeed: creationTimeSpeed, menuAutoPause: false } : parseMysterySettings(data.mystery);
   const playerFaction = data.playerFaction === undefined ? undefined : playerFactionOptions(data.playerFaction);
   if (artificialState && !generation.artificial?.enabled) throw new Error('无人世界不能包含人类活动信息。');
   if (playerState.factions.some(f => !artificialState?.territories.some(t => t.id === f.id))) throw new Error('玩家阵营在世界中不存在。');
@@ -75,6 +106,9 @@ export function parseWorldSave(text: string): WorldSave {
     throw new Error('存档位置超出星球南北极范围。');
   }
   return { 
+    ...(data.worldKey?{worldKey:data.worldKey}:{}),...(exploration?{exploration}:{}),
+    playMode, creationTimeSpeed,
+    ...(atlasDisplay?{atlasDisplay}:{}),
     ren: '人', ren_ming, playerState, mystery, ...(playerFaction ? { playerFaction } : {}),
     generatorVersion: GENERATOR_VERSION, 
     seed: data.seed, 
@@ -86,6 +120,6 @@ export function parseWorldSave(text: string): WorldSave {
     player: { x: p.x, y: p.y, z: p.z, yaw: p.yaw, pitch: p.pitch },
     ...(data.utcOffsetMinutes !== undefined ? { utcOffsetMinutes: data.utcOffsetMinutes } : {}),
     ...(data.worldName !== undefined ? { worldName: data.worldName } : {}),
-    ...(data.flying !== undefined ? { flying: data.flying } : {}),
+    ...(playMode === 'survival' ? { flying: false } : data.flying !== undefined ? { flying: data.flying } : {}),
   };
 }

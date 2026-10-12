@@ -1,9 +1,8 @@
-import { build } from 'vite';
 import { cp, mkdir, mkdtemp, readFile, writeFile, access } from 'node:fs/promises';
 import { resolve } from 'node:path';
 try { await access('node_modules/electron/dist/electron.exe'); }
 catch { await import('electron/install.js'); }
-await build({ configFile: false, publicDir: false, ssr: { noExternal: ['fflate'] }, build: { ssr: 'platforms/windows/server.ts', outDir: 'platforms/windows/runtime', rollupOptions: { output: { entryFileNames: 'server.mjs' } } } });
+await import('./build-runtime.mjs');
 if (process.argv.includes('--package')) {
   const { packager } = await import('@electron/packager');
   await mkdir(resolve('../../902temp'), { recursive: true });

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { WEATHER, weatherDayRatio, weatherPrecipitation, type WeatherId } from './Weather';
 
 /** 天空与云层 */
 export class Sky {
@@ -9,6 +10,7 @@ export class Sky {
   private readonly dome: THREE.Mesh;
   private readonly stars: THREE.Points;
   private readonly clouds: THREE.Mesh;
+  private readonly rainClouds: THREE.Mesh;
   private readonly cloudDrift: THREE.InstancedBufferAttribute;
   /** 每个云片实例的漂移速度（x, z，单位/秒） */
   private readonly cloudVelocity: Float32Array;
@@ -20,6 +22,7 @@ export class Sky {
   private underwater = false;
   private underwaterMix = 0;
   private lastNow = -1;
+  private advanced = true;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -76,6 +79,36 @@ export class Sky {
     this.dome.renderOrder = -1000;
     this.dome.frustumCulled = false;
     this.group.add(this.dome);
+    const rainMaterial = new THREE.ShaderMaterial({
+      side: THREE.BackSide, transparent: true, depthTest: true, depthWrite: false, fog: false,
+      uniforms: { uColor: { value: new THREE.Color('#68727c') }, uOpacity: { value: 0 } },
+      vertexShader: `
+        varying vec3 vDir;
+        void main() {
+          vDir = normalize(position);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_Position.z = gl_Position.w;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vDir;
+        uniform vec3 uColor;
+        uniform float uOpacity;
+        void main() {
+          vec3 dir = normalize(vDir);
+          float cloud = .5 + .25 * sin(dir.x * 12.0 + dir.z * 7.0) + .25 * cos(dir.z * 15.0 - dir.y * 8.0);
+          float coverage = smoothstep(-.12, .06, dir.y);
+          gl_FragColor = vec4(uColor * (.9 + .1 * cloud), uOpacity * coverage * (.88 + .12 * cloud));
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
+        }
+      `,
+    });
+    this.rainClouds = new THREE.Mesh(new THREE.SphereGeometry(DOME_RADIUS - 8, 24, 16), rainMaterial);
+    this.rainClouds.renderOrder = -870;
+    this.rainClouds.frustumCulled = false;
+    this.rainClouds.visible = false;
+    this.group.add(this.rainClouds);
 
     // 星空 (Stars)：只铺上半球，随天球一起转
     const starTexture = makeRadialTexture(64, [
@@ -181,6 +214,7 @@ export class Sky {
     this.cloudVelocity = clouds.velocity;
     this.cloudInstances = clouds.base.length / 3;
     const cloudMaterial = new THREE.ShaderMaterial({
+      forceSinglePass:true,
       transparent: true,
       depthWrite: false,
       side: THREE.DoubleSide,
@@ -296,9 +330,17 @@ export class Sky {
     this.underwater = underwater;
   }
 
-  update(dayRatio: number, cameraPos: THREE.Vector3, _timeMs: number): void {
+  setAdvancedVisuals(enabled: boolean): void {
+    this.advanced = enabled;
+    this.clouds.visible = enabled;
+  }
+
+  update(dayRatio: number, cameraPos: THREE.Vector3, _timeMs: number, weather: WeatherId = 0, paused = false, precipitation = weatherPrecipitation(weather)): void {
+    dayRatio = (weatherDayRatio(weather, (dayRatio + .5) % 1) + .5) % 1;
+    const effect = WEATHER[weather];
+    precipitation = THREE.MathUtils.clamp(precipitation, 0, 1);
     const now = performance.now() / 1000;
-    const delta = this.lastNow < 0 ? 0 : Math.min(Math.max(now - this.lastNow, 0), 0.1);
+    const delta = this.lastNow < 0 || paused ? 0 : Math.min(Math.max(now - this.lastNow, 0), 0.1);
     this.lastNow = now;
     this.underwaterMix += ((this.underwater ? 1 : 0) - this.underwaterMix) * Math.min(1, delta * 2.4);
     if (this.underwaterMix < 0.001) this.underwaterMix = 0;
@@ -306,6 +348,7 @@ export class Sky {
     // 跟随相机（云、日月都在这个坐标系里）
     this.group.position.set(cameraPos.x, 0, cameraPos.z);
     this.dome.position.y = cameraPos.y;
+    this.rainClouds.position.y = cameraPos.y;
     this.stars.position.y = cameraPos.y;
     this.clouds.position.y = cameraPos.y;
 
@@ -320,45 +363,62 @@ export class Sky {
     const sinA = Math.sin(angle);
     const cosA = Math.cos(angle);
     this.sun.position.set(sinA * SKY_DISTANCE, cameraPos.y + cosA * SKY_DISTANCE, 0);
-    this.sun.lookAt(cameraPos);
     this.moon.position.set(-sinA * SKY_DISTANCE, cameraPos.y - cosA * SKY_DISTANCE, 0);
+    if (weather === 900) {
+      this.sun.position.set(.4 * SKY_DISTANCE, cameraPos.y + .55 * SKY_DISTANCE, -.75 * SKY_DISTANCE);
+      this.moon.position.set(-.4 * SKY_DISTANCE, cameraPos.y + .55 * SKY_DISTANCE, -.75 * SKY_DISTANCE);
+    }
+    this.sun.lookAt(cameraPos);
     this.moon.lookAt(cameraPos);
     this.stars.rotation.z = -angle;
-    const sunTextureAlpha = 1 - this.underwaterMix;
+    const sunTextureAlpha = (1 - this.underwaterMix) * (1 - effect.dim);
     (this.sun.material as THREE.MeshBasicMaterial).opacity = sunTextureAlpha;
     (this.moon.material as THREE.MeshBasicMaterial).opacity = sunTextureAlpha;
     const moonColor = this.tint.copy(MOON_COLOR).multiplyScalar(0.55 + 0.45 * day);
     (this.moon.material as THREE.MeshBasicMaterial).color.copy(moonColor);
     this.sun.visible = sunHeight > -0.25 && this.underwaterMix < 0.99;
-    this.moon.visible = sunHeight < 0.25 && this.underwaterMix < 0.99;
+    this.moon.visible = (weather === 900 || sunHeight < 0.25) && this.underwaterMix < 0.99;
 
     // 天穹：地平线取雾色，与地形雾严格对齐
     const fog = this.scene.fog;
     const horizon = fog ? fog.color : HORIZON_FALLBACK;
     const domeUniforms = (this.dome.material as THREE.ShaderMaterial).uniforms;
+    const domeMaterial = this.dome.material as THREE.ShaderMaterial;
+    if (domeMaterial.toneMapped === (weather === 900)) {
+      domeMaterial.toneMapped = weather !== 900; domeMaterial.needsUpdate = true;
+    }
     (domeUniforms.uHorizon.value as THREE.Color).copy(horizon);
     // 白天用深蓝，夜里换成暗夜蓝，避免天顶直接黑成一片
     (domeUniforms.uZenith.value as THREE.Color)
       .copy(horizon)
       .lerp(ZENITH_DAY, 0.82 * day)
       .lerp(ZENITH_NIGHT, night * 0.9);
+    (domeUniforms.uZenith.value as THREE.Color).lerp(horizon, effect.dim);
+    (domeUniforms.uZenith.value as THREE.Color).lerp(this.tint.copy(CLOUD_RAIN).multiplyScalar(.2 + .8 * day), precipitation * .85);
+    if (weather === 900) (domeUniforms.uZenith.value as THREE.Color).copy(horizon);
     (domeUniforms.uFogColor.value as THREE.Color).copy(horizon);
     (domeUniforms.uGlowColor.value as THREE.Color).copy(GLOW_DAY).lerp(GLOW_DUSK, dusk);
-    domeUniforms.uGlow.value = 0.2 * day + 1.35 * dusk;
+    domeUniforms.uGlow.value = weather === 900 ? 0 : (0.2 * day + 1.35 * dusk) * (1 - effect.dim) * (1 - precipitation);
     (domeUniforms.uSunDir.value as THREE.Vector3).set(sinA, cosA, 0).normalize();
     domeUniforms.uUnderwater.value = this.underwaterMix;
 
     // 星空只在真正入夜后浮现
     const starMaterial = this.stars.material as THREE.PointsMaterial;
-    starMaterial.opacity = Math.pow(night, 1.4) * 0.95 * (1 - this.underwaterMix);
+    starMaterial.opacity = Math.pow(night, 1.4) * 0.95 * (1 - this.underwaterMix) * (1 - effect.dim);
     this.stars.visible = starMaterial.opacity > 0.01;
 
     // 云层颜色：白天纯白，黄昏偏暖，夜里压成暗蓝灰
     const cloudColor = this.tint.copy(CLOUD_NIGHT).lerp(CLOUD_DAY, day).lerp(CLOUD_WARM, dusk * 0.55);
     const cloudUniforms = (this.clouds.material as THREE.ShaderMaterial).uniforms;
     (cloudUniforms.uColor.value as THREE.Color).copy(cloudColor);
+    (cloudUniforms.uColor.value as THREE.Color).lerp(this.tint.copy(CLOUD_RAIN).multiplyScalar(.2 + .8 * day), precipitation);
+    (cloudUniforms.uColor.value as THREE.Color).multiplyScalar(1 - effect.dim * .6);
     (cloudUniforms.uHorizonColor.value as THREE.Color).copy(horizon);
-    cloudUniforms.uAlphaScale.value = 1 - 0.92 * this.underwaterMix;
+    cloudUniforms.uAlphaScale.value = effect.clouds * (1 - 0.92 * this.underwaterMix);
+    const rainUniforms = (this.rainClouds.material as THREE.ShaderMaterial).uniforms;
+    (rainUniforms.uColor.value as THREE.Color).copy(CLOUD_RAIN).multiplyScalar(.2 + .8 * day);
+    rainUniforms.uOpacity.value = precipitation * .92 * (1 - this.underwaterMix);
+    this.rainClouds.visible = rainUniforms.uOpacity.value > .001;
 
     // 云层淡出范围跟随雾距（水下雾很短，不作为依据）
     if (!this.underwater) this.surfaceFogFar = fog instanceof THREE.Fog ? fog.far : this.surfaceFogFar;
@@ -367,18 +427,18 @@ export class Sky {
     cloudUniforms.uFadeNear.value = half * CLOUD_FADE_NEAR_RATIO;
     cloudUniforms.uFadeFar.value = half;
     cloudUniforms.uPhase.value = (now / CLOUD_OSC_PERIOD) % 1;
-    this.updateCloudDrift(now, half);
+    this.updateCloudDrift(delta * effect.wind, half);
   }
 
   /** 云片漂移量 */
-  private updateCloudDrift(now: number, half: number): void {
+  private updateCloudDrift(delta: number, half: number): void {
     const drift = this.cloudDrift.array as Float32Array;
     const span = half * 2;
-    for (let i = 0; i < this.cloudInstances; i++) {
-      drift[i * 2] = wrapToHalf(this.cloudVelocity[i * 2] * now, span, half);
-      drift[i * 2 + 1] = wrapToHalf(this.cloudVelocity[i * 2 + 1] * now, span, half);
+    for (let i = 0; this.advanced && i < this.cloudInstances; i++) {
+      drift[i * 2] = wrapToHalf(drift[i * 2] + this.cloudVelocity[i * 2] * delta, span, half);
+      drift[i * 2 + 1] = wrapToHalf(drift[i * 2 + 1] + this.cloudVelocity[i * 2 + 1] * delta, span, half);
     }
-    this.cloudDrift.needsUpdate = true;
+    if (this.advanced) this.cloudDrift.needsUpdate = true;
   }
 
   dispose(): void {
@@ -388,6 +448,8 @@ export class Sky {
     (this.moon.material as THREE.Material).dispose();
     this.dome.geometry.dispose();
     (this.dome.material as THREE.Material).dispose();
+    this.rainClouds.geometry.dispose();
+    (this.rainClouds.material as THREE.Material).dispose();
     this.stars.geometry.dispose();
     (this.stars.material as THREE.Material).dispose();
     this.clouds.geometry.dispose();
@@ -424,6 +486,7 @@ const HORIZON_FALLBACK = new THREE.Color('#a9d3ff');
 const ZENITH_DAY = new THREE.Color('#3d78d2');
 const ZENITH_NIGHT = new THREE.Color('#0d1730');
 const CLOUD_DAY = new THREE.Color('#ffffff');
+const CLOUD_RAIN = new THREE.Color('#68727c');
 const CLOUD_NIGHT = new THREE.Color('#38445f');
 const CLOUD_WARM = new THREE.Color('#ffb277');
 const GLOW_DAY = new THREE.Color('#fff2cf');
@@ -439,7 +502,7 @@ function smoothstep(edge0: number, edge1: number, x: number): number {
 
 /** 把数值折进 [-half, half) */
 function wrapToHalf(value: number, span: number, half: number): number {
-  return ((value % span) + span) % span - half;
+  return (((value + half) % span) + span) % span - half;
 }
 
 function makeCanvas(size: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {

@@ -1,10 +1,10 @@
 /** 岩石形态原型（9 个岩石单位） */
 import { LowPolyBuilder } from '../vegetation/geometry';
 import { mulberry32 } from '../../../core/math/Random';
-import {
-  RockBuilder, clamp01, deepen, hexToRgb, lighten, mix,
-  type RGB, type RockGeometry, type V3,
-} from './geometry';
+import { RockBuilder, type RockGeometry } from './geometry';
+import { clamp01 } from '../../../core/math/Scalar';
+import { deepen, hexToRgb, lighten, mix, type RGB } from '../../../core/math/Color';
+import { type V3 } from '../../../core/math/Geometry';
 import type { RockBuildDef, RockColorSlot, RockMaterial, RockParams, RockPalette } from './types';
 
 const TAU = Math.PI * 2;

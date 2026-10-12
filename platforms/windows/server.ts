@@ -3,6 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { ModResourceService, modResourceMiddleware } from '../mods/resources';
 import { resolve, sep, extname } from 'node:path';
 import { FileSaveService, fileSaveMiddleware } from '../saves/local-saves';
+export { FileSaveService, fileSaveMiddleware, ModResourceService, modResourceMiddleware };
+export { GENERATOR_VERSION } from '../../src/core/version';
+export { DEFAULT_CLIMATE_WEIGHTS, DEFAULT_GENERATION } from '../../src/systems/world/WorldSettings';
+export { decodeSaveArchive } from '../../src/systems/world/SaveArchive';
 
 /** 启动回环本地存档服务 */
 export async function startDesktopServer(root: string, directory: string) {

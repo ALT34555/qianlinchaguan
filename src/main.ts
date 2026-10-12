@@ -16,6 +16,10 @@ import { parseWorldSave } from './systems/world/WorldSave';
 import { loadSettings, saveSettings, SETTINGS_KEY } from './core/GameSettings';
 import { FileSaveStore } from './systems/world/FileSaveStore';
 import { initI18n, onLocaleChange, t } from './i18n';
+import { probeDisplayRefresh, overrideDisplayRefreshRate } from './ui/DisplayRefresh';
+import { prepareWorld } from './systems/world/PrepareWorld';
+import { BrowserSaveStore } from './systems/world/BrowserSaveStore';
+import type { SaveStore } from './systems/world/LocalSaveStore';
 
 const params = new URLSearchParams(location.search);
 const rdRaw = Number(params.get('rd'));
@@ -41,24 +45,41 @@ onLocaleChange(() => {
 });
 
 await mountModResources();
+const refreshOverride = Number(params.get('refresh'));
+if (Number.isFinite(refreshOverride) && refreshOverride > 0) overrideDisplayRefreshRate(refreshOverride);
+else probeDisplayRefresh();
 let settings = loadSettings(storage);
 if (renderDistanceOverride !== undefined) settings = { ...settings, renderDistance: renderDistanceOverride };
 applyAppearance(settings);
-const saveStore = new FileSaveStore(fetch, '/api/saves', params.get('saveLocation') ?? 'userdata/saves');
+let saveStore:SaveStore;
+try{
+  const response=await fetch('/api/world-data',{cache:'no-store'});
+  saveStore=response.ok&&(await response.json()).worldData===true?new FileSaveStore(fetch,'/api/saves',params.get('saveLocation')??'userdata/saves'):new BrowserSaveStore();
+}catch{saveStore=new BrowserSaveStore();}
 
-function enterWorld(options: StartOptions): void {
+async function enterWorld(options: StartOptions): Promise<void> {
   if (started) return;
+  started=true;
+  loadingEl.classList.remove('hidden');
+  try{
+  const worldKey=options.save?.worldKey??options.worldKey??crypto.randomUUID();
+  const runtimeOptions={ ...options,worldKey,initialPlayer:options.save?.player,showOverlay:params.get('overlay')==='1',settings,saveStore,
+    persistSettings:(value:typeof settings)=>{settings=saveSettings(storage,value);applyAppearance(settings);} };
+  const prepared=await prepareWorld(runtimeOptions,message=>{loadingEl.textContent=message;});
+  loadingEl.textContent=t('loading.terrain');
   // 先验证出生点，失败时保持设置界面可用。
   const game = new Game(document.getElementById('app')!, {
     start: document.getElementById('start-screen')!,
     loading: document.getElementById('loading')!,
     waterTint: document.getElementById('water-tint')!,
-  }, { ...options, initialPlayer: options.save?.player, showOverlay: params.get('overlay') === '1',
+  }, { ...options,worldKey,prepared, initialPlayer: options.save?.player, showOverlay: params.get('overlay') === '1',
     settings, saveStore, persistSettings: value => { settings = saveSettings(storage, value); applyAppearance(settings); } });
   started = true;
   menu.destroy();
   menuRoot.classList.add('hidden');
   game.start();
+  loadingEl.classList.add('hidden');
+  }catch(error){started=false;loadingEl.classList.add('hidden');document.getElementById('menu-status')!.textContent=error instanceof Error?error.message:String(error);}
 }
 
 let weights = normalizeClimateWeights(DEFAULT_CLIMATE_WEIGHTS);
