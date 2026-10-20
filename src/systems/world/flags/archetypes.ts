@@ -2,6 +2,7 @@
 
 import { hashString, mulberry32 } from '../../../core/math/Random';
 import { FlagBuilder } from './geometry';
+import { flagpoleColliders } from './FlagPoleColliders';
 import { addV3, crossV3, normV3, scaleV3, subV3 } from '../../../core/math/Geometry';
 import { clamp, clamp01 } from '../../../core/math/Scalar';
 import { hexToRgb, lighten, mix } from '../../../core/math/Color';
@@ -505,9 +506,9 @@ export function buildFlagpole(def: FlagpoleBuildDef): FlagGeometry {
   if (params.tiltX !== 0 || params.tiltZ !== 0) {
     const tilted = new FlagBuilder(rand);
     tilted.bake(built, { rotX: params.tiltX, rotZ: params.tiltZ });
-    return tilted.build();
+    const geometry=tilted.build();geometry.colliders=flagpoleColliders(params);return geometry;
   }
-  return built;
+  built.colliders=flagpoleColliders(params);return built;
 }
 
 export interface MountInput {

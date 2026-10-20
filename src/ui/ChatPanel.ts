@@ -18,7 +18,7 @@ export class ChatPanel {
   private sidebar = false;
   private lastMessageAt = 0;
 
-  constructor(parent: HTMLElement, private readonly playerName: string, private readonly playerColor: string | undefined,
+  constructor(parent: HTMLElement, private playerName: string, private playerColor: string | undefined,
     private readonly command: (value: string) => string, private readonly editingChanged: (editing: boolean) => void = () => {}) {
     this.element.className = 'chat-panel chat-idle';
     this.history.className = 'chat-history';
@@ -53,12 +53,21 @@ export class ChatPanel {
     this.element.setAttribute('aria-label', t('chat.title'));
   }
 
+  setPlayerIdentity(name: string, color: string): void { this.playerName = name; this.playerColor = color; }
+
   get editing(): boolean { return document.activeElement === this.input; }
 
   focus(prefix = ''): void {
+    if (this.element.inert) return;
     if (prefix && !this.input.value) this.input.value = prefix;
     this.input.focus({ preventScroll: true });
     this.editingChanged(true);
+  }
+
+  setSettingsOpen(open: boolean): void {
+    this.element.classList.toggle('settings-open', open);
+    this.element.inert = open;
+    if (open) this.input.blur();
   }
 
   setSidebar(open: boolean): void {

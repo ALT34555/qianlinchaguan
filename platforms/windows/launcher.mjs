@@ -326,7 +326,7 @@ function shutdown(server) {
 }
 
 // 6. 自检（--check）
-async function runCheck(options, { FileSaveService, fileSaveMiddleware, GENERATOR_VERSION, DEFAULT_CLIMATE_WEIGHTS, DEFAULT_GENERATION, decodeSaveArchive }) {
+async function runCheck(options, { FileSaveService, fileSaveMiddleware, CURRENT_RULE_ID, DEFAULT_CLIMATE_WEIGHTS, DEFAULT_GENERATION, decodeSaveArchive }) {
   const results = [];
   const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`  ${ok ? '✓' : '✗'} ${name}${detail ? ` — ${detail}` : ''}`); };
 
@@ -363,7 +363,7 @@ async function runCheck(options, { FileSaveService, fileSaveMiddleware, GENERATO
     const empty = await fetch(`${base}/api/saves`).then(r => r.json());
     check('GET /api/saves 初始为空', Array.isArray(empty.saves) && empty.saves.length === 0);
 
-    const makeSave = (name) => ({ generatorVersion: GENERATOR_VERSION, seed: 20261004,
+    const makeSave = (name) => ({ ruleVersion: CURRENT_RULE_ID, seed: 20261004,
       climateWeights: DEFAULT_CLIMATE_WEIGHTS, generation: DEFAULT_GENERATION, calendarType: 'real',
       unixMs: Date.now(), utcOffsetMinutes: 480, worldName: name,
       player: { x: 32.5, y: 12, z: -40.25, yaw: 1.57, pitch: -0.2 } });

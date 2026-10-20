@@ -7,21 +7,20 @@ import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import type { MeshData } from './ChunkMesher';
 import type {WaterField} from './DynamicWater';
 import type { DecorationPlacement } from './WorldDecoration';
-import type { WatershedSamples, WatershedState } from './Watershed';
+import type { WatershedState } from './Watershed';
 import type { DecorationBatch } from './DecorationInstances';
 
 export type WorkerRequest =
   | { kind:'budget'; entries:number; meshBytes:number }
   | { kind: 'flush'; id: number }
   | { kind: 'init'; seed: number; climateWeights: ClimateWeights; generation: WorldGeneration; worldKey?:string; hydrology?:WatershedState }
-  | { kind: 'coarse'; samples: WatershedSamples }
-  | { kind: 'generate'; cx: number; cz: number; artificialType?: number; waterOverrides?: WaterAppearanceEntry[]; waterRevision?: number; waterFreezeRules?: WaterFreezeRules };
+  | { kind: 'generate'; cx: number; cz: number; artificialType?: number; waterOverrides?: WaterAppearanceEntry[]; waterRevision?: number; waterFreezeRules?: WaterFreezeRules; vegetationMultiplier?: number; waterSeason?:number|null };
 
-/** 舆图预览请求：image 为假时只回平均色，省一次像素图分配与回传 */
+/** 舆图预览请求，image 为假仅返平均色 */
 export type SurfacePreviewRequest =
   | {kind:'budget';entries:number}
   | { kind: 'init'; seed: number; climateWeights: ClimateWeights; generation: WorldGeneration; worldKey?:string; hydrology?:WatershedState }
-  | { kind: 'generate'; cx: number; cz: number; image?: boolean; detail?:boolean; cachedOnly?:boolean };
+  | { kind: 'generate'; cx: number; cz: number; image?: boolean; detail?:boolean; cachedOnly?:boolean;nodes?:boolean;base?:boolean;waterSeason?:number|null };
 
 export interface ChunkResultMessage {
   meshCacheHit?:boolean;
@@ -46,6 +45,7 @@ export interface ChunkResultMessage {
   elapsed: number;
   cacheHit?: boolean;
   instances?:DecorationBatch[];
+  colliders?:Float32Array;
 }
 
 export type WorkerResponse = ChunkResultMessage;

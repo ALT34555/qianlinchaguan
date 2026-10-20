@@ -41,6 +41,8 @@ export class Input {
   setTarget(target:HTMLElement):void { this.target=target;this.pointerLocked=false;this.enabled=this.enabledValue; }
   dispose():void {this.events.abort();this.enabled=false;}
 
+  get enabled(): boolean { return this.enabledValue; }
+
   set enabled(value: boolean) {
     this.enabledValue = value;
     this.down.clear(); this.mouseDX = 0; this.mouseDY = 0;

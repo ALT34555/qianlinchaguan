@@ -2,6 +2,28 @@ import { terrainDiagonal, terrainHeightAt, triangleHeight, type HeightSampler } 
 import { SEA_LEVEL } from '../../core/config';
 
 export const WATER_OFFSET = .12;
+export const SHALLOW_STATIC_DEPTH = 1.2;
+export type ShallowSampler = (x: number, z: number) => boolean;
+export function shallowVertexLimit(x: number, z: number, height: HeightSampler, water: HeightSampler, shallow: ShallowSampler): number {
+  let count = 0;
+  for (const [dx, dz] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+    const px = x + dx, pz = z + dz, level = water(px, pz), bed = height(px, pz);
+    if (!Number.isFinite(level) || bed >= level) continue;
+    if (!shallow(px, pz) || level - bed > SHALLOW_STATIC_DEPTH + 1e-5) return Infinity;
+    count++;
+  }
+  return count ? SHALLOW_STATIC_DEPTH : Infinity;
+}
+function shallowCellLimit(x: number, z: number, height: HeightSampler, water: HeightSampler, shallow: ShallowSampler): number {
+  let count = 0;
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    const px = x + dx, pz = z + dz, level = water(px, pz), bed = height(px, pz);
+    if (!Number.isFinite(level) || bed >= level) continue;
+    if (!shallow(px, pz) || level - bed > SHALLOW_STATIC_DEPTH + 1e-5) return Infinity;
+    count++;
+  }
+  return count ? SHALLOW_STATIC_DEPTH : Infinity;
+}
 export function waterVertexLevel(x: number, z: number, height: HeightSampler, water: HeightSampler, seed: number, seaFallback = true): number {
   let total = 0, count = 0;
   for (const [dx, dz] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
@@ -20,7 +42,7 @@ export function isWaterCascade(x: number, z: number, height: HeightSampler, wate
 }
 
 /** 与水面网格相同的三角采样 */
-function cellWaterHeight(x: number, z: number, ix: number, iz: number, seed: number, height: HeightSampler, water: HeightSampler, seaFallback = true): number {
+function cellWaterHeight(x: number, z: number, ix: number, iz: number, seed: number, height: HeightSampler, water: HeightSampler, seaFallback = true, shallow?: ShallowSampler): number {
   const level = water(ix, iz);
   let result: number;
   {
@@ -32,17 +54,19 @@ function cellWaterHeight(x: number, z: number, ix: number, iz: number, seed: num
     const [a, b, c, d] = vertices.map(value => Number.isFinite(value) ? value : fallback);
     result = triangleHeight(x - ix, z - iz, a, b, c, d, terrainDiagonal(ix, iz, seed));
   }
-  return terrainHeightAt(x, z, seed, height) < result ? result : -Infinity;
+  const depth = result - terrainHeightAt(x, z, seed, height);
+  const limit = shallow ? shallowCellLimit(ix, iz, height, water, shallow) : Infinity;
+  return depth > 0 && depth <= limit + 1e-5 ? result : -Infinity;
 }
 
-export function waterHeightAt(x: number, z: number, seed: number, height: HeightSampler, water: HeightSampler, seaFallback = true): number {
+export function waterHeightAt(x: number, z: number, seed: number, height: HeightSampler, water: HeightSampler, seaFallback = true, shallow?: ShallowSampler): number {
   const ix = Math.floor(x), iz = Math.floor(z);
-  let result = cellWaterHeight(x, z, ix, iz, seed, height, water, seaFallback);
+  let result = cellWaterHeight(x, z, ix, iz, seed, height, water, seaFallback, shallow);
   // 格线上的点也属于左/上侧的面
   const xs = x === ix ? [ix, ix - 1] : [ix], zs = z === iz ? [iz, iz - 1] : [iz];
   for (const px of xs) for (const pz of zs) {
     if (px === ix && pz === iz) continue;
-    result = Math.max(result, cellWaterHeight(x, z, px, pz, seed, height, water, seaFallback));
+    result = Math.max(result, cellWaterHeight(x, z, px, pz, seed, height, water, seaFallback, shallow));
   }
   return result;
 }

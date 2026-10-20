@@ -1,15 +1,4 @@
-/** 版本常量单一真源，规范详见同名文档。 */
-
-/** 世界生成算法与存档兼容版本，算法变更即 +1 */
-export const GENERATOR_VERSION = 43;
-
-/** 兼容生成算法版本列表，升序递增。 */
-export const LEGACY_GENERATOR_VERSIONS: readonly number[] = [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42];
-
-/** 生成算法版本能否被当前版本读入 */
-export function isSupportedGeneratorVersion(value: unknown): boolean {
-  return value === GENERATOR_VERSION || LEGACY_GENERATOR_VERSIONS.includes(value as number);
-}
+/** 版本常量单一真源，详见同名文档 */
 
 /** 内容数据格式版本：参数表与派生清单共用 */
 export const CONTENT_DATA_VERSION = 3;

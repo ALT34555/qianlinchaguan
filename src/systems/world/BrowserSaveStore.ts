@@ -1,4 +1,4 @@
-import type { SaveStore, SaveList, LocalSave } from './LocalSaveStore';
+import { leisureCopy, type SaveStore, type SaveList, type LocalSave } from './LocalSaveStore';
 import { parseWorldSave, type WorldSave } from './WorldSave';
 import { decodeArchive } from './ArchiveWorker';
 import { WorldDataStore } from './WorldDataStore';
@@ -27,7 +27,7 @@ export class BrowserSaveStore implements SaveStore {
     const valid=parseWorldSave(JSON.stringify(save)),db=await this.open();
     const old=id?(await this.list()).saves.find(s=>s.id===id):undefined;
     if(id&&!old)throw new Error('原存档不存在');
-    const now=Date.now(),item:LocalSave={id:id??crypto.randomUUID(),name:name.trim().slice(0,80)||'未命名世界',createdAt:old?.createdAt??now,updatedAt:now,save:valid};
+    const now=Date.now(),nextName=name.trim().slice(0,80)||'未命名世界',item:LocalSave={id:id??crypto.randomUUID(),name:nextName,createdAt:old?.createdAt??now,updatedAt:now,save:{...valid,worldName:nextName}};
     await new Promise<void>((resolve,reject)=>{
       const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(item);
       tx.oncomplete=()=>resolve();tx.onabort=tx.onerror=()=>reject(tx.error);
@@ -40,5 +40,14 @@ export class BrowserSaveStore implements SaveStore {
       for(const [key,data] of Object.entries(item.worldData))await store.put(key,data);
     }
     return this.put(item.save,item.name||name);
+  }
+  async rename(id:string,name:string):Promise<LocalSave>{
+    const item=(await this.list()).saves.find(item=>item.id===id);if(!item)throw new Error('原存档不存在');
+    if(!name.trim())throw new Error('存档名称不能为空');
+    return this.put(item.save,name,id);
+  }
+  async copyToLeisure(id:string,name:string):Promise<LocalSave>{
+    const item=(await this.list()).saves.find(item=>item.id===id);if(!item)throw new Error('原存档不存在');
+    return this.put(await leisureCopy(item.save),name);
   }
 }

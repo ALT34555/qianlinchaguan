@@ -1,7 +1,7 @@
-import type {PreviewChunk} from './WorldGenerator';
+import type {PreviewChunk} from './WorldContract';
 
 export interface SurfacePreview {cx: number;cz: number;size: number;average: [number,number,number];rgba?: Uint8ClampedArray<ArrayBuffer>;refined?:boolean}
-/** 稀疏采样合成粗预览像素与平均色；image 为假时只算平均色 */
+/** 稀疏采样合成粗预览与平均色 */
 export function buildSurfacePreview(chunk: PreviewChunk,image=true): SurfacePreview {
   const size=chunk.size,step=chunk.step,last=size-1;
   const rgba=image?new Uint8ClampedArray(size*size*4):undefined,average:[number,number,number]=[0,0,0];

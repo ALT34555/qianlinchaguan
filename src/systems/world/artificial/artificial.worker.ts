@@ -1,4 +1,4 @@
-import { WorldGenerator } from '../WorldGenerator';
+import { createWorldGenerator } from '../GeneratorFactory';
 import { ArtificialWorld } from './ArtificialWorld';
 
 const ctx=self as unknown as Worker;
@@ -9,13 +9,13 @@ ctx.onmessage=event=>{
   try{
     const message=event.data;
     if(message.kind==='init'){
-      const generator=new WorldGenerator(message.seed,message.climateWeights,message.generation);
+      const generator=createWorldGenerator(message.seed,message.climateWeights,message.generation,{state:message.hydrology});
       generator.cacheLimit=message.entries??8192;
-      generator.adoptHydrology(message.hydrology);
       world=new ArtificialWorld(generator,message.ms,message.mode,message.offset,message.state);return;
     }
     if(!world)throw new Error('领地 Worker 未初始化');
     if(message.kind==='budget'){world.terrain.cacheLimit=message.entries;return;}
+    if(message.kind==='player-colors'){world.setPlayerColors(message.mainColor,message.trimColor);return;}
     if(message.region)region=world.discoverRegion(...message.region as [number,number,number,number]);
     world.discover(message.cx,message.cz,32);
     world.update(message.ms,message.cx,message.cz,8);

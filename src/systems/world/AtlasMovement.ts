@@ -1,4 +1,4 @@
-import type { WorldGenerator } from './WorldGenerator';
+import type { WorldGeneratorBase as WorldGenerator } from './WorldContract';
 import type { PathPoint } from './AtlasPath';
 export class AtlasMovement {
   private busy=false;
@@ -12,6 +12,7 @@ export class AtlasMovement {
       hydrology:terrain.exposeHydrology(),entries:terrain.cacheLimit,position:{x:position.x,y:position.y,z:position.z,yaw:position.yaw}});
   }
   setCacheBudget(entries:number):void {if(!this.failed)this.worker.postMessage({kind:'budget',entries});}
+  setHeight(heightCm:number):void {if(!this.failed)this.worker.postMessage({kind:'height',heightCm});}
   private fail(error:Error):void {this.failed=true;this.busy=false;this.worker.terminate();console.error('[Atlas movement]',error);this.waiters.splice(0).forEach(w=>w.reject(error));}
   target(target:PathPoint):void {if(!this.failed)this.worker.postMessage({kind:'target',target});}
   update(dt:number,dx:number,dz:number,sprint:boolean):void {

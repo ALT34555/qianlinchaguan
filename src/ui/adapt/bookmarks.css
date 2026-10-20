@@ -1,0 +1,257 @@
+/* 共用书签布局与配色 */
+.q-bookmark-panel {
+  --q-bookmark-width: calc(112px * var(--q-size));
+  --q-bookmark-font: calc(15px * var(--q-scale));
+  --q-bookmark-height: var(--q-tab-h);
+  --q-bookmark-overlap: calc(var(--q-bookmark-height) * .25);
+  --q-bookmark-pull-x: 0px;
+  --q-bookmark-pull-y: -3px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  container-type: normal;
+  isolation: isolate;
+}
+
+.q-bookmark-panel[data-bookmark-side="left"] {
+  --q-bookmark-overlap: calc(var(--q-bookmark-width) * .2);
+  --q-bookmark-pull-x: -4px;
+  --q-bookmark-pull-y: 0px;
+  grid-template-columns: var(--q-bookmark-width) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.q-bookmark-panel::before,
+.q-bookmark-panel::after { display: none; }
+
+.q-bookmark-panel :is(.save-filters, .creator-tabs.world-bookmark-tabs) {
+  position: relative;
+  z-index: auto;
+  isolation: auto;
+  overflow: visible;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  align-self: start;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.q-bookmark-panel[data-bookmark-side="left"] :is(.save-filters, .creator-tabs.world-bookmark-tabs) {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.q-bookmark-panel :is(.save-filter-bookmark, .creator-tabs.world-bookmark-tabs button) {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--q-bookmark-width);
+  min-width: 0;
+  max-width: 100%;
+  height: var(--q-bookmark-height);
+  aspect-ratio: auto;
+  margin: 0;
+  padding: 0 10px 9px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+  color: var(--q-ink-2);
+  font-family: var(--q-font-display);
+  font-size: var(--q-bookmark-font);
+  line-height: 1.2;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  transform: none;
+  z-index: 1;
+  cursor: pointer;
+  transition: color var(--q-d2) var(--q-ease), transform var(--q-d2) var(--q-ease);
+}
+
+.q-bookmark-panel[data-bookmark-side="left"] :is(.save-filter-bookmark, .creator-tabs.world-bookmark-tabs button) {
+  padding: 0 14px 0 8px;
+}
+
+.q-bookmark-panel .world-bookmark-tabs .bookmark-label { position: static; inset: auto; }
+
+.q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"], .save-import-bookmark) {
+  color: var(--q-primary-ui);
+  background-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.q-bookmark-panel :is(.save-list-panel, .bookmark-content-frame) {
+  position: relative;
+  z-index: 2;
+  margin-top: calc(-1 * var(--q-bookmark-overlap));
+  margin-left: 0;
+}
+
+.q-bookmark-panel[data-bookmark-side="left"] :is(.save-list-panel, .bookmark-content-frame) {
+  margin-top: 0;
+  margin-left: calc(-1 * var(--q-bookmark-overlap));
+}
+
+.q-bookmark-panel :is(.save-filter-bookmark, .creator-tabs.world-bookmark-tabs button):hover:not(:disabled) {
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--q-accent-ui);
+  transform: translate(calc(var(--q-bookmark-pull-x) * .3), calc(var(--q-bookmark-pull-y) * .3));
+}
+
+.q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"]) {
+  z-index: 4;
+  transform: translate(var(--q-bookmark-pull-x), var(--q-bookmark-pull-y));
+}
+
+.q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"]):hover:not(:disabled) {
+  transform: translate(var(--q-bookmark-pull-x), var(--q-bookmark-pull-y));
+}
+
+.q-bookmark-panel :is(.save-filter-bookmark:has(input:focus-visible), .world-bookmark-tabs button:focus-visible, .save-import-bookmark:focus-visible) {
+  outline: 2px solid var(--q-accent-ui);
+  outline-offset: 1px;
+}
+
+.q-bookmark-panel .save-import-bookmark:is([data-import-state="choosing"], [data-import-state="importing"]) {
+  color: var(--q-accent-ui);
+  z-index: 4;
+  transform: translate(var(--q-bookmark-pull-x), var(--q-bookmark-pull-y));
+}
+
+.q-bookmark-panel .save-list-panel {
+  margin-right: 0;
+  margin-bottom: 0;
+  padding: 16px;
+  border: 1px solid transparent;
+  border-image: none;
+}
+
+.q-bookmark-panel .bookmark-content-frame > .settings-scroll { padding: 18px clamp(12px, 2vw, 24px); }
+.q-sheet .settings-panel > .panel-heading h1 { flex-shrink: 0; white-space: nowrap; }
+
+@media (max-width: 1080px) {
+  .q-bookmark-panel {
+    --q-bookmark-width: calc(104px * var(--q-size));
+    --q-bookmark-font: calc(14px * var(--q-scale));
+  }
+}
+
+@media (max-width: 860px) {
+  .q-bookmark-panel { --q-bookmark-height: 32px; }
+}
+
+/* 书签图形使用实时主题色 */
+.q-bookmark-panel .q-bookmark-art { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+.q-bookmark-art .q-bookmark-rim { fill: var(--q-accent-ui); }
+.q-bookmark-art .q-bookmark-paper { fill: var(--q-surface-hi); stroke: var(--q-line-soft); stroke-width: 1; }
+.q-bookmark-art .q-bookmark-cord { fill: none; stroke: var(--q-accent-ui); stroke-width: 1; }
+.q-bookmark-art .q-bookmark-bead { fill: var(--q-surface-hi); stroke: var(--q-accent-ui); stroke-width: 1; }
+.q-bookmark-art .q-bookmark-side { display: none; }
+.q-bookmark-panel[data-bookmark-side="left"] .q-bookmark-top { display: none; }
+.q-bookmark-panel[data-bookmark-side="left"] .q-bookmark-side { display: initial; }
+.q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"], .save-import-bookmark[data-import-state="importing"]) .q-bookmark-rim { fill: var(--q-primary-ui); }
+.q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"]) .q-bookmark-paper { fill: color-mix(in oklab, var(--q-surface-hi) 92%, var(--q-primary)); }
+.q-bookmark-panel .creator-tabs button[hidden] { display: none; }
+
+/* 卷面框体共用细线与浮雕 */
+:is(.q-sheet, .pause-settings) :is(.save-list-panel, .bookmark-content-frame, .atlas-panel.atlas-frame) {
+  border: 1px solid var(--q-line-soft);
+  border-image: none;
+  border-radius: 0;
+  background: var(--q-surface);
+  box-shadow: var(--q-neu-sm);
+}
+:is(.q-sheet, .pause-settings) :is(.bookmark-content-frame, .atlas-panel.atlas-frame)::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid var(--q-line-faint);
+  border-image: none;
+  pointer-events: none;
+}
+.q-bookmark-panel :is(.save-list-panel, .bookmark-content-frame) { margin-right: 0; margin-bottom: 0; }
+.q-bookmark-panel .bookmark-content-frame > .creator-scroll { min-height: 0; padding: 18px; background: transparent; }
+.q-page.creator-page .world-settings.q-bookmark-panel { display: grid; overflow: visible; container-type: normal; border: 0; box-shadow: none; background: transparent; }
+.q-page.creator-page .world-settings.q-bookmark-panel.collapsed { display: none; }
+
+/* 新建页预览独立于表单高度 */
+.q-page.creator-page .menu-layout { align-items: start; grid-template-columns: minmax(260px, calc(336px * var(--q-size) + 12px)) minmax(0, 1fr); }
+.q-page.creator-page .menu-layout.map-fullscreen { grid-template-columns: minmax(0, 1fr); }
+.q-page.creator-page .atlas-panel {
+  position: sticky;
+  top: calc(16px + var(--q-safe-y));
+  height: min(680px, calc(100dvh - 72px - var(--q-safe-y) * 2));
+  min-height: 360px;
+  padding: 16px;
+  overflow: hidden;
+}
+.q-page.creator-page .atlas-placeholder { flex: 1; min-height: 0; overflow: hidden; padding: 20px; background: var(--q-bg); }
+.q-page.creator-page .atlas-placeholder .contour-art { width: min(240px, 75%); height: auto; aspect-ratio: 1; flex-shrink: 1; }
+.q-page.creator-page .atlas-loading {
+  position: absolute;
+  z-index: 5;
+  inset: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: var(--q-bg);
+}
+.q-page.creator-page .atlas-loading.hidden { display: none; }
+.q-page.creator-page .atlas-loading-flower { display: grid; place-items: center; }
+.q-page.creator-page .atlas-loading-label {
+  margin: 0;
+  color: var(--q-ink-2);
+  font-family: var(--q-font-display);
+  font-size: calc(16px * var(--q-scale));
+  letter-spacing: .14em;
+}
+.q-page.creator-page .atlas-content { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; }
+.q-page.creator-page .atlas-content.hidden { display: none; }
+.q-page.creator-page .atlas-header-bar { flex: 0 0 auto; flex-wrap: nowrap; gap: 8px; }
+.q-page.creator-page .atlas-workspace { flex: 1; min-height: 0; }
+.q-page.creator-page .map-viewport-wrapper { min-height: 0; border-image: none; border: 1px solid var(--q-line-soft); }
+.q-page.creator-page .atlas-footer { flex: 0 0 auto; }
+
+@media (max-width: 960px) {
+  .q-page.creator-page .menu-layout { grid-template-columns: minmax(0, 1fr); }
+  .q-page.creator-page .atlas-panel { position: relative; top: auto; height: min(600px, 75dvh); }
+}
+
+.q-page.creator-page .atlas-title-group { flex: 0 0 auto; flex-wrap: nowrap; white-space: nowrap; }
+.q-page.creator-page .atlas-view-tools { flex: 0 1 auto; min-width: 0; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
+.q-page.creator-page .atlas-view-tools::-webkit-scrollbar { display: none; }
+.q-page.creator-page :is(.atlas-view-tools, .planet-view-tools) { display: flex; flex-wrap: nowrap; align-items: center; white-space: nowrap; }
+.q-page.creator-page .atlas-view-tools > * { flex-shrink: 0; }
+.q-page.creator-page #map-coord-pill { flex: 1; min-width: 0; border: 0; padding: 0; background: transparent; text-align: right; }
+.q-page.creator-page #map-coord-pill:not(.hidden) { display: block; }
+.q-page.creator-page .world-settings.q-bookmark-panel[data-bookmark-side="top"] > .world-bookmark-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, var(--q-bookmark-width))); }
+.q-page.creator-page .world-settings.q-bookmark-panel[data-bookmark-side="top"] > .world-bookmark-tabs button { width: 100%; }
+
+/* 新建表单仅滚动内容区 */
+#world-menu.creator-page { overflow-y: auto; overflow-x: hidden; }
+.q-page.creator-page .world-settings.q-bookmark-panel { height: min(680px, var(--q-creator-height, calc(100dvh - 72px - var(--q-safe-y) * 2))); min-height: 360px; }
+.q-page.creator-page .q-bookmark-panel .bookmark-content-frame { min-height: 0; overflow: visible; }
+.q-page.creator-page .q-bookmark-panel .creator-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+.q-page.creator-page .q-bookmark-panel :is(.menu-status, .menu-actions) { flex: 0 0 auto; }
+.q-page.creator-page .world-preset-columns { display: block; }
+.q-page.creator-page .preset-column { width: 100%; min-width: 0; padding: 12px; border-color: var(--q-line-soft); background: var(--q-surface); }
+.q-page.creator-page .presets-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.q-page.creator-page .preset-pill { width: 100%; min-width: 0; }
+.q-page.creator-page .seed-field { border: 0; background: transparent; box-shadow: none; padding: 0; }
+.q-page.creator-page .seed-field input { width: 100%; min-width: 0; }

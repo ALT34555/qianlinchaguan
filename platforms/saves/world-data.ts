@@ -1,14 +1,16 @@
-import { mkdir, readFile, readdir, stat, open, rename, unlink } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, lstat, open, rename, unlink, copyFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { validWorldKey, validDataKey } from '../../src/systems/world/WorldDataStore';
+import { validWorldKey, validDataKey } from '../../src/systems/world/WorldDataStore.ts';
 
 export const MAX_WORLD_ENTRY=64*1024*1024;
 export const MAX_WORLD_CACHE=256*1024*1024;
 export class FileWorldData {
   private readonly queues=new Map<string,Promise<void>>();
   private writes=0;
-  constructor(readonly directory:string){this.directory=resolve(directory);}
+  readonly directory:string;
+  constructor(directory:string){this.directory=resolve(directory);}
   private path(world:string,key:string):string{
     if(!validWorldKey(world)||!validDataKey(key))throw new Error('世界数据路径无效');
     return join(this.directory,world,`${key}.bin`);
@@ -47,6 +49,17 @@ export class FileWorldData {
     if(!validWorldKey(world))throw new Error('世界数据编号无效');
     try{return(await readdir(join(this.directory,world))).filter(n=>n.endsWith('.bin')&&validDataKey(n.slice(0,-4))).map(n=>n.slice(0,-4));}
     catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return[];throw error;}
+  }
+  async copyTo(source:string,target:string):Promise<void>{
+    if(source===target||!validWorldKey(source)||!validWorldKey(target))throw new Error('副本世界编号无效');
+    await mkdir(join(this.directory,target),{recursive:true});
+    let total=0;
+    for(const key of await this.keys(source)){
+      const path=this.path(source,key),info=await lstat(path);
+      total+=info.size;
+      if(!info.isFile()||info.isSymbolicLink()||info.size>MAX_WORLD_ENTRY||total>MAX_WORLD_CACHE+MAX_WORLD_ENTRY)throw new Error('世界数据不可复制');
+      await copyFile(path,this.path(target,key),constants.COPYFILE_EXCL);
+    }
   }
   private async trim(world:string):Promise<void>{
     const dir=join(this.directory,world),entries=[];

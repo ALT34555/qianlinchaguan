@@ -1,5 +1,5 @@
 import { hash2 } from '../../core/math/Random';
-import type { WorldGenerator } from './WorldGenerator';
+import type { WorldGeneratorBase as WorldGenerator } from './WorldContract';
 export type WeatherId = 0 | 1 | 2 | 3 | 4 | 100 | 101 | 102 | 103 | 104 | 200 | 201 | 202 | 203 | 204 | 300 | 301 | 302 | 303 | 304 | 400 | 401 | 900 | 901 | 902;
 export interface ChunkWeather {
   cx: number; cz: number; id: WeatherId; cloudCover: number; intensity: number;
@@ -83,7 +83,7 @@ export function sampleChunkWeather(generator: WorldGenerator, unixMs: number, cx
     cx = ((cx + circumference / 2) % circumference + circumference) % circumference - circumference / 2;
     cz = Math.max(-circumference / 4, Math.min(circumference / 4 - 1, cz));
   }
-  const temperature = generator.getClimate(cx, cz).temperature - Math.max(0, generator.getTerrainSample(cx, cz).height) * .0065;
+  const temperature = generator.getSurfaceTemperature(cx,cz);
   return naturalChunkWeather(generator.seed, unixMs, cx, cz, temperature, circumference);
 }
 export class WeatherSystem {

@@ -1,10 +1,16 @@
-import { WorldGenerator, type ChunkInfo } from '../systems/world/WorldGenerator';
+import {iceColorValue} from './atlas/ice-cover.mjs';
+import {rasterMacroRivers} from './MacroRiverAtlas';
+import type { ChunkInfo } from '../systems/world/WorldContract';
+import type { WorldGeneratorBase as WorldGenerator } from '../systems/world/WorldContract';
 import { getChunkTypeDef } from '../systems/world/ChunkTypes';
 import { CLIMATES } from '../systems/world/WorldSettings';
 import { snowLine } from '../systems/world/TerrainLayers';
+import { mercatorZ,MERCATOR_LIMIT } from './AtlasProjection';
 
-export type PlanetView = 'globe' | 'projection';
+export type PlanetView = 'globe' | 'projection' | 'mercator';
 export interface OverviewStyle {
+  rivers?:boolean;
+  satellite?:boolean;
   chunkColors?:boolean;
   climate: boolean; relief: boolean; climateFilter: number | null;
   filterKey: string; matches: (type: number) => boolean;
@@ -17,7 +23,7 @@ const OVERVIEW_HEIGHT = 360;
 /** 首屏粗纹理宽度，高度取其一半 */
 const OVERVIEW_COARSE_WIDTH = 96;
 /** 每帧烘焙时间预算（毫秒） */
-const OVERVIEW_BAKE_BUDGET = 20;
+const OVERVIEW_BAKE_BUDGET = 5;
 /** 尚未烘焙到的像素底色 */
 const UNBAKED: readonly [number, number, number] = [47, 74, 92];
 
@@ -33,10 +39,10 @@ export function globePoint(u: number, v: number, longitude: number, latitude: nu
 /** 海面与内陆静水（湖、封冻静水）都算水面 */
 export const isStillWater = (info: ChunkInfo): boolean => info.elevation <= 0 || info.lakeLevel !== null;
 
-/** 打包成 0xRRGGBB：逐像素烘焙用，避免每像素分配数组 */
+/** 打包 0xRRGGBB 供逐像素烘焙 */
 export function overviewColorValue(type: number, climate: number, temperature: number, elevation: number,
-  lakeLevel: number | null, palette: boolean, relief: boolean, chunkColors = false): number {
-  let hex = palette ? CLIMATES[climate].color : getChunkTypeDef(type).mapColor;
+  lakeLevel: number | null, palette: boolean, relief: boolean, chunkColors = false,macro=false): number {
+  let hex = palette ? CLIMATES[climate].color : getChunkTypeDef(type,macro).mapColor;
   // 连续色：内陆静水不随植被或雪线转色
   if (!palette && !chunkColors) {
     hex = elevation <= 0 ? '#397aa1' : lakeLevel !== null ? '#3f86ad'
@@ -51,12 +57,12 @@ export function overviewColorValue(type: number, climate: number, temperature: n
     Math.min(255, Math.round((value & 255) * light));
 }
 
-export function overviewColor(info: ChunkInfo, climate: boolean, relief: boolean,chunkColors=false): [number, number, number] {
-  const value = overviewColorValue(info.type, info.climate, info.temperature, info.elevation, info.lakeLevel, climate, relief, chunkColors);
+export function overviewColor(info: ChunkInfo, climate: boolean, relief: boolean,chunkColors=false,macro=false): [number, number, number] {
+  const value = overviewColorValue(info.type, info.climate, info.temperature, info.elevation, info.lakeLevel, climate, relief, chunkColors,macro);
   return [value >> 16, value >> 8 & 255, value & 255];
 }
 
-/** 逐帧烘焙的纹理层：样本与样式分离，换样式只需重新着色 */
+/** 逐帧烘焙纹理层，样本与样式分离 */
 interface BakeTier {
   readonly width: number;
   readonly height: number;
@@ -66,10 +72,13 @@ interface BakeTier {
   readonly kinds: Uint16Array;
   /** 原始样本：气温 / 海拔 */
   readonly values: Float32Array;
+  readonly lakeLevels:Float32Array;
   sampled: number;
   colored: number;
   /** 已着色行对应的样式标识 */
   key: string;
+  readyKey:string;
+  readyImage:Uint8ClampedArray|null;
 }
 
 function createTier(width: number, height: number): BakeTier {
@@ -77,7 +86,7 @@ function createTier(width: number, height: number): BakeTier {
   canvas.width = width; canvas.height = height;
   const pixels = width * height;
   return { width, height, canvas, image: new ImageData(width, height),
-    kinds: new Uint16Array(pixels * 2), values: new Float32Array(pixels * 2), sampled: 0, colored: 0, key: '' };
+    kinds: new Uint16Array(pixels * 2), values: new Float32Array(pixels * 2),lakeLevels:new Float32Array(pixels).fill(NaN), sampled: 0, colored: 0, key: '',readyKey:'',readyImage:null };
 }
 
 export class PlanetAtlasLayer {
@@ -102,17 +111,18 @@ export class PlanetAtlasLayer {
     this.rasterKey = '';
     for (const tier of [this.full, this.coarse]) {
       tier.sampled = 0; tier.colored = 0; tier.key = ''; tier.image.data.fill(0);
+      tier.readyKey='';tier.readyImage=null;
     }
   }
 
   /** 纹理标识：样式与筛选一起决定是否需重新着色 */
   private styleKey(style: OverviewStyle): string {
-    return `${style.climate},${style.relief},${style.climateFilter},${style.filterKey},${style.chunkColors}`;
+    return `${style.climate},${style.relief},${style.climateFilter},${style.filterKey},${style.chunkColors},${style.rivers!==false},${style.satellite}`;
   }
 
   /** 当前样式是否已有完整纹理；分帧生成垫底只用成品 */
   hasTexture(style: OverviewStyle): boolean {
-    return this.full.key === this.styleKey(style) && this.full.colored >= this.full.height;
+    return this.full.readyKey === this.styleKey(style);
   }
 
   /** 读取已烘焙的原始样本，供球体统计免去逐点重算 */
@@ -132,7 +142,7 @@ export class PlanetAtlasLayer {
         (row + .5) / tier.height * size / 2 - size / 4 - .5);
       const i = row * tier.width + x;
       tier.kinds[i * 2] = info.type; tier.kinds[i * 2 + 1] = info.climate;
-      tier.values[i * 2] = info.temperature; tier.values[i * 2 + 1] = info.elevation;
+      tier.values[i * 2] = info.temperature; tier.values[i * 2 + 1] = info.elevation;tier.lakeLevels[i]=info.lakeLevel??NaN;
     }
   }
 
@@ -141,8 +151,13 @@ export class PlanetAtlasLayer {
     const kinds = tier.kinds, values = tier.values, data = tier.image.data;
     for (let x = 0; x < tier.width; x++) {
       const i = row * tier.width + x, type = kinds[i * 2], climate = kinds[i * 2 + 1];
-      let value = overviewColorValue(type, climate, values[i * 2], values[i * 2 + 1], null,
-        style.climate, style.relief, style.chunkColors);
+      let value = overviewColorValue(type, climate, values[i * 2], values[i * 2 + 1],Number.isFinite(tier.lakeLevels[i])?tier.lakeLevels[i]:null,
+        style.climate, style.relief, style.chunkColors,this.generator.generation.terrainRule==='planet-macro');
+      if(style.satellite&&!style.climate&&!style.chunkColors){
+        const size=this.generator.generation.planet.equatorChunks;
+        value=this.generator.getSatelliteColor((x+.5)/tier.width*size-size/2-.5,(row+.5)/tier.height*size/2-size/4-.5,style.relief)??value;
+      }
+      if(!style.climate&&!style.chunkColors&&(values[i*2+1]<=0||Number.isFinite(tier.lakeLevels[i])))value=iceColorValue(value,values[i*2]);
       if (style.climate && style.climateFilter !== null && climate !== style.climateFilter) {
         value = (Math.round((value >> 16) * .35) << 16) | (Math.round((value >> 8 & 255) * .35) << 8) | Math.round((value & 255) * .35);
       }
@@ -165,7 +180,12 @@ export class PlanetAtlasLayer {
     while (tier.colored < tier.sampled && (!progressed || performance.now() < deadline)) {
       this.colorRow(tier, tier.colored, style); tier.colored++; progressed = true;
     }
-    if (progressed && tier.colored === tier.height) tier.canvas.getContext('2d')!.putImageData(tier.image, 0, 0);
+    if (progressed && tier.colored === tier.height){
+      const rivers=!this.coarseOnly&&!style.climate&&style.rivers!==false?this.generator.getMacroRiverOverview?.():null;
+      if(rivers)rasterMacroRivers(tier.image.data,tier.width,tier.height,rivers,!!style.filterKey&&style.matches(5));
+      tier.canvas.getContext('2d')!.putImageData(tier.image, 0, 0);
+      tier.readyKey=key;tier.readyImage=tier.image.data.slice();
+    }
     return tier.colored < tier.height;
   }
 
@@ -177,21 +197,44 @@ export class PlanetAtlasLayer {
     if (detailed&&!this.coarseOnly&&this.step(this.full, key, style, size, deadline)) this.redraw();
   }
 
+  /** 新样式完成前继续显示成品 */
+  private displayTier(style:OverviewStyle):BakeTier|null{
+    const key=this.styleKey(style);
+    if(this.full.readyKey===key)return this.full;
+    if(this.coarse.readyKey===key)return this.coarse;
+    return this.full.readyImage?this.full:this.coarse.readyImage?this.coarse:null;
+  }
+
   drawProjection(ctx: CanvasRenderingContext2D, width: number, height: number, cell: number,
     centerX: number, centerZ: number, panX: number, panY: number, style: OverviewStyle, detailed = true): void {
     this.advance(style, detailed);
-    const key = this.styleKey(style), size = this.generator.generation.planet.equatorChunks, worldWidth = size * cell;
+    const size = this.generator.generation.planet.equatorChunks, worldWidth = size * cell;
     const originX = width / 2 + panX + (-size / 2 - centerX) * cell;
     const originY = height / 2 + panY + (-size / 4 - centerZ) * cell;
-    const complete = this.hasTexture(style);
-    const coarse = this.coarse.key === key && this.coarse.colored === this.coarse.height;
-    const full = this.full.key === key && this.full.colored === this.full.height;
-    ctx.imageSmoothingEnabled = true;
+    const tier=this.displayTier(style);
+    ctx.imageSmoothingEnabled = !style.climate;
     const first = Math.floor(-originX / worldWidth);
     for (let copy = first; originX + copy * worldWidth < width; copy++) {
       const x = originX + copy * worldWidth, y = originY, h = worldWidth / 2;
-      if (coarse && !complete) ctx.drawImage(this.coarse.canvas, x, y, worldWidth, h);
-      if (full) ctx.drawImage(this.full.canvas, x, y, worldWidth, h);
+      if(tier)ctx.drawImage(tier.canvas,x,y,worldWidth,h);
+    }
+  }
+
+  drawFlat(ctx:CanvasRenderingContext2D,width:number,height:number,cell:number,centerX:number,centerZ:number,panX:number,panY:number,style:OverviewStyle,mercator=true):void {
+    if(!mercator){this.drawProjection(ctx,width,height,cell,centerX,centerZ,panX,panY,style);return;}
+    this.advance(style);
+    const tier=this.displayTier(style);
+    if(!tier)return;
+    ctx.imageSmoothingEnabled = !style.climate;
+    const size=this.generator.generation.planet.equatorChunks,worldWidth=size*cell;
+    const originX=width/2+panX+(-size/2-centerX)*cell,originY=height/2+panY-mercatorZ(centerZ,size)*cell;
+    const cutoff=MERCATOR_LIMIT*size/(Math.PI*2);
+    for(let row=0;row<tier.height;row++){
+      const z0=Math.max(-cutoff,(row/tier.height-.5)*size/2),z1=Math.min(cutoff,((row+1)/tier.height-.5)*size/2);
+      if(z0>=z1)continue;
+      const y0=originY+mercatorZ(z0,size)*cell,y1=originY+mercatorZ(z1,size)*cell;
+      if(y1<0||y0>height)continue;
+      for(let copy=Math.floor(-originX/worldWidth);originX+copy*worldWidth<width;copy++)ctx.drawImage(tier.canvas,0,row,tier.width,1,originX+copy*worldWidth,y0,worldWidth,y1-y0+.25);
     }
   }
 
@@ -217,10 +260,9 @@ export class PlanetAtlasLayer {
   drawGlobe(ctx: CanvasRenderingContext2D, width: number, height: number, radius: number,
     longitude: number, latitude: number, style: OverviewStyle): void {
     this.advance(style);
-    const key = this.styleKey(style);
     const full = this.full, coarse = this.coarse;
-    const useFull = full.key === key && full.colored === full.height;
-    const useCoarse = coarse.key === key && coarse.colored === coarse.height;
+    const tier=this.displayTier(style);
+    const useFull=tier===full,useCoarse=tier===coarse;
     const stride = 2, w = Math.ceil(width / stride), h = Math.ceil(height / stride);
     if (this.globeCanvas.width !== w || this.globeCanvas.height !== h) {
       this.globeCanvas.width = w; this.globeCanvas.height = h;
@@ -232,22 +274,22 @@ export class PlanetAtlasLayer {
       this.raster = new ImageData(w, h); this.rasterKey = '';
     }
     const raster = this.raster;
-    const rasterKey = `${mapKey}|${key}|${useFull}|${useCoarse}`;
+    const rasterKey = `${mapKey}|${tier?.readyKey}|${useFull}|${useCoarse}`;
     if (this.rasterKey !== rasterKey) {
       for (let i = 0; i < mapFull.length; i++) {
         const dst = i * 4, light = mapLight[i];
         if (mapFull[i] < 0) { raster.data[dst + 3] = 0; continue; }
         // 完整纹理整体替换
         let source: Uint8ClampedArray | null = null, src = 0;
-        if (useFull) { source = full.image.data; src = mapFull[i] * 4; }
-        else if (useCoarse) { source = coarse.image.data; src = mapCoarse[i] * 4; }
+        if (useFull) { source = full.readyImage; src = mapFull[i] * 4; }
+        else if (useCoarse) { source = coarse.readyImage; src = mapCoarse[i] * 4; }
         for (let c = 0; c < 3; c++) raster.data[dst + c] = source ? Math.min(255, source[src + c] * light) : UNBAKED[c];
         raster.data[dst + 3] = 255;
       }
       this.globeCanvas.getContext('2d')!.putImageData(raster, 0, 0);
       this.rasterKey = rasterKey;
     }
-    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingEnabled = !style.climate;
     ctx.drawImage(this.globeCanvas, 0, 0, width, height);
     ctx.strokeStyle = 'rgba(151,208,222,.7)'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2); ctx.stroke();

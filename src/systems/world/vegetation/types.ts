@@ -251,7 +251,7 @@ export interface PlantParams {
   sizeScale?: number;
   /** 是否有刺（荆棘、多肉），0 表示无 */
   thorns?: number;
-  /** 原型基类（状态形态如 withered、sprout 派生前物种的成株原型） */
+  /** 派生前成株原型基类 */
   baseArchetype?: string;
 }
 
@@ -363,7 +363,7 @@ export interface PlantBloomOptions {
 export interface PlantDef {
   id: string;
   archetype: string;
-  /** 原型基类（状态形态如 withered、sprout 派生前物种的成株原型） */
+  /** 派生前成株原型基类 */
   baseArchetype?: string;
   climate: ClimateZone;
   name: string;

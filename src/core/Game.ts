@@ -1,23 +1,26 @@
+import { createWorldGenerator } from '../systems/world/GeneratorFactory';
 import { performanceBudget } from './PerformanceBudget';
 import { PlaySession, parsePlayMode, parseCreationTimeSpeed, type PlayMode } from './PlayMode';
 import { AtlasMovement } from '../systems/world/AtlasMovement';
 import { defaultMysterySettings } from './MysterySettings';
 import { parsePlayerState, type PlayerState } from '../entities/PlayerState';
-import { renName } from '../entities/PlayerIdentity';
 import { playerFlagSpawn, type PlayerFactionOptions } from '../systems/world/artificial/PlayerFaction';
-import { applyAppearance } from '../ui/Appearance';
+import { applyAppearance, applySettingsPalette } from '../ui/Appearance';
 import * as THREE from 'three';
 import { CHUNK_SIZE } from './config';
 import { Input } from './Input';
 import { TouchControls } from '../ui/TouchControls';
+import { StatusFeedback } from '../ui/StatusFeedback';
 import { Player } from '../entities/Player';
 import { World } from '../systems/world/World';
 import { Sky } from '../systems/world/Sky';
 import { WEATHER, WeatherSystem, weatherDayRatio, weatherPrecipitation, sampleChunkWeather, type ChunkWeather } from '../systems/world/Weather';
 import { WeatherVisual } from '../systems/world/WeatherVisual';
-import { WorldGenerator } from '../systems/world/WorldGenerator';
+import { Precipitation, precipitationKey } from '../systems/world/weather/Precipitation';
+import { precipitationWorld } from '../systems/world/GeneratorFactory';
+import type { WorldGeneratorBase as WorldGenerator } from '../systems/world/WorldContract';
 import { type ClimateWeights, type WorldGeneration } from '../systems/world/WorldSettings';
-import { GENERATOR_VERSION } from './version';
+import { CURRENT_RULE_ID } from './WorldRule';
 import type { AtlasDisplayState, PlayerPosition, WorldSave } from '../systems/world/WorldSave';
 import { downloadWorldSave, type SaveStore } from '../systems/world/LocalSaveStore';
 import { ChatPanel, type ChatMessage } from '../ui/ChatPanel';
@@ -32,6 +35,7 @@ import { formatChunkId } from '../systems/world/ChunkTypes';
 import { calendarLabel, chunkNameById, seasonName } from '../i18n/content';
 import { applyDomI18n, onLocaleChange, t } from '../i18n';
 import { ArtificialWorld } from '../systems/world/artificial/ArtificialWorld';
+import { playerProfile, profileHeightRange, type PlayerProfile } from '../entities/PlayerProfile';
 import { Exploration } from '../systems/world/Exploration';
 import { WorldDataStore } from '../systems/world/WorldDataStore';
 import { encodeWorldData } from '../systems/world/WorldDataCodec';
@@ -43,6 +47,7 @@ export interface GameOptions {
   playMode?: PlayMode;
   creationTimeSpeed?: number;
   ren_ming?: string;
+  profile?: PlayerProfile;
   playerFaction?: PlayerFactionOptions;
   seed: number;
   climateWeights: ClimateWeights;
@@ -72,6 +77,7 @@ export class Game {
   private readonly fog: THREE.Fog;
   private input: Input | null = null;
   private touch: TouchControls | null = null;
+  private readonly statusFeedback: StatusFeedback;
   private atlasMovement?:AtlasMovement;
   private readonly events=new AbortController();
   private mapBars?:ResizeObserver;
@@ -89,7 +95,9 @@ export class Game {
   private readonly weatherCache = new Map<string, ChunkWeather>();
   private weatherCacheMinute = -Infinity;
   private lastWeatherMapRender = 0;
-  get rainCloudsAllowed(): boolean { return this.playSession.allowsCheats; }
+  private precipitation: Precipitation | null = null;
+  private precipitationStore: WorldDataStore | null = null;
+  get rainCloudsAllowed(): boolean { return true; }
   private atlas: AtlasView | null = null;
   private settingsPanel: SettingsPanel | null = null;
   private settings: GameSettings;
@@ -108,15 +116,11 @@ export class Game {
   private readonly bar: HTMLElement;
   private readonly corner: HTMLElement;
   readonly ren = '人';
-  readonly ren_ming: string;
+  ren_ming: string;
   private readonly playerState: PlayerState;
   private worldName: string;
   private saveId?: string;
   private paused = false;
-  /** 流域预热仍在进行 */
-  private coarseWarm = false;
-  /** 出生点搜索待帧循环完成 */
-  private spawnPending = false;
   private saving = false;
   private menuPage: 'pause' | 'settings' | null = null;
   private spawned = false;
@@ -143,8 +147,14 @@ export class Game {
     this.playSession = new PlaySession(parsePlayMode(options.save?.playMode ?? options.playMode), parseCreationTimeSpeed(options.save?.creationTimeSpeed ?? options.creationTimeSpeed));
     this.gamingInfo = this.allowsCheats && options.showOverlay;
     const mystery = options.save?.mystery ?? { ...defaultMysterySettings(), timeSpeed: this.playSession.creationTimeSpeed };
-    this.settings = validateSettings({ ...options.settings, ...this.playSession.saveMystery(mystery), viewMode: '2d' });
-    this.generator = options.prepared?.generator ?? new WorldGenerator(options.seed, options.climateWeights, options.generation);
+    const profile = playerProfile(options.save ? options.save.profile ?? { name: options.save.playerState?.name ?? options.save.ren_ming, mainColor: options.save.playerFaction?.mainColor, trimColor: options.save.playerFaction?.trimColor } : { ...options.settings.profile, ...options.profile, name: options.profile?.name ?? options.ren_ming ?? options.settings.ren_ming });
+    if (!options.save && !options.profile) {
+      const range = profileHeightRange(this.playSession.mode);
+      profile.heightCm = Math.max(range.min, Math.min(range.max, profile.heightCm));
+    }
+    playerProfile(profile, this.playSession.mode);
+    this.settings = validateSettings({ ...options.settings, profile, ren_ming: profile.name, ...this.playSession.saveMystery(mystery), viewMode: '2d' });
+    this.generator = options.prepared?.generator ?? createWorldGenerator(options.seed, options.climateWeights, options.generation);
     this.generator.cacheLimit=performanceBudget(this.settings).generatorEntries;
     this.worldKey=options.worldKey??options.save?.worldKey??crypto.randomUUID();
     this.atlasDisplay={...this.atlasDisplay,...options.save?.atlasDisplay};
@@ -154,26 +164,28 @@ export class Game {
     this.calendarType = options.calendarType;
     this.calendarSystem = new CalendarSystem({ mode: this.calendarType, utcOffsetMinutes: options.utcOffsetMinutes ?? 480 });
     this.calendarClock = new CalendarClock({ epochUnixMs: options.unixMs ?? Date.now(), dayLengthSeconds: 1200 });
+    this.generator.setWaterSeason(this.calendarSystem.snapshotFromUnixMs(this.calendarClock.unixMs).season?.phase??0);
+    this.setupPrecipitation(options);
     this.artificial = new ArtificialWorld(this.generator, this.calendarClock.unixMs, this.calendarType,
       this.calendarSystem.utcOffsetMinutes, options.prepared?.artificialState??options.save?.artificialState);
-    this.ren_ming = renName(options.save?.ren_ming ?? options.ren_ming, options.save ? '赤' : renName(this.settings.ren_ming));
+    this.artificial.setPlayerColors(profile.mainColor, profile.trimColor);
+    applySettingsPalette(this.settings);
+    this.ren_ming = profile.name;
     const flagSpawn = options.prepared?options.prepared.spawn:!options.initialPlayer && options.playerFaction && this.generator.generation.artificial?.enabled
       ? playerFlagSpawn(this.artificial, options.playerFaction) : null;
-    // 出生点搜索牵动全星球流域求解，放到帧循环里与预热一起分帧完成
+    // 宏观出生点由全球骨架直接给出，同步可用
     const spawn = options.initialPlayer ? null : flagSpawn ?? (options.playerFaction && this.generator.generation.artificial?.enabled ? null : this.generator.findSpawnOrigin());
-    this.spawnPending = !options.prepared && !options.initialPlayer && !flagSpawn && spawn !== null;
-    if (this.spawnPending) this.generator.startSpawnWarm();
     const owned = this.artificial.playerFactionId ? this.artificial.territories.get(this.artificial.playerFactionId) : undefined;
     this.playerState = parsePlayerState(options.save?.playerState ?? { name: this.ren_ming,
       factions: owned ? [{ id: owned.id, relationship: 'owned', mainColor: owned.mainColor, trimColor: owned.trimColor }] : [],
       ...(owned ? { activeFactionId: owned.id } : {}) });
+    this.playerState.name = this.ren_ming;
     const x = spawn ? spawn.cx * CHUNK_SIZE + CHUNK_SIZE / 2 + .5 : options.initialPlayer?.x ?? 0;
     const z = spawn ? spawn.cz * CHUNK_SIZE + CHUNK_SIZE / 2 + .5 : options.initialPlayer?.z ?? 0;
-    // 出生点搜索已算过该点地表与水位，命中即省去首次陆地水文求解
+    // 出生点搜索已算过该点地表与水位，命中即省去首次采样
     const surface = spawn ? this.generator.spawnSurface(spawn.cx, spawn.cz) : null;
-    // 待求解时只给临时高度，等预热完成再由 spawnAt 落到真实出生点
     const startY = surface ? Math.max(surface.height, surface.water)
-      : this.spawnPending ? 0 : Math.max(this.generator.getHeight(x, z), this.generator.getWaterLevel(x, z));
+      : Math.max(this.generator.getHeight(x, z), this.generator.getWaterLevel(x, z));
     this.position = options.initialPlayer ? { ...options.initialPlayer } : { x, z, y: startY + .01, yaw: 0, pitch: 0 };
     if(options.prepared&&this.artificial.settings.enabled)this.artificial.enableBackground(
       new Worker(new URL('../systems/world/artificial/artificial.worker.ts',import.meta.url),{type:'module'}),
@@ -182,7 +194,7 @@ export class Game {
     const distance = this.settings.renderDistance * CHUNK_SIZE;
     this.fogNear = distance * .55; this.fogFar = distance * .95;
     this.fog = new THREE.Fog(SKY_COLOR.clone(), this.fogNear, this.fogFar); this.scene.fog = this.fog;
-    this.camera = new THREE.PerspectiveCamera(this.settings.fov, innerWidth / innerHeight, .1, distance * 1.5 + 512);
+    this.camera = new THREE.PerspectiveCamera(this.settings.fov, innerWidth / innerHeight, Math.min(.1, profile.heightCm / 2000), distance * 1.5 + 512);
     this.camera.rotation.order = 'YXZ';
     // 在创建 DOM 和监听器前检查 3D 支持
     if (this.settings.viewMode === '3d') this.ensure3D();
@@ -190,9 +202,9 @@ export class Game {
     this.bar.innerHTML = `<div class="game-identity"><strong></strong><span data-ren-name></span><span data-date></span></div>`;
     const playerName = this.bar.querySelector<HTMLElement>('[data-ren-name]')!;
     playerName.textContent = this.ren_ming;
-    const faction = this.playerState.factions.find(f => f.id === this.playerState.activeFactionId);
-    if (faction) playerName.style.color = faction.mainColor;
-    this.chat = new ChatPanel(container, this.ren_ming, faction?.mainColor, value => this.runCommand(value), editing => {
+    playerName.style.color = profile.mainColor;
+    this.statusFeedback = new StatusFeedback(container);
+    this.chat = new ChatPanel(container, this.ren_ming, profile.mainColor, value => this.runCommand(value), editing => {
       if (this.input) this.input.enabled = !editing && !this.paused && (this.settings.viewMode === '2d'
         || !!this.settings.touchControls || document.pointerLockElement === this.renderer?.domElement);
     });
@@ -217,8 +229,8 @@ export class Game {
     }, { capture: true,signal:this.events.signal });
     this.bar.querySelector('strong')!.textContent = this.worldName; container.appendChild(this.bar);
     this.corner = document.createElement('div'); this.corner.className = 'game-corner';
-    this.corner.innerHTML = `<button class="menu-back corner-back hidden" data-back>${t('settings.back')}</button><button class="corner-menu" data-menu aria-label="${t('game.menu')}" title="${t('game.menu')}">${icon('menu-open')}</button>`;
-    container.appendChild(this.corner);
+    this.corner.innerHTML = `<button class="menu-back corner-back hidden" data-back>${t('settings.back')}</button><button class="corner-menu" data-menu aria-label="${t('game.menu')}" title="${t('game.menu')}">${icon('menu')}</button>`;
+    document.body.appendChild(this.corner);
     this.corner.querySelector('[data-menu]')!.addEventListener('click', () => { if (this.menuPage) this.continueGame(); else this.showPause(); });
     this.corner.querySelector('[data-back]')!.addEventListener('click', () => this.showPause());
     this.mapRoot = document.createElement('section'); this.mapRoot.className = 'game-map hidden';
@@ -265,11 +277,13 @@ export class Game {
   private syncCorner(): void {
     const open = this.menuPage !== null;
     const toggle = this.corner.querySelector<HTMLButtonElement>('[data-menu]')!;
-    toggle.querySelector('img')!.src = iconUrl(open ? 'menu-close' : 'menu-open');
+    toggle.querySelector('img')!.src = iconUrl('menu');
     const label = t(open ? 'game.menu.close' : 'game.menu');
     toggle.setAttribute('aria-label', label); toggle.title = label;
     toggle.setAttribute('aria-expanded', String(open));
+    this.corner.classList.toggle('menu-resting', this.settings.viewMode === '3d' && !open);
     this.chat.setSidebar(open);
+    this.chat.setSettingsOpen(this.menuPage === 'settings');
     this.bar.classList.toggle('menu-open', open);
     this.syncTopBar();
     this.corner.querySelector('[data-back]')!.classList.toggle('hidden', this.menuPage !== 'settings');
@@ -300,23 +314,19 @@ export class Game {
     renderer.domElement.tabIndex = -1;
     renderer.setClearColor(SKY_COLOR);
     this.renderer = renderer; this.resizeRenderer(); this.container.appendChild(renderer.domElement);
-    // 流域预热登记：帧循环按预算推进，避免进入世界时冻结
-    if(!this.options.prepared){this.generator.startCoarseWarm(); this.coarseWarm = true;}
     this.input??=new Input(renderer.domElement);this.input.setTarget(renderer.domElement);
     this.touch?.dispose();this.touch = new TouchControls(this.input, renderer.domElement); this.input.setBindings(this.settings.keyBindings);
     this.world = new World(this.scene, this.options.seed, this.settings.renderDistance, this.options.climateWeights, this.options.generation, this.artificial,
       this.options.prepared?this.generator:undefined,this.worldKey,this.settings);
-    // 主线程已解的粗格样本下发给各 Worker，避免重复求解
-    if(!this.options.prepared)this.world.shareCoarseSamples(() => this.generator.exposeCoarseSamples());
-    this.world.setAdvancedVisuals(this.settings.advancedVisuals !== false);
-    this.world.setMistEnabled(this.settings.particles !== false && this.settings.advancedVisuals !== false);
+    this.world.setAdvancedVisuals(this.settings.waterReflections !== false);
+    this.world.setMistEnabled(this.settings.particles !== false);
     this.world.setVegetationDistance(this.settings.vegetationDistance!);
     this.touch.applySettings(this.settings);
     this.world.setMistProjection(this.camera.fov, renderer.domElement.height, renderer.getPixelRatio());
     this.sky = new Sky(this.scene);
-    this.sky.setAdvancedVisuals(this.settings.advancedVisuals !== false);
+    this.sky.setAdvancedVisuals(this.settings.decorativeClouds !== false);
     this.weatherVisual = new WeatherVisual(this.scene);
-    this.player = new Player(this.world, this.input); this.player.ren_ming = this.ren_ming; Object.assign(this.player, this.position);
+    this.player = new Player(this.world, this.input); this.player.ren_ming = this.ren_ming; this.player.heightCm = this.settings.profile!.heightCm; Object.assign(this.player, this.position);
     if(!this.options.prepared)this.player.y = Math.max(this.player.y, this.world.getGroundUnder(this.player.x, this.player.z, .3) + .01);
     this.player.flightAllowed = this.allowsCheats;
     this.player.flying = this.allowsCheats && (this.options.save?.flying ?? false);
@@ -330,11 +340,17 @@ export class Game {
     if (this.playSession.unlock(value)) {
       if (this.player) this.player.flightAllowed = true;
       this.syncRainCloudControls();
+      if (this.menuPage === 'settings') { this.settingsPanel?.destroy(); this.showSettings(); }
       const tip = this.mapRoot.querySelector('.game-map-tip');
       tip?.setAttribute('data-i18n', 'game.map.tip'); applyDomI18n(this.mapRoot);
       return t('mode.unlocked');
     }
     if (!this.allowsCheats) return t('mode.commandsBlocked');
+    if (value.startsWith('/visual.statu')) {
+      const response = this.statusFeedback.command(value)!;
+      this.updateStatusFeedback();
+      return response;
+    }
     const weatherResponse = this.weather.command(value);
     if (weatherResponse !== null) { this.updateWeather(); return weatherResponse; }
     const match = /^\/system\.gaming_info\s+(on|off)$/.exec(value);
@@ -363,7 +379,7 @@ export class Game {
   }
   private createMap(): void {
     // 工具条文案用 data-i18n 标记
-    this.mapRoot.innerHTML = `<div class="game-map-tools"><div class="map-options"><label><input data-info type="checkbox"><span data-i18n="game.map.chunkInfo"></span></label><label><input data-colors type="checkbox"><span data-i18n="atlas.toggleChunkColors"></span></label><label><input data-relief type="checkbox"><span data-i18n="game.map.relief"></span></label></div><div class="map-buttons">${this.generator.generation.mode === 'planet' ? `<select data-planet-view aria-label="${t('game.map.viewAria')}"><option value="globe" data-i18n="atlas.view.globe"></option><option value="projection" data-i18n="atlas.view.projection"></option></select><button data-overview data-i18n="game.map.overview"></button>` : ''}<button data-zoom-in data-i18n="atlas.zoomInTitle" data-i18n-attr="aria-label">＋</button><button data-zoom-out data-i18n="atlas.zoomOutTitle" data-i18n-attr="aria-label">－</button><button data-position data-i18n="game.map.position"></button><button data-enter data-i18n="game.map.enter3d"></button></div></div><div class="game-map-viewport"><canvas aria-label="${t('game.map.canvasAria')}"></canvas><div class="game-map-tip" data-i18n="${this.allowsCheats ? 'game.map.tip' : 'game.map.survivalTip'}"></div></div><footer class="game-map-detail" role="status" data-i18n="game.map.hint"></footer>`;
+    this.mapRoot.innerHTML = `<div class="game-map-tools"><div class="map-options"><label><input data-info type="checkbox"><span data-i18n="game.map.chunkInfo"></span></label><label><input data-colors type="checkbox"><span data-i18n="atlas.toggleChunkColors"></span></label><label><input data-relief type="checkbox"><span data-i18n="game.map.relief"></span></label></div><div class="map-buttons"><select data-planet-view aria-label="${t('game.map.viewAria')}"><option value="globe" data-i18n="atlas.view.globe"></option><option value="projection" data-i18n="atlas.view.projection"></option><option value="mercator" data-i18n="atlas.view.mercator"></option></select><button data-overview data-i18n="game.map.overview"></button><button data-zoom-in data-i18n="atlas.zoomInTitle" data-i18n-attr="aria-label">＋</button><button data-zoom-out data-i18n="atlas.zoomOutTitle" data-i18n-attr="aria-label">－</button><button data-position data-i18n="game.map.position"></button><button data-enter data-i18n="game.map.enter3d"></button></div></div><div class="game-map-viewport atlas-frame"><canvas aria-label="${t('game.map.canvasAria')}"></canvas><div class="game-map-tip" data-i18n="${this.allowsCheats ? 'game.map.tip' : 'game.map.survivalTip'}"></div></div><footer class="game-map-detail" role="status" data-i18n="game.map.hint"></footer>`;
     applyDomI18n(this.mapRoot);
     const mapBars = this.mapBars = new ResizeObserver(entries => {
       for (const { target } of entries) {
@@ -378,13 +394,13 @@ export class Game {
     this.atlas = new AtlasView({ canvas: this.mapRoot.querySelector('canvas')!, generator: this.generator, artificial: this.artificial,
       previewWorkers:performanceBudget(this.settings).previewWorkers,worldKey:this.worldKey,exploration:this.playSession.mode==='survival'?this.exploration:undefined,
       initialCenter: { cx: Math.floor(this.position.x / CHUNK_SIZE), cz: Math.floor(this.position.z / CHUNK_SIZE) },
-      weatherAt: this.rainCloudsAllowed ? (cx, cz) => this.getChunkWeather(cx, cz) : undefined,
+      precipitation: this.precipitation ?? undefined,
       playerMarker: () => { const p = this.player ?? this.position; return { x: p.x, z: p.z, yaw: p.yaw }; },
       onDestination: point=>{if(!this.settings.touchControls){this.ensureAtlasMovement();this.atlasMovement?.target(point);}},
       onChunkActivate: info => this.enter3D(info.cx, info.cz),
       onChunkSelect: info => {
         this.mapRoot.querySelector('footer')!.textContent = t('game.map.chunkFooter', {
-          cx: info.cx, cz: info.cz, code: formatChunkId(info.type), name: chunkNameById(info.type),
+          cx: info.cx, cz: info.cz, code: formatChunkId(info.type), name: chunkNameById(info.type,this.generator.generation.terrainRule==='planet-macro'),
           elevation: Math.round(info.elevation), temperature: info.temperature.toFixed(1),
         }) + (info.territory ? ` · ${t('territory.detail', { id: info.territory.name ?? info.territory.id, level: info.territory.level })}` : '');
       } });
@@ -392,8 +408,8 @@ export class Game {
     on('[data-enter]', () => this.enter3D());
     on('[data-position]', () => this.centerMapOnPlayer()); on('[data-zoom-in]', () => this.atlas?.zoomBy(1.4)); on('[data-zoom-out]', () => this.atlas?.zoomBy(1 / 1.4));
     const view = this.mapRoot.querySelector<HTMLSelectElement>('[data-planet-view]');
-    view?.addEventListener('change', () => this.atlas?.setPlanetView(view.value as 'globe' | 'projection'));
-    on('[data-overview]', () => { this.atlas?.setPlanetView(view!.value as 'globe' | 'projection'); this.atlas?.showOverview(); });
+    view?.addEventListener('change', () => this.atlas?.setPlanetView(view.value as 'globe' | 'projection' | 'mercator'));
+    on('[data-overview]', () => { this.atlas?.setPlanetView(view!.value as 'globe' | 'projection' | 'mercator'); this.atlas?.showOverview(); });
     const info = this.mapRoot.querySelector<HTMLInputElement>('[data-info]')!;
     info.checked=this.atlasDisplay.info;this.atlas.setShowChunkInfo(info.checked);
     info.addEventListener('change', () => { this.atlasDisplay.info=info.checked;this.atlas?.setShowChunkInfo(info.checked); this.syncOverlayMapStyle(); });
@@ -407,17 +423,17 @@ export class Game {
     this.syncOverlayMapStyle();
     if (this.options.initialPlayer || this.artificial.playerFactionId) this.centerMapOnPlayer();
   }
+  /** 只有宏观星球有雨云数据，其余世界隐藏勾选 */
   private syncRainCloudControls(): void {
     if (!this.atlas) return;
-    this.atlas.setWeatherSource(this.rainCloudsAllowed ? (cx, cz) => this.getChunkWeather(cx, cz) : undefined);
     const existing = this.mapRoot.querySelector<HTMLInputElement>('[data-rain-clouds]');
-    if (!this.rainCloudsAllowed) { existing?.parentElement?.remove(); return; }
+    if (!this.precipitation) { existing?.parentElement?.remove(); return; }
     if (existing) return;
     const label = document.createElement('label');
     label.innerHTML = '<input data-rain-clouds type="checkbox"><span data-i18n="game.map.rainClouds"></span>';
     const input = label.querySelector<HTMLInputElement>('input')!;
     input.checked=this.atlasDisplay.rainClouds;this.atlas.setShowRainClouds(input.checked);
-    input.addEventListener('change', () => {this.atlasDisplay.rainClouds=input.checked;this.atlas?.setShowRainClouds(this.rainCloudsAllowed && input.checked);});
+    input.addEventListener('change', () => {this.atlasDisplay.rainClouds=input.checked;this.atlas?.setShowRainClouds(input.checked);});
     this.mapRoot.querySelector('.map-options')!.append(label); applyDomI18n(label);
   }
   private syncOverlayMapStyle(): void {
@@ -442,6 +458,7 @@ export class Game {
   }
   private setViewMode(): void {
     const is2D = this.settings.viewMode === '2d';
+    this.updateStatusFeedback();
     if(!is2D){this.atlasMovement?.dispose();this.atlasMovement=undefined;}
     this.world?.setActive(!is2D);
     if (!is2D) { this.lastFrame3DAt = 0; this.frame3DBudget = 0; }
@@ -461,6 +478,7 @@ export class Game {
     this.syncCrosshair();
     this.syncTopBar();
     this.updateDocumentTitle();
+    this.syncCorner();
     this.chat.element.classList.toggle('chat-atlas', is2D);
     this.syncChatMapPosition();
   }
@@ -493,9 +511,9 @@ export class Game {
     if (!this.renderer) return;
     const resolution = this.settings.resolution ?? 'auto';
     const [width, height] = resolution === 'auto' ? [innerWidth, innerHeight] : resolution.split('x').map(Number);
-    const low=this.settings.graphicsPreset!=='balanced';
-    const ratio=resolution==='auto'?Math.min(devicePixelRatio,low?1:1.5):1;
-    const limit=low?1280*720:1920*1080;
+    const budget=performanceBudget(this.settings);
+    const ratio=resolution==='auto'?Math.min(devicePixelRatio,budget.pixelRatioCap):1;
+    const limit=budget.renderPixels;
     this.renderer.setPixelRatio(ratio*Math.min(1,Math.sqrt(limit/(width*height*ratio*ratio))));
     this.renderer.setSize(width, height, false);
     this.renderer.domElement.style.width = '100vw'; this.renderer.domElement.style.height = '100dvh';
@@ -503,14 +521,23 @@ export class Game {
     this.world?.setMistProjection(this.camera.fov, height, this.renderer.getPixelRatio());
   }
   applySettings(value: GameSettings, persist = true): void {
-    const next = validateSettings(this.allowsCheats ? value : { ...value, timeSpeed: this.playSession.creationTimeSpeed, menuAutoPause: false });
+    const next = validateSettings(this.allowsCheats ? value : { ...value, profile: this.settings.profile, ren_ming: this.settings.ren_ming, timeSpeed: this.playSession.creationTimeSpeed, menuAutoPause: false });
+    playerProfile(next.profile, this.playSession.mode);
     const changedAntialias=next.antialias!==this.settings.antialias;
     const changedPreset=next.graphicsPreset!==this.settings.graphicsPreset;
     const changedView = next.viewMode !== this.settings.viewMode;
     const changedDistance = next.renderDistance !== this.settings.renderDistance;
-    const changedParticles = (next.particles !== false) !== (this.settings.particles !== false);
-    const changedAdvanced = next.advancedVisuals !== this.settings.advancedVisuals;
     this.settings = next;
+    this.ren_ming = next.profile!.name;
+    this.playerState.name = this.ren_ming;
+    if (this.player) { this.player.ren_ming = this.ren_ming; this.player.heightCm = next.profile!.heightCm; }
+    this.atlasMovement?.setHeight(next.profile!.heightCm);
+    const playerName = this.bar.querySelector<HTMLElement>('[data-ren-name]')!;
+    playerName.textContent = this.ren_ming; playerName.style.color = next.profile!.mainColor;
+    this.chat.setPlayerIdentity(this.ren_ming, next.profile!.mainColor);
+    this.artificial.setPlayerColors(next.profile!.mainColor, next.profile!.trimColor);
+    applySettingsPalette(next);
+    for (const faction of this.playerState.factions) if (faction.relationship === 'owned') { faction.mainColor = next.profile!.mainColor; faction.trimColor = next.profile!.trimColor; }
     const hadRenderer=!!this.renderer;
     if(next.viewMode==='3d')this.ensure3D();
     if(changedAntialias&&hadRenderer)this.replaceRenderer();
@@ -521,11 +548,11 @@ export class Game {
     this.generator.cacheLimit=performanceBudget(next).generatorEntries;
     applyAppearance(next); this.resizeRenderer(); this.touch?.applySettings(next);
     this.world?.setVegetationDistance(next.vegetationDistance!);
-    if (changedAdvanced) {
-      this.world?.setAdvancedVisuals(next.advancedVisuals !== false);
-      this.sky?.setAdvancedVisuals(next.advancedVisuals !== false);
-    }
-    if (changedParticles || changedAdvanced) this.world?.setMistEnabled(next.particles !== false && next.advancedVisuals !== false);
+    this.world?.setDenseVegetation(next.denseVegetation!);
+    this.world?.setAdvancedVisuals(next.waterReflections !== false);
+    this.sky?.setAdvancedVisuals(next.decorativeClouds !== false);
+    this.world?.setMistEnabled(next.particles !== false);
+    this.updateStatusFeedback();
     if (changedDistance) {
       this.world?.setRenderDistance(next.renderDistance);
       if (this.world && this.player) this.world.update(this.player.x, this.player.z);
@@ -536,7 +563,7 @@ export class Game {
     }
     this.touch?.setVisible(!this.paused && !!next.touchControls);
     this.lastCalendarMs = -Infinity;
-    this.camera.fov = next.fov; this.camera.updateProjectionMatrix();
+    this.camera.fov = next.fov; this.camera.near = Math.min(.1, next.profile!.heightCm / 2000); this.camera.updateProjectionMatrix();
     if (this.renderer) this.world?.setMistProjection(next.fov, this.renderer.domElement.height, this.renderer.getPixelRatio());
     this.input?.setBindings(next.keyBindings);
     if(this.input)this.input.enabled=!this.paused&&!this.chat.editing&&(next.viewMode==='2d'||!!next.touchControls||document.pointerLockElement===this.renderer?.domElement);
@@ -545,7 +572,7 @@ export class Game {
     this.syncTopBar();
     this.syncClock();
     this.updateCalendar(true);
-    if (persist) this.options.persistSettings(next);
+    if (persist) this.options.persistSettings({ ...next, profile: this.options.settings.profile, ren_ming: this.options.settings.ren_ming });
   }
   setTimeSpeed(speed: number): void { this.applySettings({ ...this.settings, timeSpeed: speed }); }
   get timeSpeed(): number { return this.settings.timeSpeed; }
@@ -588,6 +615,7 @@ export class Game {
       saveButton.disabled = true; status.textContent = t('game.pause.saving');
       try {
         await this.atlasMovement?.flush();await this.artificial.flushBackground();await this.flushDiscovery();await this.world?.flushWrites();
+        await this.saveWeather();
         const save = this.createSave(name.value);
         const item = await this.options.saveStore.put(save, save.worldName!, this.saveId);
         this.saveId = item.id; this.worldName = item.name; name.value = item.name; this.pauseNameDraft = '';
@@ -600,7 +628,7 @@ export class Game {
       }
     });
     this.ui.start.querySelector('[data-export]')!.addEventListener('click', async () => {
-      try { await this.atlasMovement?.flush();await this.artificial.flushBackground();await this.flushDiscovery();await this.world?.flushWrites();const save = this.createSave(name.value); await downloadWorldSave(save, save.worldName!, this.saveId); status.textContent = t('game.pause.exported'); }
+      try { await this.atlasMovement?.flush();await this.artificial.flushBackground();await this.flushDiscovery();await this.world?.flushWrites();await this.saveWeather();const save = this.createSave(name.value); await downloadWorldSave(save, save.worldName!, this.saveId); status.textContent = t('game.pause.exported'); }
       catch (error) { status.textContent = error instanceof Error ? error.message : t('game.pause.exportFailed'); }
     });
     this.ui.start.querySelector('[data-home]')!.addEventListener('click', () => {
@@ -612,7 +640,7 @@ export class Game {
   private showSettings(): void {
     if (this.saving) return;
     this.menuPage = 'settings'; this.ui.start.innerHTML = '<section class="pause-panel pause-settings"></section>';
-    this.settingsPanel = new SettingsPanel(this.ui.start.firstElementChild as HTMLElement, this.settings, (value, persist) => this.applySettings(value, persist), () => this.showPause(), { headingBack: false, worldActive: true, hideMystery: !this.allowsCheats });
+    this.settingsPanel = new SettingsPanel(this.ui.start.firstElementChild as HTMLElement, this.settings, (value, persist) => this.applySettings(value, persist), () => this.showPause(), { headingBack: false, worldActive: true, hideMystery: !this.allowsCheats, profileLocked: !this.allowsCheats, playMode: this.playSession.mode });
     this.syncCorner();
   }
   private continueGame(): void {
@@ -624,12 +652,19 @@ export class Game {
     if(this.settings.viewMode==='2d'){if(this.input)this.input.enabled=!this.chat.editing;this.touch?.setVisible(!!this.settings.touchControls);}
     if (this.settings.viewMode === '3d') this.lockPointer();
   }
+  private async saveWeather():Promise<void> {
+    if(!this.precipitation)return;
+    const paused=this.calendarClock.paused;this.calendarClock.paused=true;
+    try{await this.precipitation.save();}
+    finally{this.calendarClock.paused=paused;}
+  }
   private createSave(name: string): WorldSave {
     const p = this.player ?? this.position;
-    return { atlasDisplay:{...this.atlasDisplay},worldKey:this.worldKey,exploration:this.exploration.snapshot(),playMode: this.playSession.mode, creationTimeSpeed: this.playSession.creationTimeSpeed, generatorVersion: GENERATOR_VERSION, seed: this.generator.seed, climateWeights: this.generator.climateWeights,
+    return { atlasDisplay:{...this.atlasDisplay},worldKey:this.worldKey,exploration:this.exploration.snapshot(),playMode: this.playSession.mode, creationTimeSpeed: this.playSession.creationTimeSpeed, ruleVersion: CURRENT_RULE_ID, seed: this.generator.seed, climateWeights: this.generator.climateWeights,
       generation: this.generator.generation, calendarType: this.calendarType, unixMs: this.calendarClock.unixMs,
+      ...(this.precipitation ? {weatherKey:this.precipitation.dataKey} : {}),
       artificialState: this.artificial.snapshot(), ren: this.ren, ren_ming: this.ren_ming,
-      playerState: this.playerState, mystery: this.playSession.saveMystery({ timeSpeed: this.settings.timeSpeed, menuAutoPause: !!this.settings.menuAutoPause }),
+      playerState: parsePlayerState(this.playerState), profile: { ...this.settings.profile! }, mystery: this.playSession.saveMystery({ timeSpeed: this.settings.timeSpeed, menuAutoPause: !!this.settings.menuAutoPause }),
       utcOffsetMinutes: this.calendarSystem.utcOffsetMinutes, worldName: name.trim().slice(0, 80) || this.worldName,
       flying: this.playSession.mode === 'survival' ? false : this.player?.flying ?? this.options.save?.flying ?? false,
       player: { x: p.x, y: p.y, z: p.z, yaw: p.yaw, pitch: p.pitch } };
@@ -639,6 +674,10 @@ export class Game {
     if (!force && Math.abs(this.calendarClock.unixMs - this.lastCalendarMs) < 1000) return;
     this.lastCalendarMs = this.calendarClock.unixMs;
     this.currentSnapshot = this.calendarSystem.snapshotFromUnixMs(this.calendarClock.unixMs);
+    const phase=this.currentSnapshot.season?.phase??0;
+    const waterChanged=this.world?this.world.setWaterSeason(phase):this.generator.setWaterSeason(phase);
+    if(waterChanged){this.weatherCache.clear();this.atlas?.requestRender();}
+    this.precipitation?.refresh();
     this.currentSeason = this.currentSnapshot.season?.index ?? 0; this.currentDayRatio = this.currentSnapshot.instant.frac;
     const date = this.calendarType === 'yuan' ? this.currentSnapshot.yuan : this.currentSnapshot.gregorian;
     const pad = (value: number) => String(value).padStart(2, '0');
@@ -656,7 +695,30 @@ export class Game {
     this.weather.display(natural);
     this.precipitationIntensity = this.weather.isForced ? weatherPrecipitation(this.weather.current) : natural.intensity;
   }
+  /** 宏观星球改用逐日降水，其余世界仍用噪声云团 */
+  private setupPrecipitation(options: GameOptions): void {
+    const world = precipitationWorld(this.generator);
+    if (!world) return;
+    const store = this.precipitationStore = new WorldDataStore(this.worldKey);
+    this.precipitation = new Precipitation({
+      world, store, dataKey: options.save?.weatherKey ?? precipitationKey(),
+      unixMs: options.save?.unixMs ?? this.calendarClock.unixMs, utcOffsetMinutes: this.calendarSystem.utcOffsetMinutes,
+      isForced: () => this.weather.isForced, forcedWeather: () => this.weather.current,
+      createWorker: () => new Worker(new URL('../systems/world/weather/daily.worker.mjs', import.meta.url), { type: 'module' }),
+      onStateChange: () => { if (this.settings.viewMode === '2d') this.atlas?.requestRender(); },
+    });
+    void this.startPrecipitation(options.save?.worldKey);
+  }
+  private async startPrecipitation(existingWorldKey: string | undefined): Promise<void> {
+    const precipitation = this.precipitation, store = this.precipitationStore;
+    if (!precipitation || !store) return;
+    try {
+      const saved = existingWorldKey ? await store.get(precipitation.dataKey).catch(() => null) : null;
+      await precipitation.initialize(saved);
+    } catch (error) { console.warn('[Precipitation]', error); }
+  }
   getChunkWeather(cx: number, cz: number): ChunkWeather {
+    if (this.precipitation?.ready) return this.precipitation.chunkWeather(cx, cz, this.generator.getSurfaceTemperature(cx, cz));
     const minute = Math.floor(this.calendarClock.unixMs / 60000);
     if (minute !== this.weatherCacheMinute) { this.weatherCache.clear(); this.weatherCacheMinute = minute; }
     const key = `${Math.floor(cx)},${Math.floor(cz)}`;
@@ -681,10 +743,7 @@ export class Game {
     const location=this.player??this.position;
     if((this.settings.viewMode==='2d'||this.spawned)&&this.exploration.revealDiamond(Math.floor(location.x/CHUNK_SIZE),Math.floor(location.z/CHUNK_SIZE))){this.discoveryDirty=true;}
     if(this.discoveryDirty&&time-this.lastDiscoveryWrite>3000){this.lastDiscoveryWrite=time;void this.flushDiscovery().catch(error=>console.warn('[Exploration]',error));}
-    // 流域预热：按帧小片推进，避免进入世界时主线程长冻结
-    try { if (!this.generator.pumpCoarseWarm(4) && !this.coarseWarm) this.coarseWarm = true; }
-    catch { /* 预热失败则退回同步求解 */ }
-    if (this.settings.viewMode === '2d' && this.atlas?.getShowRainClouds() && time - this.lastWeatherMapRender > 500) {
+    if (this.settings.viewMode === '2d' && this.atlas?.getShowRainClouds() && time - this.lastWeatherMapRender > 120000) {
       this.lastWeatherMapRender = time; this.atlas.requestRender();
     }
     if (!this.worldPaused) {
@@ -706,7 +765,7 @@ export class Game {
       }
       const step = this.lastFrame3DAt ? Math.min(elapsed / 1000, .05) : 0;
       this.lastFrame3DAt = time;
-      this.frame3D(step);
+      this.frame3D(step, elapsed);
     } else {
       if(!this.worldPaused&&!this.paused&&!this.chat.editing){
         const dx=Number(this.input?.isActionDown('right'))-Number(this.input?.isActionDown('left'));
@@ -714,6 +773,7 @@ export class Game {
         if(dx||dz)this.ensureAtlasMovement();
         this.atlasMovement?.update(dt,dx,dz,!!this.input?.isActionDown('sprint'));
       }
+      this.updateStatusFeedback();
       this.overlay?.update(performance.now());
     }
   }
@@ -728,6 +788,7 @@ export class Game {
         if(moved){this.exploration.revealDiamond(Math.floor(p.x/CHUNK_SIZE),Math.floor(p.z/CHUNK_SIZE));this.discoveryDirty=true;this.atlas?.requestRender();}
         if(value.blocked)this.mapRoot.querySelector('footer')!.textContent=t('game.map.noPath');
       });
+    this.atlasMovement.setHeight(this.settings.profile!.heightCm);
   }
   private async flushDiscovery():Promise<void>{
     if(this.discoveryDirty){
@@ -737,21 +798,10 @@ export class Game {
     }
     await this.discoveryWrite;
   }
-  /** 预热完成后落位到真实出生点；返回是否已落位 */
-  private settleSpawn(): boolean {
-    if (!this.generator.coarseWarmDone) return false;
-    try {
-      const spawn = this.generator.findSpawnChunk();
-      if (this.player) this.player.spawnAt(spawn.cx * CHUNK_SIZE + CHUNK_SIZE / 2 + .5, spawn.cz * CHUNK_SIZE + CHUNK_SIZE / 2 + .5);
-      this.position.x = spawn.cx * CHUNK_SIZE + CHUNK_SIZE / 2 + .5;
-      this.position.z = spawn.cz * CHUNK_SIZE + CHUNK_SIZE / 2 + .5;
-    } catch { /* 找不到就留在原处 */ }
-    return true;
-  }
-
-  private frame3D(dt: number): void {
+  private frame3D(dt: number, frameMs = 0): void {
     const p = this.player!, world = this.world!, renderer = this.renderer!;
-    if (world.generator.generation.mode === 'planet') {
+    // 球面环绕：越过经度接缝与极点时折返
+    {
       const circumference = world.generator.generation.planet.equatorChunks * CHUNK_SIZE;
       p.x = ((p.x + circumference / 2) % circumference + circumference) % circumference - circumference / 2;
       const pole = circumference / 4;
@@ -761,21 +811,20 @@ export class Game {
         p.yaw += Math.PI; p.vx = -p.vx; p.vz = -p.vz;
       }
     }
-    world.update(p.x, p.z, p.vx, p.vz);
+    world.update(p.x, p.z, p.vx, p.vz, frameMs);
     if(this.spawned&&!world.hasGroundAround(p.x,p.z)){
       this.spawned=false;this.ui.loading.classList.remove('hidden');
     }
     if (!this.spawned) {
-      // 出生点搜索未完成时先不解锁加载界面
-      if (this.spawnPending) this.spawnPending = !this.settleSpawn();
+      this.updateStatusFeedback();
       const cx = Math.floor(p.x / CHUNK_SIZE), cz = Math.floor(p.z / CHUNK_SIZE);
-      let ready = !this.spawnPending;
+      let ready = true;
       for (let dz = -1; dz <= 1 && ready; dz++) for (let dx = -1; dx <= 1 && ready; dx++) ready = world.isLoaded(cx + dx, cz + dz);
       if (ready) { p.spawnAt(p.x,p.z);this.spawned = true; this.ui.loading.classList.add('hidden'); }
       else return;
     } else if (!this.worldPaused && (this.paused || this.settings.touchControls || document.pointerLockElement === renderer.domElement)) p.update(dt);
     this.camera.position.set(p.x, p.eyeY, p.z); this.camera.rotation.set(p.pitch, p.yaw, 0);
-    const underwater = p.eyeY < world.getWaterLevel(p.x, p.z) && world.getHeight(p.x, p.z) < p.eyeY;
+    const underwater = p.eyeY < world.getWaterLevel(p.x, p.z) && world.getBedHeight(p.x,p.z) < p.eyeY;
     this.weatherVisual?.update(this.weather.current, this.worldPaused ? 0 : dt, this.camera.position, underwater,
       this.settings.particles !== false, (x, z) => {
         for (const cx of [Math.floor((x - 3) / CHUNK_SIZE), Math.floor((x + 3) / CHUNK_SIZE)])
@@ -784,7 +833,7 @@ export class Game {
         return Math.max(world.getHeight(x, z), world.getWaterLevel(x, z));
       },
       this.weather.isForced ? undefined : (x, z) => this.getChunkWeather(Math.floor(x / CHUNK_SIZE), Math.floor(z / CHUNK_SIZE)).id,
-      this.settings.advancedVisuals !== false);
+      this.settings.weatherAtmosphere !== false);
     this.updateLighting();
     if (underwater) {
       const day = THREE.MathUtils.smoothstep(-Math.cos(weatherDayRatio(this.weather.current, this.currentDayRatio) * Math.PI * 2), -.12, .3);
@@ -796,8 +845,19 @@ export class Game {
     // 雾色先更新
     this.sky?.update((this.currentDayRatio + .5) % 1, this.camera.position, this.calendarClock.unixMs, this.weather.current, this.worldPaused, this.precipitationIntensity);
     this.ui.waterTint.classList.toggle('hidden', !underwater);
-    world.updateDecorationView(this.camera);this.overlay?.update(performance.now()); renderer.render(this.scene, this.camera);
+    this.updateStatusFeedback();
+    world.updateDecorationView(this.camera);
+    world.updateNaturalPhysics(this.worldPaused?0:dt,this.settings.naturalPhysics!==false,
+      (cx,cz)=>this.weather.isForced?this.weather.current:this.getChunkWeather(cx,cz).id,
+      `${Math.floor(this.calendarClock.unixMs/60000)}:${this.weather.isForced?this.weather.current:'natural'}`);
+    this.overlay?.update(performance.now()); renderer.render(this.scene, this.camera);
   }
-  /** 停止语言监听（页面销毁或返回开始界面时调用）。 */
-  destroy(): void { this.destroyed=true;this.events.abort();this.mapBars?.disconnect();this.input?.dispose();this.atlas?.destroy();this.atlasMovement?.dispose();this.touch?.dispose();this.artificial.dispose();this.world?.dispose();this.renderer?.dispose();this.weatherVisual?.dispose(); this.sky?.dispose(); this.settingsPanel?.destroy(); this.stopLocaleWatch(); }
+  private updateStatusFeedback(): void {
+    const mountain = this.settings.viewMode === '3d';
+    const blocked = mountain && this.spawned && !this.paused && !this.worldPaused && !this.chat.editing && this.input?.enabled && this.player?.blockedForward;
+    this.statusFeedback.update(blocked ? '001' : null, this.settings.statusFeedback !== false,
+      mountain ? this.renderer?.domElement ?? null : this.mapRoot.querySelector('canvas'));
+  }
+
+  destroy(): void { this.corner.remove();this.chat.destroy();this.destroyed=true;this.events.abort();this.precipitation?.dispose();this.statusFeedback.dispose();this.mapBars?.disconnect();this.input?.dispose();this.atlas?.destroy();this.atlasMovement?.dispose();this.touch?.dispose();this.artificial.dispose();this.world?.dispose();this.renderer?.dispose();this.weatherVisual?.dispose(); this.sky?.dispose(); this.settingsPanel?.destroy(); this.stopLocaleWatch(); }
 }

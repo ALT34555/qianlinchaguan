@@ -40,6 +40,8 @@ export class FileSaveStore implements SaveStore {
     await this.list();
     return await this.call('', { save: valid, name, id }) as LocalSave;
   }
+  async rename(id:string,name:string):Promise<LocalSave>{return await this.call('',{operation:'rename',id,name}) as LocalSave;}
+  async copyToLeisure(id:string,name:string):Promise<LocalSave>{return await this.call('',{operation:'copyLeisure',id,name}) as LocalSave;}
   async import(bytes: Uint8Array, name: string): Promise<LocalSave> {
     const item = await decodeArchive(bytes);
     if(item.worldData){

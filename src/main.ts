@@ -7,6 +7,23 @@ import './ui/menu.css';
 import './ui/simple.css';
 import './ui/preferences.css';
 import './ui/chat.css';
+// 令牌层最后引入：旧 --ql-* 名以别名覆盖上方硬编码值，组件样式无需改动即换肤
+import './ui/tokens.css';
+// 1018 茶席视觉层：令牌、组件、场景与覆盖样式，必须排在旧样式之后
+import './ui/adapt/tokens.css';
+import './ui/adapt/base.css';
+import './ui/adapt/components.css';
+import './ui/adapt/scenes.css';
+import './ui/adapt/motion.css';
+import './ui/adapt/teasheet.css';
+import './ui/adapt/bookmarks.css';
+import './ui/adapt/in-game.css';
+import './ui/adapt/buttons.css';
+import './ui/adapt/ranges.css';
+import './ui/adapt/checkbox-motion.css';
+import { initVisuals } from './ui/adapt/runtime';
+import { initRanges } from './ui/adapt/ranges';
+import { initCheckboxMotion } from './ui/adapt/checkbox-motion';
 import { randomSeed } from './core/math/Random';
 import { MIN_RENDER_DISTANCE, MAX_RENDER_DISTANCE } from './core/RenderDistance';
 import { Game } from './core/Game';
@@ -45,6 +62,10 @@ onLocaleChange(() => {
 });
 
 await mountModResources();
+// 视觉层先就位，首屏即用茶席配色
+await initVisuals();
+initRanges();
+initCheckboxMotion();
 const refreshOverride = Number(params.get('refresh'));
 if (Number.isFinite(refreshOverride) && refreshOverride > 0) overrideDisplayRefreshRate(refreshOverride);
 else probeDisplayRefresh();

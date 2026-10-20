@@ -53,6 +53,16 @@
   grid-column: 1 / -1;
 }
 
+#macro-planet-fields > label,
+#macro-dimensions {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+#macro-planet-fields select {
+  width: 100%;
+}
+
 .tectonic-heading {
   display: flex;
   justify-content: space-between;
@@ -531,8 +541,17 @@ button:hover:not(:disabled) .btn-arrow {
 }
 
 .fold-group.locked .fold-lock {
-  display: inline;
-  font-size: calc(11px * var(--text-scale, 1));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.fold-lock-icon {
+  width: calc(14px * var(--text-scale, 1));
+  height: calc(14px * var(--text-scale, 1));
+  display: block;
+  object-fit: contain;
 }
 
 .fold-group.locked .fold-lock-hint {
@@ -792,7 +811,7 @@ button:hover:not(:disabled) .btn-arrow {
   color: var(--ql-ink-3);
 }
 
-/* 方形滑钮开关。 */
+/* 方形滑钮开关 */
 input.switch-input {
   position: absolute;
   opacity: 0;
@@ -804,15 +823,17 @@ input.switch-input {
 }
 
 .switch-slider {
+  --q-switch-off: color-mix(in srgb, var(--q-ink) 8%, var(--q-surface));
+  --q-switch-travel: 18px;
   position: relative;
   flex-shrink: 0;
   width: 38px;
   height: 20px;
   margin-left: 10px;
-  background-color: var(--ql-paper-deep);
-  border: 1px solid var(--ql-line);
-  border-radius: var(--ql-radius-pill);
-  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  background-color: var(--q-switch-off);
+  border: 1px solid var(--q-line-soft);
+  border-radius: 0;
+  animation: q-switch-track-off .9s ease-in-out both;
 }
 
 .switch-slider::before {
@@ -821,24 +842,26 @@ input.switch-input {
   height: 14px;
   width: 14px;
   left: 2px;
-  bottom: 1px;
-  background-color: var(--ql-paper-hi);
-  border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(58, 47, 33, .4);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  top: 2px;
+  background-color: var(--q-surface-hi);
+  border-radius: 0;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--q-ink) 24%, transparent);
+  animation: q-switch-thumb-off .9s cubic-bezier(.34, 1.3, .52, 1) both;
 }
 
 .switch-input:checked + .switch-slider {
-  background-color: var(--ql-cinnabar);
-  border-color: var(--ql-cinnabar-deep);
+  background-color: var(--q-primary-ui);
+  border-color: var(--q-primary-ui);
+  animation-name: q-switch-track-on;
 }
 
 .switch-input:checked + .switch-slider::before {
   transform: translateX(18px);
+  animation-name: q-switch-thumb-on;
 }
 
 .switch-input:focus-visible + .switch-slider {
-  outline: 2px solid var(--ql-cinnabar);
+  outline: 2px solid var(--q-primary-ui);
   outline-offset: 2px;
 }
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<path d="M64,6 L78,16 L98,14 L104,34 L122,50 L112,64 L122,78 L104,94 L98,114 L78,112 L64,122 L50,112 L30,114 L24,94 L6,78 L16,64 L6,50 L24,34 L30,14 L50,16 Z" fill="none" stroke="#f8f4ed" stroke-width="4" stroke-linejoin="round" opacity="0.88"/>
+  <path d="M64,6 L78,16 L98,14 L104,34 L122,50 L112,64 L122,78 L104,94 L98,114 L78,112 L64,122 L50,112 L30,114 L24,94 L6,78 L16,64 L6,50 L24,34 L30,14 L50,16 Z" fill="#f1e5c7" stroke="#4d4030" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="64" cy="64" r="44" fill="#f8f4ed" stroke="#4d4030" stroke-width="2" stroke-opacity="0.45"/>
+  <g fill="#a61b29">
+    <polygon points="64,12 68,21 64,19 60,21"/>
+    <polygon points="116,64 107,68 109,64 107,60"/>
+    <polygon points="64,116 68,107 64,109 60,107"/>
+    <polygon points="12,64 21,68 19,64 21,60"/>
+  </g>
+  <polygon points="64,52 76,64 64,76 52,64" fill="none" stroke="#4d4030" stroke-width="1.6" stroke-opacity="0.3"/>
+  <circle cx="64" cy="64" r="3.5" fill="#a61b29"/>
+</svg>

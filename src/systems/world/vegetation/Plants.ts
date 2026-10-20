@@ -42,7 +42,6 @@ import guanAili from '../../../../content/data/world/plants/woody/guan.aili.json
 // 地被 / 草本 / 水生
 import caoYangmao from '../../../../content/data/world/plants/herbaceous/cao.yangmao.json';
 import caoJue from '../../../../content/data/world/plants/herbaceous/cao.jue.json';
-import caoLiuwei from '../../../../content/data/world/plants/herbaceous/cao.luwei.json';
 import caoDixue from '../../../../content/data/world/plants/herbaceous/cao.dixue.json';
 import caoShamo from '../../../../content/data/world/plants/herbaceous/cao.shamo.json';
 import caoHanji from '../../../../content/data/world/plants/herbaceous/cao.hanji.json';
@@ -52,7 +51,6 @@ import shuiLuwei from '../../../../content/data/world/plants/herbaceous/shui.luw
 import shuiLuweicong from '../../../../content/data/world/plants/herbaceous/shui.luweicong.json';
 import shuiLuweidang from '../../../../content/data/world/plants/herbaceous/shui.luweidang.json';
 import shuiKucao from '../../../../content/data/world/plants/herbaceous/shui.kucao.json';
-import shuiHuwei from '../../../../content/data/world/plants/herbaceous/shui.huwei.json';
 import shuiChangpu from '../../../../content/data/world/plants/herbaceous/shui.changpu.json';
 import shuiPingpeng from '../../../../content/data/world/plants/herbaceous/shui.pingpeng.json';
 // 中国特色经济作物
@@ -124,7 +122,6 @@ export const PLANT_FILES: readonly { file: string; data: PlantFile }[] = [
   // ---- 地被 / 草本 / 水生 ----
   { file: 'herbaceous/cao.yangmao.json', data: asPlantFile(caoYangmao) },
   { file: 'herbaceous/cao.jue.json', data: asPlantFile(caoJue) },
-  { file: 'herbaceous/cao.luwei.json', data: asPlantFile(caoLiuwei) },
   { file: 'herbaceous/cao.dixue.json', data: asPlantFile(caoDixue) },
   { file: 'herbaceous/cao.shamo.json', data: asPlantFile(caoShamo) },
   { file: 'herbaceous/cao.hanji.json', data: asPlantFile(caoHanji) },
@@ -134,7 +131,6 @@ export const PLANT_FILES: readonly { file: string; data: PlantFile }[] = [
   { file: 'herbaceous/shui.luweicong.json', data: asPlantFile(shuiLuweicong) },
   { file: 'herbaceous/shui.luweidang.json', data: asPlantFile(shuiLuweidang) },
   { file: 'herbaceous/shui.kucao.json', data: asPlantFile(shuiKucao) },
-  { file: 'herbaceous/shui.huwei.json', data: asPlantFile(shuiHuwei) },
   { file: 'herbaceous/shui.changpu.json', data: asPlantFile(shuiChangpu) },
   { file: 'herbaceous/shui.pingpeng.json', data: asPlantFile(shuiPingpeng) },
   // ---- 中国特色经济作物 ----

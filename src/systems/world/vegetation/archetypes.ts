@@ -4,6 +4,7 @@ import { clampColor, type RGB } from '../../../core/math/Color';
 import type { V3 } from '../../../core/math/Geometry';
 import { mulberry32 } from '../../../core/math/Random';
 import { LowPolyBuilder, parseColor, type PlantGeometry } from './geometry';
+import { windColor, colorWindPart, paletteWindPart } from './WindParts';
 import {
   DEFAULT_BLOOM_COLOR, type ClimateZone, type PaletteKey, type PlantDef, type PlantMaterial,
   type PlantParams, type SnowTarget,
@@ -52,7 +53,7 @@ function tone(def: PlantDef, key: PaletteKey | undefined, scale = 1): RGB {
     base = def.palette[witherKey(key)] ?? def.palette[key];
   } else base = key ? def.palette[key] : undefined;
   const rgb = parseColor(base ?? '#ff00ff');
-  return [clampColor(rgb[0] * scale), clampColor(rgb[1] * scale), clampColor(rgb[2] * scale)];
+  return windColor([clampColor(rgb[0] * scale), clampColor(rgb[1] * scale), clampColor(rgb[2] * scale)], paletteWindPart(key));
 }
 
 /** 按半径向心收缩 */
@@ -61,7 +62,7 @@ function deepen(c: RGB, depth: number): RGB {
   const outer = 1;
   const inner = 0.52;
   const k = outer + (inner - outer) * clamp(depth, 0, 1);
-  return [clampColor(c[0] * k), clampColor(c[1] * k), clampColor(c[2] * k)];
+  return windColor([clampColor(c[0] * k), clampColor(c[1] * k), clampColor(c[2] * k)], colorWindPart(c));
 }
 
 function hasSnow(def: PlantDef): boolean {
@@ -913,7 +914,7 @@ function sprout(b: LowPolyBuilder, def: PlantDef): void {
   if (wantsSnowOn(def, 'canopy')) snowCap(b, def, [0, trunk + leafR * 0.5, 0], leafR * 0.8, 0.7);
 }
 
-// 干枯原型：区分草本残埂、多秆折秆、灌木残枝与乔木枯桩
+// 干枯原型：草本残埂/残枝/枯桩
 function withered(b: LowPolyBuilder, def: PlantDef): void {
   const p = def.params;
   const rand = mulberry32(def.buildSeed);

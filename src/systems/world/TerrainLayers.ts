@@ -1,9 +1,9 @@
 import { createNoise3D, type NoiseFunction3D } from 'simplex-noise';
-import { mulberry32 } from '../../core/math/Random';
-import { CoverageLayer, type CoverageField, type SurfacePoint } from './CoverageLayer';
-import {plateUplift, PLATE_BASES, type PlateTier} from './PlateUplift';
-import { MountainField } from './MountainField';
-import { UpliftField } from './UpliftField';
+import { mulberry32 } from '../../core/math/Random.ts';
+import { CoverageLayer, type CoverageField, type SurfacePoint } from './CoverageLayer.ts';
+import {plateUplift, PLATE_BASES, type PlateTier} from './PlateUplift.ts';
+import { MountainField } from './MountainField.ts';
+import { UpliftField } from './UpliftField.ts';
 
 export const ELEVATION_TIERS = PLATE_BASES;
 export const CONTINENT_SCALE = 512;

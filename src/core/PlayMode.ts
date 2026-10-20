@@ -15,7 +15,9 @@ export function parseCreationTimeSpeed(value: unknown = 72): number {
 
 export class PlaySession {
   private unlocked = false;
-  constructor(readonly mode: PlayMode, readonly creationTimeSpeed: number) {}
+  readonly mode: PlayMode;
+  readonly creationTimeSpeed: number;
+  constructor(mode: PlayMode, creationTimeSpeed: number) {this.mode=mode;this.creationTimeSpeed=creationTimeSpeed;}
   get allowsCheats(): boolean { return this.mode === 'leisure' || this.unlocked; }
   unlock(command: string): boolean {
     if (command !== '/world.qianlin 天地無窮極陰陽轉相因') return false;

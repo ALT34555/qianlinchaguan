@@ -13,6 +13,7 @@ import {
   chargePainterOf, resolveFlagMount, type FlagShapeDef,
 } from './archetypes';
 import { FlagBuilder } from './geometry';
+import { flagpoleColliders } from './FlagPoleColliders';
 import { scaleGeometry } from '../Geometry';
 import type { FlagGeometry } from './geometry';
 import {
@@ -441,6 +442,7 @@ export function buildFlagpoleById(id: string, options: FlagpoleBuildOptions & { 
   const geo = buildFlagpole(poleBuildDef(unit, params, options, options.collars ?? []));
   const scale = options.scale ?? 1;
   if (scale !== 1) scaleGeometry(geo, scale);
+  geo.colliders=flagpoleColliders(params,scale);
   return geo;
 }
 
@@ -516,6 +518,7 @@ export function assemblySocketsOf(assembly: {
 }
 
 export interface FlagAssembly {
+  colliders:Float32Array;
   flag: string;
   pole: string;
   mount: FlagMount;
@@ -576,15 +579,18 @@ export function buildFlagAssembly(options: FlagAssemblyOptions): FlagAssembly {
   const fly = clothDef.fly * scale;
   const hoist = clothDef.hoist * scale;
   const sockets = assemblySocketsOf({ attachment, fly, hoist, scale, mount });
+  const geometry=merged.build(),colliders=flagpoleColliders(params,scale);
+  geometry.colliders=colliders;
   return {
     flag: flagUnit.id,
+    colliders,
     pole: poleUnit.id,
     mount,
     orientation: mountDef.orientation,
     attachment,
     cloth,
     poleGeometry,
-    geometry: merged.build(),
+    geometry,
     clothDef,
     poleDef,
     fly,

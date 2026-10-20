@@ -22,6 +22,7 @@ export interface FlagFace {
 }
 
 export interface FlagGeometry {
+  colliders?:Float32Array;
   positions: Float32Array;
   normals: Float32Array;
   colors: Uint8Array;

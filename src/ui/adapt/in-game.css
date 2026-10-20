@@ -1,0 +1,136 @@
+/* 游戏内设置沿用卷面材质 */
+.pause-settings.settings-panel {
+  position: relative;
+  padding-top: calc(var(--game-bar-h, 68px) / var(--ui-scale) + 8px);
+  color: var(--q-ink);
+  background: var(--q-surface-glass);
+  border: 1px solid var(--q-line-soft);
+  box-shadow: var(--q-neu-sm);
+}
+.pause-settings .panel-heading { position: absolute; top: 10px; left: 24px; margin: 0; }
+.pause-settings .panel-heading h1 { margin: 0; }
+.pause-settings .settings-bookmark-panel { min-height: 0; }
+.pause-settings .bookmark-content-frame { overflow: hidden; }
+.pause-settings .bookmark-content-frame > .settings-scroll { min-height: 0; overflow-y: auto; }
+.pause-settings .menu-status:empty { display: none; }
+
+/* 分割线按主色和装饰色绘制 */
+.settings-bookmark-panel :is(.setting-row, .key-row):not(:last-of-type)::before,
+.settings-bookmark-panel :is(.setting-row, .key-row):not(:last-of-type)::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  width: min(240px, 60%);
+  height: 20px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.settings-bookmark-panel :is(.setting-row, .key-row):not(:last-of-type)::before {
+  background: var(--q-primary);
+  mask: url('../../../content/assets/ui/frames/divider-primary.svg') center / contain no-repeat;
+}
+.settings-bookmark-panel :is(.setting-row, .key-row):not(:last-of-type)::after {
+  background: var(--q-accent-ui);
+  mask: url('../../../content/assets/ui/frames/divider-accent.svg') center / contain no-repeat;
+}
+
+/* 常驻开关独立于画布和抽屉 */
+.game-corner { z-index: 10020; }
+.game-corner .corner-menu { opacity: 1; transition: opacity .25s ease; }
+.menu-resting .corner-menu { animation: menu-toggle-dim .25s ease 30s forwards; }
+.menu-resting .corner-menu:is(:hover, :focus-visible) { animation: none; opacity: 1; }
+@keyframes menu-toggle-dim { from { opacity: 1; } to { opacity: .3; } }
+
+/* 输入常驻，闲置时只隐藏消息 */
+.chat-panel.chat-idle:not(.sidebar-open) { display: block; }
+.chat-panel.chat-idle:not(.sidebar-open) .chat-history { display: none; }
+.chat-panel .chat-composer {
+  display: block;
+  height: 40px;
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 236, 222, .18);
+  pointer-events: auto;
+}
+body:has(.game-bar.hidden) .chat-panel:not(.sidebar-open) .chat-composer { display: none; }
+.chat-panel .chat-composer input,
+.chat-panel .chat-composer input:focus {
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: 0;
+  color: #f7ece2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+}
+
+/* 设置展开时隐藏聊天整体 */
+.chat-panel.settings-open { display: none !important; }
+.settings-panel .crosshair-samples {
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 0;
+  background: transparent;
+}
+.settings-panel .crosshair-samples button {
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+}
+.settings-panel .crosshair-samples button[aria-pressed="true"] {
+  border-color: var(--q-primary-ui);
+  color: var(--q-primary-ui);
+  background: var(--q-primary-soft);
+  box-shadow: var(--q-neu-in-sm);
+}
+.settings-panel .profile-color-swatch {
+  display: block;
+  width: 64px;
+  height: 40px;
+  border: 1px solid var(--q-line-soft);
+  box-shadow: var(--q-neu-in-sm);
+}
+/* 聚焦底色跟随主题装饰色 */
+.settings-panel :is(input:not([type]), input[type="text"], input[type="number"], select, textarea):focus {
+  background: color-mix(in oklab, var(--q-accent-ui) 18%, var(--q-surface));
+  color: var(--q-ink);
+  border-color: var(--q-accent-ui);
+  box-shadow: var(--q-neu-in-sm), inset 0 0 0 1px var(--q-accent-ui);
+  outline: none;
+}
+.settings-panel select option { background: var(--q-surface); color: var(--q-ink); }
+.settings-panel .profile-fields:disabled { opacity: 1; }
+/* 共用颜色编辑器采用直角纸框 */
+.settings-panel .faction-color {
+  min-inline-size: 0;
+  border: 1px solid var(--q-line-soft);
+  border-radius: 0;
+}
+.settings-panel .palette-lab .faction-color { margin-top: 16px; }
+.settings-panel .palette-color-name {
+  display: block;
+  margin: 6px 0 12px;
+  color: var(--q-ink-3);
+  font-size: calc(11px * var(--q-scale));
+}
+/* 设置内容在卷面内滚动 */
+#world-menu:has(.preferences-page) { overflow: hidden; }
+#world-menu:has(.preferences-page) .q-shell { height: 100%; min-height: 0; }
+#world-menu:has(.preferences-page) .q-sheet { height: 100%; min-height: 0; }
+.q-sheet .preferences-page.settings-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; }
+.q-sheet .settings-panel .settings-bookmark-panel { flex: 1; min-height: 0; }
+.q-sheet .settings-panel .bookmark-content-frame { min-height: 0; overflow: hidden; }
+.q-sheet .settings-panel .settings-scroll { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.settings-panel > :is(.panel-heading, .menu-status, .settings-actions) { flex: none; }
+.joystick-jxqy { color: var(--q-primary); }
+.joystick-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.joystick-choices > button { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 10px; min-width: 0; }
+.joystick-choice-art { position: relative; display: block; width: 96px; height: 96px; pointer-events: none; }
+.joystick-choice-art > div { width: 100%; height: 100%; }
+.joystick-choice-art .joy-sprint-badge { display: none; }
+.joystick-choice-art .dpad-cross-stage, .joystick-choice-art .dpad-oct-stage { position: relative; inset: auto; }
+@media (max-width: 860px) {
+  #world-menu:has(.preferences-page) .q-shell { grid-template-rows: auto minmax(0, 1fr); }
+}

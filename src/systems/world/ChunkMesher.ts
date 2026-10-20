@@ -4,12 +4,14 @@ export { findMistEmitters, MIST_EMITTER_STRIDE } from './WaterfallSpray';
 /** 连续 low poly 地表、水面岸线和瀑布网格 */
 import { CHUNK_SIZE, SEA_LEVEL } from '../../core/config';
 import { BLOCK_RGB, Block } from './Blocks';
-import { PADDED_SIZE } from './WorldGenerator';
+import { PADDED_SIZE } from './WorldContract';
 import { TERRAIN_GRID, terrainDiagonal, terrainHeightAt } from './TerrainSurface';
-import { WATER_OFFSET, waterVertexLevel, iceVertexLevel, iceVertexCoverage, clipIce } from './WaterSurface';
+import { WATER_OFFSET, waterVertexLevel, shallowVertexLimit, SHALLOW_STATIC_DEPTH, iceVertexLevel, iceVertexCoverage, clipIce } from './WaterSurface';
 import { WaterKind, type WaterField } from './DynamicWater';
 
 export interface MeshData {
+  flagWind?:Float32Array;
+  plantParts?: Uint8Array;
   normals?: Float32Array;
   positions: Int16Array | Float32Array;
   /** RGB，Uint8 归一化 */
@@ -92,15 +94,17 @@ class GeoBuilder {
 
 type WaterVertex = { x: number; y: number; z: number; depth: number };
 /** 在与地表相同的三角形内按水深裁剪 */
-function clipShore(vertices: WaterVertex[]): WaterVertex[] {
+function clipShore(vertices: WaterVertex[], upper = Infinity): WaterVertex[] {
   const out: WaterVertex[] = [];
   for (let i = 0; i < vertices.length; i++) {
     const a = vertices[i], b = vertices[(i + 1) % vertices.length];
-    if (a.depth >= 0) out.push(a);
-    if ((a.depth >= 0) !== (b.depth >= 0)) {
-      const t = a.depth / (a.depth - b.depth);
+    const av = Number.isFinite(upper) ? upper - a.depth : a.depth;
+    const bv = Number.isFinite(upper) ? upper - b.depth : b.depth;
+    if (av >= 0) out.push(a);
+    if ((av >= 0) !== (bv >= 0)) {
+      const t = av / (av - bv);
       out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t,
-        z: a.z + (b.z - a.z) * t, depth: 0 });
+        z: a.z + (b.z - a.z) * t, depth: Number.isFinite(upper) ? upper : 0 });
     }
   }
   return out;
@@ -121,10 +125,26 @@ export function buildChunkMeshes(
   const vertexHeights = new Float32Array(V * V);
   const vertexLevels = new Float32Array(V * V);
   const vertexColors = new Uint8Array(V * V * 3);
+  const shallowStatic = (x: number, z: number) => {
+    const i = (z + 1) * P + x + 1;
+    return waterField?.kinds[i] === WaterKind.STATIC && !(waterField.iceCoverages?.[i]! >= .5);
+  };
+  let staticLimits:Float32Array|undefined;
+  if(waterField?.kinds.includes(WaterKind.STATIC))for(let i=0;i<waterField.kinds.length;i++){
+    if(waterField.kinds[i]!==WaterKind.STATIC||waterField.iceCoverages?.[i]!>=.5||!Number.isFinite(waterField.levels[i]))continue;
+    const depth=waterField.levels[i]-(waterField.bedLevels?.[i]??heights[i]);
+    if(depth<=0||depth>SHALLOW_STATIC_DEPTH+1e-5)continue;
+    staticLimits??=new Float32Array(V*V).fill(Infinity);
+    const x=i%P-1,z=Math.floor(i/P)-1;
+    for(let dz=0;dz<=1;dz++)for(let dx=0;dx<=1;dx++){
+      if(x+dx>=0&&x+dx<=S&&z+dz>=0&&z+dz<=S)staticLimits[(z+dz)*V+x+dx]=NaN;
+    }
+  }
   for (let z = 0; z <= S; z++) for (let x = 0; x <= S; x++) {
     const i = z * V + x;
     vertexHeights[i] = terrainHeightAt(ox + x, oz + z, seed, (wx, wz) => H(wx - ox, wz - oz));
     vertexLevels[i] = waterVertexLevel(ox + x, oz + z, (wx, wz) => H(wx - ox, wz - oz), (wx, wz) => W(wx - ox, wz - oz), seed, !waterField?.bedLevels);
+    if (staticLimits&&Number.isNaN(staticLimits[i])) staticLimits[i] = shallowVertexLimit(x, z, H, W, shallowStatic);
     for (let c = 0; c < 3; c++) {
       let sum = 0;
       for (const [dx, dz] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
@@ -172,16 +192,19 @@ export function buildChunkMeshes(
     // 干格也检查格角
     const finiteLevels = corners.map(i => vertexLevels[i]).filter(Number.isFinite);
     if (wet || finiteLevels.length) {
+      const depthLimit = staticLimits && corners.every(i => !Number.isFinite(vertexLevels[i]) || Number.isFinite(staticLimits[i]))
+        && (!wet || shallowStatic(x, z) && level - h <= SHALLOW_STATIC_DEPTH + 1e-5) ? SHALLOW_STATIC_DEPTH : Infinity;
       const fallback = wet ? level - WATER_OFFSET : Math.min(...finiteLevels);
       const vertices = corners.map((i, j) => {
         const y = Number.isFinite(vertexLevels[i]) ? vertexLevels[i] : fallback;
         return { x: coordinates[j][0], y, z: coordinates[j][1], depth: y - vertexHeights[i] };
       });
-      if (vertices.every(v => v.depth > 0)) { vertices.forEach(emitWater); water.quad(flip); }
+      if (vertices.every(v => v.depth > 0 && v.depth <= depthLimit)) { vertices.forEach(emitWater); water.quad(flip); }
       else {
         const triangles = flip ? [[0, 1, 3], [1, 2, 3]] : [[0, 1, 2], [0, 2, 3]];
         for (const tri of triangles) {
-          const polygon = clipShore(tri.map(j => vertices[j]));
+          let polygon = clipShore(tri.map(j => vertices[j]));
+          if (Number.isFinite(depthLimit)) polygon = clipShore(polygon, depthLimit);
           for (let j = 1; j + 1 < polygon.length; j++) {
             if ([polygon[0], polygon[j], polygon[j + 1]].every(v => v.depth === 0)) continue;
             emitWater(polygon[0]); emitWater(polygon[j]); emitWater(polygon[j + 1]); water.triangle();

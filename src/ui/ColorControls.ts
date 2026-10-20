@@ -1,7 +1,8 @@
 import { hexColor } from '../systems/world/artificial/PlayerFaction';
 import { t } from '../i18n';
 
-export function colorControl(id: string, label: string, value: string): string {
+export function colorControl(id: string, label: string, value: string, displayOnly = false): string {
+  if (displayOnly) return `<fieldset class="faction-color color-display"><legend>${label}</legend><span class="profile-color-swatch" role="img" aria-label="${label}" style="background:${value}"></span></fieldset>`;
   const channels = ['R', 'G', 'B'];
   return `<fieldset class="faction-color" data-color="${id}"><legend>${label}</legend>
     <label class="color-hex"><span data-swatch style="background:${value}"></span><span>HEX</span><input id="${id}" value="${value}" maxlength="7" aria-label="${label} HEX" autocomplete="off"></label>

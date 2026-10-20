@@ -9,7 +9,7 @@ import type { Season } from './Season';
 import { baseIdOf, buildPlantById, getPlantVariant, toPlantDef } from './vegetation/Plants';
 import { PLANT_STATES, type PlantState } from './vegetation/types';
 import type { DecorationPlacement } from './WorldDecoration';
-import { FLOW_DIRECTIONS, type ChunkInfo } from './WorldGenerator';
+import { FLOW_DIRECTIONS, type ChunkInfo } from './WorldContract';
 import type { Territory } from './artificial/ArtificialState';
 
 /** 准心最远检视距离 */
@@ -41,7 +41,7 @@ export interface AimWorld {
   getWaterLevel(wx: number, wz: number): number;
   getChunkType(cx: number, cz: number): number;
   getChunk(cx: number, cz: number): AimChunk | undefined;
-  readonly generator: { getChunkInfo(cx: number, cz: number): ChunkInfo; displayFlowWanted: boolean; getChunkWaterAppearance?(cx: number, cz: number): ChunkWaterAppearance };
+  readonly generator: { generation?:{terrainRule?:string}; getChunkInfo(cx: number, cz: number): ChunkInfo; displayFlowWanted: boolean; getChunkWaterAppearance?(cx: number, cz: number): ChunkWaterAppearance };
   readonly artificial: {
     getClaim(cx: number, cz: number): { faction: string } | undefined;
     readonly territories: ReadonlyMap<string, Territory>;
@@ -212,13 +212,13 @@ function modelDistance(ray: AimRay, placement: DecorationPlacement, limit: numbe
 function riverInfo(world: AimWorld, cx: number, cz: number): AimRiver | null {
   const generator = world.generator;
   let info = generator.getChunkInfo(cx, cz);
-  if (info.displayFlow < 0 && info.flow < 0 && info.courseVal > 0 && info.type !== 11 && isRiverType(info.type)) {
+  if (info.displayFlow < 0 && info.flow < 0 && info.courseVal > 0 && info.type !== 11 && isRiverType(info.type,generator.generation?.terrainRule==='planet-macro')) {
     generator.displayFlowWanted = true;
     try { info = generator.getChunkInfo(cx, cz); }
     finally { generator.displayFlowWanted = false; }
   }
   const direction = info.displayFlow >= 0 ? info.displayFlow : info.flow;
-  if (direction < 0 && !isRiverType(info.type) && info.riverWidth <= 0) return null;
+  if (direction < 0 && !isRiverType(info.type,generator.generation?.terrainRule==='planet-macro') && info.riverWidth <= 0) return null;
   const appearance = world.getChunk(cx, cz)?.waterField?.appearance ?? generator.getChunkWaterAppearance?.(cx, cz);
   const scale = appearance?.flowScale ?? 1;
   return { discharge: info.discharge * scale, direction: scale === 0 ? -1 : direction, width: info.riverWidth, depth: info.riverDepth };

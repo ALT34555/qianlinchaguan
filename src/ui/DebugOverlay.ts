@@ -1,8 +1,8 @@
 /** F12 调试面板与实时监控 */
-import { FLOW_DIRECTIONS } from '../systems/world/WorldGenerator';
+import { FLOW_DIRECTIONS } from '../systems/world/WorldContract';
 import { CHUNK_SIZE } from '../core/config';
 import type { Player } from '../entities/Player';
-import { CHUNK_TYPES, formatChunkId, getChunkTypeDef, isRiverType } from '../systems/world/ChunkTypes';
+import { getChunkTypes, formatChunkId, getChunkTypeDef, isRiverType } from '../systems/world/ChunkTypes';
 import type { LoadedChunk, World } from '../systems/world/World';
 import type { Game } from '../core/Game';
 import { chunkName, seasonName } from '../i18n/content';
@@ -241,7 +241,7 @@ export class DebugOverlay {
     if (now - this.lastTextUpdate > 100) {
       this.lastTextUpdate = now;
       const typeId = this.world.getChunkType(pcx, pcz);
-      const def = getChunkTypeDef(typeId);
+      const def = getChunkTypeDef(typeId,this.world.generator.generation.terrainRule==='planet-macro');
       const codeStr = formatChunkId(typeId);
       this.typeEl.innerHTML = `${t('debug.currentChunk')}<b style="color:${def.mapColor}">${codeStr} = ${chunkName(def)}</b>`;
       const mode = p.flying ? t('debug.mode.flying') : p.inWater ? t('debug.mode.water') : p.onGround ? t('debug.mode.ground') : t('debug.mode.air');
@@ -340,7 +340,7 @@ export class DebugOverlay {
         const loaded=this.world.getChunk(cx,cz),cached=this.world.generator.cachedChunkInfo(cx,cz);
         if(!loaded&&!cached)continue;
         const typeId = this.world.artificial.getClaim(cx,cz)?.type??loaded?.type??cached!.type;
-        const def = getChunkTypeDef(typeId);
+        const def = getChunkTypeDef(typeId,this.world.generator.generation.terrainRule==='planet-macro');
         present.add(typeId);
         const chunk = this.world.getChunk(cx, cz);
         if (this.mapStyle.colors) {
@@ -373,7 +373,7 @@ export class DebugOverlay {
         }
         if (this.mapStyle.relief) {
           const info = cached;
-          if (info && isRiverType(typeId) && info.displayFlow >= 0) {
+          if (info && isRiverType(typeId,this.world.generator.generation.terrainRule==='planet-macro') && info.displayFlow >= 0) {
             ctx.font = `bold 22px ${CANVAS_FONT}`;
             ctx.textAlign = 'center';
             ctx.strokeStyle = '#164b73'; ctx.lineWidth = 3;
@@ -385,7 +385,7 @@ export class DebugOverlay {
       }
     }
 
-    this.legendEl.innerHTML = CHUNK_TYPES.filter((def) => def.id !== 0 && present.has(def.id))
+    this.legendEl.innerHTML = getChunkTypes(this.world.generator.generation.terrainRule==='planet-macro').filter((def) => def.id !== 0 && present.has(def.id))
       .map((def) => `<span><i style="background:${def.mapColor}"></i>${formatChunkId(def.id)} ${chunkName(def)}</span>`)
       .join('');
 

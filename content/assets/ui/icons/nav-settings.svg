@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4d4030" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter">
+<title>设置</title>
+<desc>你想要什么？</desc>
+<path d="M10.34 5.1L10.94 2.26L13.06 2.26L13.66 5.1L14.72 5.44L15.71 5.95L18.14 4.36L19.64 5.86L18.05 8.29L18.56 9.28L18.9 10.34L21.74 10.94L21.74 13.06L18.9 13.66L18.56 14.72L18.05 15.71L19.64 18.14L18.14 19.64L15.71 18.05L14.72 18.56L13.66 18.9L13.06 21.74L10.94 21.74L10.34 18.9L9.28 18.56L8.29 18.05L5.86 19.64L4.36 18.14L5.95 15.71L5.44 14.72L5.1 13.66L2.26 13.06L2.26 10.94L5.1 10.34L5.44 9.28L5.95 8.29L4.36 5.86L5.86 4.36L8.29 5.95L9.28 5.44Z"/><circle class="nav-accent" cx="12" cy="12" r="3.1" stroke="#a61b29"/>
+</svg>

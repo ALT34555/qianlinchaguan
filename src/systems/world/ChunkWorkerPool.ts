@@ -3,7 +3,7 @@ import type { WaterAppearanceEntry } from './WaterAppearance';
 /** 区块 Worker 池 */
 import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import type { ChunkResultMessage, WorkerRequest } from './ChunkProtocol';
-import type { WatershedSamples, WatershedState } from './Watershed';
+import type { WatershedState } from './Watershed';
 
 export class ChunkWorkerPool {
   private readonly workers: Worker[] = [];
@@ -11,7 +11,6 @@ export class ChunkWorkerPool {
   private readonly jobs:({cx:number;cz:number}|undefined)[]=[];
   private readonly perWorker = 1;
   private readonly initial: Extract<WorkerRequest,{kind:'init'}>;
-  private coarse?: WatershedSamples;
   private disposed = false;
   private desiredCount = 1;
   private configuration = 0;
@@ -60,7 +59,6 @@ export class ChunkWorkerPool {
       };
       w.postMessage(this.initial);
       w.postMessage(this.budget);
-      if(this.coarse)w.postMessage({kind:'coarse',samples:this.coarse} satisfies WorkerRequest);
   }
 
   reset():boolean {
@@ -100,14 +98,8 @@ export class ChunkWorkerPool {
     return free;
   }
 
-  /** 广播已解粗格样本；不带转移表，各 Worker 各持副本 */
-  shareCoarse(samples: WatershedSamples): void {
-    this.coarse=samples;
-    for (const worker of this.workers) worker.postMessage({ kind: 'coarse', samples } satisfies WorkerRequest);
-  }
-
   /** 提交任务 */
-  request(cx: number, cz: number, artificialType?: number, waterOverrides?: WaterAppearanceEntry[], waterRevision?: number, waterFreezeRules?: WaterFreezeRules): boolean {
+  request(cx: number, cz: number, artificialType?: number, waterOverrides?: WaterAppearanceEntry[], waterRevision?: number, waterFreezeRules?: WaterFreezeRules, vegetationMultiplier = 1,waterSeason:number|null=null): boolean {
     if(this.disposed)return false;
     let best = -1;
     for (let i = 0; i < Math.min(this.workers.length,this.desiredCount); i++) {
@@ -116,7 +108,7 @@ export class ChunkWorkerPool {
     if (best < 0) return false;
     this.inFlight[best]++;
     this.jobs[best]={cx,cz};
-    this.workers[best].postMessage({ kind: 'generate', cx, cz, artificialType, waterOverrides, waterRevision, waterFreezeRules } satisfies WorkerRequest);
+    this.workers[best].postMessage({ kind: 'generate', cx, cz, artificialType, waterOverrides, waterRevision, waterFreezeRules, vegetationMultiplier,waterSeason } satisfies WorkerRequest);
     return true;
   }
 

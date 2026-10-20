@@ -22,11 +22,13 @@ async function fileBackend(): Promise<boolean> {
 }
 
 export function validWorldKey(key: string): boolean { return /^[A-Za-z0-9_-]{1,80}$/.test(key); }
-export function validDataKey(key: string): boolean { return /^(hydrology|spawn|chunk_-?\d+_-?\d+|preview_-?\d+_-?\d+|exploration)$/.test(key); }
+export function validDataKey(key: string): boolean { return /^(hydrology|spawn|weather[a-z]{8}|chunk_-?\d+_-?\d+|preview_-?\d+_-?\d+|atlas_node_-?\d+_-?\d+|exploration)$/.test(key); }
 
 export class WorldDataStore {
   private writes=0;
-  constructor(readonly worldKey: string) {
+  readonly worldKey: string;
+  constructor(worldKey: string) {
+    this.worldKey=worldKey;
     if (!validWorldKey(worldKey)) throw new Error('世界缓存编号无效');
   }
   private url(key: string): string {
@@ -82,6 +84,27 @@ export class WorldDataStore {
       tx.objectStore('entries').put({id:`${this.worldKey}/${key}`,bytes:new Uint8Array(bytes).buffer,updatedAt:Date.now()});
       tx.oncomplete=()=>resolve(); tx.onabort=tx.onerror=()=>reject(tx.error);
     });
+  }
+  async keys():Promise<string[]>{
+    if(await fileBackend()){
+      const response=await fetch(`/api/world-data/${this.worldKey}`,{cache:'no-store'});
+      if(!response.ok)throw new Error('读取世界目录失败');
+      return (await response.json() as string[]).filter(validDataKey);
+    }
+    const db=await openDatabase();
+    return new Promise((resolve,reject)=>{
+      const request=db.transaction('entries').objectStore('entries').getAllKeys(IDBKeyRange.bound(`${this.worldKey}/`,`${this.worldKey}/\uffff`));
+      request.onsuccess=()=>resolve(request.result.map(key=>String(key).slice(this.worldKey.length+1)).filter(validDataKey));
+      request.onerror=()=>reject(request.error);
+    });
+  }
+  async copyTo(worldKey:string):Promise<void>{
+    if(worldKey===this.worldKey)throw new Error('副本不能使用原世界编号');
+    const target=new WorldDataStore(worldKey);
+    for(const key of await this.keys()){
+      const bytes=await this.get(key);if(!bytes)throw new Error('复制期间世界数据已改变');
+      await target.put(key,bytes);
+    }
   }
   async entries():Promise<Record<string,Uint8Array>>{
     if(await fileBackend()){

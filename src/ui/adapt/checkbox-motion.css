@@ -1,0 +1,59 @@
+input.q-checkbox-source {
+  position: absolute;
+  width: 20px;
+  min-width: 0;
+  height: 20px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.q-checkbox-art {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.q-checkbox-art .cb-f { fill: var(--q-primary-ui); opacity: 0; }
+.q-checkbox-art .cb-b { fill: none; stroke: var(--q-ink); stroke-opacity: .36; stroke-width: 1.5; }
+.q-checkbox-art .cb-k {
+  fill: none;
+  stroke: #f8f4ed;
+  stroke-width: 2.2;
+  stroke-linecap: square;
+  stroke-linejoin: bevel;
+  stroke-dasharray: 26;
+  stroke-dashoffset: 26;
+}
+
+input.q-checkbox-source:checked + .q-checkbox-art .cb-f { opacity: 1; }
+input.q-checkbox-source:checked + .q-checkbox-art .cb-b { stroke: var(--q-primary-ui); stroke-opacity: 1; }
+input.q-checkbox-source:checked + .q-checkbox-art .cb-k { stroke-dashoffset: 0; }
+input.q-checkbox-source:focus-visible + .q-checkbox-art { outline: 2px solid var(--q-primary-ui); outline-offset: 3px; }
+input.q-checkbox-source:disabled + .q-checkbox-art { opacity: .45; }
+
+.q-checkbox-art.is-checking .cb-f { animation: q-cb-fill 1.6s ease-in-out both; }
+.q-checkbox-art.is-checking .cb-b { animation: q-cb-box 1.6s ease-in-out both; }
+.q-checkbox-art.is-checking .cb-k { animation: q-cb-draw 1.6s cubic-bezier(.4, 0, .2, 1) both; }
+.q-checkbox-art.is-unchecking .cb-f { animation: q-cb-unfill .6s ease-in-out both; }
+.q-checkbox-art.is-unchecking .cb-b { animation: q-cb-unbox .6s ease-in-out both; }
+.q-checkbox-art.is-unchecking .cb-k { animation: q-cb-undraw .6s cubic-bezier(.4, 0, .2, 1) both; }
+
+@keyframes q-cb-fill { 0%, 20% { opacity: 0; } 40%, 100% { opacity: 1; } }
+@keyframes q-cb-draw { 0%, 26% { stroke-dashoffset: 26; } 44%, 100% { stroke-dashoffset: 0; } }
+@keyframes q-cb-box {
+  0%, 20% { stroke: var(--q-ink); stroke-opacity: .36; }
+  40%, 100% { stroke: var(--q-primary-ui); stroke-opacity: 1; }
+}
+@keyframes q-cb-unfill { from { opacity: 1; } to { opacity: 0; } }
+@keyframes q-cb-undraw { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 26; } }
+@keyframes q-cb-unbox {
+  from { stroke: var(--q-primary-ui); stroke-opacity: 1; }
+  to { stroke: var(--q-ink); stroke-opacity: .36; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .q-checkbox-art.is-checking :is(.cb-f, .cb-b, .cb-k) { animation-duration: 1.6s !important; }
+  .q-checkbox-art.is-unchecking :is(.cb-f, .cb-b, .cb-k) { animation-duration: .6s !important; }
+}

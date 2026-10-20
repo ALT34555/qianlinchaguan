@@ -19,7 +19,7 @@ html, body { background-color: var(--ql-paper); background-image: var(--ql-paper
 #world-menu:has(.preferences-page) { display: flex; flex-direction: column; }
 #world-menu.landing-page { background: transparent; }
 #world-menu:has(.preferences-page) > .menu-header { flex: 0 0 auto; }
-#world-menu > .preferences-page.settings-panel { flex: 1; height: auto; width: 100%; min-height: 0; }
+#world-menu > .preferences-page.settings-panel { flex: 1; height: auto; width: 100%; max-width: none; min-height: 0; }
 #world-menu.creator-page { display: flex; flex-direction: column; overflow: hidden; }
 .creator-page .menu-header { min-height: 72px; flex: 0 0 auto; }
 .creator-page .menu-layout {
@@ -60,7 +60,7 @@ html, body { background-color: var(--ql-paper); background-image: var(--ql-paper
 .preferences-page.settings-panel { height: calc((100dvh - 2 * var(--safe-y)) / var(--ui-scale) - 110px); padding: 12px 0; }
 .settings-panel .panel-heading { flex-shrink: 0; margin-bottom: 6px; }
 .settings-panel .panel-intro { flex-shrink: 0; margin: 0 0 14px; }
-.settings-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; padding: 0 4px 12px; }
+.settings-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable both-edges; overscroll-behavior: contain; padding: 0 4px 12px; }
 .settings-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
 .settings-tabs { flex: 0 0 auto; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 10px 14px 0; }
 .settings-tabs button { padding-block: 13px; font-size: calc(16px * var(--text-scale, 1)); letter-spacing: var(--ql-track-display); }
@@ -78,9 +78,8 @@ html, body { background-color: var(--ql-paper); background-image: var(--ql-paper
 .slider-row > span { display: flex; justify-content: space-between; gap: 8px; }
 .slider-row input[type="range"] { width: 100%; min-width: 0; }
 .slider-row output { font-family: var(--ql-font-mono); color: var(--ql-cinnabar); }
-.fps-stops { display: flex; justify-content: space-between; gap: 4px; margin: -4px 0 2px; }
-.fps-stops span { display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: var(--ql-font-mono); font-size: calc(10px * var(--text-scale, 1)); line-height: 1.25; color: var(--ql-ink-3); white-space: nowrap; }
-.fps-stops span::before { content: ""; width: 1px; height: 4px; background: var(--ql-line); }
+.fps-stops { position: relative; height: 18px; margin: -4px 0 2px; }
+.fps-stops span { position: absolute; top: 0; left: calc(7px + (100% - 14px) * var(--fps-stop-ratio)); transform: translateX(-50%); font-family: var(--ql-font-mono); font-size: calc(10px * var(--text-scale, 1)); line-height: 1.25; color: var(--ql-ink-3); white-space: nowrap; }
 .distance-pair { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 20px 12px auto 20px; padding: 17px 0; }
 .distance-heading { display: flex; justify-content: space-between; gap: 8px; font-size: calc(14px * var(--text-scale, 1)); padding-bottom: 8px; }
 .distance-heading output { color: var(--ql-cinnabar); font-family: var(--ql-font-mono); }
@@ -88,13 +87,8 @@ html, body { background-color: var(--ql-paper); background-image: var(--ql-paper
 .distance-heading-vegetation { grid-row: 4; grid-column: 1; padding-top: 10px; }
 .distance-pair input[type="range"] { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; height: 20px; padding: 0; margin: 0; border: 0; background: transparent; box-shadow: none; position: relative; z-index: 2; }
 .distance-pair > input { grid-row: 2; grid-column: 1; }
-.distance-pair input::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--ql-paper-deep); }
-.distance-pair input::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: var(--ql-cinnabar); }
-.distance-pair input::-moz-range-track { height: 4px; border-radius: 2px; background: var(--ql-paper-deep); }
-.distance-pair input::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: var(--ql-cinnabar); }
 .distance-connector { grid-row: 2 / 6; grid-column: 1; align-self: stretch; margin-block: 10px; width: 1px; position: relative; left: calc(7px + (100% - 14px) * var(--distance-limit)); background: var(--ql-seal-off); pointer-events: none; z-index: 1; }
 .distance-vegetation-track { grid-row: 5; grid-column: 1; position: relative; min-width: 0; }
-.distance-vegetation-track::before { content: ''; position: absolute; top: 8px; left: 7px; right: 7px; height: 4px; background: var(--ql-seal-off); opacity: .3; border-radius: 2px; }
 .distance-vegetation-track input[type="range"] { display: block; width: calc(14px + (100% - 14px) * var(--distance-limit)); }
 .distance-stop { position: absolute; left: calc(7px + (100% - 14px) * var(--distance-limit)); top: 3px; height: 14px; border-left: 2px solid var(--ql-seal-off); z-index: 3; pointer-events: none; }
 .settings-actions { flex: 0 0 auto; border-top: 1px solid var(--ql-line); padding-top: 12px; }
@@ -131,11 +125,65 @@ html, body { background-color: var(--ql-paper); background-image: var(--ql-paper
 body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-index: 34; inset: 0 0 0 auto; width: calc(var(--safe-x) + var(--safe-drawer-width)); background: var(--ql-paper); background-image: var(--ql-paper-weave); opacity: .5; pointer-events: none; }
 .game-map-detail { max-height: min(calc(var(--safe-height) * .4), max(0px, calc(var(--safe-height) - var(--game-bar-h, 68px)))); overflow-y: auto; overscroll-behavior: contain; }
 .game-map-tools { max-height: min(calc(var(--safe-height) * .35), max(0px, calc(var(--safe-height) * .6 - var(--game-bar-h, 68px)))); padding-block: min(14px, calc(var(--safe-height) * .04)); overflow-y: auto; }
-.touch-move { display: block; width: 150px; height: 150px; }
 .touch-controls { inset: calc(var(--safe-y) / var(--ui-scale)) auto auto calc(var(--safe-x) / var(--ui-scale)); width: calc(var(--safe-width) / var(--ui-scale)); height: calc(var(--safe-height) / var(--ui-scale)); overflow: hidden; zoom: var(--ui-scale); }
-.touch-stick { position: relative; width: 100%; height: 100%; touch-action: none; user-select: none; }
-.stick-base { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.stick-knob { position: absolute; width: 45%; height: 45%; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+/* 虚拟按键折叠分组与等大布局 */
+.settings-panel.layout-editor-active,
+.pause-panel.layout-editor-hidden { display: none !important; }
+.setting-row.layout-adjust-row { margin-top: 8px; flex-direction: column; align-items: stretch; gap: 8px; }
+.setting-row.layout-adjust-row button { width: 100%; padding: 10px 14px; }
+.fold-lock-icon { width: calc(13px * var(--text-scale, 1)); height: calc(13px * var(--text-scale, 1)); object-fit: contain; }
+
+/* 虚拟摇杆与按键样式 */
+.touch-move { position: absolute; display: block; width: calc(168px * var(--touch-effective-size, 1)); height: calc(168px * var(--touch-effective-size, 1)); pointer-events: auto; touch-action: none; user-select: none; }
+.joystick-stage { position: relative; width: 100%; height: 100%; touch-action: none; cursor: grab; user-select: none; }
+.joystick-stage:active { cursor: grabbing; }
+.joy-base-img { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.joy-active-arc { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity .1s linear; }
+.joy-knob-img { position: absolute; width: 40%; height: 40%; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.joy-sprint-badge { position: absolute; top: -17%; left: 50%; transform: translateX(-50%); width: 19%; height: 19%; opacity: .45; pointer-events: none; transition: all .15s ease; }
+.joy-sprint-badge.locked { opacity: 1; transform: translateX(-50%) scale(1.18); filter: drop-shadow(0 0 5px rgba(166, 27, 41, .7)); }
+
+/* 鲁班十字键 */
+.dpad-cross-stage { position: relative; width: 100%; height: 100%; pointer-events: auto; touch-action: none; }
+.dpad-cross-bg { position: absolute; inset: 6%; width: 88%; height: 88%; pointer-events: none; }
+.dpad-btn { position: absolute; width: 28.57%; height: 28.57%; background: none !important; border: none !important; box-shadow: none !important; padding: 0; cursor: pointer; touch-action: none; transition: transform .08s; }
+.dpad-btn img { width: 100%; height: 100%; display: block; }
+.dpad-btn:active, .dpad-btn.pressed { transform: scale(.90); filter: brightness(1.15); }
+.dpad-btn.up { top: 2.38%; left: 35.715%; }
+.dpad-btn.down { bottom: 2.38%; left: 35.715%; }
+.dpad-btn.left { left: 2.38%; top: 35.715%; }
+.dpad-btn.right { right: 2.38%; top: 35.715%; }
+
+/* 奇门八向盘 */
+.dpad-oct-stage { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: auto; touch-action: none; }
+.dpad-oct-grid { display: grid; width: 92%; height: 92%; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 2.4%; padding: 2.4%; background: rgba(248, 244, 237, .65); border: 2px solid var(--ql-ink); border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); }
+.oct-cell-btn { width: 100%; height: 100%; background: none !important; border: none !important; box-shadow: none !important; padding: 2px; cursor: pointer; touch-action: none; transition: transform .08s; }
+.oct-cell-btn img { width: 100%; height: 100%; display: block; }
+.oct-cell-btn:active, .oct-cell-btn.pressed { transform: scale(.88); }
+.oct-cell-center { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.oct-cell-center img { width: 74%; height: 74%; opacity: .85; }
+
+/* 动作按键组 */
+.touch-action-btn { position: relative; width: calc(62px * var(--touch-effective-size, 1)); height: calc(62px * var(--touch-effective-size, 1)); background: none !important; border: none !important; box-shadow: none !important; padding: 0; cursor: pointer; touch-action: none; user-select: none; transition: transform .08s; flex-shrink: 0; }
+.touch-action-btn:active, .touch-action-btn.pressed { transform: scale(.90); }
+.touch-action-btn img.action-plate { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.touch-action-btn img.action-icon { position: absolute; width: 64%; height: 64%; left: 18%; top: 18%; pointer-events: none; }
+.touch-action-btn .skill-name-tip { position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10px; font-weight: 700; color: var(--ql-paper-hi); background: rgba(42, 33, 23, .90); padding: 1px 5px; border-radius: 2px; border: 1px solid rgba(248, 244, 237, .45); pointer-events: none; }
+
+/* 全屏等大布局调整模式 */
+.touch-layout-overlay { position: fixed; inset: 0; z-index: 99999; pointer-events: auto; user-select: none; }
+.touch-layout-mask { position: absolute; inset: var(--safe-y) var(--safe-x); width: var(--safe-width); height: var(--safe-height); background: rgba(0, 0, 0, .50); border: 2px dashed rgba(166, 27, 41, .85); box-shadow: 0 0 0 9999px rgba(0, 0, 0, .72); overflow: hidden; }
+.layout-screen-item { position: absolute; cursor: grab; touch-action: none; }
+.layout-screen-item:active { cursor: grabbing; }
+.layout-screen-item * { pointer-events: none; }
+.layout-screen-move { width: calc(168px * var(--touch-effective-size, 1)); height: calc(168px * var(--touch-effective-size, 1)); }
+.layout-item-badge { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: #fff; background: rgba(166, 27, 41, .92); padding: 2px 8px; border-radius: 3px; border: 1px solid rgba(255, 255, 255, .4); white-space: nowrap; pointer-events: none; }
+.layout-center-dialog { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 26px; background: var(--ql-paper-hi); background-image: var(--ql-paper-weave); border: 2px solid var(--ql-ink); border-radius: var(--ql-radius); box-shadow: inset 0 0 0 1px #f8f4ed, inset 0 0 0 2.5px var(--ql-line), 0 8px 32px rgba(0, 0, 0, .55); z-index: 100; text-align: center; }
+.layout-center-heading { display: flex; flex-direction: column; gap: 4px; }
+.layout-center-title { font-family: var(--ql-font-display); font-size: calc(16px * var(--text-scale, 1)); font-weight: 600; color: var(--ql-cinnabar); letter-spacing: var(--ql-track-display); }
+.layout-center-hint { font-family: var(--ql-font-body); font-size: calc(12px * var(--text-scale, 1)); color: var(--ql-ink-2); }
+.layout-center-actions { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+
 #crosshair[data-kind="none"] { display: none; }
 #crosshair[data-kind="cross"], #crosshair[data-kind="aim"], #crosshair[data-kind="ring"] { width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 0; box-shadow: none; background: none; }
 #crosshair[data-kind="cross"]::before, #crosshair[data-kind="cross"]::after { content: ''; position: absolute; background: var(--ql-ink-inv); box-shadow: 0 0 1px 1px var(--ql-ink); }
@@ -231,3 +279,461 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
 
 .save-filters { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0 0 18px; padding: 12px 16px; border: 1px solid var(--ql-line-seal); }
 .save-filters label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+.game-map-viewport.atlas-frame {
+  inset: calc(var(--safe-y) + var(--game-bar-h, 68px) + var(--game-map-tools-h, 0px) + 8px)
+    calc(var(--safe-x) + 10px) calc(var(--safe-y) + var(--game-map-detail-h, 0px) + 8px);
+}
+.game-map-viewport.atlas-frame .game-map-tip { left: 12px; bottom: 12px; }
+.map-viewport-wrapper.atlas-frame { border-radius: 0; }
+
+.world-settings.atlas-frame, .atlas-panel.atlas-frame { border-width: 1px; border-image-width: 12px; border-image-outset: 6px; border-radius: 0; }
+
+.creator-page .world-settings:has(.world-bookmark-tabs),
+.bookmark-panel {
+  container-type: inline-size;
+  position: relative;
+  isolation: isolate;
+}
+
+.creator-page .world-settings.atlas-frame:has(.world-bookmark-tabs) {
+  border: 0;
+  border-image: none;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.bookmark-content-frame {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid transparent;
+  border-image: url('../../content/assets/ui/frames/atlas-wood-frame.svg') 32 stretch;
+  border-image-width: 12px;
+  border-image-outset: 6px;
+  background: var(--ql-paper-card);
+  overflow: hidden;
+}
+
+.creator-page .bookmark-content-frame { margin: 0 6px 6px; }
+
+.bookmark-content-frame::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 10;
+  border: 1px solid transparent;
+  border-image: url('../../content/assets/ui/frames/atlas-wood-frame.svg') 32 stretch;
+  border-image-width: 12px;
+  border-image-outset: 6px;
+  pointer-events: none;
+}
+
+.world-bookmark-tabs {
+  --bookmark-overlap: clamp(32px, 12cqw, 72px);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 12px 0;
+  margin-bottom: calc(-1 * var(--bookmark-overlap));
+  border: 0;
+  align-items: start;
+}
+
+.creator-tabs.world-bookmark-tabs button {
+  min-width: 0;
+  flex: 0 1 144px;
+  width: 144px;
+  max-width: 144px;
+  aspect-ratio: 10 / 9;
+  padding: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  font-size: min(calc(14px * var(--text-scale, 1)), calc(100cqw / 24));
+  line-height: 1.25;
+  letter-spacing: .04em;
+  overflow-wrap: anywhere;
+  color: var(--ql-cinnabar-deep);
+  background: url('../../content/assets/ui/frames/frame-tab-bookmark.svg') center / contain no-repeat;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  text-shadow: none;
+  transform: translateY(4%);
+  z-index: 1;
+  transition: transform .18s ease;
+}
+
+.creator-tabs.world-bookmark-tabs button[hidden] { display: none; }
+
+.creator-tabs.world-bookmark-tabs button:hover:not(:disabled) {
+  background-color: transparent;
+  transform: translateY(-3%);
+  z-index: 1;
+}
+
+.creator-tabs.world-bookmark-tabs button[aria-selected="true"] {
+  background-color: transparent;
+  color: var(--ql-cinnabar);
+  box-shadow: none;
+  transform: translateY(-5px);
+  z-index: 4;
+}
+
+.bookmark-content-frame > .creator-scroll,
+.settings-panel .bookmark-content-frame > .settings-scroll {
+  --bookmark-overlap: clamp(32px, 12cqw, 72px);
+  position: relative;
+  z-index: 2;
+  padding-top: calc(var(--bookmark-overlap) + 18px);
+  background: var(--ql-paper-card);
+}
+
+.creator-tabs.world-bookmark-tabs button[aria-selected="true"]:hover:not(:disabled) {
+  transform: translateY(-8px);
+  z-index: 4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .creator-tabs.world-bookmark-tabs button { transition: none; }
+}
+
+.settings-bookmark-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 8px 6px;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+
+.settings-panel .world-bookmark-tabs,
+.settings-panel .bookmark-content-frame > .settings-scroll {
+  --bookmark-overlap: 56px;
+}
+
+.settings-panel .world-bookmark-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.settings-panel .world-bookmark-tabs button {
+  flex: 0 1 144px;
+  width: 144px;
+  max-width: 144px;
+  justify-self: center;
+  font-size: min(calc(16px * var(--text-scale, 1)), 4cqw);
+  padding: 0;
+}
+
+.world-bookmark-tabs .bookmark-label {
+  position: absolute;
+  top: 22%;
+  inset-inline: 12%;
+}
+
+.settings-panel .bookmark-content-frame > .settings-scroll {
+  padding-top: 74px;
+}
+
+.settings-bookmark-panel .settings-group {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+#world-menu:has(.saves-page) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.saves-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  padding-bottom: 0;
+}
+
+.saves-page > .panel-heading {
+  flex-shrink: 0;
+}
+
+.saves-bookmark-panel {
+  --save-filter-width: 180px;
+  --save-filter-overlap: 40px;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: var(--save-filter-width) minmax(0, 1fr);
+  margin: 6px;
+}
+
+.saves-bookmark-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 calc(var(--save-filter-width) - var(--save-filter-overlap) - 14px);
+  width: 32px;
+  z-index: 3;
+  background: linear-gradient(to right, rgba(45, 34, 22, 0), rgba(45, 34, 22, .32) 44%, rgba(45, 34, 22, .14) 55%, rgba(45, 34, 22, 0));
+  pointer-events: none;
+}
+
+.saves-bookmark-panel::after {
+  content: "";
+  position: absolute;
+  inset: -1px -1px -1px calc(var(--save-filter-width) - var(--save-filter-overlap) - 1px);
+  border: 1px solid transparent;
+  border-image: url('../../content/assets/ui/frames/atlas-wood-frame.svg') 32 stretch;
+  border-image-width: 12px;
+  border-image-outset: 6px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.saves-page .save-filters {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 0;
+  border: 0;
+}
+
+.saves-page .save-filters legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+
+.saves-page .save-filter-bookmark {
+  position: relative;
+  width: 220px;
+  aspect-ratio: 13 / 6;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0 28px;
+  color: var(--ql-cinnabar);
+  font-family: var(--ql-font-display);
+  font-size: calc(20px * var(--text-scale, 1));
+  background: url('../../content/assets/ui/frames/frame-tab-bookmark-side.svg') center / contain no-repeat;
+  transform: translateX(12px);
+  z-index: 1;
+  cursor: pointer;
+  transition: transform .18s ease;
+}
+
+.saves-page .save-filter-bookmark:has(input:checked) {
+  transform: translateX(-20px);
+  z-index: 11;
+}
+
+.saves-page .save-filter-bookmark:hover {
+  transform: translateX(4px);
+}
+
+.saves-page .save-filter-bookmark:has(input:checked):hover {
+  transform: translateX(-24px);
+}
+
+.saves-page .save-import-bookmark {
+  --import-pull: -20px;
+  flex-shrink: 0;
+  margin-top: auto;
+  border: 0;
+  border-radius: 0;
+  color: var(--ql-ink-inv);
+  background: url('../../content/assets/ui/frames/frame-tab-bookmark-side-red.svg') center / contain no-repeat;
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: .04em;
+  font-size: calc(17px * var(--text-scale, 1));
+  padding-left: 20px;
+  transform: translateX(12px);
+  z-index: 1;
+}
+
+.saves-page .save-import-bookmark:hover:not(:disabled) {
+  background-color: transparent;
+  color: var(--ql-ink-inv);
+  box-shadow: none;
+  transform: translateX(4px);
+}
+
+.saves-page .save-import-bookmark:is([data-import-state="choosing"], [data-import-state="importing"]) {
+  transform: translateX(var(--import-pull));
+  z-index: 11;
+}
+
+.save-import-bookmark:focus-visible {
+  outline: 2px solid var(--ql-cinnabar);
+  outline-offset: -8px;
+}
+
+.saves-page .save-import-bookmark:disabled { opacity: .6; }
+
+.save-filter-bookmark input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.save-filter-bookmark:has(input:focus-visible) {
+  outline: 2px solid var(--ql-cinnabar);
+  outline-offset: -8px;
+}
+
+.save-list-panel {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-left: calc(-1 * var(--save-filter-overlap));
+  padding: 12px 14px 12px 62px;
+  background: var(--ql-paper-card);
+  border: 1px solid var(--ql-line);
+  scrollbar-gutter: stable;
+}
+
+.saves-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.saves-footer .menu-status {
+  margin: 0;
+}
+
+.save-location {
+  margin: 0 0 0 auto;
+  max-width: 60%;
+  text-align: right;
+  overflow-wrap: anywhere;
+  color: var(--ql-ink-2);
+  font-size: calc(12px * var(--text-scale, 1));
+}
+
+@media (max-width: 640px) {
+  .settings-panel .world-bookmark-tabs,
+  .settings-panel .bookmark-content-frame > .settings-scroll {
+    --bookmark-overlap: 20px;
+  }
+  .settings-panel .bookmark-content-frame > .settings-scroll { padding-top: 32px; }
+  .settings-panel .world-bookmark-tabs button { font-size: min(calc(12px * var(--text-scale, 1)), 4cqw); }
+  .saves-bookmark-panel { --save-filter-width: 100px; --save-filter-overlap: 28px; }
+  .saves-page .save-filter-bookmark { width: 144px; padding-left: 18px; font-size: calc(14px * var(--text-scale, 1)); }
+  .saves-page .save-filter-bookmark:has(input:checked) { transform: translateX(-12px); }
+  .saves-page .save-filter-bookmark:has(input:checked):hover { transform: translateX(-16px); }
+  .saves-page .save-import-bookmark { --import-pull: -12px; font-size: 12px; }
+  .save-list-panel { padding: 10px 10px 10px 48px; }
+  .saves-page .save-card { padding: 14px; gap: 12px; }
+  .saves-page .save-actions { grid-template-columns: minmax(0, 1fr); }
+  .saves-page .save-actions .save-convert { justify-self: stretch; }
+  .saves-page .save-actions button { padding: 8px; }
+  .saves-page .panel-heading h1 { font-size: calc(26px * var(--text-scale, 1)); }
+  .saves-footer { flex-wrap: wrap; }
+  .save-location { max-width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saves-page .save-filter-bookmark { transition: none; }
+}
+
+.settings-bookmark-panel .setting-row,
+.settings-bookmark-panel .key-row {
+  position: relative;
+  border-bottom: 0;
+}
+
+.settings-bookmark-panel .setting-row:not(:last-of-type)::after,
+.settings-bookmark-panel .key-row:not(:last-of-type)::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  width: min(240px, 60%);
+  height: 20px;
+  transform: translateX(-50%);
+  background: url('../../content/assets/ui/frames/frame-divider.svg') center / contain no-repeat;
+  pointer-events: none;
+}
+
+.settings-panel .settings-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.settings-footer-note {
+  flex: 1 1 240px;
+  margin: 0 auto 0 0;
+  color: var(--ql-ink-2);
+  font-size: calc(12px * var(--text-scale, 1));
+  line-height: 1.6;
+}
+
+.preferences-page.settings-panel { position: relative; }
+
+@media (min-width: 720px) {
+  .preferences-page.settings-panel > .panel-heading {
+    position: absolute;
+    inset: 12px 0 auto;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .preferences-page.settings-panel > .panel-heading > * { pointer-events: auto; }
+}
+
+.touch-move, .layout-screen-move {
+  --touch-effective-size: min(var(--touch-size, 1), calc(var(--safe-width) / var(--ui-scale) / 168px), calc(var(--safe-height) / var(--ui-scale) / 168px));
+}
+
+.touch-action-btn, .layout-screen-action {
+  --touch-effective-size: min(var(--touch-size, 1), calc(var(--safe-width) / var(--ui-scale) / 62px), calc(var(--safe-height) / var(--ui-scale) / 62px));
+}
+
+.touch-layout-mask {
+  inset: calc(var(--safe-y) / var(--ui-scale)) auto auto calc(var(--safe-x) / var(--ui-scale));
+  width: calc(var(--safe-width) / var(--ui-scale));
+  height: calc(var(--safe-height) / var(--ui-scale));
+  zoom: var(--ui-scale);
+}
+
+.layout-size-controls { display: grid; gap: 12px; width: 100%; }
+.layout-size-controls label { display: grid; gap: 6px; text-align: left; font-size: calc(13px * var(--text-scale, 1)); }
+.layout-size-controls label > span { display: flex; justify-content: space-between; gap: 12px; }
+.layout-size-controls input { width: 100%; min-width: 0; }
+.layout-size-controls output { color: var(--ql-cinnabar); font-variant-numeric: tabular-nums; }
+.layout-center-dialog { width: min(460px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; }
+
+.touch-controls > .touch-action-btn { position: absolute; pointer-events: auto; }
+.layout-screen-action { width: calc(62px * var(--touch-effective-size, 1)); height: calc(62px * var(--touch-effective-size, 1)); }
+.joystick-stage .joy-sprint-badge { pointer-events: auto; cursor: pointer; }
+.profile-fields { border: 0; padding: 0; margin: 0; min-inline-size: 0; }
+.profile-fields:disabled { opacity: .65; }
+.settings-panel .profile-fields .faction-color { width: 100%; }

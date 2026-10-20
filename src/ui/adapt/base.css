@@ -1,0 +1,457 @@
+/* 重置与外壳布局：直角 + 纸面浮雕 + Aero 玻璃 */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--q-bg);
+  color: var(--q-ink);
+  font-family: var(--q-font-body);
+  font-size: calc(14.5px * var(--q-scale));
+  line-height: 1.62;
+  letter-spacing: .01em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  transition: background-color var(--q-d3) var(--q-ease), color var(--q-d3) var(--q-ease);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(90% 55% at 50% -10%, color-mix(in oklab, var(--q-primary) 10%, transparent), transparent 70%),
+    radial-gradient(60% 40% at 100% 100%, color-mix(in oklab, var(--q-accent) 9%, transparent), transparent 70%);
+}
+
+/* 纸纹 */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: .5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E");
+}
+
+:root[data-theme="dark"] body::after {
+  mix-blend-mode: screen;
+  opacity: .34;
+}
+
+img { max-width: 100%; display: block; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--q-primary-ui); text-decoration: none; }
+
+:focus-visible {
+  outline: 2px solid var(--q-primary-ui);
+  outline-offset: 3px;
+}
+
+::selection { background: var(--q-primary-soft); }
+
+* { scrollbar-width: thin; scrollbar-color: var(--q-line) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--q-line);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* Aero 玻璃层 */
+.aero {
+  background-color: var(--q-aero-tint);
+  background-image: var(--q-aero-gloss);
+  backdrop-filter: var(--q-blur);
+  -webkit-backdrop-filter: var(--q-blur);
+  box-shadow:
+    inset 0 1px 0 var(--q-aero-line),
+    inset 1px 0 0 color-mix(in oklab, var(--q-aero-line) 45%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--q-surface-hi) 38%, transparent),
+    var(--q-shadow);
+}
+
+/* 外壳：一列侧栏 + 一张卷面 */
+.shell {
+  position: relative;
+  z-index: 2;
+  max-width: var(--q-shell);
+  margin: 0 auto;
+  padding: calc(12px + var(--q-safe-y)) calc(14px + var(--q-safe-x)) 26px;
+  display: grid;
+  grid-template-columns: calc(112px * var(--q-size)) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+/* 侧栏：品牌 / 导航 / 工具，三段一列，取代原来的顶栏 */
+.rail {
+  position: sticky;
+  top: calc(12px + var(--q-safe-y));
+  height: calc(100dvh - 38px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rail-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--q-line-soft);
+  color: var(--q-ink);
+}
+
+.rail-logo {
+  width: calc(34px * var(--q-size));
+  height: calc(34px * var(--q-size));
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px color-mix(in oklab, var(--q-accent) 26%, transparent));
+  transition: transform var(--q-d3) var(--q-ease-spring);
+}
+
+.rail-brand:hover .rail-logo { transform: translateY(-1px) scale(1.06); }
+
+.rail-word {
+  font-family: var(--q-font-display);
+  font-size: calc(14px * var(--q-scale));
+  letter-spacing: .16em;
+  line-height: 1.2;
+  text-indent: .16em;
+}
+
+.rail-sub {
+  font-family: var(--q-font-mono);
+  font-size: calc(10px * var(--q-scale));
+  letter-spacing: .22em;
+  color: var(--q-ink-3);
+  text-indent: .22em;
+}
+
+.rail-nav { display: flex; flex-direction: column; gap: 3px; }
+
+/* 工具区：贴到侧栏底部 */
+.rail-acts {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--q-line-soft);
+}
+
+.rail-acts .rail-btn { width: calc(72px * var(--q-size)); }
+
+.rail-acts .icon-btn { height: calc(40px * var(--q-size)); }
+
+/* 侧栏里的滑轨比默认宽，把手行程跟着放大 */
+.rail-acts .theme-pill {
+  width: calc(72px * var(--q-size));
+  height: calc(36px * var(--q-size));
+  padding: calc(6px * var(--q-size));
+  --tp-travel: calc(36px * var(--q-size));
+}
+
+/* 侧栏按钮的提示气泡朝右，避免贴边被裁 */
+.rail-acts .tip::after {
+  bottom: auto;
+  top: 50%;
+  left: calc(100% + 9px);
+  translate: 0 -50%;
+}
+
+.rail-acts .tip:hover::after { translate: 3px -50%; }
+
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--q-tab-h);
+  padding: 0 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--q-ink-2);
+  font-size: calc(15px * var(--q-scale));
+  letter-spacing: .16em;
+  transition: background var(--q-d2) var(--q-ease), color var(--q-d2) var(--q-ease),
+    transform var(--q-d2) var(--q-ease), box-shadow var(--q-d2) var(--q-ease), border-color var(--q-d2) var(--q-ease);
+}
+
+.tab::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 14px;
+  margin-top: -7px;
+  background: var(--q-primary-ui);
+  opacity: 0;
+  transform: scaleY(.2);
+  transition: opacity var(--q-d2) var(--q-ease), transform var(--q-d3) var(--q-ease-spring);
+}
+
+.tab-mark {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  rotate: 45deg;
+  background: var(--q-primary-ui);
+  opacity: 0;
+  scale: .3;
+  transition: opacity var(--q-d2) var(--q-ease), scale var(--q-d3) var(--q-ease-spring);
+}
+
+.tab:hover { color: var(--q-ink); transform: translateX(2px); }
+
+.tab.is-active {
+  background: var(--q-surface);
+  border-color: var(--q-line-soft);
+  color: var(--q-ink);
+  box-shadow: var(--q-shadow-sm);
+  transform: translateX(3px);
+}
+
+.tab.is-active::before { opacity: 1; transform: none; }
+.tab.is-active .tab-mark { opacity: 1; scale: 1; }
+
+.rail-foot {
+  margin: 0;
+  font-size: calc(9.5px * var(--q-scale));
+  line-height: 1.7;
+  letter-spacing: .1em;
+  text-align: center;
+  color: var(--q-ink-3);
+  opacity: .75;
+}
+
+/* 卷面：一张压出纸面的册页 */
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 64px);
+  padding: var(--q-pad-sheet);
+  border: 1px solid var(--q-line-soft);
+  background: var(--q-surface);
+  box-shadow:
+    var(--q-shadow-lg),
+    inset 0 1px 0 var(--q-neu-light),
+    inset 0 -1px 0 color-mix(in oklab, var(--q-neu-dark) 55%, transparent);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* 内框细线 */
+.sheet::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid var(--q-line-faint);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 四角界画角标 */
+.sheet::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(var(--q-line) 0 0) left 0 top 0 / 20px 1px no-repeat,
+    linear-gradient(var(--q-line) 0 0) left 0 top 0 / 1px 20px no-repeat,
+    linear-gradient(var(--q-line) 0 0) right 0 top 0 / 20px 1px no-repeat,
+    linear-gradient(var(--q-line) 0 0) right 0 top 0 / 1px 20px no-repeat,
+    linear-gradient(var(--q-line) 0 0) left 0 bottom 0 / 20px 1px no-repeat,
+    linear-gradient(var(--q-line) 0 0) left 0 bottom 0 / 1px 20px no-repeat,
+    linear-gradient(var(--q-line) 0 0) right 0 bottom 0 / 20px 1px no-repeat,
+    linear-gradient(var(--q-line) 0 0) right 0 bottom 0 / 1px 20px no-repeat;
+}
+
+.sheet-mark {
+  position: absolute;
+  top: -70px;
+  right: -70px;
+  width: 340px;
+  height: 340px;
+  color: var(--q-primary-ui);
+  opacity: .05;
+  rotate: 14deg;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page { display: none; position: relative; z-index: 1; }
+/* 页面本身不抢高度，短页面多出来的空白落在落款下面，而不是挤在内容与落款之间 */
+.page.is-active { display: block; flex: 0 0 auto; animation: page-in var(--q-d3) var(--q-ease-out); }
+.page > * + * { margin-top: var(--q-rhythm); }
+
+/* 卷末落款 */
+/* 卷末落款：紧跟在内容之后，多出来的高度落在落款下面的纸面上 */
+.sheet-foot {
+  position: relative;
+  z-index: 1;
+  margin-top: var(--q-rhythm);
+  padding-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: calc(9.5px * var(--q-scale));
+  letter-spacing: .14em;
+  color: var(--q-ink-3);
+  opacity: .85;
+}
+
+.foot-logo { width: 15px; height: 15px; object-fit: contain; opacity: .65; }
+.foot-dash { width: 16px; height: 1px; background: var(--q-line); }
+
+/* 排版 */
+h1, h2, h3, h4 {
+  margin: 0;
+  font-family: var(--q-font-display);
+  font-weight: 400;
+  letter-spacing: .06em;
+  line-height: 1.3;
+}
+
+h1 { font-size: calc(clamp(20px, 2.3vw, 27px) * var(--q-scale)); }
+h2 { font-size: calc(clamp(15px, 1.4vw, 18px) * var(--q-scale)); }
+h3 { font-size: calc(14px * var(--q-scale)); }
+
+p { margin: 0; }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(10px * var(--q-scale));
+  letter-spacing: .3em;
+  color: var(--q-primary-ui);
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 12px;
+  height: 1px;
+  background: currentColor;
+  opacity: .6;
+}
+
+.lead {
+  font-size: calc(13.5px * var(--q-scale));
+  line-height: 1.72;
+  color: var(--q-ink-2);
+  max-width: 96ch;
+}
+
+.muted { color: var(--q-ink-3); }
+.mono { font-family: var(--q-font-mono); font-size: .86em; letter-spacing: .02em; }
+.accent-text { color: var(--q-primary-ui); }
+
+/* 区块头 */
+.sec-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--q-line-soft);
+}
+
+.sec-title { display: flex; align-items: center; gap: 8px; }
+
+.sec-title .decor { width: 17px; height: 17px; color: var(--q-primary-ui); opacity: .8; flex: 0 0 auto; }
+
+.sec-desc { font-size: calc(11px * var(--q-scale)); color: var(--q-ink-3); letter-spacing: .06em; }
+
+/* 栅格 */
+.grid { display: grid; gap: var(--q-gap-grid); }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.g-2col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* 字号基准放大后，列数要跟着减，否则每行只剩七八个字 */
+@media (max-width: 1180px) {
+  .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 960px) {
+  .g3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 820px) {
+  .g2, .g3, .g4, .g-2col { grid-template-columns: minmax(0, 1fr); }
+}
+
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+.stack-24 > * + * { margin-top: 24px; }
+
+.decor { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.2; }
+.decor path { stroke-linecap: round; stroke-linejoin: round; }
+
+.decor-host { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+
+/* 大尺寸装饰：撑满宿主 */
+.sheet-mark .decor,
+.steam .decor,
+.demo-petal .decor,
+.demo-steam .decor { width: 100%; height: 100%; }
+
+.demo-steam path { stroke-dasharray: 26 120; animation: steam 5.4s linear infinite; }
+.demo-steam path:nth-child(2) { animation-delay: -1.8s; }
+.demo-steam path:nth-child(3) { animation-delay: -3.4s; }
+
+/* 图标 */
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.ic {
+  width: calc(16px * var(--q-size));
+  height: calc(16px * var(--q-size));
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tp-sun, .tp-moon { width: calc(15px * var(--q-size)); height: calc(15px * var(--q-size)); fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* 配色实验室入口：五瓣花，红黄白黑蓝 */
+.palette-flower {
+  width: calc(26px * var(--q-size));
+  height: calc(26px * var(--q-size));
+  display: block;
+  overflow: visible;
+  transition: transform var(--q-d3) var(--q-ease-spring);
+}
+
+/* 不描边，用跟着主题走的细投影压出花瓣边界 */
+.palette-flower path { filter: drop-shadow(0 0 .9px color-mix(in oklab, var(--q-ink) 68%, transparent)); }
+
+/* 夜间底色深，黑瓣要靠更亮的边才看得出来 */
+:root[data-theme="dark"] .palette-flower path { filter: drop-shadow(0 0 1.3px color-mix(in oklab, var(--q-ink) 88%, transparent)); }
+
+.icon-btn:hover .palette-flower { transform: rotate(24deg); }
+
+.input-group .ic { position: absolute; left: 13px; color: var(--q-ink-3); pointer-events: none; }

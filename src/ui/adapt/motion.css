@@ -1,0 +1,206 @@
+/* 动效基元 */
+
+@keyframes page-in {
+  from { opacity: 0; translate: 0 10px; filter: blur(4px); }
+  to { opacity: 1; translate: 0 0; filter: blur(0); }
+}
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes dialog-in {
+  from { opacity: 0; scale: .97; translate: 0 8px; }
+  to { opacity: 1; scale: 1; translate: 0 0; }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; translate: 0 16px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; translate: 0 0; }
+  to { opacity: 0; translate: 0 10px; }
+}
+
+@keyframes ripple-out {
+  to { transform: scale(1); opacity: 0; }
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+@keyframes spin { to { rotate: 360deg; } }
+
+/* 菱形框：从 45° 起转 */
+@keyframes spin-diamond {
+  from { rotate: 45deg; }
+  to { rotate: 405deg; }
+}
+
+@keyframes float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -10px; }
+}
+
+@keyframes halo {
+  0%, 100% { opacity: .55; scale: 1; }
+  50% { opacity: .95; scale: 1.06; }
+}
+
+@keyframes steam {
+  0% { stroke-dashoffset: 146; opacity: 0; }
+  18% { opacity: .85; }
+  70% { opacity: .45; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes orb-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, .34),
+      inset 0 -2px 6px rgba(0, 0, 0, .22),
+      0 0 0 1px rgba(20, 12, 14, .34),
+      0 0 14px color-mix(in oklab, var(--q-primary) 45%, transparent);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, .5),
+      inset 0 -2px 6px rgba(0, 0, 0, .22),
+      0 0 0 1px rgba(20, 12, 14, .34),
+      0 0 28px color-mix(in oklab, var(--q-primary) 72%, transparent);
+  }
+}
+
+@keyframes bar-grow { from { width: 0; } }
+
+@keyframes msg-in {
+  from { opacity: 0; translate: -8px 0; filter: blur(3px); }
+  to { opacity: 1; translate: 0 0; filter: blur(0); }
+}
+
+@keyframes seal-press {
+  0% { scale: 1; }
+  38% { scale: .9; }
+  62% { scale: 1.04; }
+  100% { scale: 1; }
+}
+
+@keyframes petal-fall {
+  0% { translate: 0 -18px; rotate: 0deg; opacity: 0; }
+  15% { opacity: 1; }
+  100% { translate: 18px 56px; rotate: 220deg; opacity: 0; }
+}
+
+@keyframes bloom {
+  0% { scale: .2; opacity: 0; }
+  60% { opacity: 1; }
+  100% { scale: 1; opacity: 1; }
+}
+
+/* 加载完成：花整体微微涨开再淡出 */
+@keyframes bloom-out {
+  0% { scale: 1; opacity: 1; }
+  40% { scale: 1.12; opacity: 1; }
+  100% { scale: 1.2; opacity: 0; }
+}
+
+.load-veil.is-done .pl-svg { animation: bloom-out 420ms var(--q-ease-out) both; }
+
+@keyframes draw-line {
+  from { stroke-dashoffset: 60; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes pulse-ring {
+  0% { scale: .8; opacity: .7; }
+  100% { scale: 1.9; opacity: 0; }
+}
+
+@keyframes q-switch-track-on {
+  0%, 22% { background-color: var(--q-switch-off); border-color: var(--q-line-soft); }
+  45%, 100% { background-color: var(--q-primary-ui); border-color: var(--q-primary-ui); }
+}
+
+@keyframes q-switch-track-off {
+  0%, 22% { background-color: var(--q-primary-ui); border-color: var(--q-primary-ui); }
+  55%, 100% { background-color: var(--q-switch-off); border-color: var(--q-line-soft); }
+}
+
+@keyframes q-switch-thumb-on {
+  0%, 22% { transform: translateX(0); background-color: var(--q-surface-hi); }
+  55%, 100% { transform: translateX(var(--q-switch-travel)); background-color: #fffaf4; }
+}
+
+@keyframes q-switch-thumb-off {
+  0%, 22% { transform: translateX(var(--q-switch-travel)); background-color: #fffaf4; }
+  55%, 100% { transform: translateX(0); background-color: var(--q-surface-hi); }
+}
+
+/* 滚动浮现 */
+[data-reveal] {
+  opacity: 0;
+  translate: 0 16px;
+  transition: opacity 560ms var(--q-ease-out), translate 560ms var(--q-ease-out);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+
+[data-reveal].is-in { opacity: 1; translate: 0 0; }
+
+/* 主题切换的圆形揭示 */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+::view-transition-new(root) {
+  animation: theme-reveal 620ms var(--q-ease-out) both;
+}
+
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--tx, 50%) var(--ty, 4%)); }
+  to { clip-path: circle(150% at var(--tx, 50%) var(--ty, 4%)); }
+}
+
+/* 数字滚动 */
+.roll { display: inline-block; overflow: hidden; vertical-align: bottom; }
+.roll span { display: block; transition: transform 620ms var(--q-ease-out); }
+
+/* 演示用元素 */
+.demo-card {
+  width: 74px;
+  height: 46px;
+  background: var(--q-surface-hi);
+  border: 1px solid var(--q-line-soft);
+  box-shadow: var(--q-neu-sm);
+}
+
+.demo-seal {
+  width: 40px;
+  height: 40px;
+  background: var(--q-primary-ui);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .3),
+    inset 0 -2px 0 rgba(0, 0, 0, .16),
+    3px 3px 9px color-mix(in oklab, var(--q-primary) 30%, transparent);
+}
+
+.demo-petal { width: 44px; height: 44px; color: var(--q-petal); }
+.demo-steam { width: 54px; height: 54px; color: var(--q-primary-ui); opacity: .7; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  [data-reveal] { opacity: 1; translate: 0 0; }
+
+  :is(.switch, .switch-slider),
+  .switch::after,
+  .switch-slider::before {
+    animation-duration: .9s !important;
+  }
+}

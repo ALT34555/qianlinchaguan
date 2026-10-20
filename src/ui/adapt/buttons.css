@@ -1,0 +1,72 @@
+/* 设计稿按钮的统一入口 */
+:root body button[data-ui-button]:not([data-ui-button="gamepad"]) {
+  border-radius: 0;
+  text-shadow: none;
+  font-family: var(--q-font-body);
+  cursor: pointer;
+  transition: transform var(--q-d2) var(--q-ease), box-shadow var(--q-d2) var(--q-ease), background var(--q-d2) var(--q-ease), color var(--q-d2) var(--q-ease), border-color var(--q-d2) var(--q-ease);
+}
+:root body button[data-ui-button]:is([data-ui-button="primary"], [data-ui-button="ghost"], [data-ui-button="quiet"], [data-ui-button="danger"]) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--q-ink);
+  box-shadow: none;
+  letter-spacing: .1em;
+}
+:root body button[data-ui-button="primary"][data-ui-button] {
+  color: var(--q-on-primary);
+  background: var(--q-primary-ui);
+  box-shadow: inset 0 1px 0 #ffffff3d, inset 0 -2px 0 #00000024, 3px 3px 9px color-mix(in oklab, var(--q-primary) 26%, transparent);
+}
+:root body button[data-ui-button="primary"][data-ui-button]:hover:not(:disabled) {
+  transform: translateY(-1px);
+  color: var(--q-on-primary);
+  background: var(--q-primary-ui);
+  box-shadow: inset 0 1px 0 #ffffff4d, inset 0 -2px 0 #00000024, 4px 5px 14px color-mix(in oklab, var(--q-primary) 32%, transparent);
+}
+:root body button[data-ui-button="primary"][data-ui-button]:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px #00000042, inset 0 -1px 0 #ffffff1f;
+}
+:root body button:is([data-ui-button="ghost"], [data-ui-button="icon"])[data-ui-button] {
+  border: 1px solid var(--q-line-soft);
+  background: var(--q-surface);
+  color: var(--q-ink);
+  box-shadow: var(--q-neu-sm);
+}
+:root body button:is([data-ui-button="ghost"], [data-ui-button="icon"])[data-ui-button]:hover:not(:disabled) {
+  color: var(--q-primary-ui);
+  background: var(--q-surface);
+  border-color: var(--q-line-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--q-neu);
+}
+:root body button:is([data-ui-button="ghost"], [data-ui-button="icon"])[data-ui-button]:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--q-neu-in-sm);
+}
+:root body button[data-ui-button="quiet"][data-ui-button] { color: var(--q-ink-2); background: transparent; border-color: transparent; box-shadow: none; transform: none; }
+:root body button[data-ui-button="quiet"][data-ui-button]:hover:not(:disabled) { color: var(--q-ink); background: var(--q-accent-soft); box-shadow: none; transform: none; }
+:root body button[data-ui-button="quiet"][data-ui-button]:active:not(:disabled) { box-shadow: none; transform: none; }
+:root body button[data-ui-button="danger"][data-ui-button] {
+  color: #fff5f7;
+  background: var(--q-highlight-ui);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 0 #0000002e, 3px 3px 9px color-mix(in oklab, var(--q-highlight) 26%, transparent);
+}
+:root body button[data-ui-button="danger"][data-ui-button]:hover:not(:disabled) { transform: translateY(-1px); }
+:root body button[data-ui-button="segment"][data-ui-button] { background: transparent; color: var(--q-ink-2); border: 1px solid transparent; box-shadow: none; transform: none; }
+:root body button[data-ui-button="segment"][data-ui-button]:hover:not(:disabled) { color: var(--q-ink); box-shadow: none; transform: none; }
+:root body button[data-ui-button="segment"][data-ui-button]:is(.active, .is-on, [aria-pressed="true"], [aria-selected="true"]) {
+  background: var(--q-primary-soft);
+  border-color: var(--q-line-primary);
+  color: var(--q-primary-ui);
+  box-shadow: inset 0 1px 0 #ffffff80;
+}
+:root body button[data-ui-button]:disabled { opacity: .42; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  :root body button[data-ui-button] { transition: none; }
+  :root body button[data-ui-button] .ripple { display: none; }
+}

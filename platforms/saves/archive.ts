@@ -1,12 +1,13 @@
 import { open, lstat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
+import type { Writable } from 'node:stream';
 import { createInflateRaw } from 'node:zlib';
 import type { ServerResponse } from 'node:http';
 import { Zip, ZipPassThrough, inflateSync } from 'fflate';
-import { MAX_ARCHIVE_BYTES, MAX_SAVE_BYTES, parseSaveArchiveFiles, saveArchiveFiles } from '../../src/systems/world/SaveArchive';
-import { validDataKey } from '../../src/systems/world/WorldDataStore';
-import type { LocalSave } from '../../src/systems/world/LocalSaveStore';
-import type { FileWorldData } from './world-data';
+import { MAX_ARCHIVE_BYTES, MAX_SAVE_BYTES, parseSaveArchiveFiles, saveArchiveFiles } from '../../src/systems/world/SaveArchive.ts';
+import { validDataKey } from '../../src/systems/world/WorldDataStore.ts';
+import type { LocalSave } from '../../src/systems/world/LocalSaveStore.ts';
+import type { FileWorldData } from './world-data.ts';
 
 export async function readSaveMetadata(path:string):Promise<LocalSave> {
   const stat=await lstat(path);
@@ -81,7 +82,7 @@ async function* embeddedData(path:string,excluded:Set<string>):AsyncGenerator<{k
     }
   } finally {await file.close();}
 }
-export async function streamSaveArchive(response:ServerResponse,item:LocalSave,data:FileWorldData,source?:string):Promise<void> {
+export async function writeSaveArchive(response:Writable,item:LocalSave,data?:FileWorldData,source?:string):Promise<void> {
   let blocked=false,written=0,error:Error|undefined;
   const zip=new Zip((err,chunk,final)=>{
     if(err){error=err;return;}
@@ -102,11 +103,10 @@ export async function streamSaveArchive(response:ServerResponse,item:LocalSave,d
       response.once('drain',done);response.once('close',closed);response.once('error',failed);
     });
   };
-  response.setHeader('Content-Type','application/zip');response.setHeader('Cache-Control','no-store');
   try {
     const included=new Set<string>();
     for(const [name,bytes] of Object.entries(saveArchiveFiles(item))){const entry=new ZipPassThrough(name);zip.add(entry);entry.push(bytes,true);await drain();}
-    if(item.save.worldKey)for(const key of await data.keys(item.save.worldKey)){
+    if(data&&item.save.worldKey)for(const key of await data.keys(item.save.worldKey)){
       const path=data.entryPath(item.save.worldKey,key),stat=await lstat(path);
       if(!stat.isFile()||stat.isSymbolicLink()||stat.size>64*1024*1024)throw new Error('世界数据不可读');
       const entry=new ZipPassThrough('world-data/'+key+'.bin');zip.add(entry);await drain();
@@ -122,5 +122,9 @@ export async function streamSaveArchive(response:ServerResponse,item:LocalSave,d
       if(size!==embedded.size)throw new Error('区块大小不符');entry.push(new Uint8Array(),true);await drain();
     }
     zip.end();if(error)throw error;
-  } catch(err){zip.terminate();if(response.headersSent)response.destroy();throw err;}
+  } catch(err){zip.terminate();response.destroy();throw err;}
+}
+export async function streamSaveArchive(response:ServerResponse,item:LocalSave,data:FileWorldData,source?:string):Promise<void>{
+  response.setHeader('Content-Type','application/zip');response.setHeader('Cache-Control','no-store');
+  await writeSaveArchive(response,item,data,source);
 }

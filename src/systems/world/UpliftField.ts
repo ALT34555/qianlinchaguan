@@ -1,4 +1,4 @@
-import type { SurfacePoint } from './CoverageLayer';
+import type { SurfacePoint } from './CoverageLayer.ts';
 
 /** 整数键可覆盖的格点索引范围 */
 const INDEX_LIMIT = 512;
@@ -15,9 +15,12 @@ export class UpliftField {
   private readonly weights = new Float64Array(12);
   private readonly lattice = new Int32Array(3);
   readonly spacing: number;
+  private readonly spherical: boolean;
+  private readonly source: (point: SurfacePoint, activity: number) => number;
 
-  constructor(private readonly spherical: boolean, blocksPerUnit: number,
-    private readonly source: (point: SurfacePoint, activity: number) => number) {
+  constructor(spherical: boolean, blocksPerUnit: number,
+    source: (point: SurfacePoint, activity: number) => number) {
+    this.spherical=spherical;this.source=source;
     this.spacing = Math.min(48 * 64 / blocksPerUnit, spherical ? .12 : Infinity);
   }
 
@@ -32,7 +35,7 @@ export class UpliftField {
   private at(activity: number, ix: number, iy: number, iz: number): number {
     if (ix < -INDEX_LIMIT || ix > INDEX_LIMIT || iy < -INDEX_LIMIT || iy > INDEX_LIMIT ||
         iz < -INDEX_LIMIT || iz > INDEX_LIMIT) return this.overflowAt(activity, ix, iy, iz);
-    // 键含 activity，避免不同活动度共用同一格点值
+    // 键含 activity 区分活动度
     const key = ((activity * INDEX_SIDE + (ix + INDEX_LIMIT)) * INDEX_SIDE + (iy + INDEX_LIMIT)) * INDEX_SIDE + (iz + INDEX_LIMIT);
     const cached = this.cache.get(key);
     if (cached !== undefined) return cached;

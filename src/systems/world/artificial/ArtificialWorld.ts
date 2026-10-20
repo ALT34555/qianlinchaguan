@@ -1,5 +1,6 @@
 import type { PlayerFactionOptions } from './PlayerFaction';
-import type { ChunkInfo, WorldGenerator } from '../WorldGenerator';
+import type { ChunkInfo } from '../WorldContract';
+import type { WorldGeneratorBase as WorldGenerator } from '../WorldContract';
 import { ArtificialGenerator, MIN_TERRITORY_SCORE } from './ArtificialGenerator';
 import { normalizeArtificial } from './ArtificialSettings';
 import { calendarYear, claimKey, DAY_MS, EXCLUSION_RADIUS, FLAG_LAND, OWNED_LAND,
@@ -31,7 +32,9 @@ export class ArtificialWorld {
   readonly territories = new Map<string, Territory>();
   readonly claims = new Map<string, ArtificialClaim>();
   revision = 0;
+  private initialCivilizations=0;
   playerFactionId?: string;
+  private playerColors?: { mainColor: string; trimColor: string };
   private readonly tiles = new Set<string>();
   private queryDiscovery=true;
   private readonly buckets = new Map<string, ArtificialClaim[]>();
@@ -63,7 +66,14 @@ export class ArtificialWorld {
       this.needsCatchup = true;
       for(const [x,z] of state.discoveredTiles??[])this.tiles.add(claimKey(x,z));
     }
+    this.countInitialCivilizations();
   }
+
+  private countInitialCivilizations():void {
+    this.initialCivilizations=0;
+    for(const t of this.territories.values())if(t.id!==this.playerFactionId&&t.bornYear===0)this.initialCivilizations++;
+  }
+  private get initialLimitReached():boolean {return this.initialCivilizations>=this.settings.initialCivilizationLimit;}
 
   enableBackground(worker:Worker,ms:number,cx:number,cz:number,hydrology:WatershedState,onChange?:()=>void):void {
     if(!this.settings.enabled||this.background)return;
@@ -85,13 +95,23 @@ export class ArtificialWorld {
   }
   setCacheBudget(entries:number):void {this.background?.postMessage({kind:'budget',entries});}
 
+  setPlayerColors(mainColor: string, trimColor: string): void {
+    if (this.playerColors?.mainColor === mainColor && this.playerColors.trimColor === trimColor) return;
+    this.playerColors = { mainColor, trimColor };
+    const territory = this.playerFactionId ? this.territories.get(this.playerFactionId) : undefined;
+    if (territory) { Object.assign(territory, this.playerColors); this.revision++; }
+    this.background?.postMessage({ kind: 'player-colors', mainColor, trimColor });
+  }
+
   private adoptBackground(state:ArtificialState):void {
     this.territories.clear();this.claims.clear();this.buckets.clear();this.tiles.clear();
     this.playerFactionId=state.playerFactionId;this.lastDay=state.lastDay;
     for(const territory of state.territories)this.territories.set(territory.id,territory);
+    const owned = this.playerFactionId ? this.territories.get(this.playerFactionId) : undefined;
+    if (owned && this.playerColors) Object.assign(owned, this.playerColors);
     for(const claim of state.claims)this.addClaim(claim);
     for(const [x,z] of state.discoveredTiles??[])this.tiles.add(claimKey(x,z));
-    this.revision++;
+    this.countInitialCivilizations();this.revision++;
   }
 
   private pumpBackground():void {
@@ -134,10 +154,13 @@ export class ArtificialWorld {
   }
 
   private found(cx: number, cz: number, type: number, year: number, salt: string): boolean {
+    const initial=salt==='initial'||salt==='spawn';
+    if(initial&&this.initialLimitReached)return false;
     cx = this.generator.wrap(cx);
     const t = this.generator.faction(cx, cz, year, salt);
     if (this.territories.has(t.id) || this.claims.has(claimKey(cx, cz))) return false;
     this.territories.set(t.id, t);
+    if(initial)this.initialCivilizations++;
     this.addClaim({ cx, cz, type, faction: t.id, step: 0 });
     this.needsCatchup = true;
     return true;
@@ -155,7 +178,7 @@ export class ArtificialWorld {
 
   /** 出生点附近保底立一处自然置旗地 */
   seedNearby(cx: number, cz: number, radius = SPAWN_SCAN_RADIUS): boolean {
-    if (!this.settings.enabled) return false;
+    if (!this.settings.enabled||this.initialLimitReached) return false;
     const offsets = radius === SPAWN_SCAN_RADIUS ? SPAWN_SCAN : scanOffsets(radius);
     for (const strict of [true, false]) {
       for (const [dx, dz] of offsets) {
@@ -170,7 +193,7 @@ export class ArtificialWorld {
   }
 
   discover(cx: number, cz: number, radius = 0): void {
-    if (!this.settings.enabled) return;
+    if (!this.settings.enabled||this.initialLimitReached) return;
     const s = this.generator.cellSize;
     const planet = this.terrain.generation.mode === 'planet';
     const size = this.terrain.generation.planet.equatorChunks;
@@ -186,6 +209,7 @@ export class ArtificialWorld {
         this.tiles.add(key);
         const c = this.generator.candidate(tx, z);
         if (c && this.hasSpace(c.cx, c.cz)) this.found(c.cx, c.cz, OWNED_LAND, 0, 'initial');
+        if(this.initialLimitReached)return;
       }
     }
   }
@@ -197,7 +221,7 @@ export class ArtificialWorld {
   useCachedQueries():void {this.queryDiscovery=false;}
 
   *discoverRegion(minX: number, minZ: number, maxX: number, maxZ: number): Generator<void> {
-    if (!this.settings.enabled) return;
+    if (!this.settings.enabled||this.initialLimitReached) return;
     if(this.background){
       if(this.backgroundError||this.flushing)return;
       this.region=[minX,minZ,maxX,maxZ];this.pending=this.latest;this.pumpBackground();yield;return;
@@ -207,6 +231,7 @@ export class ArtificialWorld {
     const ox = planet ? -size / 2 : 0, oz = planet ? -size / 4 : 0;
     for (let z = Math.floor((minZ - oz) / s); z <= Math.floor((maxZ - oz) / s); z++) {
       for (let x = Math.floor((minX - ox) / s); x <= Math.floor((maxX - ox) / s); x++) {
+        if(this.initialLimitReached)return;
         this.discover(Math.floor(ox + (x + .5) * s), Math.floor(Math.min(oz + (z + .5) * s, planet ? size / 4 - 1 : Infinity)));
         yield;
       }

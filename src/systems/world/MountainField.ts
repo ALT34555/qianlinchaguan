@@ -1,6 +1,6 @@
 import { createNoise3D, type NoiseFunction3D } from 'simplex-noise';
-import { mulberry32 } from '../../core/math/Random';
-import type { SurfacePoint } from './CoverageLayer';
+import { mulberry32 } from '../../core/math/Random.ts';
+import type { SurfacePoint } from './CoverageLayer.ts';
 
 export const MOUNTAIN_LIFT_THRESHOLD = .14;
 export const MOUNTAIN_MIN_RELIEF = 32;

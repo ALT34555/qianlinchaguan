@@ -2,7 +2,7 @@ import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import { SAVE_FORMAT_VERSION } from '../../core/version.ts';
 import { parseWorldSave, type WorldSave } from './WorldSave.ts';
 import type { LocalSave } from './LocalSaveStore.ts';
-import { validDataKey } from './WorldDataStore';
+import { validDataKey } from './WorldDataStore.ts';
 
 export const MAX_SAVE_BYTES = 16 * 1024 * 1024;
 export const MAX_ARCHIVE_BYTES = 384 * 1024 * 1024;

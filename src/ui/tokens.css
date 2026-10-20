@@ -1,0 +1,184 @@
+/* 动态配色令牌：四色手写，其余由 color-mix(in oklab) 推导；直角拟物尺寸与动效基线也从这里出。
+   旧 --ql-* 名在文件末尾做别名，历史组件样式无需改动即可换肤。 */
+
+:root {
+  color-scheme: light;
+
+  /* 四个手写色：底色与强调色固定，主色/装饰色由玩家档案注入 */
+  --q-bg: #fbecde;
+  --q-primary: #cb3a56;
+  --q-accent: #5d3f51;
+  --q-highlight: #c70039;
+
+  /* 茶盏实物色：日夜都不变，作为整套界面的锚 */
+  --q-tea: #8fa97f;
+  --q-gold: #d9a94e;
+  --q-celadon: #a8c7c1;
+  --q-wood: #4a2c1e;
+  --q-petal: #f0a9b8;
+
+  /* 面：底色与白/黑按比例混合 */
+  --q-surface: color-mix(in oklab, var(--q-bg) 78%, white);
+  --q-surface-hi: color-mix(in oklab, var(--q-bg) 58%, white);
+  --q-surface-lo: color-mix(in oklab, var(--q-bg) 92%, black);
+  --q-surface-card: color-mix(in oklab, var(--q-bg) 84%, white);
+  --q-surface-deep: color-mix(in oklab, var(--q-bg) 82%, black);
+  --q-surface-glass: color-mix(in oklab, var(--q-surface) 72%, transparent);
+
+  /* 字：装饰色与底色按比例混合 */
+  --q-ink: color-mix(in oklab, var(--q-accent) 78%, black);
+  --q-ink-2: color-mix(in oklab, var(--q-accent) 62%, var(--q-bg));
+  --q-ink-3: color-mix(in oklab, var(--q-accent) 42%, var(--q-bg));
+  --q-ink-inv: color-mix(in oklab, var(--q-bg) 82%, white);
+
+  /* 线：一律由装饰色加透明得到，不出现第二种线色 */
+  --q-line: color-mix(in oklab, var(--q-accent) 34%, transparent);
+  --q-line-soft: color-mix(in oklab, var(--q-accent) 16%, transparent);
+  --q-line-faint: color-mix(in oklab, var(--q-accent) 9%, transparent);
+  --q-line-accent: color-mix(in oklab, var(--q-accent) 45%, transparent);
+  --q-line-primary: color-mix(in oklab, var(--q-primary) 48%, transparent);
+
+  /* 主色三态 */
+  --q-primary-ui: var(--q-primary);
+  --q-primary-soft: color-mix(in oklab, var(--q-primary) 12%, transparent);
+  --q-primary-deep: color-mix(in oklab, var(--q-primary) 82%, black);
+  --q-primary-hi: color-mix(in oklab, var(--q-primary) 76%, white);
+  --q-on-primary: color-mix(in oklab, var(--q-bg) 88%, white);
+
+  --q-accent-ui: var(--q-accent);
+  --q-accent-soft: color-mix(in oklab, var(--q-accent) 10%, transparent);
+  --q-highlight-ui: var(--q-highlight);
+  --q-highlight-soft: color-mix(in oklab, var(--q-highlight) 12%, transparent);
+
+  /* 阴影由装饰色加透明得到，而不是纯黑 */
+  --q-shadow-sm: 0 1px 2px color-mix(in oklab, var(--q-accent) 14%, transparent);
+  --q-shadow: 0 5px 16px color-mix(in oklab, var(--q-accent) 16%, transparent), 0 1px 2px color-mix(in oklab, var(--q-accent) 10%, transparent);
+  --q-shadow-lg: 0 22px 62px color-mix(in oklab, var(--q-accent) 26%, transparent), 0 2px 8px color-mix(in oklab, var(--q-accent) 12%, transparent);
+  --q-glow: 0 0 0 1px color-mix(in oklab, var(--q-primary) 30%, transparent), 0 6px 18px color-mix(in oklab, var(--q-primary) 18%, transparent);
+
+  /* 拟物凸凹：亮面朝左上、暗面朝右下 */
+  --q-neu-light: color-mix(in oklab, var(--q-bg) 74%, white);
+  --q-neu-dark: color-mix(in oklab, var(--q-bg) 88%, black);
+  --q-neu-sm: 2px 2px 5px var(--q-neu-dark), -2px -2px 4px var(--q-neu-light);
+  --q-neu: 5px 5px 13px var(--q-neu-dark), -5px -5px 13px var(--q-neu-light);
+  --q-neu-lg: 9px 9px 24px var(--q-neu-dark), -9px -9px 24px var(--q-neu-light);
+  --q-neu-in: inset 3px 3px 6px var(--q-neu-dark), inset -3px -3px 6px var(--q-neu-light);
+  --q-neu-in-sm: inset 2px 2px 4px var(--q-neu-dark), inset -2px -2px 4px var(--q-neu-light);
+
+  /* 直角：所有圆角令牌归零 */
+  --q-r-xs: 0;
+  --q-r-sm: 0;
+  --q-r: 0;
+  --q-r-lg: 0;
+  --q-r-xl: 0;
+  --q-r-pill: 0;
+
+  /* 席面编织：直角格网，替代旧宣纸纤维 */
+  --q-weave:
+    repeating-linear-gradient(90deg, color-mix(in oklab, var(--q-accent) 7%, transparent) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, color-mix(in oklab, var(--q-accent) 7%, transparent) 0 1px, transparent 1px 6px),
+    radial-gradient(ellipse at 20% 8%, color-mix(in oklab, white 55%, transparent), transparent 60%);
+
+  /* 尺寸与留白：只缩放留白与控件高度，不动字号 */
+  --q-size: 1;
+  --q-ctl-h: calc(36px * var(--q-size));
+  --q-ctl-h-sm: calc(28px * var(--q-size));
+  --q-ctl-h-lg: calc(44px * var(--q-size));
+  --q-pad-card: calc(13px * var(--q-size));
+  --q-pad-sheet: calc(clamp(14px, 1.5vw, 22px) * var(--q-size));
+  --q-rhythm: calc(clamp(12px, 1.1vw, 17px) * var(--q-size));
+  --q-gap-grid: calc(10px * var(--q-size));
+  --q-tab-h: calc(44px * var(--q-size));
+  --q-sp-1: calc(4px * var(--q-size));
+  --q-sp-2: calc(8px * var(--q-size));
+  --q-sp-3: calc(12px * var(--q-size));
+  --q-sp-4: calc(16px * var(--q-size));
+  --q-sp-5: calc(24px * var(--q-size));
+  --q-sp-6: calc(32px * var(--q-size));
+  --q-sp-7: calc(48px * var(--q-size));
+  --q-sp-8: calc(64px * var(--q-size));
+
+  /* 动效：只动 opacity/transform/filter；进场慢、退场快 */
+  --q-ease: cubic-bezier(.2, .8, .2, 1);
+  --q-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --q-ease-in: cubic-bezier(.4, 0, 1, 1);
+  --q-d1: 140ms;
+  --q-d2: 240ms;
+  --q-d3: 380ms;
+  --q-d4: 640ms;
+  --q-d5: 1200ms;
+
+  --q-safe-x: 0px;
+  --q-safe-y: 0px;
+  --q-scale: 1;
+  --q-blur: blur(18px) saturate(1.35);
+
+  /* 旧名别名：历史组件样式继续可用 */
+  --ql-paper: var(--q-surface);
+  --ql-ink: var(--q-ink);
+  --ql-cinnabar: var(--q-primary);
+  --ql-seal-on: var(--q-accent);
+  --ql-seal-off: var(--q-ink-3);
+  --ql-paper-hi: var(--q-surface-hi);
+  --ql-paper-card: var(--q-surface-card);
+  --ql-paper-lo: var(--q-surface-lo);
+  --ql-paper-deep: var(--q-surface-deep);
+  --ql-ink-2: var(--q-ink-2);
+  --ql-ink-3: var(--q-ink-3);
+  --ql-ink-inv: var(--q-ink-inv);
+  --ql-cinnabar-soft: var(--q-primary-hi);
+  --ql-cinnabar-deep: var(--q-primary-deep);
+  --ql-seal-on-hi: color-mix(in oklab, var(--q-accent) 86%, white);
+  --ql-seal-on-lo: color-mix(in oklab, var(--q-accent) 84%, black);
+  --ql-line: var(--q-line);
+  --ql-line-soft: var(--q-line-soft);
+  --ql-line-faint: var(--q-line-faint);
+  --ql-line-seal: var(--q-line-accent);
+  --ql-shadow-sm: var(--q-shadow-sm);
+  --ql-shadow: var(--q-shadow);
+  --ql-shadow-lg: var(--q-shadow-lg);
+  --ql-radius: var(--q-r);
+  --ql-radius-lg: var(--q-r-lg);
+  --ql-radius-pill: var(--q-r-pill);
+  --ql-paper-weave: var(--q-weave);
+  --ql-glow: var(--q-glow);
+}
+
+/* 夜间：不是反相，而是重新给一套比例 */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --q-bg: #1d1b1c;
+  --q-surface: color-mix(in oklab, var(--q-bg) 86%, white);
+  --q-surface-hi: color-mix(in oklab, var(--q-bg) 76%, white);
+  --q-surface-lo: color-mix(in oklab, var(--q-bg) 70%, black);
+  --q-surface-card: color-mix(in oklab, var(--q-bg) 82%, white);
+  --q-surface-deep: color-mix(in oklab, var(--q-bg) 62%, black);
+  --q-ink: color-mix(in oklab, var(--q-bg) 72%, white);
+  --q-ink-2: color-mix(in oklab, var(--q-bg) 58%, white);
+  --q-ink-3: color-mix(in oklab, var(--q-bg) 44%, white);
+  --q-ink-inv: color-mix(in oklab, var(--q-bg) 82%, black);
+  --q-line: color-mix(in oklab, var(--q-bg) 76%, white 24%);
+  --q-line-soft: color-mix(in oklab, white 13%, transparent);
+  --q-line-faint: color-mix(in oklab, white 8%, transparent);
+  --q-primary-ui: color-mix(in oklab, var(--q-primary) 84%, white);
+  --q-primary-deep: color-mix(in oklab, var(--q-primary) 74%, white);
+  --q-accent-ui: color-mix(in oklab, var(--q-accent) 62%, white);
+  --q-neu-light: color-mix(in oklab, var(--q-bg) 82%, white);
+  --q-neu-dark: color-mix(in oklab, var(--q-bg) 70%, black);
+  --q-shadow-sm: 0 1px 2px rgba(0, 0, 0, .40);
+  --q-shadow: 0 7px 20px rgba(0, 0, 0, .44), 0 1px 2px rgba(0, 0, 0, .48);
+  --q-shadow-lg: 0 26px 72px rgba(0, 0, 0, .58), 0 2px 8px rgba(0, 0, 0, .52);
+  --q-weave:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --q-d1: 1ms;
+    --q-d2: 1ms;
+    --q-d3: 1ms;
+    --q-d4: 1ms;
+    --q-d5: 1ms;
+  }
+}

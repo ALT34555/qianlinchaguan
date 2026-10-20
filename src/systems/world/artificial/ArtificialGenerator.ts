@@ -1,7 +1,7 @@
 import { CHUNK_SIZE } from '../../../core/config';
 import { hash2, hashString } from '../../../core/math/Random';
 import { planetCoordinates } from '../WorldSettings';
-import type { WorldGenerator } from '../WorldGenerator';
+import type { WorldGeneratorBase as WorldGenerator } from '../WorldContract';
 import { EXCLUSION_RADIUS, type Territory } from './ArtificialState';
 
 /** 每格候选尝试次数 */

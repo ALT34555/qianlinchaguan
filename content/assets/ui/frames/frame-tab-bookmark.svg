@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" preserveAspectRatio="none">
+<defs>
+    <linearGradient id="palWood" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#75624b" />
+      <stop offset="28%" stop-color="#5a4b39" />
+      <stop offset="62%" stop-color="#4d4030" />
+      <stop offset="88%" stop-color="#33291e" />
+      <stop offset="100%" stop-color="#221a12" />
+    </linearGradient>
+
+    <linearGradient id="palWoodInset" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1f1811" />
+      <stop offset="40%" stop-color="#352b20" />
+      <stop offset="100%" stop-color="#4d4030" />
+    </linearGradient>
+
+    <linearGradient id="palBronzeRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8f4ed" />
+      <stop offset="25%" stop-color="#bfa888" />
+      <stop offset="55%" stop-color="#877256" />
+      <stop offset="85%" stop-color="#4d4030" />
+      <stop offset="100%" stop-color="#2e251b" />
+    </linearGradient>
+
+    <linearGradient id="palLacquer" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#db3b4b" />
+      <stop offset="32%" stop-color="#b82231" />
+      <stop offset="68%" stop-color="#a61b29" />
+      <stop offset="90%" stop-color="#73101a" />
+      <stop offset="100%" stop-color="#4a080f" />
+    </linearGradient>
+
+    <radialGradient id="palCinnabarOrb" cx="35%" cy="30%" r="68%">
+      <stop offset="0%" stop-color="#f8f4ed" />
+      <stop offset="16%" stop-color="#e34656" />
+      <stop offset="52%" stop-color="#a61b29" />
+      <stop offset="84%" stop-color="#6b0e18" />
+      <stop offset="100%" stop-color="#38050a" />
+    </radialGradient>
+
+    <linearGradient id="palPaper" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="35%" stop-color="#f8f4ed" />
+      <stop offset="78%" stop-color="#ece3d2" />
+      <stop offset="100%" stop-color="#dcd0b8" />
+    </linearGradient>
+
+    <radialGradient id="palJadeOrb" cx="35%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="45%" stop-color="#f8f4ed" />
+      <stop offset="82%" stop-color="#e3d7c1" />
+      <stop offset="100%" stop-color="#b8a689" />
+    </radialGradient>
+
+    <radialGradient id="palInkBlot" cx="48%" cy="48%" r="52%">
+      <stop offset="0%" stop-color="#261f17" />
+      <stop offset="60%" stop-color="#4d4030" />
+      <stop offset="88%" stop-color="#4d4030" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#4d4030" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="palWaterRing" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4d4030" stop-opacity="0.03" />
+      <stop offset="68%" stop-color="#4d4030" stop-opacity="0.06" />
+      <stop offset="86%" stop-color="#4d4030" stop-opacity="0.28" />
+      <stop offset="94%" stop-color="#4d4030" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#4d4030" stop-opacity="0" />
+    </radialGradient>
+</defs>
+  <g>
+    <polygon points="10,8 190,8 190,144 100,126 10,144" fill="url(#palWood)" stroke="#f8f4ed" stroke-width="2"/>
+    <polygon points="16,14 184,14 184,136 100,119 16,136" fill="url(#palWoodInset)"/>
+    <polygon points="22,20 178,20 178,129 100,112 22,129" fill="url(#palPaper)" stroke="url(#palBronzeRim)" stroke-width="1.2"/>
+    <line x1="100" y1="126" x2="100" y2="173" stroke="#a61b29" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="100" cy="156" r="7" fill="url(#palJadeOrb)" stroke="#a61b29" stroke-width="2"/>
+    <path d="M98,167 L96,175 M100,167 L100,177 M102,167 L104,175" fill="none" stroke="#a61b29" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+</svg>

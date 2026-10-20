@@ -1,5 +1,6 @@
 import { atlasPath,type PathPoint } from './AtlasPath';
 import { WALK_SPEED,SPRINT_SPEED,SWIM_SPEED } from '../../entities/Player';
+import { movementScale } from '../../entities/PlayerProfile';
 export interface AtlasPosition extends PathPoint {y:number;yaw:number}
 export interface AtlasGround {height(x:number,z:number):number;water(x:number,z:number):number;circumference?:number}
 export class AtlasWalker {
@@ -8,14 +9,17 @@ export class AtlasWalker {
   private vx=0;
   private vz=0;
   private planned=false;
+  private speedScale=1;
+  private heightCm=170;
   constructor(readonly position:AtlasPosition,private readonly ground:AtlasGround){}
+  setHeight(heightCm:number):void {if(heightCm===this.heightCm)return;this.heightCm=heightCm;this.speedScale=movementScale(heightCm);this.path=[];this.planned=false;}
   target(point:PathPoint):void {
     this.goal={...point};this.path=[];this.planned=false;
     const n=this.ground.circumference;if(n)this.goal.x+=Math.round((this.position.x-this.goal.x)/n)*n;
   }
   private passable=(a:PathPoint,b:PathPoint):boolean=>{
     const n=this.ground.circumference;if(n&&Math.abs(b.z)>=n/4)return false;
-    const rise=this.ground.height(b.x,b.z)-this.ground.height(a.x,a.z);return rise<=1&&rise>=-3;
+    const rise=this.ground.height(b.x,b.z)-this.ground.height(a.x,a.z);return rise<=this.speedScale&&rise>=-3*this.speedScale;
   };
   tick(dt:number,dx:number,dz:number,sprint=false):{position:AtlasPosition;blocked:boolean;walking:boolean}{
     dt=Math.min(.1,dt);const p=this.position;let blocked=false;
@@ -44,7 +48,7 @@ export class AtlasWalker {
     }
     const length=Math.hypot(dx,dz);if(length>1){dx/=length;dz/=length;}
     const water=this.ground.water(p.x,p.z)>this.ground.height(p.x,p.z)+.4;
-    const speed=water?SWIM_SPEED:sprint?SPRINT_SPEED:WALK_SPEED,k=Math.min(1,14*dt);
+    const speed=(water?SWIM_SPEED:sprint?SPRINT_SPEED:WALK_SPEED)*this.speedScale,k=Math.min(1,14*dt);
     this.vx+=(dx*speed-this.vx)*k;this.vz+=(dz*speed-this.vz)*k;
     if(this.goal&&!this.passable(p,{x:p.x+this.vx*dt,z:p.z+this.vz*dt})){
       this.goal=undefined;this.path=[];this.vx=this.vz=0;blocked=true;

@@ -1,7 +1,10 @@
+import {macroDecorationType} from './planet-macro/DecorationType';
+import { createWorldGenerator } from './GeneratorFactory';
 /** 区块生成 Worker */
 import { buildChunkMeshes, type MeshData } from './ChunkMesher';
+import {buildPlanetChunkMeshes} from './planet-macro/PlanetChunkMesher';
 import type { ChunkResultMessage, WorkerRequest } from './ChunkProtocol';
-import { WorldGenerator } from './WorldGenerator';
+import type { WorldGeneratorBase as WorldGenerator } from './WorldContract';
 import { decorationPlacements } from './WorldDecoration';
 import { CHUNK_SIZE } from '../../core/config';
 import * as THREE from 'three';
@@ -36,6 +39,7 @@ function pushBuffers(mesh: MeshData | null, out: Transferable[]): void {
   }
   out.push(mesh.normals.buffer);
   out.push(mesh.positions.buffer, mesh.colors.buffer, mesh.indices.buffer);
+  if (mesh.plantParts) out.push(mesh.plantParts.buffer);
   if (mesh.waterDepths) out.push(mesh.waterDepths.buffer);
   if (mesh.waterFlows) out.push(mesh.waterFlows.buffer);
   if (mesh.waterFoams) out.push(mesh.waterFoams.buffer);
@@ -51,41 +55,38 @@ async function handle(e: MessageEvent<WorkerRequest>):Promise<void> {
     return;
   }
   if (msg.kind === 'init') {
-    generator = new WorldGenerator(msg.seed, msg.climateWeights, msg.generation);
-    if(msg.hydrology)generator.adoptHydrology(msg.hydrology);
+    generator = createWorldGenerator(msg.seed, msg.climateWeights, msg.generation,{state:msg.hydrology});
     cache=msg.worldKey?new ChunkCache(msg.worldKey):null;
-    return;
-  }
-  // 主线程已解好的粗格样本，省去重复地形采样
-  if (msg.kind === 'coarse') {
-    generator?.adoptCoarseSamples(msg.samples);
     return;
   }
   if (msg.kind === 'generate') {
     if (!generator) throw new Error('[chunk.worker] 未初始化');
     if (msg.waterFreezeRules) generator.setWaterFreezeRules(msg.waterFreezeRules);
     generator.replaceWaterAppearanceOverrides(msg.waterOverrides ?? []);
+    generator.setWaterSeason(msg.waterSeason??null);
     const t0 = performance.now();
-    await cache?.flush(6);
     const signature=chunkSignature(generator);
-    const meshKey=JSON.stringify([signature,msg.cx,msg.cz,msg.artificialType]);
+    const meshKey=JSON.stringify([signature,msg.cx,msg.cz,msg.artificialType,msg.vegetationMultiplier ?? 1]);
     const reused=derived.get(meshKey);
     if(reused){reused.waterRevision=msg.waterRevision;reused.elapsed=performance.now()-t0;reused.cacheHit=true;reused.meshCacheHit=true;ctx.postMessage(reused,transferResult(reused));return;}
     const stored=await cache?.chunk(msg.cx,msg.cz,signature);
     const chunk = stored??generator.generateChunk(msg.cx, msg.cz);
     const waterGenerator = generator;
-    const meshes = buildChunkMeshes(msg.cx, msg.cz, chunk.heights, chunk.surfaces, generator.seed, chunk.waterLevels, chunk.surfaceColors,chunk.waterField,
+    const meshes = generator.generation.terrainRule==='planet-macro'?buildPlanetChunkMeshes(chunk,generator.seed):buildChunkMeshes(msg.cx, msg.cz, chunk.heights, chunk.surfaces, generator.seed, chunk.waterLevels, chunk.surfaceColors,chunk.waterField,
       (x, z) => waterGenerator.getWaterState(msg.cx * CHUNK_SIZE + x, msg.cz * CHUNK_SIZE + z));
-    const decorationInput = { ...chunk, cx: msg.cx, cz: msg.cz,
+    const decorationInput = { ...chunk, type:generator.generation.terrainRule==='planet-macro'?macroDecorationType(chunk.type):chunk.type, cx: msg.cx, cz: msg.cz,
       artificialType: msg.artificialType,
+      vegetationMultiplier: msg.vegetationMultiplier,
       seed: generator.seed, temperature: generator.getClimate(msg.cx, msg.cz).temperature };
     const placements = decorationPlacements(decorationInput);
-    const instances=decorationInstances(decorationInput,placements);
+    const collisionData:number[]=[];
+    const instances=decorationInstances(decorationInput,placements,collisionData);
+    const colliders=new Float32Array(collisionData);
     const decoration=null,rocks=null;
     const summary=minimapSummary(generator,msg.cx,msg.cz,meshes.minimap);
     if(cache){
-      if(!stored)cache.queueWrite(`chunk_${msg.cx}_${msg.cz}`,signature,chunk);
       cache.queueWrite(`preview_${msg.cx}_${msg.cz}`,signature,summary);
+      if(!stored)cache.queueWrite(`chunk_${msg.cx}_${msg.cz}`,signature,chunk,8);
     }
 
     // 主线程只需要区块内部的高度（去掉外扩一圈）
@@ -126,9 +127,11 @@ async function handle(e: MessageEvent<WorkerRequest>):Promise<void> {
       elapsed: 0,
       cacheHit:!!stored,
       instances,
+      colliders,
     };
     const transfer: Transferable[] = [inner.buffer, bedLevels.buffer,iceLevels.buffer,iceBottomLevels.buffer,iceCoverages.buffer,waterLevels.buffer, kinds.buffer,velocities.buffer,discharge.buffer,chunk.surfaces.buffer, meshes.minimap.buffer];
     if (meshes.mist) transfer.push(meshes.mist.buffer);
+    transfer.push(colliders.buffer);
     pushBuffers(meshes.terrain, transfer);
     pushBuffers(meshes.water, transfer);
     pushBuffers(decoration, transfer);

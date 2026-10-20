@@ -1,5 +1,5 @@
-import { SEA_LEVEL } from '../../core/config';
-import {freezeState, snowLine, smooth, SNOW_MARGIN} from './TerrainLayers';
+import { SEA_LEVEL } from '../../core/config.ts';
+import {freezeState, snowLine, smooth, SNOW_MARGIN} from './TerrainLayers.ts';
 
 export const FLOW_DIRECTIONS = [
   { dx: 0, dz: -1, arrow: '↑' }, { dx: 1, dz: -1, arrow: '↗' },

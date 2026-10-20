@@ -4,7 +4,7 @@ import { ModResourceService, modResourceMiddleware } from '../mods/resources';
 import { resolve, sep, extname } from 'node:path';
 import { FileSaveService, fileSaveMiddleware } from '../saves/local-saves';
 export { FileSaveService, fileSaveMiddleware, ModResourceService, modResourceMiddleware };
-export { GENERATOR_VERSION } from '../../src/core/version';
+export { CURRENT_RULE_ID } from '../../src/core/WorldRule';
 export { DEFAULT_CLIMATE_WEIGHTS, DEFAULT_GENERATION } from '../../src/systems/world/WorldSettings';
 export { decodeSaveArchive } from '../../src/systems/world/SaveArchive';
 

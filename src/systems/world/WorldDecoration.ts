@@ -3,16 +3,18 @@ import { hash2 } from '../../core/math/Random';
 import { Block, blockBase } from './Blocks';
 import { terrainHeightAt } from './TerrainSurface';
 import { waterHeightAt } from './WaterSurface';
-import { scatterablePlants } from './vegetation/Plants';
+import { scatterablePlants, buildPlantById } from './vegetation/Plants';
 import type { ClimateZone } from './vegetation/types';
 import type { Season } from './Season';
 import { rocksForChunk } from './rocks/Rocks';
 import type { RockForm } from './rocks/types';
 import { allowsNaturalDecoration } from './artificial/ArtificialState';
 import { isRiverType } from './ChunkTypes';
+import { WaterKind, type WaterField } from './DynamicWater';
 
 export interface DecorationInput {
   artificialType?: number;
+  vegetationMultiplier?: number;
   cx: number;
   cz: number;
   type: number;
@@ -21,6 +23,7 @@ export interface DecorationInput {
   heights: Float32Array;
   waterLevels: Float32Array;
   surfaces: Uint32Array;
+  waterField?: WaterField;
 }
 
 export interface DecorationPlacement {
@@ -41,7 +44,57 @@ const SOILS = new Set<number>([Block.GRASS, Block.FOREST_SOIL, Block.DIRT, Block
   Block.MOSS_SOIL, Block.PODZOL, Block.ALLUVIUM, Block.GLACIAL_TILL]);
 const SANDS = new Set<number>([Block.SAND, Block.RED_SAND, Block.DARK_SAND]);
 const plants = scatterablePlants().filter(p => !(p.tags ?? []).some(t => ['farm', 'crop', 'orchard'].includes(t)));
+export type PlantCategory = 'cao' | 'guan' | 'hua' | 'nong' | 'shu' | 'shui';
+const LAND_CATEGORIES: readonly PlantCategory[] = ['shu', 'guan', 'cao'];
+const COLD_FOREST_CATEGORIES: readonly PlantCategory[] = ['shu', 'guan'];
+const WATER_CATEGORIES: readonly PlantCategory[] = ['shui'];
+const EMPTY_CATEGORIES: readonly PlantCategory[] = [];
+export function naturalPlantCategories(type: number): readonly PlantCategory[] {
+  if (type === 0) return EMPTY_CATEGORIES;
+  if (isRiverType(type) || type === 11 || type === 105 || type === 2 || type % 100 === 2) return WATER_CATEGORIES;
+  return type === 405 ? COLD_FOREST_CATEGORIES : LAND_CATEGORIES;
+}
+const pools = new Map<string, typeof plants>();
+const plantHeights = new Map<string, number>();
+function plantTop(id: string, season: Season): number {
+  const key = `${id}:${season}`;
+  if (!plantHeights.has(key)) {
+    const geometry = buildPlantById(id, season);
+    let top = .05;
+    for (let i = 1; i < geometry.positions.length; i += 3) top = Math.max(top, geometry.positions[i]);
+    plantHeights.set(key, top);
+  }
+  return plantHeights.get(key)!;
+}
+for (const climate of ['tropical', 'subtropical', 'temperate', 'cold']) for (const category of LAND_CATEGORIES) for (let flags = 0; flags < 8; flags++) {
+  pools.set(`${climate}:${category}:${flags}`, plants.filter(plant => {
+    const tags = plant.tags ?? [];
+    return plant.climate === climate && plant.id.startsWith(category + '.') && !tags.includes('water')
+      && (!(flags & 1) || tags.includes('arid')) && (!(flags & 2) || tags.includes('snow'))
+      && (!tags.includes('riparian') || !!(flags & 4));
+  }));
+}
+export function naturalPlantScale(type: number, category: PlantCategory, id: string, size: number, rarity: number, variation: number, season: Season = 'summer'): number {
+  if (id === 'cao.dixue') return (.18 + variation * .16) / plantTop(id, season);
+  if (category === 'shu' && type === 106) return rarity < .08 ? 1.55 + variation * .5 : .8 + variation * .65;
+  if (category === 'cao' && (type === 7 || type % 100 === 7) && rarity < .2) return Math.min(4, (1.46 + variation * .4) / plantTop(id, season));
+  if (category === 'cao') return .55 + variation * .7;
+  if (category === 'guan') return .65 + variation * .65;
+  return size;
+}
 const forms: RockForm[] = ['outcrop', 'buried', 'buried', 'crusted', 'stacked'];
+
+function vegetationPatch(x: number, z: number, seed: number): number {
+  const noise = (scale: number, salt: number) => {
+    const u = x / scale, v = z / scale, ix = Math.floor(u), iz = Math.floor(v);
+    const smooth = (n: number) => n * n * (3 - 2 * n);
+    const tx = smooth(u - ix), tz = smooth(v - iz);
+    const a = hash2(ix, iz, seed ^ salt), b = hash2(ix + 1, iz, seed ^ salt);
+    const c = hash2(ix, iz + 1, seed ^ salt), d = hash2(ix + 1, iz + 1, seed ^ salt);
+    return (a + (b - a) * tx) * (1 - tz) + (c + (d - c) * tx) * tz;
+  };
+  return .2 + 1.3 * (.65 * noise(19, 0x7711) + .35 * noise(43, 0x8917));
+}
 
 function sampleAquaticDecoration(
   xw: number, zw: number, yw: number, wlw: number,
@@ -58,7 +111,7 @@ function sampleAquaticDecoration(
   const isWetSoil = surface === Block.MUD || surface === Block.ALLUVIUM || surface === Block.SILT || surface === Block.PEAT;
   const reedTempSuitable = temperature >= 8 && temperature <= 32;
 
-  // 1. 茂密芦苇荡：仅在温度适宜的湿地/内陆静水沿岸生成
+  // 芦苇荡：适温湿地与内陆静水岸
   if (reedTempSuitable && (isWetland || isStillWater) && !isRiver) {
     if (depth >= -0.45 && depth <= 0.45 && slopes.every(v => v <= 0.75)) {
       if (rand(101) < 0.62) {
@@ -120,17 +173,6 @@ function sampleAquaticDecoration(
     }
   }
 
-  // 6. 沉水羽叶草：狐尾藻
-  if ((isWetland || isStillWater || isRiver) && depth > 0.25 && depth <= 1.8) {
-    if (rand(211) < 0.42) {
-      return {
-        kind: 'plant', id: 'shui.huwei', x: xw, y: yw - 0.04, z: zw,
-        yaw: rand(223) * Math.PI * 2, scale: 0.85 + rand(227) * 0.3,
-        season, form: 'outcrop', type,
-      };
-    }
-  }
-
   return null;
 }
 
@@ -141,73 +183,90 @@ export function decorationPlacements(input: DecorationInput): DecorationPlacemen
   const at = (x: number, z: number) => (Math.floor(z) - oz + 1) * padded + Math.floor(x) - ox + 1;
   const height = (x: number, z: number) => input.heights[at(x, z)];
   const water = (x: number, z: number) => input.waterLevels[at(x, z)];
+  const iced = (x:number,z:number) => (input.waterField?.iceCoverages?.[at(x,z)]??0)>=.5;
+  const shallow = input.waterField ? (x:number,z:number) => {
+    const i=at(x,z);return input.waterField!.kinds[i]===WaterKind.STATIC&&!(input.waterField!.iceCoverages?.[i]!>=.5);
+  } : undefined;
   const ground = (x: number, z: number) => terrainHeightAt(x, z, seed, height);
+  const slopeGround = (x: number, z: number) => ground(Math.max(ox, Math.min(ox + CHUNK_SIZE, x)), Math.max(oz, Math.min(oz + CHUNK_SIZE, z)));
   const climate: ClimateZone = temperature >= 26 ? 'tropical' : temperature >= 18 ? 'subtropical' : temperature >= 0 ? 'temperate' : 'cold';
   const season: Season = temperature < 0 ? 'winter' : 'summer';
   const rockUnits = rocksForChunk(type);
   const out: DecorationPlacement[] = [];
-  const isWaterBiome = isRiverType(type) || type === 11 || type === 105 || type === 2 || type % 100 === 2;
+  const categories = naturalPlantCategories(type);
+  const isWaterBiome = categories === WATER_CATEGORIES;
+  const hasHerbs = categories.includes('cao');
+  const emptyPool: typeof plants = [];
+  const multiplier = Math.max(1, Math.min(16, input.vegetationMultiplier ?? 1));
 
   for (let gz = 0; gz < CHUNK_SIZE; gz += 8) {
     for (let gx = 0; gx < CHUNK_SIZE; gx += 8) {
-      const centerSurfIdx = (gz + 4) * CHUNK_SIZE + gx + 4;
-      const centerRaw = centerSurfIdx < input.surfaces.length ? input.surfaces[centerSurfIdx] : Block.DIRT;
-      const centerSurf = blockBase(centerRaw);
-      if (type !== 0 && centerRaw !== Block.ICE && (isWaterBiome || centerSurf === Block.ALLUVIUM || centerSurf === Block.SILT)) {
-        const saltW = seed ^ (0x9e377 + (gz * 8 + gx) * 31);
-        const randW = (n: number) => hash2(ox + gx, oz + gz, saltW ^ n);
-        const xw = ox + gx + 1 + randW(17) * 6;
-        const zw = oz + gz + 1 + randW(29) * 6;
-        const yw = ground(xw, zw);
-        const wlw = waterHeightAt(xw, zw, seed, height, water);
-        if (Number.isFinite(yw) && Number.isFinite(wlw)) {
-          const surfIdx = (Math.floor(zw) - oz) * CHUNK_SIZE + Math.floor(xw) - ox;
-          const surf = surfIdx >= 0 && surfIdx < input.surfaces.length ? blockBase(input.surfaces[surfIdx]) : Block.DIRT;
-          const slopes = [[.75, 0], [-.75, 0], [0, .75], [0, -.75]].map(([dx, dz]) => Math.abs(ground(xw + dx, zw + dz) - yw));
-          const aquatic = sampleAquaticDecoration(xw, zw, yw, wlw, surf, type, temperature, season, slopes, randW);
-          if (aquatic) out.push(aquatic);
+      for (let pass = 0; pass < Math.ceil(multiplier); pass++) {
+        if (pass > 0 && hash2(ox + gx, oz + gz, seed ^ (pass * 104729)) >= multiplier - pass) continue;
+        const centerSurfIdx = (gz + 4) * CHUNK_SIZE + gx + 4;
+        const centerRaw = centerSurfIdx < input.surfaces.length ? input.surfaces[centerSurfIdx] : Block.DIRT;
+        if (isWaterBiome && (pass > 0 || centerRaw !== Block.ICE)) {
+          const saltW = seed ^ (0x9e377 + (gz * 8 + gx) * 31 + pass * 104729);
+          const randW = (n: number) => hash2(ox + gx, oz + gz, saltW ^ n);
+          const xw = ox + (pass === 0 ? gx + 1 + randW(17) * 6 : randW(17) * CHUNK_SIZE);
+          const zw = oz + (pass === 0 ? gz + 1 + randW(29) * 6 : randW(29) * CHUNK_SIZE);
+          const yw = ground(xw, zw);
+          const wlw = waterHeightAt(xw, zw, seed, height, water,true,shallow);
+          if (Number.isFinite(yw) && Number.isFinite(wlw)) {
+            const surfIdx = (Math.floor(zw) - oz) * CHUNK_SIZE + Math.floor(xw) - ox;
+            if (iced(xw,zw) || (pass > 0 && input.surfaces[surfIdx] === Block.ICE)) continue;
+            const surf = surfIdx >= 0 && surfIdx < input.surfaces.length ? blockBase(input.surfaces[surfIdx]) : Block.DIRT;
+            const slopes = [[.75, 0], [-.75, 0], [0, .75], [0, -.75]].map(([dx, dz]) => Math.abs(slopeGround(xw + dx, zw + dz) - yw));
+            const aquatic = sampleAquaticDecoration(xw, zw, yw, wlw, surf, type, temperature, season, slopes, randW);
+            if (aquatic) out.push(aquatic);
+          }
         }
-      }
+        if (isWaterBiome) continue;
 
-      for (let layer = 0; layer < 3; layer++) {
-        const salt = seed ^ (0x4d321 + layer * 7919);
-        const rand = (n: number) => hash2(ox + gx, oz + gz, salt ^ n);
-        const x = ox + gx + 2 + rand(11) * 4, z = oz + gz + 2 + rand(23) * 4;
-        const y = ground(x, z);
-        if (!Number.isFinite(y)) continue;
-        const wl = waterHeightAt(x, z, seed, height, water);
-        if (wl > y - .05) continue;
-        const slopes = [[.75, 0], [-.75, 0], [0, .75], [0, -.75]].map(([dx, dz]) => Math.abs(ground(x + dx, z + dz) - y));
-        if (slopes.some(v => !Number.isFinite(v) || v > (layer === 2 ? 1.4 : .8))) continue;
-        const surfaceRaw = input.surfaces[(Math.floor(z) - oz) * CHUNK_SIZE + Math.floor(x) - ox];
-        if (surfaceRaw === Block.ICE) continue;
-        const surface = blockBase(surfaceRaw);
-        const size = .8 + rand(37) * .4;
-        const common = { x, y: y - .06, z, yaw: rand(41) * Math.PI * 2, scale: size, season, form: forms[Math.floor(rand(53) * forms.length)], type };
-        if (layer === 2) {
-          const rocky = !SOILS.has(surface) && !SANDS.has(surface);
-          if (!rockUnits.length || rand(67) > (rocky ? .55 : .16)) continue;
-          const unit = rockUnits[Math.floor(rand(71) * rockUnits.length)];
-          out.push({ ...common, kind: 'rock', id: unit.id, scale: size * (.65 + rand(79) * .65) });
-          continue;
+        for (let layer = 0; layer < 3; layer++) {
+          if (pass > 0 && layer !== 1) continue;
+          const salt = seed ^ (0x4d321 + layer * 7919 + pass * 104729);
+          const rand = (n: number) => hash2(ox + gx, oz + gz, salt ^ n);
+          const x = ox + (pass === 0 ? gx + 2 + rand(11) * 4 : rand(11) * CHUNK_SIZE);
+          const z = oz + (pass === 0 ? gz + 2 + rand(23) * 4 : rand(23) * CHUNK_SIZE);
+          const y = ground(x, z);
+          if (!Number.isFinite(y)) continue;
+          const wl = waterHeightAt(x, z, seed, height, water,true,shallow);
+          if (wl > y - .05) continue;
+          const slopes = [[.75, 0], [-.75, 0], [0, .75], [0, -.75]].map(([dx, dz]) => Math.abs(slopeGround(x + dx, z + dz) - y));
+          if (slopes.some(v => !Number.isFinite(v) || v > (layer === 2 ? 1.4 : .8))) continue;
+          const surfaceRaw = input.surfaces[(Math.floor(z) - oz) * CHUNK_SIZE + Math.floor(x) - ox];
+          if (surfaceRaw === Block.ICE || iced(x,z)) continue;
+          const surface = blockBase(surfaceRaw);
+          const size = .8 + rand(37) * .4;
+          const common = { x, y: y - .06, z, yaw: rand(41) * Math.PI * 2, scale: size, season, form: forms[Math.floor(rand(53) * forms.length)], type };
+          if (layer === 2) {
+            const rocky = !SOILS.has(surface) && !SANDS.has(surface);
+            if (!rockUnits.length || rand(67) > (rocky ? .55 : .16)) continue;
+            const unit = rockUnits[Math.floor(rand(71) * rockUnits.length)];
+            out.push({ ...common, kind: 'rock', id: unit.id, scale: size * (.65 + rand(79) * .65) });
+            continue;
+          }
+          const snow = surface === Block.SNOW;
+          if ((!SOILS.has(surface) && !SANDS.has(surface) && !snow) || temperature < -18) continue;
+          const forest = surface === Block.FOREST_SOIL || surface === Block.PODZOL || type % 100 === 6 || type === 205 || type === 305 || type === 405 || type === 109;
+          const density = layer === 0 ? (forest ? .72 : .17) : .65;
+          const patch = pass === 0 ? .55 + hash2(Math.floor(x / 24), Math.floor(z / 24), seed ^ 0x7711) * .6 : vegetationPatch(x, z, seed);
+          if (rand(67) > density * patch * (snow ? .3 : 1)) continue;
+          const dry = SANDS.has(surface) || surface === Block.DRY_DIRT;
+          const flags = Number(dry) | (Number(snow) << 1) | (Number(surface === Block.MUD || surface === Block.ALLUVIUM) << 2);
+          let category: PlantCategory = 'shu';
+          if (layer === 1) {
+            const shrubs = pools.get(`${climate}:guan:${flags}`)!;
+            const herbs = hasHerbs ? pools.get(`${climate}:cao:${flags}`)! : emptyPool;
+            const herbShare = type === 7 || type % 100 === 7 || [101, 201, 301, 401].includes(type) ? .75 : .4;
+            category = herbs.length && (!shrubs.length || rand(73) < herbShare) ? 'cao' : 'guan';
+          }
+          const candidates = pools.get(`${climate}:${category}:${flags}`)!;
+          if (!candidates.length) continue;
+          const plant = candidates[Math.floor(rand(71) * candidates.length)];
+          out.push({ ...common, kind: 'plant', id: plant.id, scale: naturalPlantScale(type, category, plant.id, size, rand(83), rand(89), season) });
         }
-        const snow = surface === Block.SNOW;
-        if ((!SOILS.has(surface) && !SANDS.has(surface) && !snow) || temperature < -18) continue;
-        const forest = surface === Block.FOREST_SOIL || surface === Block.PODZOL || type % 100 === 6 || type === 205 || type === 305 || type === 405 || type === 109;
-        const density = layer === 0 ? (forest ? .72 : .17) : .65;
-        const patch = .55 + hash2(Math.floor(x / 24), Math.floor(z / 24), seed ^ 0x7711) * .6;
-        if (rand(67) > density * patch * (snow ? .3 : 1)) continue;
-        const dry = SANDS.has(surface) || surface === Block.DRY_DIRT;
-        const candidates = plants.filter(p => {
-          const tags = p.tags ?? [];
-          const tall = tags.includes('tree') || tags.includes('bamboo');
-          return p.climate === climate && tall === (layer === 0) && !tags.includes('water')
-            && (!dry || tags.includes('arid')) && (!snow || tags.includes('snow'))
-            && (!tags.includes('riparian') || surface === Block.MUD || surface === Block.ALLUVIUM);
-        });
-        if (!candidates.length) continue;
-        const plant = candidates[Math.floor(rand(71) * candidates.length)];
-        out.push({ ...common, kind: 'plant', id: plant.id });
       }
     }
   }
