@@ -16,7 +16,7 @@ import {sampleCover,sampleCoverAt,finishCover,coverSlope,coverGradient} from './
 import {PLATE_LAYOUT,planetSize,createPlates,assignPlateIds,requirePlateLayout,isCurrentPlateLayout} from './plate-layout.mjs';
 const TAU = Math.PI * 2;
 const YEAR = 31557600;
-// 陆地常数源、背风下沉干燥、对流底雨、底雨系数、阻挡尺度
+// 陆地降水常数源、干燥、底雨与阻挡
 const CLIMATE_SOURCE=.03,CLIMATE_SUBSIDE=.06,CONVECTIVE=.08,RAIN_BASE=.05,BLOCK_HEIGHT=150,BLOCK_WIDTH=650,ORO_FINE_SCALE=220;
 const gauss=(v,mu,s)=>{const z=(v-mu)/s;return Math.exp(-z*z);};
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
@@ -36,8 +36,8 @@ const sphere = (lon,lat) => [Math.cos(lat)*Math.cos(lon),Math.sin(lat),Math.cos(
 function rotate(p,axis,angle) { const c=Math.cos(angle),s=Math.sin(angle),d=dot(axis,p),v=cross(axis,p);return p.map((x,i)=>x*c+v[i]*s+axis[i]*d*(1-c)); }
 
 export function normalizeOptions(input={}) {
-  const options={seed:1934353244,columns:1024,plateLayout:PLATE_LAYOUT,majorPlateCount:16,minorPlateCount:4,plateCount:20,activity:5,driftSteps:0,monsoonDirection:90,landRatio:.3,
-    recipe:'balanced',equatorChunks:640000,equatorTemperature:30,poleTemperature:-25,precipitation:1,flagCount:16,...input};
+  const options={seed:1934353244,columns:512,plateLayout:PLATE_LAYOUT,majorPlateCount:16,minorPlateCount:4,plateCount:20,activity:5,driftSteps:0,monsoonDirection:90,landRatio:.3,
+    recipe:'balanced',equatorChunks:128000,equatorTemperature:30,poleTemperature:-25,precipitation:1,flagCount:16,...input};
   for(const [key,min,max] of [['seed',0,0xffffffff],['columns',64,1024],['activity',0,9],['driftSteps',0,12],['monsoonDirection',0,359],['equatorChunks',256,640000],['flagCount',0,32]])
     if(!Number.isInteger(options[key])||options[key]<min||options[key]>max)throw Error(`参数 ${key} 超出范围`);
   if(options.columns%4)throw Error('列数须为4的倍数');
@@ -49,6 +49,34 @@ export function normalizeOptions(input={}) {
   if(!['balanced','archipelago','mountains','rift'].includes(options.recipe))throw Error('未知地形配方');
   for(const key of ['equatorTemperature','poleTemperature'])if(!Number.isFinite(options[key])||Math.abs(options[key])>100)throw Error('温度超出范围');
   return options;
+}
+
+// 三档高度包络，格宽取档，活动度共用
+const HEIGHT_BASE=3800,HEIGHT_EXP=1.504;
+const HEIGHT_STOPS=[64,100,160,250,360,480,625];
+const HEIGHT_CEILING={
+  256:[4096,4096,4096,4096,4096,4096,4096],
+  512:[4096,4229,4374,4516,5942,7378,9000],
+  1024:[4096,5546,7632,10334,12414,14347,16384]
+};
+const logMix=(a,b,t)=>Math.exp(Math.log(a)+(Math.log(b)-Math.log(a))*t);
+function ceilingAt(values,chunks){
+  if(chunks<=HEIGHT_STOPS[0])return values[0];
+  const last=HEIGHT_STOPS.length-1;
+  if(chunks>=HEIGHT_STOPS[last])return values[last];
+  let i=0;while(chunks>HEIGHT_STOPS[i+1])i++;
+  return logMix(values[i],values[i+1],Math.log(chunks/HEIGHT_STOPS[i])/Math.log(HEIGHT_STOPS[i+1]/HEIGHT_STOPS[i]));
+}
+function classBlend(columns){
+  if(columns<=256)return [256,256,0];
+  if(columns>=1024)return [1024,1024,0];
+  const base=columns<=512?256:512,span=base===256?512:1024;
+  return [base,span,(Math.log(columns)-Math.log(base))/Math.log(span/base)];
+}
+export function terrainHeightCap(options){
+  const chunks=options.equatorChunks/options.columns,[lo,hi,t]=classBlend(options.columns);
+  const low=ceilingAt(HEIGHT_CEILING[lo],chunks),high=ceilingAt(HEIGHT_CEILING[hi],chunks),ceiling=lo===hi?low:logMix(low,high,t);
+  return HEIGHT_BASE+(ceiling-HEIGHT_BASE)*Math.pow(clamp(options.activity??5,0,9)/9,HEIGHT_EXP);
 }
 
 let gridCache=null,spreadHeap=null;
@@ -421,6 +449,20 @@ function readMacro(world,c,field){
   return value;
 }
 export function macroAt(world,wx,wz,field='height'){return readMacro(world,macroContext(world,wx,wz),field);}
+/** 同一坐标的字段共享插值上下文 */
+export function macroAtMany(world,wx,wz,fields){
+  const context=macroContext(world,wx,wz),out={};
+  for(const field of fields)out[field]=readMacro(world,context,field);
+  return out;
+}
+/** 稀疏取样：陆面抬高与湖掩码分开，湖掩码为最贵一步 */
+export function landHeight(world,wx,wz){return sampleSurface(world,wx,wz,true,false,false).height;}
+export function lakeMask(world,wx,wz,land){
+  const context=macroContext(world,wx,wz);
+  if(land<0||world.water[context.a]===1)return {kind:0,water:-Infinity};
+  const lake=sampleLakeShore(world,wx,wz,land,readMacro(world,context,'height'),context,sampleNaturalHeight,true);
+  return lake?{kind:lake.kind,water:lake.water}:{kind:0,water:-Infinity};
+}
 
 export function sampleMacroChannels(world,wx,wz,context=null){
   const c=context??macroContext(world,wx,wz),gradient=coverGradient(world,c);
@@ -436,8 +478,9 @@ function coverAtNode(world,wx,wz){
 export function regionalRelief(world,wx,wz,context=null,point=null,baseValue=null) {
   const lon=wx/world.circumference*TAU,lat=-wz/world.circumference*TAU,p=point??sphere(lon,lat),base=baseValue??macroAt(world,wx,wz);
   // 连续球面噪声，无独立排水汇
-  const coast=smooth(Math.abs(base)/160),uplift=clamp(context?readMacro(world,context,'uplift'):macroAt(world,wx,wz,'uplift'));
-  const roughness=base>0?18+uplift*150:12;
+  const g=world.heightScale??1,ref=160*g;
+  const coast=smooth(Math.abs(base)/ref),uplift=clamp(context?readMacro(world,context,'uplift'):macroAt(world,wx,wz,'uplift'));
+  const roughness=(base>0?18+uplift*150:12)*g;
   const layer=(scale,seed)=>noise(p[0]*world.radius/scale,p[1]*world.radius/scale,p[2]*world.radius/scale,world.options.seed^seed);
   return coast*roughness*(layer(12000,0x72656731)*.55+layer(3000,0x72656732)*.30+layer(750,0x72656733)*.15);
 }
@@ -445,16 +488,20 @@ export function regionalRelief(world,wx,wz,context=null,point=null,baseValue=nul
 export function sampleNaturalHeight(world,wx,wz){
   const context=macroContext(world,wx,wz),base=readMacro(world,context,'height');
   const p=sphere(wx/world.circumference*TAU,-wz/world.circumference*TAU),r=world.radius;
-  return base+(regionalRelief(world,wx,wz,context,p,base)+noise(p[0]*r/42,p[1]*r/42,p[2]*r/42,world.options.seed^0x64657461)*1.5*smooth(Math.abs(base)/30));
+  const detail=world.heightScale??1;
+  return base+(regionalRelief(world,wx,wz,context,p,base)+noise(p[0]*r/42,p[1]*r/42,p[2]*r/42,world.options.seed^0x64657461)*1.5*detail*smooth(Math.abs(base)/(30*detail)));
 }
 
-export function sampleSurface(world,wx,wz,details=true,carveRivers=false,shapeLakes=true,channels=false) {
+export function sampleSurface(world,wx,wz,details=true,carveRivers=false,shapeLakes=true,channels=false,cover=details) {
   const {columns:w,rows:h,circumference:C,radius}=world,x=(wx/C+.5)*w-.5,y=(wz/C+.25)*w-.5;
   const lat=-wz/C*TAU,lon=wx/C*TAU,p=sphere(lon,lat),ix=Math.round(x),iy=Math.round(y);
   const index=(a,b)=>{if(b<0){b=-b-1;a+=w/2;}if(b>=h){b=h*2-b-1;a+=w/2;}return clamp(b,0,h-1)*w+((a%w)+w)%w;};
   const context=macroContext(world,wx,wz),cell=index(ix,iy);let height=readMacro(world,context,'height'),water=-Infinity,kind=0,river=null,riverDistance=Infinity,salinity=null,saltLakeId=null;
   const naturalBase=height;
-  if(details)height+=regionalRelief(world,wx,wz,context,p,height)+noise(p[0]*radius/42,p[1]*radius/42,p[2]*radius/42,world.options.seed^0x64657461)*1.5*smooth(Math.abs(height)/30);
+  if(details){
+    const detail=world.heightScale??1;
+    height+=regionalRelief(world,wx,wz,context,p,height)+noise(p[0]*radius/42,p[1]*radius/42,p[2]*radius/42,world.options.seed^0x64657461)*1.5*detail*smooth(Math.abs(height)/(30*detail));
+  }
   // 滨海低地跨宏观格填海水
   if(height<0&&(world.water[cell]===1||world.water[context.a]===1||world.water[context.b]===1||world.water[context.c]===1||world.water[context.d]===1)){water=0;kind=1;}
   if(shapeLakes&&kind!==1){
@@ -484,7 +531,7 @@ export function sampleSurface(world,wx,wz,details=true,carveRivers=false,shapeLa
   }
   if(kind===1)salinity='salt';else if(kind===3){salinity='fresh';saltLakeId=null;}
   const temperature=readMacro(world,context,'temperature'),surface={height,water,kind,cell,temperature,river,wetland:0,salinity,saltLakeId};
-  if(details){
+  if(details&&cover){
     if(!(water>height))Object.assign(surface,sampleCoverAt(world,wx,wz,coverAtNode));
     finishCover(surface);
   }
@@ -500,9 +547,11 @@ function flags(world,g,o) {
     let slope=0,wet=false;for(let d=0;d<8;d++){const j=g.neighbors[i*8+d];slope=Math.max(slope,Math.abs(world.height[i]-world.height[j])/Math.max(1,g.lengths[i*8+d]));wet ||= world.water[j]===1||world.water[j]===2;}
     if(slope>.04||wet)continue;
     const lat=Math.PI/2-(Math.floor(i/g.w)+.5)*Math.PI/g.h;if(Math.abs(lat)>Math.PI*.42)continue;
-    candidates.push({i,score:1-slope/.04+world.moisture[i]*.4-Math.abs(world.temperature[i]-18)/45});
+    const score=1-slope/.04+world.moisture[i]*.4-Math.abs(world.temperature[i]-18)/45;
+    const area=Math.cos(lat),draw=Math.max(Number.EPSILON,(hash(i,0,0,o.seed^0x464c4147)+1)/2);
+    candidates.push({i,score,key:-Math.log(draw)/Math.max(.001,area*(.5+score))});
   }
-  candidates.sort((a,b)=>b.score-a.score||a.i-b.i);
+  candidates.sort((a,b)=>a.key-b.key||a.i-b.i);
   const sites=[];let checked=0,columns=0;
   const minDistance=128*64;
   for(const {i,score} of candidates){
@@ -574,8 +623,16 @@ export function generateWorld(input={},progress=()=>{}) {
   const operations=stage('简化地形配方',()=>recipes(g,options,t));
   const macroIslands=stage('宏观格取岛',()=>raiseMacroIslands(g,options,t.heights,t.boundary));
   const valleyFriction=stage('河谷走廊',()=>macroValleys(g,options,t.heights));
+  const heightCap=terrainHeightCap(options),heightScale=heightCap/HEIGHT_BASE;
   const c=stage('风带与降水',()=>climate(g,options,t.heights)),h=stage('流域与河湖',()=>drainage(g,options,t.heights,c,valleyFriction));
-  const world={rule:MACRO_RULE,ruleVersion,options,columns:g.w,rows:g.h,circumference:options.equatorChunks*64,radius:g.radius,
+  if(heightScale!==1){
+    // 高度放大后补足气温递减
+    for(let i=0;i<t.heights.length;i++){const old=t.heights[i];t.heights[i]=old>0?old*heightScale:Math.max(-3000,old*heightScale);c.temperature[i]-=Math.max(0,t.heights[i]-old)*.0065;}
+    for(let i=0;i<h.spill.length;i++)h.spill[i]*=heightScale;
+    for(const lake of h.lakes){lake.level*=heightScale;lake.maxDepth*=heightScale;}
+    for(const island of macroIslands){island.peakHeight*=heightScale;island.baseHeight*=heightScale;}
+  }
+  const world={rule:MACRO_RULE,ruleVersion,options,columns:g.w,rows:g.h,circumference:options.equatorChunks*64,radius:g.radius,heightScale,heightCap,
     plate:t.ids,plates:t.plates,rotationHistory:t.rotationHistory,boundary:t.boundary,uplift:t.uplift,rift:t.rift,shear:t.shear,height:t.heights,
     areas:g.areas,...c,receiver:h.receiver,rank:h.rank,spill:h.spill,flow:h.flow,catchment:h.catchment,riverWidth:h.riverWidth,lakeId:h.lakeId,water:h.water,lakes:h.lakes,
     biome:biomes(g,t,c,h),continents:t.continents,operations,macroIslands,mountainRanges:mountainRanges.ridges,mountainLandforms:mountainRanges.landforms,oases:h.oases,ridgePushX:t.ridgePushX,ridgePushY:t.ridgePushY,poles:{},flags:[],stats:{runoffInput:h.input,runoffOutput:h.output,terminal:h.terminal},timings};
@@ -587,7 +644,7 @@ export function generateWorld(input={},progress=()=>{}) {
   Object.assign(world.stats,{cells:g.n,areaKm2:totalArea,landRatio:landArea/totalArea,lakes:h.lakes.length,lakeCells:h.water.reduce((s,v)=>s+(v===2?1:0),0),
     saltLakes:h.saltBasins,dryBasins:h.dryBasins,lakeLossM3s:h.lakeLoss,lakeRainM3s:h.lakeRain,lakeRunoffReplacedM3s:h.lakeRunoff,dryBasinLossM3s:h.dryLoss,riverLossM3s:h.riverLoss,waterBalanceVersion:2,
     shallowCandidates:h.shallowCandidates,plainLakes:h.plainLakes,oases:h.oases.length,flagCandidatesChecked:flagged.checked,flagColumns:flagged.columns,
-    mountainRanges:mountainRanges.ridges.length,mountainRangePeak:mountainRanges.peak,filledCells:0,
+    mountainRanges:mountainRanges.ridges.length,mountainRangePeak:Math.round(mountainRanges.peak*heightScale),filledCells:0,
     mountainBranches:mountainRanges.ridges.filter(r=>r.kind==='branch').length,mountainLandforms:mountainRanges.landforms.length,
     mountainKernelCount:mountainRanges.kernels,mountainStampSamples:mountainRanges.samples,
     majorPlates:options.majorPlateCount,minorPlates:options.minorPlateCount,

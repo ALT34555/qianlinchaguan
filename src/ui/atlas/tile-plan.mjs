@@ -9,9 +9,9 @@ export function tileAt(view,z,point){
   const n=2**z,x=((Math.floor((p.lon/TAU+.5)*n)%n)+n)%n,y=clamp(Math.floor((.25-p.lat/TAU)*n),0,n/2-1);
   return {z,x,y,key:tileKey(z,x,y),distance:0};
 }
-export function planTiles(view,has,failed=new Set(),focus={x:view.width/2,y:view.height/2}){
-  let z=levelFor(view),tiles=visibleTiles(view,z);
-  while(tiles.length>512&&z>2){z--;tiles=visibleTiles(view,z);}
+export function planTiles(view,has,failed=new Set(),focus={x:view.width/2,y:view.height/2},maxTiles=512,minBaseLevel=2){
+  let z=levelFor(view),tiles=visibleTiles(view,z,maxTiles);
+  while(tiles.length>maxTiles&&z>2){z--;tiles=visibleTiles(view,z,maxTiles);}
   const anchor=tileAt(view,z,focus),queue=new Map(),protectedKeys=new Set();
   const ordered=[...(anchor?[anchor]:[]),...tiles];
   const add=t=>{if(!has(t.key)&&!failed.has(t.key)&&!queue.has(t.key))queue.set(t.key,t);};
@@ -19,7 +19,7 @@ export function planTiles(view,has,failed=new Set(),focus={x:view.width/2,y:view
     let found=1;
     for(let at=tile.z;at>=2;at--){const p=ancestor(tile,at);protectedKeys.add(p.key);if(has(p.key)){found=at;break;}}
     if(found<tile.z){
-      let next=Math.max(2,found+1);
+      let next=Math.min(tile.z,Math.max(minBaseLevel,found+1));
       while(next<=tile.z&&failed.has(ancestor(tile,next).key))next++;
       if(next<=tile.z)add(ancestor(tile,next));
     }
@@ -38,18 +38,36 @@ export function planTiles(view,has,failed=new Set(),focus={x:view.width/2,y:view
 }
 
 export class TileStore{
-  constructor(budget=48*2**20){this.budget=budget;this.bytes=0;this.items=new Map();this.protectedKeys=new Set();}
+  constructor(budget=48*2**20){this.budget=budget;this.bytes=0;this.items=new Map();this.protectedKeys=new Set();this.byKey=new Map();}
   id(style,key){return `${style}:${key}`;}
   has(style,key){return this.items.has(this.id(style,key));}
   get(style,key){const id=this.id(style,key),item=this.items.get(id);if(item){this.items.delete(id);this.items.set(id,item);}return item?.tile;}
+  /** 跨样式取瓦片：缺片回退上一级 */
+  getAny(key){
+    const id=this.byKey.get(key);if(!id)return undefined;
+    const item=this.items.get(id);if(!item){this.byKey.delete(key);return undefined;}
+    this.items.delete(id);this.items.set(id,item);return item.tile;
+  }
   protect(style,keys){this.protectedKeys=new Set([...keys].map(key=>this.id(style,key)));this.trim();}
   set(style,tile){
-    const id=this.id(style,tile.key),bytes=tile.canvas.width*tile.canvas.height*4;
-    this.bytes-=this.items.get(id)?.bytes??0;this.items.delete(id);this.items.set(id,{tile,bytes});this.bytes+=bytes;this.trim();
+    const id=this.id(style,tile.key),bytes=(tile.canvas?tile.canvas.width*tile.canvas.height*4:0)+(tile.pixels?.byteLength??0);
+    this.bytes-=this.items.get(id)?.bytes??0;this.items.delete(id);this.items.set(id,{tile,bytes});this.bytes+=bytes;
+    this.byKey.set(tile.key,id);this.trim();
   }
   trim(){
-    for(const [id,item] of this.items){if(this.bytes<=this.budget)break;if(this.protectedKeys.has(id))continue;this.items.delete(id);this.bytes-=item.bytes;}
-    // 视口超预算时仍遵守硬上限
-    while(this.bytes>this.budget&&this.items.size){const [id,item]=this.items.entries().next().value;this.items.delete(id);this.bytes-=item.bytes;}
+    const evict = (id,item) => {this.items.delete(id);this.bytes-=item.bytes;this.dropKey(id,item);};
+    for(const [id,item] of this.items){
+      if(this.bytes<=this.budget)break;
+      if(this.protectedKeys.has(id)||item.tile.persistent)continue;
+      evict(id,item);
+    }
+    for(const [id,item] of this.items){
+      if(this.bytes<=this.budget)break;
+      if(item.tile.persistent)continue;
+      evict(id,item);
+    }
+    while(this.bytes>this.budget&&this.items.size){const [id,item]=this.items.entries().next().value;evict(id,item);}
   }
+  clear(){this.items.clear();this.byKey.clear();this.protectedKeys.clear();this.bytes=0;}
+  dropKey(id,item){const key=item.tile.key;if(this.byKey.get(key)===id)this.byKey.delete(key);}
 }

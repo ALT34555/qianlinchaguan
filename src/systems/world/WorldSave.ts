@@ -1,4 +1,4 @@
-import { renName } from '../../entities/PlayerIdentity.ts';
+﻿import { renName } from '../../entities/PlayerIdentity.ts';
 import { playerProfile, type PlayerProfile } from '../../entities/PlayerProfile.ts';
 import { playerFactionOptions, type PlayerFactionOptions } from './artificial/PlayerFaction.ts';
 import { normalizeClimateWeights, normalizeGeneration, type ClimateWeights, type WorldGeneration } from './WorldSettings.ts';
@@ -11,9 +11,12 @@ import { parseMysterySettings, type MysterySettings } from '../../core/MysterySe
 import { parsePlayMode, parseCreationTimeSpeed, type PlayMode } from '../../core/PlayMode.ts';
 import type { ExplorationSnapshot } from './Exploration.ts';
 import { validWorldKey } from './WorldDataStore.ts';
+import { LAYER_IDS, normalizeLayers, type LayerId } from '../../ui/atlas/layers.mjs';
 
 export interface PlayerPosition { x: number; y: number; z: number; yaw: number; pitch: number }
-export interface AtlasDisplayState {info:boolean;colors:boolean;relief:boolean;rainClouds:boolean}
+/** 舆图图层状态：顺序即合成顺序，列表在前=画在上层 */
+export interface AtlasLayerSetting {id:LayerId;on:boolean;opacity:number}
+export interface AtlasDisplayState {layers:AtlasLayerSetting[];density:number}
 export interface WorldSave {
   atlasDisplay?:AtlasDisplayState;
   worldKey?:string;
@@ -35,7 +38,7 @@ export interface WorldSave {
   calendarType: 'real' | 'yuan';
   unixMs?: number;
   utcOffsetMinutes?: number;
-  /** 降水快照在世界数据存储中的键，缺省表示该世界没有降水 */
+  /** 降水快照键，缺省表示无降水 */
   weatherKey?: string;
   worldName?: string;
   flying?: boolean;
@@ -67,8 +70,22 @@ function parseBody(data: any): WorldSave {
   if(data.atlasDisplay!==undefined){
     const value=data.atlasDisplay;
     if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('舆图显示设置无效。');
-    const keys=['info','colors','relief','rainClouds'] as const;
-    if(keys.some(k=>value[k]!==undefined&&typeof value[k]!=='boolean'))throw new Error('舆图显示开关无效。');    atlasDisplay={info:value.info??false,colors:value.colors??false,relief:value.relief??false,rainClouds:value.rainClouds??false};
+    const density=Number.isFinite(value.density)?Math.max(0,Math.min(4,Math.round(value.density))):2;
+    let layers:AtlasLayerSetting[]=[];
+    if(value.layers!==undefined){
+      if(!Array.isArray(value.layers)||value.layers.length>16)throw new Error('舆图图层设置无效。');
+      const seen=new Set<string>();
+      for(const raw of value.layers){
+        if(!raw||typeof raw!=='object')throw new Error('舆图图层设置无效。');
+        const id=raw.id;
+        if(typeof id!=='string'||!LAYER_IDS.includes(id as LayerId)||seen.has(id))throw new Error('舆图图层设置无效。');
+        seen.add(id);
+        const opacity=Number.isFinite(raw.opacity)?Math.max(0,Math.min(1,raw.opacity)):1;
+        layers.push({id:id as LayerId,on:!!raw.on,opacity});
+      }
+    }
+    if(!layers.length)layers=normalizeLayers(null);
+    atlasDisplay={layers:normalizeLayers(layers),density};
   }
   const exploration=data.exploration as ExplorationSnapshot|undefined;
   if(data.weatherKey!==undefined&&(typeof data.weatherKey!=='string'||!/^weather[a-z]{8}$/.test(data.weatherKey)))throw new Error('存档中的降水编号无效。');

@@ -7,8 +7,8 @@ export const DECORATIVE_CATCHMENT_KM2=1;
 export const DECORATIVE_MIN_WIDTH=2,DECORATIVE_MAX_WIDTH=64;
 const WIDTH_STAGES=[[0,1],[10,2],[1000,3],[10000,5],[100000,8]];
 
-// 河门槛：∝格宽并随基准降水抬升，小流量交给装饰支流
-export function macroRiverThreshold(scale,precipitation=1){return .96*scale*Math.pow(Math.max(.2,precipitation),.6);}
+// 小尺度门槛随集水面积缩放
+export function macroRiverThreshold(scale,precipitation=1){return .96*scale*Math.min(1,scale/625)*Math.pow(Math.max(.2,precipitation),.6);}
 
 export function macroBandWidth(discharge){
   const q=Math.max(0,discharge);

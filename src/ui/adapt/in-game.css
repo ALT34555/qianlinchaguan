@@ -37,30 +37,34 @@
 
 /* 常驻开关独立于画布和抽屉 */
 .game-corner { z-index: 10020; }
+.game-bar .corner-in-bar { position: static; flex: none; }
+.corner-in-bar .corner-menu { backdrop-filter: none; }
 .game-corner .corner-menu { opacity: 1; transition: opacity .25s ease; }
 .menu-resting .corner-menu { animation: menu-toggle-dim .25s ease 30s forwards; }
 .menu-resting .corner-menu:is(:hover, :focus-visible) { animation: none; opacity: 1; }
 @keyframes menu-toggle-dim { from { opacity: 1; } to { opacity: .3; } }
 
-/* 输入常驻，闲置时只隐藏消息 */
+/* 舆图输入随菜单显示 */
 .chat-panel.chat-idle:not(.sidebar-open) { display: block; }
 .chat-panel.chat-idle:not(.sidebar-open) .chat-history { display: none; }
 .chat-panel .chat-composer {
   display: block;
   height: 40px;
   background: transparent;
-  border-bottom: 1px solid rgba(255, 236, 222, .18);
+  border-bottom: 1px solid var(--chat-edge, var(--q-line-soft));
   pointer-events: auto;
 }
 body:has(.game-bar.hidden) .chat-panel:not(.sidebar-open) .chat-composer { display: none; }
+.chat-panel.chat-atlas:not(.sidebar-open) .chat-composer { display: none; }
+/* 输入框跟随消息栏昼夜色 */
 .chat-panel .chat-composer input,
 .chat-panel .chat-composer input:focus {
   background: transparent;
   background-image: none;
   box-shadow: none;
   border: 0;
-  color: #f7ece2;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+  color: var(--chat-ink, var(--q-ink));
+  text-shadow: 0 1px 2px color-mix(in oklab, var(--q-bg) 30%, transparent);
 }
 
 /* 设置展开时隐藏聊天整体 */
@@ -80,8 +84,8 @@ body:has(.game-bar.hidden) .chat-panel:not(.sidebar-open) .chat-composer { displ
   padding: 8px 12px;
 }
 .settings-panel .crosshair-samples button[aria-pressed="true"] {
-  border-color: var(--q-primary-ui);
-  color: var(--q-primary-ui);
+  border-color: var(--q-primary-text);
+  color: var(--q-primary-text);
   background: var(--q-primary-soft);
   box-shadow: var(--q-neu-in-sm);
 }
@@ -96,7 +100,7 @@ body:has(.game-bar.hidden) .chat-panel:not(.sidebar-open) .chat-composer { displ
 .settings-panel :is(input:not([type]), input[type="text"], input[type="number"], select, textarea):focus {
   background: color-mix(in oklab, var(--q-accent-ui) 18%, var(--q-surface));
   color: var(--q-ink);
-  border-color: var(--q-accent-ui);
+  border-color: var(--q-accent-text);
   box-shadow: var(--q-neu-in-sm), inset 0 0 0 1px var(--q-accent-ui);
   outline: none;
 }

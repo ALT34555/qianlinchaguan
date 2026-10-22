@@ -1,8 +1,6 @@
 import {CHUNK_SIZE} from '../core/config';
 import type {ChunkInfo,RiverPoint} from '../systems/world/WorldContract';
 import type {MapSummary} from '../systems/world/ChunkCache';
-import {snowLine} from '../systems/world/TerrainLayers';
-import {isStillWater} from './PlanetAtlasLayer';
 
 type Project=(x:number,z:number)=>[number,number];
 type Lookup=(cx:number,cz:number)=>ChunkInfo|null|undefined;
@@ -26,21 +24,6 @@ export function riverLOD(path:readonly RiverPoint[],cell:number):readonly RiverP
     if(index>=0){keep.add(index);stack.push([start,index],[index,end]);}
   }
   const result=[...keep].sort((a,b)=>a-b).map(i=>path[i]);cache.set(level,result);return result;
-}
-
-/** 阴影只读取已有高程 */
-export function drawMapRelief(ctx:CanvasRenderingContext2D,info:ChunkInfo,x:number,y:number,w:number,h:number,lookup:Lookup):void{
-  const east=lookup(info.cx+1,info.cz),west=lookup(info.cx-1,info.cz),south=lookup(info.cx,info.cz+1),north=lookup(info.cx,info.cz-1);
-  if(east&&west&&south&&north){
-    const light=(-(east.elevation-west.elevation)*.5*.707-(south.elevation-north.elevation)*.5*.707)*.012;
-    if(light){ctx.fillStyle=light>0?`rgba(255,255,255,${Math.min(.38,light*.45)})`:`rgba(0,0,0,${Math.min(.42,-light*.48)})`;ctx.fillRect(x,y,w,h);}
-  }
-  if(isStillWater(info)){
-    const depth=info.lakeLevel!==null?Math.max(0,info.lakeLevel-info.elevation):Math.abs(info.elevation);
-    ctx.fillStyle=`rgba(3,20,50,${Math.min(.28,depth/90)})`;ctx.fillRect(x,y,w,h);
-  }
-  const snow=snowLine(info.temperature);
-  if(info.elevation>snow){ctx.fillStyle=`rgba(240,248,255,${Math.min(.32,(info.elevation-snow)/480)})`;ctx.fillRect(x,y,w,h);}
 }
 
 /** 节点与真实曲线共用河宽和样式 */

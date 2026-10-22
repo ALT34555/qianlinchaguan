@@ -31,6 +31,7 @@ const swatch = (hex: string): string =>
   /^#[0-9a-f]{6}$/i.test(hex) ? `<span style="color:${hex}">■</span> ${hex}` : escapeHtml(hex);
 
 export class DebugOverlay {
+  destroy(): void { this.root.remove(); }
   private readonly root: HTMLDivElement;
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;

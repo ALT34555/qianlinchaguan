@@ -263,16 +263,14 @@ export class Sky {
           float breathe = 0.93 + 0.07 * sin(TAU * (uPhase * 4.0 + aPhase.w * 1.7));
           float rot = aRot + 0.16 * sin(TAU * (uPhase + aPhase.w * 2.3));
 
-          // 公告板：用相机的右、上向量展开云片
-          vec3 right = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
-          vec3 up = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+          // 相机空间展开，避免大坐标精度损失
           float c = cos(rot);
           float s = sin(rot);
           vec2 local = vec2(position.x * c - position.y * s, position.x * s + position.y * c) * (aSize * (2.0 * breathe));
 
-          vec4 world = modelMatrix * vec4(xz.x, y, xz.y, 1.0);
-          world.xyz += right * local.x + up * local.y;
-          gl_Position = projectionMatrix * viewMatrix * world;
+          vec4 center = modelViewMatrix * vec4(xz.x, y, xz.y, 1.0);
+          center.xy += local;
+          gl_Position = projectionMatrix * center;
 
           vUv = uv;
           vFade = fade;

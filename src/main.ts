@@ -7,9 +7,9 @@ import './ui/menu.css';
 import './ui/simple.css';
 import './ui/preferences.css';
 import './ui/chat.css';
-// 令牌层最后引入：旧 --ql-* 名以别名覆盖上方硬编码值，组件样式无需改动即换肤
+// 令牌层最后引入覆盖别名以换肤
 import './ui/tokens.css';
-// 1018 茶席视觉层：令牌、组件、场景与覆盖样式，必须排在旧样式之后
+// 茶席视觉层排在旧样式之后
 import './ui/adapt/tokens.css';
 import './ui/adapt/base.css';
 import './ui/adapt/components.css';
@@ -21,7 +21,7 @@ import './ui/adapt/in-game.css';
 import './ui/adapt/buttons.css';
 import './ui/adapt/ranges.css';
 import './ui/adapt/checkbox-motion.css';
-import { initVisuals } from './ui/adapt/runtime';
+import { initVisuals, showLoading } from './ui/adapt/runtime';
 import { initRanges } from './ui/adapt/ranges';
 import { initCheckboxMotion } from './ui/adapt/checkbox-motion';
 import { randomSeed } from './core/math/Random';
@@ -31,20 +31,20 @@ import { StartScreen, type StartOptions } from './ui/StartScreen';
 import { DEFAULT_CLIMATE_WEIGHTS, normalizeClimateWeights, normalizeGeneration } from './systems/world/WorldSettings';
 import { parseWorldSave } from './systems/world/WorldSave';
 import { loadSettings, saveSettings, SETTINGS_KEY } from './core/GameSettings';
-import { FileSaveStore } from './systems/world/FileSaveStore';
+import './core/DesktopBridge';
+import { resolveSaveStore } from './systems/world/SaveBackend';
 import { initI18n, onLocaleChange, t } from './i18n';
 import { probeDisplayRefresh, overrideDisplayRefreshRate } from './ui/DisplayRefresh';
 import { prepareWorld } from './systems/world/PrepareWorld';
-import { BrowserSaveStore } from './systems/world/BrowserSaveStore';
-import type { SaveStore } from './systems/world/LocalSaveStore';
 
+async function bootstrap(): Promise<void> {
 const params = new URLSearchParams(location.search);
 const rdRaw = Number(params.get('rd'));
 const renderDistanceOverride = Number.isFinite(rdRaw) && rdRaw > 0 ? Math.max(MIN_RENDER_DISTANCE, Math.min(MAX_RENDER_DISTANCE, Math.round(rdRaw))) : undefined;
 const menuRoot = document.getElementById('world-menu')!;
 let started = false;
 // 延迟访问浏览器存储
-const desktopSettings = (window as Window & { desktopSettings?: { read(): string | null; write(value: string): void } }).desktopSettings;
+const desktopSettings = window.desktopSettings;
 const storage = {
   getItem: (key: string) => key === SETTINGS_KEY && desktopSettings ? desktopSettings.read() : localStorage.getItem(key),
   setItem: (key: string, value: string) => { if (key === SETTINGS_KEY && desktopSettings) desktopSettings.write(value); else localStorage.setItem(key, value); },
@@ -72,22 +72,26 @@ else probeDisplayRefresh();
 let settings = loadSettings(storage);
 if (renderDistanceOverride !== undefined) settings = { ...settings, renderDistance: renderDistanceOverride };
 applyAppearance(settings);
-let saveStore:SaveStore;
-try{
-  const response=await fetch('/api/world-data',{cache:'no-store'});
-  saveStore=response.ok&&(await response.json()).worldData===true?new FileSaveStore(fetch,'/api/saves',params.get('saveLocation')??'userdata/saves'):new BrowserSaveStore();
-}catch{saveStore=new BrowserSaveStore();}
+const desktop = params.get('desktop') === '1';
+if (desktop && (!desktopSettings || !window.desktopRuntime)) throw new Error(t('startup.bridgeUnavailable'));
+const saveStore = await resolveSaveStore(desktop, params.get('saveLocation') ?? 'userdata/saves');
 
 async function enterWorld(options: StartOptions): Promise<void> {
   if (started) return;
   started=true;
-  loadingEl.classList.remove('hidden');
+  // 段起始/步数/已完成，用于把消息折算成环形进度
+  let stageStart = 0, stageSteps = 0, stageDone = 0;
+  const loading=showLoading({title:t('loading.terrain')});
+  const progress=()=>stageStart+(stageSteps>0?stageDone/stageSteps:0)*.9;
+  const wave=(from:number,steps:number)=>{stageStart=from;stageSteps=steps;stageDone=0;};
+  wave(.04,4);
+  const ticker=window.setInterval(()=>{if(stageDone<stageSteps)stageDone+=1;},260);
   try{
   const worldKey=options.save?.worldKey??options.worldKey??crypto.randomUUID();
   const runtimeOptions={ ...options,worldKey,initialPlayer:options.save?.player,showOverlay:params.get('overlay')==='1',settings,saveStore,
     persistSettings:(value:typeof settings)=>{settings=saveSettings(storage,value);applyAppearance(settings);} };
-  const prepared=await prepareWorld(runtimeOptions,message=>{loadingEl.textContent=message;});
-  loadingEl.textContent=t('loading.terrain');
+  const prepared=await prepareWorld(runtimeOptions,message=>{wave(.26,10);loading.set(message,progress);});
+  loading.set(t('loading.terrain'),progress);
   // 先验证出生点，失败时保持设置界面可用。
   const game = new Game(document.getElementById('app')!, {
     start: document.getElementById('start-screen')!,
@@ -100,7 +104,9 @@ async function enterWorld(options: StartOptions): Promise<void> {
   menuRoot.classList.add('hidden');
   game.start();
   loadingEl.classList.add('hidden');
-  }catch(error){started=false;loadingEl.classList.add('hidden');document.getElementById('menu-status')!.textContent=error instanceof Error?error.message:String(error);}
+  await loading.done();
+  }catch(error){started=false;loading.cancel();loadingEl.classList.add('hidden');document.getElementById('menu-status')!.textContent=error instanceof Error?error.message:String(error);}
+  finally{window.clearInterval(ticker);}
 }
 
 let weights = normalizeClimateWeights(DEFAULT_CLIMATE_WEIGHTS);
@@ -125,3 +131,18 @@ if (params.get('resume') === '1') {
   } catch (e) { initialError = e instanceof Error ? e.message : t('saves.readFailed'); }
 }
 if (initialError) document.getElementById('menu-status')!.textContent = initialError;
+window.desktopRuntime?.ready();
+}
+
+void bootstrap().catch(error => {
+  const message = error instanceof Error ? error.message : String(error);
+  window.desktopRuntime?.failed(message);
+  document.getElementById('loading')?.classList.add('hidden');
+  const root = document.getElementById('world-menu')!;
+  const status = document.createElement('p');
+  status.setAttribute('role', 'alert'); status.textContent = `${t('startup.failed')} ${message}`;
+  const retry = document.createElement('button');
+  retry.className = 'btn btn--ghost'; retry.textContent = t('startup.retry');
+  retry.addEventListener('click', () => location.reload());
+  root.replaceChildren(status, retry); root.classList.remove('hidden');
+});

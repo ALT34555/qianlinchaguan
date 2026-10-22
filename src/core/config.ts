@@ -8,7 +8,7 @@ export const SEA_LEVEL = 0;
 
 /** 世界高度下限 / 上限 */
 export const WORLD_MIN_Y = -4096;
-export const WORLD_MAX_Y = 4096;
+export const WORLD_MAX_Y = 20480;
 
 /** 默认世界种子 */
 export const DEFAULT_SEED = 20261004;

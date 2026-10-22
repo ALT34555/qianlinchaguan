@@ -6,6 +6,8 @@ import { getChunkTypeDef } from '../systems/world/ChunkTypes';
 import { CLIMATES } from '../systems/world/WorldSettings';
 import { snowLine } from '../systems/world/TerrainLayers';
 import { mercatorZ,MERCATOR_LIMIT } from './AtlasProjection';
+import { elevationRampValue,snowValue,LAND,dayProfile,dayFactor,applyDaylight,normalizeSunHours } from './atlas/relief.mjs';
+import { contourUnit,bandPosition,terraceShade } from './atlas/contour.mjs';
 
 export type PlanetView = 'globe' | 'projection' | 'mercator';
 export interface OverviewStyle {
@@ -14,8 +16,16 @@ export interface OverviewStyle {
   chunkColors?:boolean;
   climate: boolean; relief: boolean; climateFilter: number | null;
   filterKey: string; matches: (type: number) => boolean;
+  /** 地势档：无光影/拟真/高度/等高线 */
+  reliefMode?:string;
+  sunHours?:number;
+  sunWorld?:unknown;
+  /** 等高距（米），0 或缺省时用档位表 */
+  contourUnit?:number;
 }
 const RAD = Math.PI / 180;
+/** 雪色，供高程带混色 */
+const SNOW_LIGHT = 246;
 
 /** 全览纹理完整分辨率 */
 const OVERVIEW_WIDTH = 720;
@@ -42,6 +52,14 @@ export const isStillWater = (info: ChunkInfo): boolean => info.elevation <= 0 ||
 /** 打包 0xRRGGBB 供逐像素烘焙 */
 export function overviewColorValue(type: number, climate: number, temperature: number, elevation: number,
   lakeLevel: number | null, palette: boolean, relief: boolean, chunkColors = false,macro=false): number {
+  // 等高线档：按高程分带上色，不再叠加统一光照
+  if (relief && !palette && !chunkColors) {
+    if (elevation <= 0) return 0x397aa1;
+    if (lakeLevel !== null) return 0x3f86ad;
+    const at = elevationRampValue(elevation) * 3, amount = snowValue(temperature) / 255;
+    const mix = (base: number, peak: number) => Math.round(base + (peak - base) * amount);
+    return (mix(LAND[at], SNOW_LIGHT) << 16) | (mix(LAND[at + 1], SNOW_LIGHT) << 8) | mix(LAND[at + 2], SNOW_LIGHT);
+  }
   let hex = palette ? CLIMATES[climate].color : getChunkTypeDef(type,macro).mapColor;
   // 连续色：内陆静水不随植被或雪线转色
   if (!palette && !chunkColors) {
@@ -49,12 +67,7 @@ export function overviewColorValue(type: number, climate: number, temperature: n
       : temperature < 0 || elevation > snowLine(temperature) ? '#e3ebe1'
       : type === 104 || type === 4 ? '#c5b078' : elevation > 768 ? '#8e947a' : '#73965e';
   }
-  const value = parseInt(hex.slice(1), 16);
-  const light = relief ? elevation <= 0 ? 1 - Math.min(.4, -elevation / 280)
-    : 1 + Math.min(.2, elevation / 4000) : 1;
-  return (Math.min(255, Math.round((value >> 16) * light)) << 16) |
-    (Math.min(255, Math.round((value >> 8 & 255) * light)) << 8) |
-    Math.min(255, Math.round((value & 255) * light));
+  return parseInt(hex.slice(1), 16);
 }
 
 export function overviewColor(info: ChunkInfo, climate: boolean, relief: boolean,chunkColors=false,macro=false): [number, number, number] {
@@ -115,9 +128,13 @@ export class PlanetAtlasLayer {
     }
   }
 
-  /** 纹理标识：样式与筛选一起决定是否需重新着色 */
+  /** 样式/地势/等高距决定是否重着色 */
   private styleKey(style: OverviewStyle): string {
-    return `${style.climate},${style.relief},${style.climateFilter},${style.filterKey},${style.chunkColors},${style.rivers!==false},${style.satellite}`;
+    const mode=style.relief?(style.reliefMode??'height'):'none';
+    const stamp=mode==='sun'?':'+normalizeSunHours(style.sunHours).toFixed(2):'';
+    const unit=mode==='contour'?':'+(style.contourUnit??0):'';
+    return [style.climate,style.relief,mode+stamp+unit,style.climateFilter,style.filterKey,
+      style.chunkColors,style.rivers!==false,style.satellite].join(',');
   }
 
   /** 当前样式是否已有完整纹理；分帧生成垫底只用成品 */
@@ -149,15 +166,36 @@ export class PlanetAtlasLayer {
   /** 按当前样式着色一行 */
   private colorRow(tier: BakeTier, row: number, style: OverviewStyle): void {
     const kinds = tier.kinds, values = tier.values, data = tier.image.data;
+    const mode=style.relief?(style.reliefMode??'height'):'none';
+    const size=this.generator.generation.planet.equatorChunks;
+    const daylight=mode==='sun'?dayProfile(normalizeSunHours(style.sunHours),style.sunWorld):null;
+    // 全览只有 L4 附近，等高距取该档
+    const unit=mode==='contour'?(style.contourUnit&&style.contourUnit>0?style.contourUnit:contourUnit(4,this.generator.generation.macroColumns)):0;
+    const rgb=[0,0,0];
     for (let x = 0; x < tier.width; x++) {
       const i = row * tier.width + x, type = kinds[i * 2], climate = kinds[i * 2 + 1];
       let value = overviewColorValue(type, climate, values[i * 2], values[i * 2 + 1],Number.isFinite(tier.lakeLevels[i])?tier.lakeLevels[i]:null,
-        style.climate, style.relief, style.chunkColors,this.generator.generation.terrainRule==='planet-macro');
+        style.climate, this.modeUsesRamp(mode), style.chunkColors,this.generator.generation.terrainRule==='planet-macro');
       if(style.satellite&&!style.climate&&!style.chunkColors){
-        const size=this.generator.generation.planet.equatorChunks;
-        value=this.generator.getSatelliteColor((x+.5)/tier.width*size-size/2-.5,(row+.5)/tier.height*size/2-size/4-.5,style.relief)??value;
+        value=this.generator.getSatelliteColor((x+.5)/tier.width*size-size/2-.5,(row+.5)/tier.height*size/2-size/4-.5,false)??value;
       }
       if(!style.climate&&!style.chunkColors&&(values[i*2+1]<=0||Number.isFinite(tier.lakeLevels[i])))value=iceColorValue(value,values[i*2]);
+      if(mode==='contour'&&unit>0&&!style.climate&&!style.chunkColors&&values[i*2+1]>0){
+        const west=values[this.wrapIndex(tier,x-1,row)*2+1],east=values[this.wrapIndex(tier,x+1,row)*2+1];
+        const northRow=Math.max(0,row-1),southRow=Math.min(tier.height-1,row+1);
+        const north=values[(northRow*tier.width+x)*2+1],south=values[(southRow*tier.width+x)*2+1];
+        const band=bandPosition(values[i*2+1],unit),gradient=Math.hypot(east-west,south-north)/2;
+        const distance=gradient>0?Math.min(band,1-band)*unit/gradient:9;
+        const factor=terraceShade(band)*(distance<1.4?1-(1-distance/1.4)*.34:1);
+        value=(Math.min(255,Math.round((value>>16)*factor))<<16)|(Math.min(255,Math.round((value>>8&255)*factor))<<8)|Math.min(255,Math.round((value&255)*factor));
+      }
+      // 昼夜：整幅纹理按经纬度受光，海面同样变暗
+      if(daylight&&!style.climate&&!style.chunkColors){
+        const light=dayFactor(daylight,(90-(row+.5)/tier.height*180)*Math.PI/180,((x+.5)/tier.width*360-180)*Math.PI/180);
+        rgb[0]=value>>16;rgb[1]=value>>8&255;rgb[2]=value&255;
+        applyDaylight(rgb,light.day,light.dusk);
+        value=(Math.round(rgb[0])<<16)|(Math.round(rgb[1])<<8)|Math.round(rgb[2]);
+      }
       if (style.climate && style.climateFilter !== null && climate !== style.climateFilter) {
         value = (Math.round((value >> 16) * .35) << 16) | (Math.round((value >> 8 & 255) * .35) << 8) | Math.round((value & 255) * .35);
       }
@@ -169,6 +207,12 @@ export class PlanetAtlasLayer {
       data[at] = value >> 16; data[at + 1] = value >> 8 & 255; data[at + 2] = value & 255; data[at + 3] = 255;
     }
   }
+  /** 经度循环取列 */
+  private wrapIndex(tier:BakeTier,x:number,row:number):number{
+    return row*tier.width+((x%tier.width)+tier.width)%tier.width;
+  }
+  /** 高程色带只用于高度图 */
+  private modeUsesRamp(mode:string):boolean{return mode==='height';}
 
   /** 单层推进：先补采样再补着色，整体着色完成才换图 */
   private step(tier: BakeTier, key: string, style: OverviewStyle, size: number, deadline: number): boolean {

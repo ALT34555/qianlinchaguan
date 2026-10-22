@@ -1,4 +1,19 @@
-import {TAU,clamp,wrap,unproject} from './tiles.mjs';
+import {TAU,TILE,clamp,wrap,unproject,atlasCamera} from './tiles.mjs';
+
+/** 以逻辑放大档限制全部投影 */
+export function atlasZoomLimitFactor(v){
+  if(!v.isPlanet||!Number.isFinite(v.maxZoomLevel))return Infinity;
+  const state=atlasCamera(v,v.canvas.clientWidth,v.canvas.clientHeight);
+  if(!(state.scale>0))return Infinity;
+  const stretch=state.view==='mercator'?1/Math.max(.04,Math.cos(state.lat)):1;
+  const maximum=TILE*2**clamp(Math.floor(v.maxZoomLevel),2,22)/TAU/stretch;
+  return maximum*(1-1e-10)/state.scale;
+}
+
+export function limitAtlasZoom(v){
+  const factor=atlasZoomLimitFactor(v);
+  if(factor<1)v.scale*=factor;
+}
 
 export function globeAnchor(point,x,y,radius){
   const u=x/radius,v=-y/radius,c=Math.cos(point.lat);
@@ -9,13 +24,13 @@ export function globeAnchor(point,x,y,radius){
   return Math.abs(lat)>Math.PI/2?null:{lon:wrap(point.lon-dl),lat};
 }
 export function zoomGameAtlas(v,factor,clientX,clientY){
-  if(!v.isPlanet||v.exploration||v.survivalPreview)return false;
+  if(!v.isPlanet||v.survivalPreview)return false;
+  factor=Math.min(factor,atlasZoomLimitFactor(v));
   v.deferRefinement();
   const rect=v.canvas.getBoundingClientRect(),width=v.canvas.clientWidth,height=v.canvas.clientHeight;
   const x=clientX===undefined?width/2:clientX-rect.left,y=clientY===undefined?height/2:clientY-rect.top,size=v.generator.generation.planet.equatorChunks;
   v.labAtlasFocus={x,y};
-  const cell=v.baseCellSize*v.scale,isGlobe=v.isGlobe;
-  const state={width,height,view:isGlobe?'globe':v.isMercator?'mercator':'projection',lon:(v.centerCx+(isGlobe?.5:-v.panX/cell))/size*TAU,lat:-(isGlobe?v.centerCz+.5:v.worldZ(v.mapZ(v.centerCz)-v.panY/cell))/size*TAU,scale:isGlobe?v.globeRadius:cell*size/TAU};
+  const isGlobe=v.isGlobe,state=atlasCamera(v,width,height);
   const point=unproject(state,x,y);if(!point)return true;
   const fitRadius=Math.min(width,height)*.43,newRadius=state.scale*factor;
   if(isGlobe){

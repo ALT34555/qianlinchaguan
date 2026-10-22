@@ -35,8 +35,8 @@ html, body { background-color: var(--ql-paper); background-image: var(--ql-paper
 .creator-tabs button:nth-child(2) { border-radius: 54% 46% 0 0 / 15px 11px 0 0; transform: translateY(4px) rotate(.6deg); }
 .creator-tabs button:nth-child(3) { border-radius: 42% 58% 0 0 / 11px 15px 0 0; transform: translateY(4px) rotate(-.8deg); }
 .creator-tabs button:nth-child(4) { border-radius: 58% 44% 0 0 / 14px 12px 0 0; transform: translateY(4px) rotate(.7deg); }
-.creator-tabs button:hover:not(:disabled) { color: var(--ql-cinnabar-deep); background-color: var(--ql-paper-card); transform: translateY(2px) rotate(0deg); }
-.creator-tabs button[aria-selected="true"] { background-color: var(--ql-paper-hi); color: var(--ql-cinnabar); border-color: var(--ql-line-seal); box-shadow: 0 -5px 12px rgba(77, 64, 48, .18); transform: translateY(1px) rotate(0deg); z-index: 2; }
+.creator-tabs button:hover:not(:disabled) { color: var(--ql-cinnabar-text); background-color: var(--ql-paper-card); transform: translateY(2px) rotate(0deg); }
+.creator-tabs button[aria-selected="true"] { background-color: var(--ql-paper-hi); color: var(--ql-cinnabar-text); border-color: var(--ql-line-seal); box-shadow: 0 -5px 12px rgba(77, 64, 48, .18); transform: translateY(1px) rotate(0deg); z-index: 2; }
 .creator-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 24px 24px; scrollbar-gutter: stable; overscroll-behavior: contain; }
 .creator-scroll [hidden] { display: none; }
 .creator-tabs button[hidden] { display: none; }
@@ -50,6 +50,7 @@ html, body { background-color: var(--ql-paper); background-image: var(--ql-paper
 .creator-page .atlas-header-bar { flex: 0 0 auto; }
 .creator-page .atlas-title-group { flex-wrap: wrap; }
 .creator-page .atlas-view-tools { flex-wrap: wrap; }
+.creator-page .atlas-view-tools [hidden] { display: none; }
 .creator-page .atlas-control-panel { max-height: none; padding: 0; border: 0; overflow: visible; background: none; }
 .creator-page .atlas-control-panel .ctrl-group { flex-shrink: 0; }
 .creator-page .atlas-footer { flex: 0 0 auto; padding-right: 52px; font-size: calc(10px * var(--text-scale, 1)); }
@@ -77,12 +78,12 @@ html, body { background-color: var(--ql-paper); background-image: var(--ql-paper
 .slider-row { flex-direction: column; align-items: stretch; gap: 8px; }
 .slider-row > span { display: flex; justify-content: space-between; gap: 8px; }
 .slider-row input[type="range"] { width: 100%; min-width: 0; }
-.slider-row output { font-family: var(--ql-font-mono); color: var(--ql-cinnabar); }
+.slider-row output { font-family: var(--ql-font-mono); color: var(--ql-cinnabar-text); }
 .fps-stops { position: relative; height: 18px; margin: -4px 0 2px; }
 .fps-stops span { position: absolute; top: 0; left: calc(7px + (100% - 14px) * var(--fps-stop-ratio)); transform: translateX(-50%); font-family: var(--ql-font-mono); font-size: calc(10px * var(--text-scale, 1)); line-height: 1.25; color: var(--ql-ink-3); white-space: nowrap; }
 .distance-pair { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 20px 12px auto 20px; padding: 17px 0; }
 .distance-heading { display: flex; justify-content: space-between; gap: 8px; font-size: calc(14px * var(--text-scale, 1)); padding-bottom: 8px; }
-.distance-heading output { color: var(--ql-cinnabar); font-family: var(--ql-font-mono); }
+.distance-heading output { color: var(--ql-cinnabar-text); font-family: var(--ql-font-mono); }
 .distance-heading-world { grid-row: 1; grid-column: 1; }
 .distance-heading-vegetation { grid-row: 4; grid-column: 1; padding-top: 10px; }
 .distance-pair input[type="range"] { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; height: 20px; padding: 0; margin: 0; border: 0; background: transparent; box-shadow: none; position: relative; z-index: 2; }
@@ -131,7 +132,6 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
 .pause-panel.layout-editor-hidden { display: none !important; }
 .setting-row.layout-adjust-row { margin-top: 8px; flex-direction: column; align-items: stretch; gap: 8px; }
 .setting-row.layout-adjust-row button { width: 100%; padding: 10px 14px; }
-.fold-lock-icon { width: calc(13px * var(--text-scale, 1)); height: calc(13px * var(--text-scale, 1)); object-fit: contain; }
 
 /* 虚拟摇杆与按键样式 */
 .touch-move { position: absolute; display: block; width: calc(168px * var(--touch-effective-size, 1)); height: calc(168px * var(--touch-effective-size, 1)); pointer-events: auto; touch-action: none; user-select: none; }
@@ -180,7 +180,7 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
 .layout-item-badge { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: #fff; background: rgba(166, 27, 41, .92); padding: 2px 8px; border-radius: 3px; border: 1px solid rgba(255, 255, 255, .4); white-space: nowrap; pointer-events: none; }
 .layout-center-dialog { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 26px; background: var(--ql-paper-hi); background-image: var(--ql-paper-weave); border: 2px solid var(--ql-ink); border-radius: var(--ql-radius); box-shadow: inset 0 0 0 1px #f8f4ed, inset 0 0 0 2.5px var(--ql-line), 0 8px 32px rgba(0, 0, 0, .55); z-index: 100; text-align: center; }
 .layout-center-heading { display: flex; flex-direction: column; gap: 4px; }
-.layout-center-title { font-family: var(--ql-font-display); font-size: calc(16px * var(--text-scale, 1)); font-weight: 600; color: var(--ql-cinnabar); letter-spacing: var(--ql-track-display); }
+.layout-center-title { font-family: var(--ql-font-display); font-size: calc(16px * var(--text-scale, 1)); font-weight: 600; color: var(--ql-cinnabar-text); letter-spacing: var(--ql-track-display); }
 .layout-center-hint { font-family: var(--ql-font-body); font-size: calc(12px * var(--text-scale, 1)); color: var(--ql-ink-2); }
 .layout-center-actions { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
 
@@ -269,7 +269,7 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
 .creator-page .preset-column h2 { margin: 0 0 14px; font-size: calc(14px * var(--text-scale, 1)); font-weight: 500; text-align: center; white-space: nowrap; }
 .preset-column .presets-row { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
 .creator-page .preset-column .preset-pill { padding: 10px 2px; font-size: calc(14px * var(--text-scale, 1)); letter-spacing: normal; white-space: normal; }
-.save-mode { display: inline-block; margin: 0 0 6px; padding: 2px 9px; border: 1px solid var(--ql-line-seal); border-radius: 4px; color: var(--ql-cinnabar); }
+.save-mode { display: inline-block; margin: 0 0 6px; padding: 2px 9px; border: 1px solid var(--ql-line-seal); border-radius: 4px; color: var(--ql-cinnabar-text); }
 @media (max-width: 600px) { .play-mode-options { grid-template-columns: minmax(0, 1fr); } }
 
 .preset-note { grid-column: 1 / -1; margin: 0; }
@@ -280,11 +280,11 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
 .save-filters { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0 0 18px; padding: 12px 16px; border: 1px solid var(--ql-line-seal); }
 .save-filters label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 
-.game-map-viewport.atlas-frame {
-  inset: calc(var(--safe-y) + var(--game-bar-h, 68px) + var(--game-map-tools-h, 0px) + 8px)
-    calc(var(--safe-x) + 10px) calc(var(--safe-y) + var(--game-map-detail-h, 0px) + 8px);
+.game-map-viewport {
+  inset: calc(var(--safe-y) + var(--game-bar-h, 68px) + var(--game-map-tools-h, 0px))
+    var(--safe-x) calc(var(--safe-y) + var(--game-map-detail-h, 0px));
 }
-.game-map-viewport.atlas-frame .game-map-tip { left: 12px; bottom: 12px; }
+.game-map-viewport .game-map-tip { left: 12px; bottom: 12px; }
 .map-viewport-wrapper.atlas-frame { border-radius: 0; }
 
 .world-settings.atlas-frame, .atlas-panel.atlas-frame { border-width: 1px; border-image-width: 12px; border-image-outset: 6px; border-radius: 0; }
@@ -359,7 +359,7 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
   line-height: 1.25;
   letter-spacing: .04em;
   overflow-wrap: anywhere;
-  color: var(--ql-cinnabar-deep);
+  color: var(--ql-cinnabar-text);
   background: url('../../content/assets/ui/frames/frame-tab-bookmark.svg') center / contain no-repeat;
   border: 0;
   border-radius: 0;
@@ -380,7 +380,7 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
 
 .creator-tabs.world-bookmark-tabs button[aria-selected="true"] {
   background-color: transparent;
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
   box-shadow: none;
   transform: translateY(-5px);
   z-index: 4;
@@ -472,48 +472,10 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
 }
 
 .saves-bookmark-panel {
-  --save-filter-width: 180px;
-  --save-filter-overlap: 40px;
   flex: 1;
   min-height: 0;
   position: relative;
-  isolation: isolate;
-  display: grid;
-  grid-template-columns: var(--save-filter-width) minmax(0, 1fr);
   margin: 6px;
-}
-
-.saves-bookmark-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 calc(var(--save-filter-width) - var(--save-filter-overlap) - 14px);
-  width: 32px;
-  z-index: 3;
-  background: linear-gradient(to right, rgba(45, 34, 22, 0), rgba(45, 34, 22, .32) 44%, rgba(45, 34, 22, .14) 55%, rgba(45, 34, 22, 0));
-  pointer-events: none;
-}
-
-.saves-bookmark-panel::after {
-  content: "";
-  position: absolute;
-  inset: -1px -1px -1px calc(var(--save-filter-width) - var(--save-filter-overlap) - 1px);
-  border: 1px solid transparent;
-  border-image: url('../../content/assets/ui/frames/atlas-wood-frame.svg') 32 stretch;
-  border-image-width: 12px;
-  border-image-outset: 6px;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.saves-page .save-filters {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  min-width: 0;
-  margin: 0;
-  padding: 12px 0;
-  border: 0;
 }
 
 .saves-page .save-filters legend {
@@ -524,97 +486,12 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
   overflow: hidden;
 }
 
-.saves-page .save-filter-bookmark {
-  position: relative;
-  width: 220px;
-  aspect-ratio: 13 / 6;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  padding: 0 28px;
-  color: var(--ql-cinnabar);
-  font-family: var(--ql-font-display);
-  font-size: calc(20px * var(--text-scale, 1));
-  background: url('../../content/assets/ui/frames/frame-tab-bookmark-side.svg') center / contain no-repeat;
-  transform: translateX(12px);
-  z-index: 1;
-  cursor: pointer;
-  transition: transform .18s ease;
-}
-
-.saves-page .save-filter-bookmark:has(input:checked) {
-  transform: translateX(-20px);
-  z-index: 11;
-}
-
-.saves-page .save-filter-bookmark:hover {
-  transform: translateX(4px);
-}
-
-.saves-page .save-filter-bookmark:has(input:checked):hover {
-  transform: translateX(-24px);
-}
-
-.saves-page .save-import-bookmark {
-  --import-pull: -20px;
-  flex-shrink: 0;
-  margin-top: auto;
-  border: 0;
-  border-radius: 0;
-  color: var(--ql-ink-inv);
-  background: url('../../content/assets/ui/frames/frame-tab-bookmark-side-red.svg') center / contain no-repeat;
-  box-shadow: none;
-  text-shadow: none;
-  letter-spacing: .04em;
-  font-size: calc(17px * var(--text-scale, 1));
-  padding-left: 20px;
-  transform: translateX(12px);
-  z-index: 1;
-}
-
-.saves-page .save-import-bookmark:hover:not(:disabled) {
-  background-color: transparent;
-  color: var(--ql-ink-inv);
-  box-shadow: none;
-  transform: translateX(4px);
-}
-
-.saves-page .save-import-bookmark:is([data-import-state="choosing"], [data-import-state="importing"]) {
-  transform: translateX(var(--import-pull));
-  z-index: 11;
-}
-
-.save-import-bookmark:focus-visible {
-  outline: 2px solid var(--ql-cinnabar);
-  outline-offset: -8px;
-}
-
-.saves-page .save-import-bookmark:disabled { opacity: .6; }
-
+/* 书签外观由 adapt/bookmarks.css 管理 */
 .save-filter-bookmark input {
   position: absolute;
   opacity: 0;
   width: 1px;
   height: 1px;
-}
-
-.save-filter-bookmark:has(input:focus-visible) {
-  outline: 2px solid var(--ql-cinnabar);
-  outline-offset: -8px;
-}
-
-.save-list-panel {
-  position: relative;
-  z-index: 2;
-  min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  margin-left: calc(-1 * var(--save-filter-overlap));
-  padding: 12px 14px 12px 62px;
-  background: var(--ql-paper-card);
-  border: 1px solid var(--ql-line);
-  scrollbar-gutter: stable;
 }
 
 .saves-footer {
@@ -646,12 +523,6 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
   }
   .settings-panel .bookmark-content-frame > .settings-scroll { padding-top: 32px; }
   .settings-panel .world-bookmark-tabs button { font-size: min(calc(12px * var(--text-scale, 1)), 4cqw); }
-  .saves-bookmark-panel { --save-filter-width: 100px; --save-filter-overlap: 28px; }
-  .saves-page .save-filter-bookmark { width: 144px; padding-left: 18px; font-size: calc(14px * var(--text-scale, 1)); }
-  .saves-page .save-filter-bookmark:has(input:checked) { transform: translateX(-12px); }
-  .saves-page .save-filter-bookmark:has(input:checked):hover { transform: translateX(-16px); }
-  .saves-page .save-import-bookmark { --import-pull: -12px; font-size: 12px; }
-  .save-list-panel { padding: 10px 10px 10px 48px; }
   .saves-page .save-card { padding: 14px; gap: 12px; }
   .saves-page .save-actions { grid-template-columns: minmax(0, 1fr); }
   .saves-page .save-actions .save-convert { justify-self: stretch; }
@@ -659,10 +530,6 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
   .saves-page .panel-heading h1 { font-size: calc(26px * var(--text-scale, 1)); }
   .saves-footer { flex-wrap: wrap; }
   .save-location { max-width: 100%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .saves-page .save-filter-bookmark { transition: none; }
 }
 
 .settings-bookmark-panel .setting-row,
@@ -728,7 +595,7 @@ body:has(.debug-overlay:not(.hidden))::after { content: ''; position: fixed; z-i
 .layout-size-controls label { display: grid; gap: 6px; text-align: left; font-size: calc(13px * var(--text-scale, 1)); }
 .layout-size-controls label > span { display: flex; justify-content: space-between; gap: 12px; }
 .layout-size-controls input { width: 100%; min-width: 0; }
-.layout-size-controls output { color: var(--ql-cinnabar); font-variant-numeric: tabular-nums; }
+.layout-size-controls output { color: var(--ql-cinnabar-text); font-variant-numeric: tabular-nums; }
 .layout-center-dialog { width: min(460px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; }
 
 .touch-controls > .touch-action-btn { position: absolute; pointer-events: auto; }

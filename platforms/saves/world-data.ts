@@ -26,9 +26,12 @@ export class FileWorldData {
     const slot=`${world}/${key}`,previous=this.queues.get(slot)??Promise.resolve();
     const task=previous.catch(()=>{}).then(async()=>{
       await mkdir(join(this.directory,world),{recursive:true});
-      const temporary=`${path}.${randomUUID()}.tmp`,file=await open(temporary,'wx');
-      try{await file.writeFile(bytes);await file.sync();}finally{await file.close();}
-      try{await rename(temporary,path);}finally{await unlink(temporary).catch(()=>{});}
+      const temporary=`${path}.${randomUUID()}.tmp`;
+      try {
+        const file=await open(temporary,'wx');
+        try{await file.writeFile(bytes);await file.sync();}finally{await file.close();}
+        await rename(temporary,path);
+      } finally{await unlink(temporary).catch(()=>{});}
       if(++this.writes%64===0)await this.trim(world);
     });
     this.queues.set(slot,task);await task.finally(()=>{if(this.queues.get(slot)===task)this.queues.delete(slot);});

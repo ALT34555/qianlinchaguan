@@ -126,6 +126,7 @@ function stackCore(
     bottomColor: deepen(t.base, 0.5),
     jitter: scalar(p.jitter, 0.18) * 1.2,
     rotY: rand() * TAU,
+    bottomCap: false,
     ...crustArgs(plan),
   });
 }

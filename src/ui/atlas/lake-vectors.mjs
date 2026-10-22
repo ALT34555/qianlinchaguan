@@ -57,9 +57,10 @@ export function stitchRings(segments,error=0){
   return rings;
 }
 export class LakeVectors{
-  constructor(world,{sampler=sampleNaturalHeight,pause=pausePreview}={}){
+  constructor(world,{sampler=sampleNaturalHeight,pause=pausePreview,maxDiv=32,contourDiv=4}={}){
     this.world=world;this.sampler=sampler;this.pause=pause;this.models=new Map();this.shapes=new Map();this.details=new Map();this.sampled=0;this.coarseVisited=0;
-    this.div=Math.max(4,Math.min(32,2**Math.ceil(Math.log2(world.circumference/world.columns/2500))));
+    this.div=Math.max(4,Math.min(maxDiv,2**Math.ceil(Math.log2(world.circumference/world.columns/2500))));
+    this.contourDiv=contourDiv;
     this.step=world.circumference/world.columns/this.div;this.width=world.columns*this.div;this.height=world.rows*this.div;
     this.catalog=new Map();this.nearby=new Map();
     for(let i=0;i<world.water.length;i++)if(world.water[i]===2){const id=world.lakeId[i];if(!this.catalog.has(id))this.catalog.set(id,{id,level:world.lakes[id]?.level??world.spill[i],cells:[]});this.catalog.get(id).cells.push(i);}
@@ -74,9 +75,11 @@ export class LakeVectors{
   key(x,y){const p=this.normalize(x,y);return p.y*this.width+p.x;}
   natural(x,y){const p=this.normalize(x,y);this.sampled++;return this.sampler(this.world,p.x*this.step-this.world.circumference/2,p.y*this.step-this.world.circumference/4);}
   async execute(task,cancelled,progress){
-    let deadline=performance.now()+6;
+    let deadline=performance.now()+6,first=true;
     try{while(true){if(cancelled())abort();const next=task.next();if(next.done)return next.value;
-      if(performance.now()>=deadline){progress?.(next.value);await this.pause();deadline=performance.now()+6;}
+      const due=performance.now()>=deadline;
+      if(first||due){first=false;progress?.(next.value);if(cancelled())abort();}
+      if(due){await this.pause();deadline=performance.now()+6;}
     }}finally{task.return();}
   }
   *buildCoarse(lake){
@@ -114,9 +117,11 @@ export class LakeVectors{
     const key=`${x},${y}`;if(model.heights.has(key))return model.heights.get(key);
     const h=this.natural(x,y);model.heights.set(key,h);return h;
   }
-  *contours(model,target){
+  *contours(model,target,box=null){
     const segments=[],depth=Math.max(0,Math.ceil(Math.log2(this.step/target))),level=model.level;
+    const bounds=box?[Math.floor(box.left)-2,Math.floor(box.top)-2,Math.ceil(box.left+box.span)+2,Math.ceil(box.top+box.span)+2]:null;
     const value=(x,y)=>{
+      if(bounds&&(x<=bounds[0]||y<=bounds[1]||x>=bounds[2]||y>=bounds[3]))return .001;
       const raw=this.heightAt(model,x,y)-level,h=Math.abs(raw)<.001?.001:raw,ix=Math.floor(x),iy=Math.floor(y),wet=(dx,dy)=>model.wet.has(this.key(ix+dx,iy+dy));
       if(Number.isInteger(x)&&Number.isInteger(y))return wet(0,0)?h:Math.max(.001,h);
       if(Number.isInteger(x)&&!wet(0,0)&&!wet(0,1)||Number.isInteger(y)&&!wet(0,0)&&!wet(1,0))return Math.max(.001,h);
@@ -140,12 +145,13 @@ export class LakeVectors{
     };
     for(let i=0;i<model.cells.length;i++){
       const [x,y]=model.cells[i];if(y<0||y>=this.height)continue;
+      if(bounds&&(x<bounds[0]||y<bounds[1]||x>=bounds[2]||y>=bounds[3]))continue;
       visit(x,y,1,depth,[[x,y],[x+1,y],[x+1,y+1],[x,y+1]].map(p=>value(...p,true)));
       if(i%32===0)yield {stage:'湖形岸边加点',lake:model.id,visited:i,sampled:this.sampled};
     }
     const ends=new Map();for(const segment of segments)for(const p of segment){const k=p.map(v=>v.toFixed(4)).join(',');ends.set(k,(ends.get(k)??0)+1);}
     model.diagnostics={segments:segments.length,open:[...ends].filter(([k,n])=>n!==2).slice(0,15),badEnds:[...ends.values()].filter(n=>n!==2).length};
-    return stitchRings(segments,target*.4).map(r=>r.map(([x,y])=>[x-this.world.circumference/2,y-this.world.circumference/4]));
+    return stitchRings(segments,box?0:target*.4).map(r=>r.map(([x,y])=>[x-this.world.circumference/2,y-this.world.circumference/4]));
   }
   idsFor(tile){
     const w=this.world,n=2**tile.z,a=Math.floor(tile.x/n*w.columns),b=Math.floor((tile.x+1)/n*w.columns),c=Math.floor(tile.y/n*w.columns),d=Math.floor((tile.y+1)/n*w.columns),ids=new Set();
@@ -159,16 +165,16 @@ export class LakeVectors{
   }
   // L7 起给粗矢量湖形
   async prepare(tile,cancelled=()=>false,progress){
-    const shapes=[];if(tile.z<7)return shapes;
-    for(const id of this.idsFor(tile)){
+    const shapes=[];if(tile.z<7)return shapes;const shift=tile.z>10?tile.z-10:0,refTile=shift?{z:10,x:tile.x>>shift,y:tile.y>>shift,key:`10/${tile.x>>shift}/${tile.y>>shift}`}:tile;
+    for(const id of this.idsFor(refTile)){
       if(cancelled())abort();const lake=this.catalog.get(id);if(!lake)continue;
       const model=this.models.get(id)??await this.execute(retryTask(this.buildCoarse(lake)),cancelled,progress);
-      if(!this.tileBox(model,tile))continue;
-      const z=Math.min(12,tile.z),key=`${id}/${z}`;
+      const box=this.tileBox(model,refTile);if(!box||!this.tileBox(model,tile))continue;
+      const z=Math.min(10,tile.z),key=tile.z>=10?`${id}/${refTile.key}`:`${id}/${z}`;
       if(!this.shapes.has(key)){
-        const target=Math.max(this.step/4,this.world.circumference/2**z/TILE*1.5);
-        const rings=await this.execute(this.contours(model,target),cancelled,progress);this.shapes.set(key,{id,z,level:model.level,rings});
-        while(this.shapes.size>96)this.shapes.delete(this.shapes.keys().next().value);
+        const target=Math.max(16,this.step/this.contourDiv,this.world.circumference/2**z/TILE*1.5);
+        const rings=await this.execute(this.contours(model,target,tile.z>=10?box:null),cancelled,progress);this.shapes.set(key,{id,z,level:model.level,rings});
+        while(this.shapes.size>256)this.shapes.delete(this.shapes.keys().next().value);
       }
       shapes.push(this.shapes.get(key));
     }
@@ -205,7 +211,7 @@ export class LakeVectors{
     return {id:model.id,left,top,step,columns,rows,wet,samples:columns*rows,visited:tail};
   }
   async prepareDetail(tile,focusId,cancelled=()=>false,progress){
-    this.activeDetail=null;if(tile.z<13||focusId===null)return;
+    this.activeDetail=null;if(tile.z<16||focusId===null)return;
     const model=this.models.get(focusId);if(!model)return;
     const key=`${focusId}/${tile.key}`;
     if(!this.details.has(key)){const detail=await this.execute(this.detailSteps(model,tile),cancelled,progress);if(detail)this.details.set(key,detail);while(this.details.size>12)this.details.delete(this.details.keys().next().value);}

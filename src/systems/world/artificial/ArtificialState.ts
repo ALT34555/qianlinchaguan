@@ -24,6 +24,7 @@ export interface ArtificialClaim {
 }
 
 export interface ArtificialState {
+  initialPlacementDone?:boolean;
   discoveredTiles?:[number,number][];
   playerFactionId?: string;
   epochUnixMs: number;
@@ -49,6 +50,7 @@ export function parseArtificialState(value: unknown): ArtificialState | undefine
   const fail = (): never => { throw new Error('存档中的人工领地数据无效。'); };
   if (!value || typeof value !== 'object') return fail();
   const s = value as ArtificialState;
+  if(s.initialPlacementDone!==undefined&&typeof s.initialPlacementDone!=='boolean')return fail();
   if (!Number.isFinite(s.epochUnixMs) || Math.abs(s.epochUnixMs) > 8640000000000000 || !Number.isSafeInteger(s.lastDay) ||
       !Array.isArray(s.territories) || !Array.isArray(s.claims)) return fail();
   const coord = (n: number) => Number.isInteger(n) && Math.abs(n) <= 10000000;
@@ -76,5 +78,5 @@ export function parseArtificialState(value: unknown): ArtificialState | undefine
   const byCell = new Map(claims.map(c => [claimKey(c.cx, c.cz), c]));
   for (const t of territories) if (byCell.get(claimKey(t.cx, t.cz))?.faction !== t.id) return fail();
   if (s.playerFactionId !== undefined && !ids.has(s.playerFactionId)) return fail();
-  return { ...(s.discoveredTiles?{discoveredTiles}:{}),...(s.playerFactionId !== undefined ? { playerFactionId: s.playerFactionId } : {}), epochUnixMs: s.epochUnixMs, lastDay: s.lastDay, territories, claims };
+  return { ...(s.initialPlacementDone!==undefined?{initialPlacementDone:s.initialPlacementDone}:{}),...(s.discoveredTiles?{discoveredTiles}:{}),...(s.playerFactionId !== undefined ? { playerFactionId: s.playerFactionId } : {}), epochUnixMs: s.epochUnixMs, lastDay: s.lastDay, territories, claims };
 }

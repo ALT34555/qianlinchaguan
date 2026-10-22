@@ -30,19 +30,22 @@ export function satelliteColor(code,rainfall){
   return c.map((value,k)=>Math.round(value*a+m[k]*(1-a)));
 }
 // 分类保留编号，显示混合权重
-export function continuousSatelliteColor(temperature,rainfall,evaporation,relief,slope,relative=0){
-  const values=landMaterialWeights(temperature,rainfall/Math.max(150,evaporation),relief,slope,relative),c=[...climateRGB[1]],limits=[-8,8,18,24];
-  for(let i=0;i<limits.length;i++){const blend=smooth(limits[i]-2,limits[i]+2,temperature);for(let k=0;k<3;k++)c[k]+=(climateRGB[i+2][k]-c[k])*blend;}
-  const cold=1-smooth(-10,-6,temperature),rain=rainWeight(rainfall),out=[0,0,0];
+const limits=[-8,8,18,24],desert=[184,155,96],ice=[195,209,203],scratchC=[0,0,0],scratchW=[0,0,0,0,0,0];
+export function continuousSatelliteColor(temperature,rainfall,evaporation,relief,slope,relative=0,out=[0,0,0]){
+  const values=landMaterialWeights(temperature,rainfall/Math.max(150,evaporation),relief,slope,relative,.28,scratchW);
+  scratchC[0]=climateRGB[1][0];scratchC[1]=climateRGB[1][1];scratchC[2]=climateRGB[1][2];
+  for(let i=0;i<4;i++){const blend=smooth(limits[i]-2,limits[i]+2,temperature);for(let k=0;k<3;k++)scratchC[k]+=(climateRGB[i+2][k]-scratchC[k])*blend;}
+  const cold=1-smooth(-10,-6,temperature),rain=rainWeight(rainfall);
+  out[0]=0;out[1]=0;out[2]=0;
   for(let material=1;material<=5;material++){
     const warm=material===2?rain:Math.min(.6,rain),frozen=material===2?Math.max(.5,rain):Math.min(.6,Math.max(.5,rain)),alpha=warm+(frozen-warm)*cold;
-    for(let k=0;k<3;k++)out[k]+=values[material]*(c[k]*alpha+materialRGB[material][k]*(1-alpha));
+    for(let k=0;k<3;k++)out[k]+=values[material]*(scratchC[k]*alpha+materialRGB[material][k]*(1-alpha));
   }
   return out;
 }
-export function continuousBiomeColor(temperature,rainfall,evaporation){
+export function continuousBiomeColor(temperature,rainfall,evaporation,out=[0,0,0]){
   const moisture=Math.max(0,Math.min(2,rainfall/Math.max(150,evaporation)))/2,arid=1-smooth(200,300,rainfall),cold=1-smooth(-10,-6,temperature);
-  const out=[67+46*(1-moisture),109+28*moisture,66+17*(1-moisture)],desert=[184,155,96],ice=[195,209,203];
+  out[0]=67+46*(1-moisture);out[1]=109+28*moisture;out[2]=66+17*(1-moisture);
   for(let k=0;k<3;k++){out[k]+=(desert[k]-out[k])*arid;out[k]+=(ice[k]-out[k])*cold;}
   return out;
 }
@@ -50,6 +53,7 @@ export function continuousBiomeColor(temperature,rainfall,evaporation){
 export function satelliteMap(world){
   if(cache.has(world))return cache.get(world);
   const start=performance.now(),w=world.columns,h=world.rows,span=world.circumference/w,pixels=new Uint8ClampedArray(w*h*4),codes=new Uint16Array(w*h);
+  const shadeScale=world.heightScale??1;
   const at=(x,y)=>{if(y<0){y=-y-1;x+=w/2;}if(y>=h){y=h*2-y-1;x+=w/2;}return y*w+(x+w)%w;};
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const i=y*w+x,height=world.height[i];let code,color,shade=1;
@@ -64,8 +68,8 @@ export function satelliteMap(world){
       code=landTypeId(world.temperature[i],world.rainfall[i],world.evaporation[i],relief,slope,relative);
       color=continuousSatelliteColor(world.temperature[i],world.rainfall[i],world.evaporation[i],relief,slope,relative);
       // 混合近坡与宽坡明暗，详见同名文档
-      const near=(left-right+.65*(up-down))/1000;
-      const broad=(world.height[at(x-2,y)]-world.height[at(x+2,y)]+.65*(world.height[at(x,y-2)]-world.height[at(x,y+2)]))/2000;
+      const near=(left-right+.65*(up-down))/(1000*shadeScale);
+      const broad=(world.height[at(x-2,y)]-world.height[at(x+2,y)]+.65*(world.height[at(x,y-2)]-world.height[at(x,y+2)]))/(2000*shadeScale);
       shade=Math.max(.38,Math.min(1.5,1+2.4*near+1.2*broad));
     }
     codes[i]=code;color??=satelliteColor(code,world.rainfall[i]);

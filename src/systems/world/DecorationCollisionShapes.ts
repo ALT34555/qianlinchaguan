@@ -1,6 +1,7 @@
 import type { MeshData } from './ChunkMesher';
 import type { DecorationPlacement } from './WorldDecoration';
 import { getPlantVariant, toPlantDef } from './vegetation/Plants';
+import stableBounds from './decoration-collision-bounds.json';
 
 export const COLLIDER_STRIDE = 7;
 export const HARD_TRUNK = 0;
@@ -13,6 +14,11 @@ const woody = new Set(['conifer', 'broadleaf', 'palm', 'acacia', 'baobab', 'blos
 
 function shapeFor(p: DecorationPlacement, geometry: MeshData): Shape | null {
   if (shapes.has(geometry)) return shapes.get(geometry)!;
+  const stable=p.kind==='plant'?(stableBounds as Record<string,number[]>)[`${p.id}:${p.season}`]:undefined;
+  if(stable){
+    const [x,z,bottom,top,rx,rz,kind]=stable,shape={x,z,bottom,top,rx,rz,kind};
+    shapes.set(geometry,shape);return shape;
+  }
   let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
   let shape: Shape | null = null;
   const variant = p.kind === 'plant' ? getPlantVariant(p.id) : undefined;

@@ -51,7 +51,7 @@ body::after {
 img { max-width: 100%; display: block; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
-a { color: var(--q-primary-ui); text-decoration: none; }
+a { color: var(--q-primary-text); text-decoration: none; }
 
 :focus-visible {
   outline: 2px solid var(--q-primary-ui);
@@ -290,7 +290,7 @@ a { color: var(--q-primary-ui); text-decoration: none; }
   right: -70px;
   width: 340px;
   height: 340px;
-  color: var(--q-primary-ui);
+  color: var(--q-primary-text);
   opacity: .05;
   rotate: 14deg;
   pointer-events: none;
@@ -342,7 +342,7 @@ p { margin: 0; }
   gap: 8px;
   font-size: calc(10px * var(--q-scale));
   letter-spacing: .3em;
-  color: var(--q-primary-ui);
+  color: var(--q-primary-text);
   text-transform: uppercase;
 }
 
@@ -363,7 +363,7 @@ p { margin: 0; }
 
 .muted { color: var(--q-ink-3); }
 .mono { font-family: var(--q-font-mono); font-size: .86em; letter-spacing: .02em; }
-.accent-text { color: var(--q-primary-ui); }
+.accent-text { color: var(--q-primary-text); }
 
 /* 区块头 */
 .sec-head {
@@ -379,7 +379,7 @@ p { margin: 0; }
 
 .sec-title { display: flex; align-items: center; gap: 8px; }
 
-.sec-title .decor { width: 17px; height: 17px; color: var(--q-primary-ui); opacity: .8; flex: 0 0 auto; }
+.sec-title .decor { width: 17px; height: 17px; color: var(--q-primary-text); opacity: .8; flex: 0 0 auto; }
 
 .sec-desc { font-size: calc(11px * var(--q-scale)); color: var(--q-ink-3); letter-spacing: .06em; }
 

@@ -9,6 +9,7 @@ import { expandTerritory } from './NaturalExpansion';
 import { evolveTerritory } from './NaturalEvolution';
 import { flagIndependence } from './FlagIndependence';
 import type { WatershedState } from '../Watershed';
+import { hash2 } from '../../../core/math/Random';
 
 export type TerritoryChunkInfo = ChunkInfo & { territory?: Territory };
 
@@ -33,6 +34,7 @@ export class ArtificialWorld {
   readonly claims = new Map<string, ArtificialClaim>();
   revision = 0;
   private initialCivilizations=0;
+  private initialPlacementDone=false;
   playerFactionId?: string;
   private playerColors?: { mainColor: string; trimColor: string };
   private readonly tiles = new Set<string>();
@@ -59,6 +61,7 @@ export class ArtificialWorld {
     this.generator = new ArtificialGenerator(terrain);
     this.epochUnixMs = state?.epochUnixMs ?? unixMs;
     this.lastDay = state?.lastDay ?? this.day(unixMs);
+    this.initialPlacementDone=state?.initialPlacementDone??!!state;
     if (state) {
       this.playerFactionId = state.playerFactionId;
       for (const t of state.territories) this.territories.set(t.id, { ...t });
@@ -104,6 +107,7 @@ export class ArtificialWorld {
   }
 
   private adoptBackground(state:ArtificialState):void {
+    this.initialPlacementDone=state.initialPlacementDone??true;
     this.territories.clear();this.claims.clear();this.buckets.clear();this.tiles.clear();
     this.playerFactionId=state.playerFactionId;this.lastDay=state.lastDay;
     for(const territory of state.territories)this.territories.set(territory.id,territory);
@@ -192,25 +196,43 @@ export class ArtificialWorld {
     return false;
   }
 
-  discover(cx: number, cz: number, radius = 0): void {
-    if (!this.settings.enabled||this.initialLimitReached) return;
-    const s = this.generator.cellSize;
-    const planet = this.terrain.generation.mode === 'planet';
-    const size = this.terrain.generation.planet.equatorChunks;
-    const ox = planet ? -size / 2 : 0, oz = planet ? -size / 4 : 0;
-    cx = this.generator.wrap(cx);
-    const columns = Math.round(size / s);
-    for (let z = Math.floor((cz - radius - oz) / s); z <= Math.floor((cz + radius - oz) / s); z++) {
-      if (planet && (z < 0 || z * s >= size / 2)) continue;
-      for (let x = Math.floor((cx - radius - ox) / s); x <= Math.floor((cx + radius - ox) / s); x++) {
-        const tx = planet ? (x % columns + columns) % columns : x;
-        const key = claimKey(tx, z);
-        if (this.tiles.has(key)) continue;
-        this.tiles.add(key);
-        const c = this.generator.candidate(tx, z);
-        if (c && this.hasSpace(c.cx, c.cz)) this.found(c.cx, c.cz, OWNED_LAND, 0, 'initial');
-        if(this.initialLimitReached)return;
-      }
+  discover(_cx: number, _cz: number, _radius = 0): void {
+    this.seedInitialTerritories();
+  }
+
+  /** 开局一次性选定全球初始领地 */
+  seedInitialTerritories():void {
+    if(!this.settings.enabled||this.initialPlacementDone)return;
+    this.initialPlacementDone=true;
+    if(this.initialLimitReached||this.terrain.generation.landRatio===0)return;
+    const owned=this.playerFactionId?this.territories.get(this.playerFactionId):undefined;
+    const spawn=owned??this.terrain.findSpawnChunk();
+    if(!owned&&!this.initialCivilizations)this.seedNearby(spawn.cx,spawn.cz);
+    if(this.initialLimitReached)return;
+    const g=this.generator,planet=this.terrain.generation.mode==='planet';
+    const size=planet?this.terrain.generation.planet.equatorChunks:g.cellSize*64;
+    const nearby=Math.max(EXCLUSION_RADIUS*2,Math.min(size/8,g.cellSize*4));
+    const accept=(cx:number,cz:number)=>{
+      if(g.distance2(cx,cz,spawn.cx,spawn.cz)<=nearby**2||!g.inWorld(cz)||!this.hasSpace(cx,cz))return;
+      if(g.score(cx,cz)<MIN_TERRITORY_SCORE)return;
+      this.found(cx,cz,FLAG_LAND,0,'initial');
+    };
+    for(const site of this.terrain.getInitialTerritorySites()){
+      if(this.initialLimitReached)return;
+      accept(site.cx,site.cz);
+    }
+    const columns=Math.max(1,Math.round(size/g.cellSize));
+    const tried=new Set<string>();
+    for(let attempt=0;attempt<1024&&!this.initialLimitReached;attempt++){
+      const tx=Math.floor(hash2(attempt,0,this.terrain.seed^0x474c4f42)*columns);
+      const draw=hash2(attempt,1,this.terrain.seed^0x474c4f42);
+      const tz=Math.min(Math.ceil(columns/2)-1,Math.floor(draw*columns/2));
+      const x=planet?tx:tx-Math.floor(columns/2),row=planet?tz:tz-Math.floor(columns/4);
+      const key=claimKey(x,row);
+      if(tried.has(key))continue;
+      tried.add(key);
+      const candidate=g.candidate(x,row);
+      if(candidate)accept(candidate.cx,candidate.cz);
     }
   }
 
@@ -221,21 +243,13 @@ export class ArtificialWorld {
   useCachedQueries():void {this.queryDiscovery=false;}
 
   *discoverRegion(minX: number, minZ: number, maxX: number, maxZ: number): Generator<void> {
-    if (!this.settings.enabled||this.initialLimitReached) return;
+    if (!this.settings.enabled||this.initialPlacementDone) return;
     if(this.background){
       if(this.backgroundError||this.flushing)return;
       this.region=[minX,minZ,maxX,maxZ];this.pending=this.latest;this.pumpBackground();yield;return;
     }
-    const s = this.generator.cellSize, planet = this.terrain.generation.mode === 'planet';
-    const size = this.terrain.generation.planet.equatorChunks;
-    const ox = planet ? -size / 2 : 0, oz = planet ? -size / 4 : 0;
-    for (let z = Math.floor((minZ - oz) / s); z <= Math.floor((maxZ - oz) / s); z++) {
-      for (let x = Math.floor((minX - ox) / s); x <= Math.floor((maxX - ox) / s); x++) {
-        if(this.initialLimitReached)return;
-        this.discover(Math.floor(ox + (x + .5) * s), Math.floor(Math.min(oz + (z + .5) * s, planet ? size / 4 - 1 : Infinity)));
-        yield;
-      }
-    }
+    this.seedInitialTerritories();
+    yield;
   }
 
   info(cx: number, cz: number): TerritoryChunkInfo {
@@ -321,7 +335,7 @@ export class ArtificialWorld {
 
   snapshot(): ArtificialState | undefined {
     if (!this.settings.enabled && !this.playerFactionId) return undefined;
-    return { discoveredTiles:[...this.tiles].map(k=>k.split(',').map(Number) as [number,number]),...(this.playerFactionId ? { playerFactionId: this.playerFactionId } : {}), epochUnixMs: this.epochUnixMs, lastDay: this.lastDay,
+    return { initialPlacementDone:this.initialPlacementDone,discoveredTiles:[...this.tiles].map(k=>k.split(',').map(Number) as [number,number]),...(this.playerFactionId ? { playerFactionId: this.playerFactionId } : {}), epochUnixMs: this.epochUnixMs, lastDay: this.lastDay,
       territories: [...this.territories.values()].map(t => ({ ...t })), claims: [...this.claims.values()].map(c => ({ ...c })) };
   }
 }

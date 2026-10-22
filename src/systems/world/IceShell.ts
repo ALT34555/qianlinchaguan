@@ -45,7 +45,7 @@ export class IceShell {
   }
   private footprint(x:number,z:number,half:number):Polygon[] {
     const out:Polygon[]=[],x0=x-half,x1=x+half,z0=z-half,z1=z+half;
-    for(let iz=Math.floor(z0);iz<=Math.floor(z1);iz++)for(let ix=Math.floor(x0);ix<=Math.floor(x1);ix++)for(const source of this.cell(ix,iz)){
+    for(let iz=Math.floor(z0-.5)+.5;iz<=z1;iz++)for(let ix=Math.floor(x0-.5)+.5;ix<=x1;ix++)for(const source of this.cell(ix,iz)){
       let p=clip(source,v=>v.x-x0);p=clip(p,v=>x1-v.x);p=clip(p,v=>v.z-z0);p=clip(p,v=>z1-v.z);
       if(hasArea(p))out.push(p);
     }

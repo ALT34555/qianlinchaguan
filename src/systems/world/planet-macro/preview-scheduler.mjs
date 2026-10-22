@@ -1,10 +1,18 @@
 import {cooperativeLakeShore,LakeShorePending} from './lake-shores.mjs';
 
 const owners=new WeakMap();
+let previewChannel,previewQueue=[];
 export const pausePreview=()=>globalThis.scheduler?.yield?globalThis.scheduler.yield():new Promise(resolve=>{
-  const channel=new MessageChannel();
-  channel.port1.onmessage=()=>{channel.port1.close();channel.port2.close();resolve();};
-  channel.port2.postMessage(0);
+  if(!previewChannel){
+    previewChannel=new MessageChannel();
+    previewChannel.port1.onmessage=()=>{
+      const list=previewQueue;previewQueue=[];
+      if(!previewQueue.length)previewChannel.port1.unref?.();
+      for(const fn of list)fn();
+    };
+  }
+  previewQueue.push(resolve);
+  if(previewQueue.length===1){previewChannel.port1.ref?.();previewChannel.port2.postMessage(0);}
 });
 export function* retrySample(sample){
   while(true){

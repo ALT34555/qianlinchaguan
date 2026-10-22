@@ -242,11 +242,13 @@ function requestModel(w,s,lake,mode){
   while(s.tasks.size>2){const oldest=s.tasks.keys().next().value;s.tasks.delete(oldest);}
   const cancelled=mode.cancelled?.()??(()=>false);
   const promise=(async()=>{
-    let deadline=performance.now()+8;
+    let deadline=performance.now()+8,first=true;
     while(true){
       if(cancelled())return null;
       const step=task.next();if(step.done){s.tasks.delete(lake.id);return step.value;}
-      if(performance.now()>=deadline){mode.progress?.(step.value);await mode.pause();deadline=performance.now()+8;}
+      const due=performance.now()>=deadline;
+      if(first||due){first=false;mode.progress?.(step.value);if(cancelled())return null;}
+      if(due){await mode.pause();deadline=performance.now()+8;}
     }
   })();
   s.jobs.set(lake.id,promise);promise.then(()=>s.jobs.delete(lake.id),()=>s.jobs.delete(lake.id));return promise;

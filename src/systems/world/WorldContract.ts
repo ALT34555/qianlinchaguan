@@ -29,6 +29,7 @@ export interface MacroRiverOverview {
   columns:number;rows:number;receiver:Int32Array;widths:Float32Array;discharge:Float64Array;water:Uint8Array;
 }
 
+
 export interface ChunkInfo {
   cx: number; cz: number; type: number; climate: number; temperature: number;
   elevation: number; flow: number; discharge: number; riverWidth: number; riverDepth: number;riverBlocks:number;
@@ -188,6 +189,7 @@ export abstract class WorldGenerator {
   /** 卫星配色：仅宏观链路实现 */
   getSatelliteColor(_cx: number, _cz: number, _relief = true): number | null { return null; }
   getMacroRiverOverview(): MacroRiverOverview | null { return null; }
+  getInitialTerritorySites(): readonly {cx:number;cz:number}[] { return []; }
 }
 
 /** 生成器实例的统一类型别名 */

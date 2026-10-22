@@ -1,9 +1,6 @@
-// 通用交互：水波、开关、浮层、提示条、加载花
+// 通用交互：水波、开关、浮层、提示条、载入遮罩
 import { paintAll } from './decor';
 import { initButtons } from './buttons';
-
-const PETAL_D = 'M24 24C18.8 20.2 16.8 13.6 24 4.6C31.2 13.6 29.2 20.2 24 24Z';
-const PETAL_ROT = [0, 72, 144, 216, 288];
 
 const RING_TIP = 54;
 const RING_VALLEY = 21;
@@ -33,77 +30,83 @@ export function flowerRingSVG(size = 128): string {
     </svg>`;
 }
 
-export function loaderSVG(size = 96): SVGSVGElement {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 48 48');
-  svg.setAttribute('width', String(size));
-  svg.setAttribute('height', String(size));
-  svg.setAttribute('aria-hidden', 'true');
-  svg.classList.add('pl-svg');
-  PETAL_ROT.forEach(rot => {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('transform', `rotate(${rot} 24 24)`);
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', PETAL_D);
-    path.classList.add('pl-petal');
-    g.appendChild(path);
-    svg.appendChild(g);
-  });
-  const core = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  core.setAttribute('cx', '24');
-  core.setAttribute('cy', '24');
-  core.setAttribute('r', '3.4');
-  core.classList.add('pl-core');
-  svg.appendChild(core);
-  return svg;
+export interface LoadingOptions {
+  title?: string;
+  /** 0..1；缺省时反复扫向 90% */
+  progress?: () => number;
+  /** 加载结束后的回退淡出，单位毫秒 */
+  linger?: number;
 }
 
-export function setLoaderProgress(svg: SVGSVGElement, p: number): void {
-  const pct = Math.max(0, Math.min(1, p)) * 100;
-  svg.querySelectorAll<HTMLElement>('.pl-petal').forEach((petal, i) => {
-    petal.style.setProperty('--s', Math.max(0, Math.min(1, (pct - i * 20) / 20)).toFixed(3));
-  });
-  svg.querySelector<HTMLElement>('.pl-core')!.style.setProperty('--s', Math.max(0, Math.min(1, (pct - 80) / 20)).toFixed(3));
+export interface LoadingHandle {
+  set(title: string, progress?: () => number): void;
+  done(): Promise<void>;
+  cancel(): void;
 }
 
-export function showLoading({ duration = 2400, title = '山川正在生成' } = {}): Promise<void> {
-  const root = document.getElementById('overlayRoot');
-  if (!root) return Promise.resolve();
+const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3;
+
+/** 世界载入遮罩：右侧推入，环形填充按真实进度走 */
+export function showLoading({ title = '', progress, linger = 420 }: LoadingOptions = {}): LoadingHandle {
   const veil = document.createElement('div');
-  veil.className = 'load-veil';
+  veil.className = 'load-veil load-veil--slide';
+  veil.setAttribute('role', 'status');
+  veil.setAttribute('aria-live', 'polite');
   veil.innerHTML = `
     <div class="load-card">
       <span class="eyebrow">LOADING</span>
-      <div class="pl-slot"></div>
+      <div class="ring load-ring" style="--p:0"><span class="ring-value">0%</span></div>
       <h3 class="load-title"></h3>
-      <div class="bar load-bar"><i></i></div>
-      <span class="load-pct mono">0%</span>
+      <div class="bar load-bar"><i style="--p:0%"></i></div>
     </div>`;
-  veil.querySelector('.load-title')!.textContent = title;
-  const svg = loaderSVG();
-  veil.querySelector('.pl-slot')!.appendChild(svg);
-  root.appendChild(veil);
-
+  const titleEl = veil.querySelector<HTMLElement>('.load-title')!;
+  const ring = veil.querySelector<HTMLElement>('.load-ring')!;
+  const ringValue = veil.querySelector<HTMLElement>('.ring-value')!;
   const bar = veil.querySelector<HTMLElement>('.load-bar i')!;
-  const pctText = veil.querySelector<HTMLElement>('.load-pct')!;
-  const start = performance.now();
+  ring.insertAdjacentHTML('afterbegin', flowerRingSVG(116));
+  titleEl.textContent = title;
+  const host = document.getElementById('overlayRoot') ?? document.body;
+  host.appendChild(veil);
 
-  return new Promise(resolve => {
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-      setLoaderProgress(svg, eased);
-      bar.style.setProperty('--p', `${(eased * 100).toFixed(1)}%`);
-      pctText.textContent = `${Math.round(eased * 100)}%`;
-      if (t < 1) {
-        requestAnimationFrame(tick);
-      } else {
-        veil.classList.add('is-done');
-        setTimeout(() => { veil.remove(); resolve(); }, 460);
-      }
-    };
-    requestAnimationFrame(tick);
-  });
+  const start = performance.now();
+  let finished = false;
+  let frame = 0;
+  const tick = (now: number) => {
+    if (finished) return;
+    const elapsed = now - start;
+    const target = progress ? progress() : .9 * (1 - Math.exp(-elapsed / 2600));
+    const eased = easeOutCubic(Math.min(1, Math.max(0, target)));
+    ring.style.setProperty('--p', eased.toFixed(3));
+    const percent = Math.round(eased * 100);
+    bar.style.setProperty('--p', `${percent}%`);
+    ringValue.textContent = `${percent}%`;
+    frame = requestAnimationFrame(tick);
+  };
+  frame = requestAnimationFrame(tick);
+
+  const stop = (): void => {
+    if (finished) return;
+    finished = true;
+    cancelAnimationFrame(frame);
+  };
+  const cancel = (): void => { stop(); veil.remove(); };
+  const done = (): Promise<void> => {
+    if (finished) { veil.remove(); return Promise.resolve(); }
+    stop();
+    ring.style.setProperty('--p', '1');
+    bar.style.setProperty('--p', '100%');
+    ringValue.textContent = '100%';
+    veil.classList.add('is-done');
+    return new Promise(resolve => {
+      setTimeout(() => { veil.remove(); resolve(); }, linger);
+    });
+  };
+  const set = (next: string, nextProgress?: () => number): void => {
+    if (finished) return;
+    if (next) titleEl.textContent = next;
+    if (nextProgress) progress = nextProgress;
+  };
+  return { set, done, cancel };
 }
 
 export function initUI(): void {

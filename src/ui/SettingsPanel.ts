@@ -91,6 +91,7 @@ export class SettingsPanel {
           <div class="fold-body">
             <label class="setting-row"><span>${t('settings.particles')}</span><input data-particles type="checkbox"></label>
             <label class="setting-row"><span>${t('settings.waterReflections')}</span><input data-water-reflections type="checkbox"></label>
+            <label class="setting-row"><span>${t('settings.waterWaves')} <small>${t('settings.waterWaves.hint')}</small></span><input data-water-waves type="checkbox"></label>
             <label class="setting-row"><span>${t('settings.mirrorReflections')} <small>${t('settings.comingSoon')}</small></span><input data-mirror-reflections type="checkbox" disabled></label>
             <label class="setting-row"><span>${t('settings.weatherAtmosphere')} <small>${t('settings.weatherAtmosphere.hint')}</small></span><input data-weather-atmosphere type="checkbox"></label>
             <label class="setting-row"><span>${t('settings.decorativeClouds')}</span><input data-decorative-clouds type="checkbox"></label>
@@ -134,8 +135,8 @@ export class SettingsPanel {
         <label class="setting-row"><span>${t('settings.speed')} <small>${t('settings.speed.hint')}</small></span><input data-speed type="number" min="0" max="86400" step="0.5"></label>
         <div class="speed-presets">${[0, 1, 72, 360].map(n => `<button data-speed-preset="${n}">${n === 0 ? t('settings.speed.pause') : `${n}×`}</button>`).join('')}</div>
         <label class="setting-row"><span>${t('settings.menuAutoPause')}</span><input data-menu-auto-pause type="checkbox"></label></fieldset>
-      </section>` : ''}</div></div><p class="menu-status" role="status" aria-live="polite"></p><div class="settings-actions"><p class="settings-footer-note">${t(this.mysteryAvailable ? 'settings.intro.world' : 'settings.intro')}</p><button class="secondary" data-reset>${t('settings.reset')}</button><button class="primary" data-apply>${t('settings.apply')}</button></div>`;
-    this.status = this.root.querySelector('.menu-status')!;
+      </section>` : ''}</div></div><p class="menu-status" role="status" hidden></p><div class="settings-actions"><p class="settings-footer-note" role="status" aria-live="polite">${t(this.mysteryAvailable ? 'settings.intro.world' : 'settings.intro')}</p><button class="secondary" data-reset>${t('settings.reset')}</button><button class="primary" data-apply>${t('settings.apply')}</button></div></div>`;
+    this.status = this.root.querySelector('.settings-footer-note')!;
     this.renderTabs();
     this.renderValues();
     this.stopColors = bindColorControls(this.root);
@@ -338,6 +339,7 @@ export class SettingsPanel {
     this.syncJoystickChoices();
     this.field<HTMLInputElement>('[data-particles]').checked = this.draft.particles !== false;
     this.field<HTMLInputElement>('[data-water-reflections]').checked = this.draft.waterReflections !== false;
+    this.field<HTMLInputElement>('[data-water-waves]').checked = this.draft.waterWaves === true;
     this.field<HTMLInputElement>('[data-weather-atmosphere]').checked = this.draft.weatherAtmosphere !== false;
     this.field<HTMLInputElement>('[data-decorative-clouds]').checked = this.draft.decorativeClouds !== false;
     this.field<HTMLInputElement>('[data-natural-physics]').checked = this.draft.naturalPhysics !== false;
@@ -411,6 +413,7 @@ export class SettingsPanel {
       showTopBar: this.field<HTMLInputElement>('[data-top-bar]').checked,
       particles: this.field<HTMLInputElement>('[data-particles]').checked,
       waterReflections: this.field<HTMLInputElement>('[data-water-reflections]').checked,
+      waterWaves: this.field<HTMLInputElement>('[data-water-waves]').checked,
       weatherAtmosphere: this.field<HTMLInputElement>('[data-weather-atmosphere]').checked,
       decorativeClouds: this.field<HTMLInputElement>('[data-decorative-clouds]').checked,
       naturalPhysics: this.field<HTMLInputElement>('[data-natural-physics]').checked,

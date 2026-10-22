@@ -45,9 +45,6 @@ export class Exploration {
     for(let z=-radius;z<=radius;z++)for(let x=-radius;x<=radius;x++)if(Math.abs(x)+Math.abs(z)<=radius)changed=this.reveal(cx+x,cz+z,0)||changed;
     return changed;
   }
-  boundary(cx:number,cz:number):number {
-    return Number(!this.has(cx,cz-1))|Number(!this.has(cx+1,cz))<<1|Number(!this.has(cx,cz+1))<<2|Number(!this.has(cx-1,cz))<<3;
-  }
   *coordinates(): Generator<[number,number]> {
     for(const [key,bits] of this.regions){
       const [x,z]=key.split(',').map(Number);

@@ -1,4 +1,4 @@
-﻿group,token,light,dark,note
+group,token,light,dark,note
 基底,--q-bg,"#fbecde","#1D1B1C","页面底色，需求指定"
 基底,--q-bg-deep,"color-mix(in oklab, var(--q-bg) 88%, var(--q-accent))","color-mix(in oklab, var(--q-bg) 78%, #000000)","下沉底"
 面,--q-surface,"color-mix(in oklab, var(--q-bg) 58%, #ffffff)","color-mix(in oklab, var(--q-bg) 93%, #ffffff)","纸面，浮雕的母色"
@@ -25,6 +25,7 @@
 强调,--q-highlight-ui,"var(--q-highlight)","color-mix(in oklab, var(--q-highlight) 86%, #ffffff)","暗色提亮"
 强调,--q-highlight-soft,"color-mix(in oklab, var(--q-highlight) 10%, transparent)","color-mix(in oklab, var(--q-highlight) 22%, transparent)","强调淡底"
 材质,--q-tea,"#8fa97f","#9db98c","茶汤青"
+材质,--q-tea-text,"color-mix(in oklab, var(--q-tea) 50%, var(--q-ink))","color-mix(in oklab, var(--q-tea) 60%, var(--q-ink))","茶标签文字，保证可读"
 材质,--q-gold,"#d9a94e","#e0b562","花心金"
 材质,--q-celadon,"#a8c7c1","#b6d2cc","盏壁青瓷"
 材质,--q-wood,"#4a2c1e","#6b422d","木托棕"

@@ -58,7 +58,7 @@
 }
 
 .btn--ghost:hover {
-  color: var(--q-primary-ui);
+  color: var(--q-primary-text);
   border-color: var(--q-line-primary);
   transform: translateY(-1px);
   box-shadow: var(--q-neu);
@@ -94,8 +94,8 @@
   height: 12px;
   flex: 0 0 auto;
   border: 1px solid var(--q-line);
-  border-top-color: var(--q-primary-ui);
-  border-right-color: var(--q-primary-ui);
+  border-top-color: var(--q-primary-text);
+  border-right-color: var(--q-primary-text);
   animation: spin .8s steps(4, end) infinite;
 }
 
@@ -123,7 +123,7 @@
 }
 
 .icon-btn:hover {
-  color: var(--q-primary-ui);
+  color: var(--q-primary-text);
   border-color: var(--q-line-primary);
   transform: translateY(-1px);
   box-shadow: var(--q-neu);
@@ -194,7 +194,7 @@
 .seg button.is-on {
   background: var(--q-primary-soft);
   border-color: var(--q-line-primary);
-  color: var(--q-primary-ui);
+  color: var(--q-primary-text);
   box-shadow: inset 0 1px 0 color-mix(in oklab, #ffffff 50%, transparent);
 }
 
@@ -218,7 +218,7 @@
 
 .input:focus {
   outline: none;
-  border-color: var(--q-primary-ui);
+  border-color: var(--q-primary-text);
   background: var(--q-surface-hi);
   box-shadow: var(--q-neu-in-sm), inset 0 0 0 1px var(--q-primary-ui);
 }
@@ -266,7 +266,7 @@ select.input {
 
 .switch[aria-checked="true"] {
   background: var(--q-primary-ui);
-  border-color: var(--q-primary-ui);
+  border-color: var(--q-primary-text);
   animation-name: q-switch-track-on;
 }
 
@@ -299,7 +299,7 @@ select.input {
 
 .check input:checked + .check-box {
   background: var(--q-primary-ui);
-  border-color: var(--q-primary-ui);
+  border-color: var(--q-primary-text);
   box-shadow: none;
 }
 
@@ -318,7 +318,7 @@ select.input {
 
 .check input:focus-visible + .check-box { outline: 2px solid var(--q-primary-ui); outline-offset: 2px; }
 
-:root[data-theme="dark"] .theme-pill { background: var(--q-primary-ui); border-color: var(--q-primary-ui); }
+:root[data-theme="dark"] .theme-pill { background: var(--q-primary-ui); border-color: var(--q-primary-text); }
 
 @media (prefers-reduced-motion: reduce) {
   .theme-pill, .tp-knob { transition: none; }
@@ -403,8 +403,9 @@ select.input {
   color: var(--q-ink-2);
 }
 
-.tag--primary { color: var(--q-primary-ui); border-color: var(--q-line-primary); background: var(--q-primary-soft); }
-.tag--tea { color: color-mix(in oklab, var(--q-tea) 60%, var(--q-ink)); border-color: color-mix(in oklab, var(--q-tea) 40%, transparent); background: color-mix(in oklab, var(--q-tea) 12%, transparent); }
+.tag--primary { color: var(--q-primary-text); border-color: var(--q-line-primary); background: var(--q-primary-soft); }
+.tag--accent { color: var(--q-accent-text); border-color: color-mix(in oklab, var(--q-accent) 40%, transparent); background: var(--q-accent-soft); }
+.tag--tea { color: var(--q-tea-text); border-color: color-mix(in oklab, var(--q-tea) 40%, transparent); background: color-mix(in oklab, var(--q-tea) 12%, transparent); }
 .tag--gold { color: color-mix(in oklab, var(--q-gold) 55%, var(--q-ink)); border-color: color-mix(in oklab, var(--q-gold) 45%, transparent); background: color-mix(in oklab, var(--q-gold) 12%, transparent); }
 .tag .dot { width: 4px; height: 4px; background: currentColor; }
 
@@ -442,7 +443,7 @@ select.input {
 /* 分隔 */
 .divider { display: flex; align-items: center; gap: 12px; color: var(--q-line); }
 .divider::before, .divider::after { content: ""; height: 1px; flex: 1; background: currentColor; }
-.divider .decor { width: 12px; height: 12px; color: var(--q-primary-ui); opacity: .6; }
+.divider .decor { width: 12px; height: 12px; color: var(--q-primary-text); opacity: .6; }
 
 /* 空态 */
 .empty { text-align: center; padding: 22px 16px; color: var(--q-ink-3); }
@@ -490,7 +491,7 @@ select.input {
   color: var(--q-ink-2);
 }
 
-.note .decor { width: 14px; height: 14px; color: var(--q-primary-ui); flex: 0 0 auto; margin-top: 3px; }
+.note .decor { width: 14px; height: 14px; color: var(--q-primary-text); flex: 0 0 auto; margin-top: 3px; }
 
 /* 浮层 */
 .scrim {
@@ -532,7 +533,7 @@ select.input {
   margin-bottom: 12px;
   border: 1px solid var(--q-line-primary);
   background: var(--q-primary-soft);
-  color: var(--q-primary-ui);
+  color: var(--q-primary-text);
 }
 
 .dialog-mark .decor { width: 17px; height: 17px; }
@@ -608,20 +609,29 @@ select.input {
 .toast.is-out { animation: toast-out 300ms var(--q-ease-in) both; }
 .toast--gold { background: var(--q-gold); color: #2a1c08; border-color: color-mix(in oklab, var(--q-gold) 70%, #000); }
 
-/* 加载：五瓣花 */
+/* 加载：五瓣花环形填充 */
 .load-veil {
   position: fixed;
   inset: 0;
   z-index: 200;
   display: grid;
   place-items: center;
-  background: color-mix(in oklab, var(--q-bg) 46%, transparent);
-  backdrop-filter: var(--q-blur);
-  -webkit-backdrop-filter: var(--q-blur);
+  background-color: color-mix(in oklab, var(--q-bg) 88%, transparent);
+  background-image:
+    radial-gradient(120% 80% at 50% 42%, color-mix(in oklab, var(--q-primary) 12%, transparent), transparent 68%),
+    radial-gradient(80% 60% at 100% 100%, color-mix(in oklab, var(--q-accent) 10%, transparent), transparent 70%);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
   animation: fade-in var(--q-d2) var(--q-ease) both;
 }
 
-.load-veil.is-done { animation: fade-out 420ms var(--q-ease-in) both; }
+/* 自右向左推入，离场沿原路退回 */
+.load-veil--slide {
+  animation: load-push-in 620ms var(--q-ease-out) both;
+  will-change: translate;
+}
+
+.load-veil--slide.is-done { animation: load-push-out 460ms var(--q-ease) both; }
 
 .load-card {
   display: flex;
@@ -640,26 +650,15 @@ select.input {
   animation: dialog-in var(--q-d3) var(--q-ease-spring) both;
 }
 
-.pl-slot { display: grid; place-items: center; }
-
-/* 花瓣只上色，不描边 */
-.pl-petal {
-  fill: var(--q-primary-ui);
-  stroke: none;
-  transform: scale(var(--s, 0));
-  transform-box: fill-box;
-  transform-origin: center bottom;
-  transition: transform .24s var(--q-ease-out);
+/* 环形尺寸随遮罩缩一档，卡片内不顶边 */
+.load-ring { gap: 6px; }
+.load-ring .ring-svg {
+  width: clamp(88px, 14vmin, 116px);
+  height: auto;
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--q-primary) 26%, transparent));
 }
-
-.pl-core {
-  fill: var(--q-gold);
-  stroke: none;
-  transform: scale(var(--s, 0));
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform .24s var(--q-ease-out);
-}
+.load-ring .ring-value { font-size: calc(13px * var(--q-scale)); letter-spacing: .16em; color: var(--q-ink); }
+.load-ring .ring-fill { transition: stroke-dasharray 240ms var(--q-ease-out); }
 
 .load-title {
   margin: 0;

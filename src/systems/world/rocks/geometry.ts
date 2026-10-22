@@ -203,6 +203,8 @@ export class RockBuilder {
     mat?: RockMaterial;
     /** 是否封顶盖，默认 true */
     cap?: boolean;
+    /** 是否封底盖，叠置小石可省 */
+    bottomCap?: boolean;
     /** 逐顶点半径倍率（按环上的顶点索引） */
     radiusScale?: readonly number[] | ((i: number) => number);
     /** 逐顶点沿环面法线的位移倍数（0~1） */
@@ -276,9 +278,11 @@ export class RockBuilder {
       }
     }
     // 底盖（法线朝下，颜色最暗）
-    const down: V3 = [-up[0], -up[1], -up[2]];
-    for (let i = 1; i < n - 1; i++) {
-      this.push([...bot[0], ...bot[i + 1], ...bot[i]], bottomColor, down, mat);
+    if (opts.bottomCap !== false) {
+      const down: V3 = [-up[0], -up[1], -up[2]];
+      for (let i = 1; i < n - 1; i++) {
+        this.push([...bot[0], ...bot[i + 1], ...bot[i]], bottomColor, down, mat);
+      }
     }
   }
 

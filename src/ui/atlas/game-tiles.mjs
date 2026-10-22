@@ -1,141 +1,464 @@
-import {TAU,LIMIT,clamp,project,detailLevel,unproject,levelFor} from './tiles.mjs';
-import {planetCoordinates} from '../../systems/world/WorldSettings.ts';
-import {padTilePixels,expandTriangle} from './tile-seams.mjs';
-import {ancestor,planTiles,TileStore} from './tile-plan.mjs';
-import {focusLakeAt} from './lake-vectors.mjs';
-const layers=new WeakMap();
-export class GameTiles{
-  constructor(view,world){
-    this.owner=view;this.world=world;this.store=new TileStore();this.failedTiles=new Set();this.queue=[];this.version=0;this.serial=0;
-    this.worker=new Worker(new URL('./tiles.worker.mjs',import.meta.url),{type:'module'});
-    this.worker.onmessage=({data:m})=>{
-      if(m.id!==this.inFlight?.id)return;
-      if(m.kind==='progress'){this.progress=m;this.owner.requestRender();return;}
-      this.progress=null;
-      this.inFlight=null;
-      if(m.kind==='tile'){
-        const canvas=document.createElement('canvas');canvas.width=canvas.height=m.side+2;
-        canvas.getContext('2d').putImageData(new ImageData(padTilePixels(m.pixels,m.side),m.side+2,m.side+2),0,0);
-        this.store.set(this.storageStyle(m.tile,m.layer,m.focusId??null),{...m.tile,canvas});this.version++;this.stats=m.stats;
-      }else if(m.kind==='error'){this.failedTiles.add(`${m.layer}:${m.tile.key}`);this.version++;}
-      if(!this.paused)this.owner.requestRender();
-    };
-    this.worker.onerror=()=>{this.failed=true;this.progress=null;this.inFlight=null;this.queue=[];this.worker.terminate();view.requestRender();};
-    this.worker.postMessage({kind:'world',world,generation:1});
+import {TAU, LIMIT, clamp, project, detailLevel, unproject, levelFor, atlasCamera} from './tiles.mjs';
+import {expandTriangle} from './tile-seams.mjs';
+import {ancestor, planTiles} from './tile-plan.mjs';
+import {contourUnit} from './contour.mjs';
+import {TileScheduler} from './tile-scheduler.mjs';
+import {LayerCompositor} from './layer-compositor.mjs';
+
+const layers = new WeakMap();
+import {isStaticLayer} from './static-layers.mjs';
+import {macroBackdrop} from './macro-backdrop.mjs';
+import {climatePlanTiles} from './climate-plan.mjs';
+import {staticResidency, planLayerResidency} from './layer-residency.mjs';
+
+// 底图换挡交叉淡化时长
+const FADE_MS = 320;
+
+// 游戏瓦片管理：调度与合成外观
+export class GameTiles {
+  constructor(view, world) {
+    this.owner = view;
+    this.world = world;
+    this.state = {layers: [], density: 2};
+    this.scheduler = new TileScheduler(world, {owner: view});
+    this.compositor = new LayerCompositor();
   }
-  updateStyle(style){this.style=style;}
-  storageStyle(tile,style=this.style,focus=this.focusId){return tile.z>=13?`${style}:lake:${focus??'none'}`:style;}
-  setPaused(paused){
-    if(this.paused===paused)return;
-    this.paused=paused;this.camera=null;
-    if(paused){this.queue=[];this.cancel();}
+
+  get store() { return this.scheduler.store; }
+  set store(s) { this.scheduler.store = s; }
+  get failedTiles() { return this.scheduler.failedTiles; }
+  get queue() { return this.scheduler.queue; }
+  set queue(q) { this.scheduler.queue = q; }
+  get inFlight() { return this.scheduler.inFlight; }
+  set inFlight(f) { this.scheduler.inFlight = f; }
+  get version() { return this.scheduler.version; }
+  set version(v) { this.scheduler.version = v; }
+  get baseVersion() { return this.scheduler.baseVersion; }
+  set baseVersion(v) { this.scheduler.baseVersion = v; }
+  get serial() { return this.scheduler.serial; }
+  set serial(s) { this.scheduler.serial = s; }
+  get cancelling() { return this.scheduler.cancelling; }
+  set cancelling(c) { this.scheduler.cancelling = c; }
+  get paused() { return this.scheduler.paused; }
+  set paused(p) { this.scheduler.paused = p; }
+  get failed() { return this.scheduler.failed; }
+  set failed(f) { this.scheduler.failed = f; }
+  get progress() { return this.scheduler.progress; }
+  set progress(p) { this.scheduler.progress = p; }
+  get stats() { return this.scheduler.stats; }
+  set stats(s) { this.scheduler.stats = s; }
+  get worker() { return this.scheduler.worker; }
+  set worker(w) { this.scheduler.worker = w; }
+  get plan() { return this.scheduler.plan; }
+  set plan(p) { this.scheduler.plan = p; }
+  get focusId() { return this.scheduler.focusId; }
+  set focusId(id) { this.scheduler.focusId = id; }
+
+  get projections() { return this.compositor ? this.compositor.projections : (this._projections ??= new Map()); }
+  set projections(p) { if (this.compositor) this.compositor.projections = p; else this._projections = p; }
+  get screenGrid() { return this.compositor ? this.compositor.screenGrid : this._screenGrid; }
+  set screenGrid(g) { if (this.compositor) this.compositor.screenGrid = g; else this._screenGrid = g; }
+  get daylight() { return this.compositor ? this.compositor.daylight : this._daylight; }
+  set daylight(d) { if (this.compositor) this.compositor.daylight = d; else this._daylight = d; }
+
+  setLayers(state) { this.state = state ?? this.state; }
+  palette() { return this.owner.showSatellite ? 'satellite' : 'biome'; }
+  unit() { return this.viewUnit ?? 0; }
+
+  styleFor(id) {
+    const level = this.renderLevel ?? this.logicalLevel;
+    if (id === 'base') return `base:${this.palette()}${level>=18?':surface':level>=12?':code':''}`;
+    if (id === 'contour') return `contour:L${this.logicalLevel}:${this.unit()}`;
+    if (id === 'daylight') return `daylight:${(this.owner.sunHours ?? 10.5).toFixed(2)}`;
+    if (isStaticLayer(id)) return `${id}:${this.world.fingerprint ?? ''}`;
+    return `layer:${id}`;
   }
-  scale(){return this.state.scale;}
-  pump(){
-    if(this.inFlight||this.failed||this.paused||!this.owner.active)return;
-    while(this.queue.length){
-      const tile=this.queue.shift();if(this.store.has(this.storageStyle(tile),tile.key)||this.failedTiles.has(`${this.style}:${tile.key}`))continue;
-      if(tile.prefetch&&(!this.owner.refinementReady||this.plan.z<13&&tile.z>=13))continue;
-      this.inFlight={id:++this.serial,tile,layer:this.style,focusId:this.focusId};
-      this.worker.postMessage({kind:'tile',...this.inFlight,layer:this.style,generation:1});break;
-    }
+
+  focused(style, tile) {
+    return tile && tile.z >= 13 ? `${style}:lake:${this.focusId ?? 'none'}` : style;
   }
-  cancel(){if(this.inFlight&&!this.cancelling){this.cancelling=true;this.worker.postMessage({kind:'cancel',generation:1});}}
-  draw(ctx,state){
-    this.state=state;this.view=state.view;this.width=state.width;this.height=state.height;
-    const focus=this.owner.labAtlasFocus??{x:state.width/2,y:state.height/2};
-    const point=unproject(state,focus.x,focus.y),selected=this.owner.selectedChunk;
-    this.focusId=levelFor(state)>=13&&(point||selected)?focusLakeAt(this.world,selected?(selected.cx+.5)*64:point.lon/TAU*this.world.circumference,selected?(selected.cz+.5)*64:-point.lat/TAU*this.world.circumference):null;
-    const key=JSON.stringify(state),focusKey=`${focus.x}/${focus.y}/${this.focusId}`;
-    if(this.camera!==key||this.planStyle!==this.style||this.planVersion!==this.version||this.focusKey!==focusKey){
-      const failed=new Set([...this.failedTiles].filter(k=>k.startsWith(this.style+':')).map(k=>k.slice(this.style.length+1)));
-      this.camera=key;this.planStyle=this.style;this.planVersion=this.version;this.focusKey=focusKey;
-      this.plan=planTiles(state,k=>this.store.has(this.storageStyle({z:Number(k.split('/')[0])}),k),failed,focus);
-      this.queue=this.plan.queue;
-      this.store.protectedKeys=new Set([...this.plan.protectedKeys].map(k=>this.store.id(this.storageStyle({z:Number(k.split('/')[0])}),k)));this.store.trim();
-      if(this.inFlight&&(this.inFlight.layer!==this.style||this.inFlight.tile.z>=13&&this.inFlight.focusId!==this.focusId||!this.plan.protectedKeys.has(this.inFlight.tile.key)&&!this.queue.some(t=>t.key===this.inFlight.tile.key)))this.cancel();
-    }
-    if(!this.inFlight)this.cancelling=false;
-    const tiles=this.plan.tiles,cacheKey=`${key}:${this.style}:${this.focusId}:${this.version}`,output=ctx;
-    if(this.backgroundKey!==cacheKey){
-      this.background??=document.createElement('canvas');
-      if(this.background.width!==Math.ceil(state.width)||this.background.height!==Math.ceil(state.height)){this.background.width=Math.ceil(state.width);this.background.height=Math.ceil(state.height);}
-      ctx=this.background.getContext('2d');ctx.clearRect(0,0,state.width,state.height);
-      const complete=tiles.every(t=>this.store.has(this.storageStyle(t),t.key));
-      if(!complete||this.owner.isGlobe){
-        const v=this.owner,cell=v.baseCellSize*v.scale;
-        if(v.isGlobe){const p=planetCoordinates(v.centerCx,v.centerCz,v.generator.generation.planet.equatorChunks);v.planetLayer.drawGlobe(ctx,state.width,state.height,v.globeRadius,p.longitude,p.latitude,v.overviewStyle());}
-        else v.planetLayer.drawFlat(ctx,state.width,state.height,cell,v.centerCx,v.centerCz,v.panX,v.panY,v.overviewStyle(),v.isMercator);
+
+  setPaused(paused) {
+    this.scheduler.setPaused(paused);
+    if (paused) this.camera = null;
+  }
+
+  scale() { return this.state?.scale; }
+  enabledLayers() { return (this.state.layers ?? []).filter(l => l.on); }
+
+  pump() {
+    this.scheduler.pump({
+      palette: this.palette(),
+      logicalLevel:this.renderLevel ?? this.logicalLevel,
+      sunHours: this.owner.sunHours,
+      contourUnit: this.unit(),
+      sunWorld: this.owner.sunWorld?.(),
+    });
+  }
+
+  cancel() {
+    this.scheduler.cancel();
+  }
+
+  draw(ctx, state) {
+    state = {...state, rasterBudget: this.owner.refinementReady === false ? 90000 : 600000};
+    this.state = {...this.state, ...state};
+    this.logicalLevel=levelFor(state);
+    this.scheduler.syncWater();
+    this.view = state.view;
+    this.width = state.width;
+    this.height = state.height;
+    this.state.scale = state.scale;
+
+    const focus = this.owner.labAtlasFocus ?? {x: state.width / 2, y: state.height / 2};
+    this.focusId=null;
+    this.scheduler.focusId = this.focusId;
+
+    const enabled = this.enabledLayers();
+    const level = levelFor(state);
+    this.viewUnit = enabled.some(l => l.id === 'contour') ? this.contourUnitFor(state, level) : 0;
+
+    const key = JSON.stringify(state);
+    const focusKey = `${focus.x}/${focus.y}/${this.focusId}`;
+    const styleKeyNow = [this.palette(), this.viewUnit, ...enabled.map(l => l.id)].join('|');
+
+    if (this.camera !== key || this.planStyle !== styleKeyNow || this.planVersion !== this.version || this.focusKey !== focusKey) {
+      const failed = new Set([...this.failedTiles].filter(k => k.startsWith(this.styleFor('base') + ':')).map(k => k.split(':').at(-1)));
+      this.camera = key;
+      this.planStyle = styleKeyNow;
+      this.planVersion = this.version;
+      this.focusKey = focusKey;
+
+      const fixed = staticResidency(state, enabled, this.store, id => this.styleFor(id));
+      const maxBaseTiles = Math.max(8, Math.min(512, Math.floor((this.store.budget * .86 - fixed.bytes) / (128 * 128 * 4 * 1.4))));
+      this.plan = planTiles(state, k => this.store.has(this.focused(this.styleFor('base'), {z: Number(k.split('/')[0])}), k), failed, focus, maxBaseTiles,this.logicalLevel>=18?18:this.logicalLevel>=12?12:2);
+      this.scheduler.plan = this.plan;
+      this.renderLevel = this.plan.z;
+      this.residency = planLayerResidency(this.plan, enabled, fixed, this.store.budget);
+
+      const jobs = new Map(), protectedIds = new Set();
+      const add = (layer, tile) => {
+        const style = this.focused(this.styleFor(layer, tile), tile);
+        const id = this.store.id(style, tile.key);
+        protectedIds.add(id);
+        if (!this.store.has(style, tile.key) && !this.failedTiles.has(`${style}:${tile.key}`)) {
+          jobs.set(id, {layer, tile, style});
+        }
+      };
+
+      for (const tile of this.plan.queue.filter(t => !t.prefetch)) add('base', tile);
+      for (const [id, targets] of this.residency.targets) for (const tile of targets) add(id, tile);
+      for (const tile of this.plan.queue.filter(t => t.prefetch)) add('base', tile);
+      for (const k of this.plan.protectedKeys) {
+        protectedIds.add(this.store.id(this.focused(this.styleFor('base'), {z: Number(k.split('/')[0])}), k));
       }
-      const found=new Map();
-      for(const tile of tiles)for(let z=tile.z;z>=2;z--){const p=ancestor(tile,z),cached=this.store.get(this.storageStyle(p),p.key);if(cached){found.set(p.key,cached);break;}}
-      ctx.save();if(state.view==='globe'){ctx.beginPath();ctx.arc(state.width/2,state.height/2,state.scale,0,TAU);ctx.clip();}
-      for(const tile of [...found.values()].sort((a,b)=>a.z-b.z))this.drawTile(ctx,tile,state);
-      ctx.restore();this.backgroundKey=cacheKey;
+
+      this.scheduler.updateQueue(jobs, protectedIds);
     }
-    output.drawImage(this.background,0,0,state.width,state.height);this.pump();
-    return {loaded:tiles.filter(t=>this.store.has(this.storageStyle(t),t.key)).length,total:tiles.length,z:this.plan.z,shore:this.progress,focusId:this.focusId};
-  }
-}
-export function drawGameAtlas(v){
-  if(!v.active)return true;
-  if(!v.isPlanet||v.exploration||v.survivalPreview||v.showClimate||v.showChunkColors||v.filterTypeId!==null||v.filterCategory!==null){suspendGameAtlas(v,true);return false;}
-  const world=v.generator.exposeHydrology()?.planetMacro;if(!world)return false;
-  let layer=layers.get(v);if(layer?.world!==world){layer?.worker.terminate();layer=new GameTiles(v,world);layers.set(v,layer);}
-  layer.setPaused(false);if(layer.failed)return false;
-  layer.updateStyle(v.showSatellite?'satellite':v.showProjection?'terrain':'biome');
-  const dpr=Math.min(window.devicePixelRatio||1,2),width=v.canvas.width/dpr,height=v.canvas.height/dpr,size=v.generator.generation.planet.equatorChunks,cell=v.baseCellSize*v.scale;
-  const center=v.isGlobe?planetCoordinates(v.centerCx,v.centerCz,size):{longitude:(v.centerCx-v.panX/cell)/size*360,latitude:-v.worldZ(v.mapZ(v.centerCz)-v.panY/cell)/size*360};
-  const state={width,height,view:v.isGlobe?'globe':v.isMercator?'mercator':'projection',lon:center.longitude/360*TAU,lat:center.latitude/360*TAU,scale:v.isGlobe?v.globeRadius:cell*size/TAU};
-  const ctx=v.ctx;ctx.save();ctx.scale(dpr,dpr);ctx.fillStyle='#241c13';ctx.fillRect(0,0,width,height);
-  const progress=layer.draw(ctx,state);v.surfaceCache.beginFrame();
-  const meters=world.radius/state.scale*(v.isMercator?Math.cos(state.lat):1);
-  if(!v.isGlobe&&cell>=24){
-    const left=Math.floor(v.centerCx+(-width/2-v.panX)/cell),right=Math.ceil(v.centerCx+(width/2-v.panX)/cell),top=Math.floor(v.worldZ(v.mapZ(v.centerCz)+(-height/2-v.panY)/cell)),bottom=Math.ceil(v.worldZ(v.mapZ(v.centerCz)+(height/2-v.panY)/cell));
-    const coords=v.centerCells(left,right,top,bottom,v.centerCx-v.panX/cell,v.worldZ(v.mapZ(v.centerCz)-v.panY/cell)).slice(0,192).filter(([,z])=>z>=-size/4&&z<size/4).map(([x,z])=>[((x+size/2)%size+size)%size-size/2,z]);
-    drawAtlasDetails(v,ctx,state,coords,cell,size);
-  }
-  v.surfaceCache.endFrame();v.drawPlayerMarker(ctx,width,height,cell);v.drawTerritoryLayer(ctx,width,height,cell);v.drawRainClouds(ctx,width,height,cell);
-  const at=v.getCenterCoordinates();v.onStatsUpdate?.({centerCx:at.cx,centerCz:at.cz,scale:v.scale,visibleChunks:0,climateCounts:[0,0,0,0,0],climatePercents:[0,0,0,0,0],matchedCount:0,matchedPercent:0,activeFilterName:'',level:v.isGlobe?'globe':'overview'});
-  const target=meters*100,unit=10**Math.floor(Math.log10(target)),length=[1,2,5,10].map(n=>n*unit).filter(n=>n<=target).pop()??unit;
-  ctx.fillStyle='rgba(27,24,18,.78)';ctx.fillRect(12,height-90,progress.shore?340:256,52);
-  ctx.fillStyle='#eadfc0';ctx.strokeStyle='#eadfc0';ctx.font='12px "Qianlin Song",serif';ctx.textAlign='left';ctx.fillText(`${detailLevel(meters)} L${progress.z} · ${progress.loaded}/${progress.total}${progress.shore?' · '+(progress.shore.stage??'湖形计算中'):progress.z>=13&&progress.focusId!==null?' · 聚焦湖 '+progress.focusId:''}${layer.failedTiles.size?' · 部分细节失败':''}`,20,height-74);ctx.fillText((length>=1000?`${length/1000} km`:`${length} m`)+(progress.shore?` · 已采样 ${Math.round(progress.shore.sampled/1000)} 千点`:''),20,height-56);ctx.beginPath();ctx.moveTo(20,height-50);ctx.lineTo(20+length/meters,height-50);ctx.stroke();ctx.restore();return true;
-}
-function drawAtlasDetails(v,ctx,state,coords,cell,size){
-  for(const [cx,cz] of coords){
-    const wrapped=cx+Math.round((v.centerCx-v.panX/cell-cx)/size)*size,x=state.width/2+v.panX+(wrapped-v.centerCx)*cell,y=state.height/2+v.panY+(v.mapZ(cz)-v.mapZ(v.centerCz))*cell,h=(v.mapZ(cz+1)-v.mapZ(cz))*cell;
-    if(v.showChunkInfo&&v.refinementReady){
-      const tile=v.surfaceCache.get(cx,cz,(x-state.width/2)**2+(y-state.height/2)**2,false,false,true),info=tile?.summary?.info??v.generator.cachedChunkInfo(cx,cz);
-      if(info&&cell>=36){ctx.fillStyle='#eadfc0';ctx.font='10px "Qianlin Song",serif';ctx.fillText(String(info.type),x+3,y+12);if(v.showProjection)v.drawFlowArrow(ctx,info,x,y,cell,h);}
+
+    const tiles = this.plan.tiles;
+    const basePolicy = this.renderLevel >= 18 ? 'surface' : this.renderLevel >= 12 ? 'code' : 'macro';
+    if (this.basePolicy !== undefined && this.basePolicy !== basePolicy && this.background?.width) {
+      this.fadeCanvas = this.background;
+      this.fadeStart = performance.now();
+      this.background = document.createElement('canvas');
+      this.backgroundKey = null;
     }
-    if(v.hoveredChunk?.cx===cx&&v.hoveredChunk?.cz===cz||v.selectedChunk?.cx===cx&&v.selectedChunk?.cz===cz){ctx.strokeStyle=v.selectedChunk?.cx===cx&&v.selectedChunk?.cz===cz?'#eac876':'#ffffff';ctx.lineWidth=1;ctx.strokeRect(x,y,cell,h);}
+    this.basePolicy = basePolicy;
+    const cacheKey = `${key}:${this.palette()}:${this.focusId}:${this.baseVersion}`;
+    const output = ctx;
+
+    if (this.backgroundKey !== cacheKey) {
+      this.background ??= document.createElement('canvas');
+      if (this.background.width !== Math.ceil(state.width) || this.background.height !== Math.ceil(state.height)) {
+        this.background.width = Math.ceil(state.width);
+        this.background.height = Math.ceil(state.height);
+      }
+      ctx = this.background.getContext('2d');
+      ctx.clearRect(0, 0, state.width, state.height);
+      const backdropKey = `${key}:${this.palette()}`;
+      const policy=this.renderLevel>=18?'surface':this.renderLevel>=12?'code':'macro';
+      const backdropStyle=`${this.palette()}:${policy}`;
+      if (this.backdropPalette !== backdropStyle) {
+        this.backdropTiles = macroBackdrop(this.world, this.palette(),policy);
+        this.backdropPalette = backdropStyle;
+      }
+      if (this.backdropTiles.length) ctx.drawImage(this.projectLayer('backdrop', this.backdropTiles, state, backdropKey), 0, 0, state.width, state.height);
+      ctx.save();
+      if (state.view === 'globe') {
+        ctx.beginPath();
+        ctx.arc(state.width / 2, state.height / 2, state.scale, 0, TAU);
+        ctx.clip();
+      }
+      const bases = new Map();
+      for (const tile of tiles) {
+        for (let z = tile.z; z >= 2; z--) {
+          const p = ancestor(tile, z);
+          const cached = this.store.get(this.focused(this.styleFor('base'), p), p.key);
+          if (cached) {
+            bases.set(p.key, cached);
+            break;
+          }
+        }
+      }
+      const sources = [...bases.values()].sort((a, b) => a.z - b.z);
+      if (sources.length) ctx.drawImage(this.projectLayer('base', sources, state, cacheKey), 0, 0, state.width, state.height);
+      ctx.restore();
+      this.backgroundKey = cacheKey;
+    }
+
+    output.drawImage(this.background, 0, 0, state.width, state.height);
+    if (this.fadeCanvas) {
+      const t = (performance.now() - this.fadeStart) / FADE_MS;
+      if (t >= 1) this.fadeCanvas = null;
+      else {
+        output.save();
+        output.globalAlpha = 1 - t;
+        output.drawImage(this.fadeCanvas, 0, 0, state.width, state.height);
+        output.restore();
+        this.owner.requestRender?.();
+      }
+    }
+    ctx = output;
+    ctx.save();
+    if (state.view === 'globe') {
+      ctx.beginPath();
+      ctx.arc(state.width / 2, state.height / 2, state.scale, 0, TAU);
+      ctx.clip();
+    }
+
+    this.compositor.draw(ctx, state, enabled, {
+      tiles,
+      store: this.store,
+      focusId: this.focusId,
+      owner: this.owner,
+      world: this.world,
+      key,
+      styleFor: id => this.styleFor(id),
+      compositor: this,
+      layerTargets: this.residency.targets,
+      climateTiles: enabled.some(l => l.id === 'climate') ? climatePlanTiles(this.world) : [],
+    });
+
+    ctx.restore();
+    this.pump();
+
+    const overlays = [...this.residency.targets].flatMap(([id, targets]) => targets.map(tile => ({id, tile})));
+    return {
+      overlaysLoaded: overlays.filter(({id, tile}) => this.store.has(this.focused(this.styleFor(id), tile), tile.key)).length,
+      overlaysTotal: overlays.length,
+      loaded: tiles.filter(t => this.store.has(this.focused(this.styleFor('base'), t), t.key)).length,
+      total: tiles.length,
+      z: this.plan.z,
+      shore: this.progress,
+      focusId: this.focusId,
+    };
+  }
+
+  projectLayer(id, tiles, state, key) {
+    if (!this.compositor) {
+      this.compositor = new LayerCompositor();
+      if (this._projections) this.compositor.projections = this._projections;
+      if (this._screenGrid) this.compositor.screenGrid = this._screenGrid;
+    }
+    return this.compositor.projectLayer(id, tiles, state, key);
+  }
+
+  daylightImage(state, key, hours, world) {
+    return this.compositor.daylightImage(state, key, hours, world);
+  }
+
+  contourUnitFor(_state, level) {
+    return contourUnit(level,this.world.columns);
+  }
+
+  dispose() {
+    this.scheduler.dispose();
+    this.compositor.dispose();
+    if(this.background){this.background.width=0;this.background.height=0;}
+    if(this.fadeCanvas){this.fadeCanvas.width=0;this.fadeCanvas.height=0;}
+    this.background=undefined;this.fadeCanvas=undefined;this.backdropTiles=[];this.plan=null;this.residency=null;this.camera=null;
   }
 }
-export function suspendGameAtlas(v,paused){layers.get(v)?.setPaused(paused);}
-export function disposeGameAtlas(v){const layer=layers.get(v);if(layer){layer.worker.terminate();layers.delete(v);}}
+
+export function drawGameAtlas(v) {
+  if (!v.active) return true;
+  if (!v.isPlanet || v.showClimate || v.showChunkColors) {
+    suspendGameAtlas(v, true);
+    return false;
+  }
+  const world = v.generator.exposeHydrology()?.planetMacro;
+  if (!world) return false;
+  let layer = layers.get(v);
+  if (layer?.world !== world) {
+    layer?.dispose?.();
+    layer = new GameTiles(v, world);
+    layers.set(v, layer);
+  }
+  layer.setPaused(false);
+
+  layer.setLayers({layers: v.getMapLayers?.() ?? [], density: v.getContourDensity?.() ?? 2});
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const width = v.canvas.width / dpr, height = v.canvas.height / dpr;
+  const cell = v.baseCellSize * v.scale, size = v.generator.generation.planet.equatorChunks;
+  const state = atlasCamera(v, width, height);
+  const ctx = v.ctx;
+  ctx.save();
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#241c13';
+  ctx.fillRect(0, 0, width, height);
+  v.surfaceCache.beginFrame();
+  const progress = layer.draw(ctx, state);
+  if (!v.isGlobe && cell >= 24) {
+    const left = Math.floor(v.centerCx + (-width / 2 - v.panX) / cell);
+    const right = Math.ceil(v.centerCx + (width / 2 - v.panX) / cell);
+    const top = Math.floor(v.worldZ(v.mapZ(v.centerCz) + (-height / 2 - v.panY) / cell));
+    const bottom = Math.ceil(v.worldZ(v.mapZ(v.centerCz) + (height / 2 - v.panY) / cell));
+    const coords = v.centerCells(left, right, top, bottom, v.centerCx - v.panX / cell, v.worldZ(v.mapZ(v.centerCz) - v.panY / cell))
+      .slice(0, 192)
+      .filter(([, z]) => z >= -size / 4 && z < size / 4)
+      .map(([x, z]) => [((x + size / 2) % size + size) % size - size / 2, z])
+      .filter(([x,z])=>!v.exploration||v.exploration.has(x,z));
+    drawAtlasDetails(v, ctx, state, coords, cell, size);
+  }
+  v.surfaceCache.endFrame();
+  const at = v.getCenterCoordinates();
+  v.onStatsUpdate?.({
+    centerCx: at.cx,
+    centerCz: at.cz,
+    scale: v.scale,
+    visibleChunks: 0,
+    climateCounts: [0, 0, 0, 0, 0],
+    climatePercents: [0, 0, 0, 0, 0],
+    matchedCount: 0,
+    matchedPercent: 0,
+    activeFilterName: '',
+    level: v.isGlobe ? 'globe' : 'overview',
+  });
+  layer.displayProgress = progress;
+  ctx.restore();
+  return true;
+}
+
+export function drawGameAtlasLegend(v) {
+  const layer = layers.get(v);
+  if (!v.active || layer?.paused || !layer?.displayProgress) return;
+  const {width, height} = layer.state ?? {};
+  if (!width) return;
+  const progress = layer.displayProgress;
+  const meters = layer.world.radius / layer.state.scale * (v.isMercator ? Math.cos(layer.state.lat) : 1);
+  const ctx = v.ctx, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  ctx.save();
+  ctx.scale(dpr, dpr);
+  const target = meters * 100, unit = 10 ** Math.floor(Math.log10(target));
+  const length = [1, 2, 5, 10].map(n => n * unit).filter(n => n <= target).pop() ?? unit;
+  ctx.fillStyle = 'rgba(27,24,18,.78)';
+  ctx.fillRect(12, height - 90, progress.shore ? 340 : 256, 52);
+  ctx.fillStyle = '#eadfc0';
+  ctx.strokeStyle = '#eadfc0';
+  ctx.font = '12px "Qianlin Song",serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(
+    `${detailLevel(meters)} L${layer.logicalLevel} · ${progress.loaded}/${progress.total}${progress.overlaysTotal ? ` · 图层 ${progress.overlaysLoaded}/${progress.overlaysTotal}` : ''}${progress.shore ? ' · ' + (progress.shore.stage ?? '湖形计算中') : progress.z >= 13 && progress.focusId !== null ? ' · 聚焦湖 ' + progress.focusId : ''}${layer.failedTiles.size ? ' · 部分细节失败' : ''}`,
+    20,
+    height - 74
+  );
+  ctx.fillText(
+    (length >= 1000 ? `${length / 1000} km` : `${length} m`) + (layer.unit() > 0 ? ` · 等高距 ${layer.unit()} m` : '') + (progress.shore ? ` · 已采样 ${Math.round(progress.shore.sampled / 1000)} 千点` : ''),
+    20,
+    height - 56
+  );
+  ctx.beginPath();
+  ctx.moveTo(20, height - 50);
+  ctx.lineTo(20 + length / meters, height - 50);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawAtlasDetails(v, ctx, state, coords, cell, size) {
+  for (const [cx, cz] of coords) {
+    const wrapped = cx + Math.round((v.centerCx - v.panX / cell - cx) / size) * size;
+    const x = state.width / 2 + v.panX + (wrapped - v.centerCx) * cell;
+    const y = state.height / 2 + v.panY + (v.mapZ(cz) - v.mapZ(v.centerCz)) * cell;
+    const h = (v.mapZ(cz + 1) - v.mapZ(cz)) * cell;
+    if ((v.showChunkInfo||v.filterTypeId!==null||v.filterCategory!==null) && v.refinementReady) {
+      const tile = v.surfaceCache.get(cx, cz, (x - state.width / 2) ** 2 + (y - state.height / 2) ** 2, false, false, true);
+      const info = tile?.summary?.info ?? v.generator.cachedChunkInfo(cx, cz);
+      if(info&&(v.filterTypeId!==null||v.filterCategory!==null)&&v.isChunkMatched?.(info)){
+        ctx.strokeStyle='#c2333f';ctx.lineWidth=1;ctx.strokeRect(x,y,cell,h);
+      }
+      if (info && v.showChunkInfo&&cell >= 36) {
+        ctx.fillStyle = '#eadfc0';
+        ctx.font = '10px "Qianlin Song",serif';
+        ctx.fillText(String(info.type), x + 3, y + 12);
+        if (v.showFlowArrows) v.drawFlowArrow(ctx, info, x, y, cell, h);
+      }
+    }
+    if (
+      (v.hoveredChunk?.cx === cx && v.hoveredChunk?.cz === cz) ||
+      (v.selectedChunk?.cx === cx && v.selectedChunk?.cz === cz)
+    ) {
+      ctx.strokeStyle = v.selectedChunk?.cx === cx && v.selectedChunk?.cz === cz ? '#eac876' : '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, cell, h);
+    }
+  }
+}
+
+export function suspendGameAtlas(v, paused) {
+  layers.get(v)?.setPaused(paused);
+}
+
+export function disposeGameAtlas(v) {
+  const layer = layers.get(v);
+  if (layer) {
+    layer.dispose();
+    layers.delete(v);
+  }
+}
+
 class TileMesh {
-  drawTile(ctx,tile,view){
-    const span=TAU/2**tile.z,lon0=tile.x*span-Math.PI,lat0=Math.PI/2-tile.y*span;
-    const steps=this.view==='globe'?clamp(Math.ceil(span*this.scale()/32),1,24):this.view==='mercator'?8:1,side=tile.canvas.width-2;
-    const center=project(view,lon0+span/2,clamp(lat0-span/2,-LIMIT,LIMIT),false);
-    const vertex=(x,y)=>{const lat=clamp(lat0-y*span,view.view==='mercator'?-LIMIT:-Math.PI/2,view.view==='mercator'?LIMIT:Math.PI/2),p=project(view,lon0+x*span,lat);if(p&&this.view!=='globe')p.x=center.x+(x-.5)*span*view.scale;return p;};
-    for(let y=0;y<steps;y++)for(let x=0;x<steps;x++){
-      const u=x/steps,v=y/steps,d=1/steps,a=vertex(u,v),b=vertex(u+d,v),c=vertex(u,v+d),e=vertex(u+d,v+d);
-      this.triangle(ctx,tile.canvas,[a,b,c],[[u*side,v*side],[(u+d)*side,v*side],[u*side,(v+d)*side]]);
-      this.triangle(ctx,tile.canvas,[b,e,c],[[(u+d)*side,v*side],[(u+d)*side,(v+d)*side],[u*side,(v+d)*side]]);
+  drawTile(ctx, tile, view) {
+    const span = TAU / 2 ** tile.z, lon0 = tile.x * span - Math.PI, lat0 = Math.PI / 2 - tile.y * span;
+    const steps = this.view === 'globe' ? clamp(Math.ceil(span * this.scale() / 32), 1, 24) : this.view === 'mercator' ? 8 : 1, side = tile.canvas.width - 2;
+    const center = project(view, lon0 + span / 2, clamp(lat0 - span / 2, -LIMIT, LIMIT), false);
+    const vertex = (x, y) => {
+      const lat = clamp(lat0 - y * span, view.view === 'mercator' ? -LIMIT : -Math.PI / 2, view.view === 'mercator' ? LIMIT : Math.PI / 2);
+      const p = project(view, lon0 + x * span, lat);
+      if (p && this.view !== 'globe') p.x = center.x + (x - 0.5) * span * view.scale;
+      return p;
+    };
+    for (let y = 0; y < steps; y++) for (let x = 0; x < steps; x++) {
+      const u = x / steps, v = y / steps, d = 1 / steps;
+      const a = vertex(u, v), b = vertex(u + d, v), c = vertex(u, v + d), e = vertex(u + d, v + d);
+      this.triangle(ctx, tile.canvas, [a, b, c], [[u * side, v * side], [(u + d) * side, v * side], [u * side, (v + d) * side]]);
+      this.triangle(ctx, tile.canvas, [b, e, c], [[(u + d) * side, v * side], [(u + d) * side, (v + d) * side], [u * side, (v + d) * side]]);
     }
   }
-  triangle(ctx,image,p,uv){
-    uv=uv.map(([x,y])=>[x+1,y+1]);
-    if(p.some(v=>!v))return;
-    if(this.view!=='globe'&&Math.max(...p.map(v=>v.x))-Math.min(...p.map(v=>v.x))>this.scale()*Math.PI)return;
-    if(Math.max(...p.map(v=>v.x))<0||Math.min(...p.map(v=>v.x))>this.width||Math.max(...p.map(v=>v.y))<0||Math.min(...p.map(v=>v.y))>this.height)return;
-    const [a,b,c]=p,[u,v,w]=uv,det=(v[0]-u[0])*(w[1]-u[1])-(v[1]-u[1])*(w[0]-u[0]);if(!det)return;
-    const ax=((b.x-a.x)*(w[1]-u[1])-(c.x-a.x)*(v[1]-u[1]))/det,ay=((b.y-a.y)*(w[1]-u[1])-(c.y-a.y)*(v[1]-u[1]))/det;
-    const bx=((c.x-a.x)*(v[0]-u[0])-(b.x-a.x)*(w[0]-u[0]))/det,by=((c.y-a.y)*(v[0]-u[0])-(b.y-a.y)*(w[0]-u[0]))/det;
-    const [ca,cb,cc]=expandTriangle(p);
-    ctx.save();ctx.beginPath();ctx.moveTo(ca.x,ca.y);ctx.lineTo(cb.x,cb.y);ctx.lineTo(cc.x,cc.y);ctx.closePath();ctx.clip();ctx.transform(ax,ay,bx,by,a.x-ax*u[0]-bx*u[1],a.y-ay*u[0]-by*u[1]);ctx.drawImage(image,0,0);ctx.restore();
+  triangle(ctx, image, p, uv) {
+    uv = uv.map(([x, y]) => [x + 1, y + 1]);
+    if (p.some(v => !v)) return;
+    if (this.view !== 'globe' && Math.max(...p.map(v => v.x)) - Math.min(...p.map(v => v.x)) > this.scale() * Math.PI) return;
+    if (Math.max(...p.map(v => v.x)) < 0 || Math.min(...p.map(v => v.x)) > this.width || Math.max(...p.map(v => v.y)) < 0 || Math.min(...p.map(v => v.y)) > this.height) return;
+    const [a, b, c] = p, [u, v, w] = uv, det = (v[0] - u[0]) * (w[1] - u[1]) - (v[1] - u[1]) * (w[0] - u[0]);
+    if (!det) return;
+    const ax = ((b.x - a.x) * (w[1] - u[1]) - (c.x - a.x) * (v[1] - u[1])) / det;
+    const ay = ((b.y - a.y) * (w[1] - u[1]) - (c.y - a.y) * (v[1] - u[1])) / det;
+    const bx = ((c.x - a.x) * (v[0] - u[0]) - (b.x - a.x) * (w[0] - u[0])) / det;
+    const by = ((c.y - a.y) * (v[0] - u[0]) - (b.y - a.y) * (w[0] - u[0])) / det;
+    const [ca, cb, cc] = expandTriangle(p);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(ca.x, ca.y);
+    ctx.lineTo(cb.x, cb.y);
+    ctx.lineTo(cc.x, cc.y);
+    ctx.closePath();
+    ctx.clip();
+    ctx.transform(ax, ay, bx, by, a.x - ax * u[0] - bx * u[1], a.y - ay * u[0] - by * u[1]);
+    ctx.drawImage(image, 0, 0);
+    ctx.restore();
   }
 }
-GameTiles.prototype.drawTile=TileMesh.prototype.drawTile;
-GameTiles.prototype.triangle=TileMesh.prototype.triangle;
+
+GameTiles.prototype.drawTile = TileMesh.prototype.drawTile;
+GameTiles.prototype.triangle = TileMesh.prototype.triangle;

@@ -100,7 +100,7 @@ function fruitCountFor(def: PlantDef, requested: number, fallback = 0): number {
 function snowCap(b: LowPolyBuilder, def: PlantDef, center: V3, r: number, yScale = 1): void {
   const thickness = scalar(def.params.snow, 0.18);
   const col = snowColor(def);
-  b.dome([center[0], center[1] + r * 0.42 + thickness * 0.35, center[2]], r * 0.86, r * 0.5 * yScale, r * 0.86, 6, col, {
+  b.dome([center[0], center[1] + r * 0.42 + thickness * 0.35, center[2]], r * 0.86, r * 0.5 * yScale, r * 0.86, 5, col, {
     floor: false,
     jitter: 0.1,
     rand: mulberry32(def.buildSeed ^ 0x51ed270b),
@@ -283,7 +283,7 @@ export function buildPetalGeometry(spec: PetalShapeSpec = {}): PlantGeometry {
 function limbTo(b: LowPolyBuilder, start: V3, dir: V3, length: number, radius: number, col: RGB): V3 {
   const len = Math.hypot(dir[0], dir[1], dir[2]) || 1;
   const d: V3 = [dir[0] / len, dir[1] / len, dir[2] / len];
-  b.limb(start, d, length, radius, col, { sides: 3, tipRatio: 0.42 });
+  b.limb(start, d, length, radius, col, { sides: 3, tipRatio: 0.42, cap: false });
   return [start[0] + d[0] * length, start[1] + d[1] * length, start[2] + d[2] * length];
 }
 
@@ -307,9 +307,9 @@ function conifer(b: LowPolyBuilder, def: PlantDef): void {
   const jitter = scalar(p.jitter, 0.14);
   const lean = scalar(p.lean, 0);
 
-  b.prism([0, 0, 0], trunkR * 1.25, trunkR * 1.25, 0, trunk, sides, bark, { jitter: jitter * 0.4, rand });
+  b.prism([0, 0, 0], trunkR * 1.25, trunkR * 1.25, 0, trunk, sides, bark, { jitter: jitter * 0.4, rand, cap: false });
   const topY = trunk + span;
-  b.prism([lean * span * 0.4, trunk, lean * span * 0.2], trunkR * 0.8, trunkR * 0.8, 0, span * 0.7, sides, bark, { rand });
+  b.prism([lean * span * 0.4, trunk, lean * span * 0.2], trunkR * 0.8, trunkR * 0.8, 0, span * 0.7, sides, bark, { rand, cap: false });
   // 根盘
   b.cone([0, 0, 0], trunkR * 1.9, trunkR * 1.9, trunk * 0.12, sides, bark, { rotY: 0.4, jitter: jitter * 0.5, rand, cap: true });
 
@@ -323,7 +323,6 @@ function conifer(b: LowPolyBuilder, def: PlantDef): void {
       rotY: i * 0.7,
       jitter,
       rand,
-      cap: true,
       radiusRatio: i === layers ? 0.02 : 0.06,
     });
     if (wantsSnowOn(def, 'canopy') && i >= layers - Math.ceil(layers * 0.5)) {
@@ -385,8 +384,8 @@ function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
   const limbs = Math.max(0, Math.round(scalar(p.limbCount, 3)));
   const limbLength = scalar(p.limbLength, canopy * 0.62);
 
-  b.prism([0, 0, 0], trunkR * 1.3, trunkR * 1.3, 0, trunk * 0.16, sides, bark, { jitter: jitter * 0.5, rand });
-  b.prism([lean * trunk * 0.25, trunk * 0.12, 0], trunkR, trunkR, 0, trunk - trunk * 0.12, sides, bark, { jitter, rand });
+  b.prism([0, 0, 0], trunkR * 1.3, trunkR * 1.3, 0, trunk * 0.16, sides, bark, { jitter: jitter * 0.5, rand, cap: false });
+  b.prism([lean * trunk * 0.25, trunk * 0.12, 0], trunkR, trunkR, 0, trunk - trunk * 0.12, sides, bark, { jitter, rand, cap: false });
   const crown: V3 = [lean * trunk * 0.25, trunk, 0];
 
   // 主枝
@@ -409,7 +408,7 @@ function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
     const y = cy + canopyH * (0.42 * (1 - t) - 0.1) + (rand() - 0.5) * canopyH * 0.28;
     const r = mainR * (0.32 + rand() * 0.22);
     const c = deepen(tone(def, i % 2 ? 'canopy' : 'foliage'), t);
-    b.dome([crown[0] + Math.cos(a) * rad, y, Math.sin(a) * rad], r, r * 0.82, r, sides, c, { jitter: jitter * 1.4, rand });
+    b.dome([crown[0] + Math.cos(a) * rad, y, Math.sin(a) * rad], r, r * 0.82, r, sides, c, { jitter: jitter * 1.4, rand, floor: false });
     if (wantsSnowOn(def, 'canopy') && i < blobs * 0.7) {
       snowCap(b, def, [crown[0] + Math.cos(a) * rad, y + r * 0.3, Math.sin(a) * rad], r);
     }
@@ -417,7 +416,7 @@ function broadleaf(b: LowPolyBuilder, def: PlantDef): void {
   // 枝头叶团：补上主枝末端的空缺
   for (const tip of limbTips) {
     const r = mainR * (0.34 + rand() * 0.18);
-    b.dome(tip, r, r * 0.8, r, sides, tone(def, 'canopy'), { jitter: jitter * 1.3, rand });
+    b.dome(tip, r, r * 0.8, r, sides, tone(def, 'canopy'), { jitter: jitter * 1.3, rand, floor: false });
   }
   // 冠面碎叶
   leafSpray(b, def, [crown[0], cy, 0], mainR * 1.02, Math.round(scalar(p.leafPetals, blobs + 4)), rand,
@@ -451,7 +450,7 @@ function palm(b: LowPolyBuilder, def: PlantDef): void {
   const fronds = Math.max(4, Math.round(scalar(p.fronds, 9)));
   const frondLength = scalar(p.frondLength, height * 0.42);
   const droop = clamp(scalar(p.droop, 0.55), 0, 1);
-  const segments = Math.max(1, Math.round(scalar(p.segments, 7)));
+  const segments = Math.min(5, Math.max(1, Math.round(scalar(p.segments, 7))));
   const sides = Math.round(clamp(scalar(p.sides, 5), 3, 10));
   const leaf = tone(def, 'palmFrond');
   const leafDark = tone(def, 'foliageDark', 1);
@@ -464,7 +463,7 @@ function palm(b: LowPolyBuilder, def: PlantDef): void {
     const y = i * nodeH;
     const t = i / Math.max(1, nodes - 1);
     const nr = trunkR * (1.05 - 0.28 * t);
-    b.prism([x, y, 0], nr * 1.08, nr * 1.08, 0, nodeH * 1.02, sides, i % 2 ? bark : barkLight, { jitter: 0.06, rand });
+    b.prism([x, y, 0], nr * 1.08, nr * 1.08, 0, nodeH * 1.02, sides, i % 2 ? bark : barkLight, { jitter: 0.06, rand, cap: false });
     x += lean * nodeH * (0.35 + t * 0.9);
   }
   const crown: V3 = [x, trunk, 0];
@@ -563,8 +562,8 @@ function acacia(b: LowPolyBuilder, def: PlantDef): void {
   const fol = tone(def, 'foliage');
   const folDark = tone(def, 'foliageDark', 1);
 
-  b.prism([0, 0, 0], trunkR * 1.35, trunkR * 1.35, 0, trunk * 0.2, sides, bark, { jitter: jitter * 0.5, rand });
-  b.prism([0, trunk * 0.16, 0], trunkR, trunkR, 0, trunk - trunk * 0.16, sides, barkLight, { jitter, rand });
+  b.prism([0, 0, 0], trunkR * 1.35, trunkR * 1.35, 0, trunk * 0.2, sides, bark, { jitter: jitter * 0.5, rand, cap: false });
+  b.prism([0, trunk * 0.16, 0], trunkR, trunkR, 0, trunk - trunk * 0.16, sides, barkLight, { jitter, rand, cap: false });
 
   for (let i = 0; i < limbCount; i++) {
     const a = (i / limbCount) * TAU + rand() * 0.5;
@@ -614,9 +613,9 @@ function baobab(b: LowPolyBuilder, def: PlantDef): void {
   const folDark = tone(def, 'foliageDark', 1);
 
   // 主干：下粗上细的两段，制造"瓶状"轮廓
-  b.prism([0, 0, 0], trunkR * 1.45, trunkR * 1.35, 0, trunk * 0.14, sides, bark, { jitter: jitter * 0.6, rand });
-  b.prism([0, trunk * 0.12, 0], trunkR * 0.95, trunkR * 0.9, 0, trunk * 0.5, sides, bark, { jitter, rand });
-  b.prism([0, trunk * 0.6, 0], trunkR * 0.66, trunkR * 0.62, 0, trunk * 0.44, sides, barkLight, { jitter, rand });
+  b.prism([0, 0, 0], trunkR * 1.45, trunkR * 1.35, 0, trunk * 0.14, sides, bark, { jitter: jitter * 0.6, rand, cap: false });
+  b.prism([0, trunk * 0.12, 0], trunkR * 0.95, trunkR * 0.9, 0, trunk * 0.5, sides, bark, { jitter, rand, cap: false });
+  b.prism([0, trunk * 0.6, 0], trunkR * 0.66, trunkR * 0.62, 0, trunk * 0.44, sides, barkLight, { jitter, rand, cap: false });
 
   // 稀疏分枝 + 小团冠
   const limbs = Math.max(3, Math.round(scalar(p.limbCount, 6)));
@@ -666,7 +665,7 @@ function shrub(b: LowPolyBuilder, def: PlantDef): void {
     const sx = Math.cos(a) * spread * (0.35 + rand() * 0.5);
     const sz = Math.sin(a) * spread * (0.35 + rand() * 0.5);
     const h = height * (0.5 + rand() * 0.4);
-    b.prism([sx, 0, sz], 0.045 + height * 0.014, 0.045 + height * 0.014, 0, h, 3, bark, { rand, jitter: 0.15 });
+    b.prism([sx, 0, sz], 0.045 + height * 0.014, 0.045 + height * 0.014, 0, h, 3, bark, { rand, jitter: 0.15, cap: false });
   }
   for (let i = 0; i < blobs; i++) {
     const a = i * GOLDEN + def.buildSeed * 0.0013;
@@ -675,7 +674,7 @@ function shrub(b: LowPolyBuilder, def: PlantDef): void {
     const r = canopy * (i === 0 ? 0.62 : 0.34 + rand() * 0.24);
     const c = deepen(i % 2 ? fol : folDark, i / blobs);
     // 主叶团加一圈纬线
-    b.dome([Math.cos(a) * rad, y, Math.sin(a) * rad], r, r * 0.84, r, sides, c, { jitter, rand, rings: i === 0 ? 1 : 0 });
+    b.dome([Math.cos(a) * rad, y, Math.sin(a) * rad], r, r * 0.84, r, sides, c, { jitter, rand, rings: i === 0 ? 1 : 0, floor: false });
     if (wantsSnowOn(def, 'canopy') && i < blobs * 0.75) {
       snowCap(b, def, [Math.cos(a) * rad, y + r * 0.3, Math.sin(a) * rad], r * 0.95);
     }
@@ -728,7 +727,7 @@ function succulent(b: LowPolyBuilder, def: PlantDef): void {
     }
   }
   // 中央花茎
-  b.prism([0, height * 0.5, 0], spread * 0.08, spread * 0.08, 0, height * 0.36, 3, leafDark, { rand });
+  b.prism([0, height * 0.5, 0], spread * 0.08, spread * 0.08, 0, height * 0.36, 3, leafDark, { rand, cap: false });
   const bloomCount = bloomCountFor(def, Math.max(1, Math.round(scalar(p.bloomCount, 3))), 4);
   // 莲 / 多肉的花就开在叶心顶上
   bloomCluster(b, def, [0, height * 0.9, 0], spread * 0.6, bloomCount, rand, { size: spread * 0.5, ySpan: height * 0.14 });
@@ -771,7 +770,7 @@ function bramble(b: LowPolyBuilder, def: PlantDef): void {
     const rad = spread * (0.25 + rand() * 0.6);
     const y = height * (0.3 + rand() * 0.55);
     const r = spread * (0.18 + rand() * 0.14);
-    b.dome([Math.cos(a) * rad, y, Math.sin(a) * rad], r, r * 0.8, r, sides, i % 2 ? fol : folDark, { jitter: 0.3, rand });
+    b.dome([Math.cos(a) * rad, y, Math.sin(a) * rad], r, r * 0.8, r, sides, i % 2 ? fol : folDark, { jitter: 0.3, rand, floor: false });
   }
   // 悬钩子 / 旱棘丛的叶本来就只有几片
   leafSpray(b, def, [0, height * 0.55, 0], spread * 0.8, Math.round(scalar(p.leafPetals, blobs + 5)), rand,
@@ -849,7 +848,7 @@ function sapling(b: LowPolyBuilder, def: PlantDef): void {
   const fol = tone(def, 'foliage');
   const leafR = scalar(p.canopy, height * 0.28);
 
-  b.prism([0, 0, 0], height * 0.035, height * 0.035, 0, trunk, 3, bark, { rand });
+  b.prism([0, 0, 0], height * 0.035, height * 0.035, 0, trunk, 3, bark, { rand, cap: false });
   const lobes = Math.max(1, Math.round(scalar(p.blobs, 3)));
   for (let i = 0; i < lobes; i++) {
     const a = i * GOLDEN + rand();
@@ -888,8 +887,8 @@ function sprout(b: LowPolyBuilder, def: PlantDef): void {
 
   // 主茎
   const stemR = Math.max(0.012, height * 0.05);
-  b.prism([0, 0, 0], stemR * 1.3, stemR * 1.3, 0, trunk * 0.5, 4, stem, { rand, jitter: 0.1 });
-  b.prism([0, trunk * 0.46, 0], stemR, stemR, 0, trunk * 0.56, 4, stem, { rand, jitter: 0.12 });
+  b.prism([0, 0, 0], stemR * 1.3, stemR * 1.3, 0, trunk * 0.5, 4, stem, { rand, jitter: 0.1, cap: false });
+  b.prism([0, trunk * 0.46, 0], stemR, stemR, 0, trunk * 0.56, 4, stem, { rand, jitter: 0.12, cap: false });
   // 子叶
   for (let i = 0; i < 2; i++) {
     const a = i * Math.PI + rand() * 0.5;
@@ -975,7 +974,7 @@ function withered(b: LowPolyBuilder, def: PlantDef): void {
       const cz = Math.sin(a) * rad;
       const h = height * (0.28 + rand() * 0.18);
       const lean = (rand() - 0.5) * 0.12;
-      b.prism([cx, 0, cz], culmR, culmR, 0, h, 4, wood, { rand, jitter: 0.1 });
+      b.prism([cx, 0, cz], culmR, culmR, 0, h, 4, wood, { rand, jitter: 0.1, cap: false });
       const leafLen = h * 0.45;
       b.petal([cx + lean * h, h * 0.85, cz], a + rand() * 0.5, leafLen, leafLen * 0.2, dryLeaf, {
         pitch: -0.4 + rand() * 0.2,
@@ -1015,8 +1014,8 @@ function withered(b: LowPolyBuilder, def: PlantDef): void {
   const limbs = Math.max(2, Math.min(5, Math.round(scalar(p.limbCount, 4))));
   const lean = scalar(p.lean, 0.06);
 
-  b.prism([0, 0, 0], trunkR * 1.4, trunkR * 1.4, 0, trunk * 0.3, sides, wood, { jitter: jitter * 0.5, rand });
-  b.prism([lean * trunk * 0.2, trunk * 0.22, 0], trunkR * 1.05, trunkR * 1.05, 0, trunk * 0.62, sides, stem, { jitter, rand });
+  b.prism([0, 0, 0], trunkR * 1.4, trunkR * 1.4, 0, trunk * 0.3, sides, wood, { jitter: jitter * 0.5, rand, cap: false });
+  b.prism([lean * trunk * 0.2, trunk * 0.22, 0], trunkR * 1.05, trunkR * 1.05, 0, trunk * 0.62, sides, stem, { jitter, rand, cap: false });
 
   for (let i = 0; i < limbs; i++) {
     const a = (i / limbs) * TAU + rand() * 0.8;
@@ -1060,9 +1059,9 @@ function blossomTree(b: LowPolyBuilder, def: PlantDef): void {
 
   // 虬曲主干：两段折向，制造"老梅"的折枝感
   const bend = scalar(p.lean, 0.18);
-  b.prism([0, 0, 0], trunkR * 1.5, trunkR * 1.5, 0, trunk * 0.55, sides, wood, { jitter: 0.16, rand });
+  b.prism([0, 0, 0], trunkR * 1.5, trunkR * 1.5, 0, trunk * 0.55, sides, wood, { jitter: 0.16, rand, cap: false });
   b.prism([bend * trunk * 0.3, trunk * 0.5, 0], trunkR * 0.9, trunkR * 0.9, 0, trunk * 0.55, sides, barkLight,
-    { jitter: 0.2, rand });
+    { jitter: 0.2, rand, cap: false });
 
   const tips: V3[] = [];
   for (let i = 0; i < limbs; i++) {
@@ -1149,7 +1148,7 @@ function bamboo(b: LowPolyBuilder, def: PlantDef): void {
       const nx = x0 + lean * y * 0.35 * (0.4 + t);
       const rr = r * (1 - t * 0.2);
       // 节间：比节环细，两段之间留出节的位置
-      b.prism([nx, y, z0], rr, rr, 0, nodeH * 0.86, sides, stem, { jitter: jitter * 0.4, rand });
+      b.prism([nx, y, z0], rr, rr, 0, nodeH * 0.86, sides, stem, { jitter: jitter * 0.4, rand, cap: false });
       // 竹节
       // 一节只加一个环
   // 外凸环强化竹节几何特征
@@ -1242,7 +1241,6 @@ function reed(b: LowPolyBuilder, def: PlantDef): void {
   const plumeRadius = scalar(p.bloomRadius, 0.2);
 
   const culmCol = tone(def, 'reedCulm', 1);
-  const culmDark = deepen(culmCol, 0.25);
   const leafCol = tone(def, 'foliage');
   const leafDark = tone(def, 'foliageDark', 1);
   const plumeCol = tone(def, 'bloom') ?? tone(def, 'reedPlume') ?? tone(def, 'pollen');
@@ -1300,7 +1298,7 @@ function reed(b: LowPolyBuilder, def: PlantDef): void {
 
   const baseWind = 0.55;
 
-  for (const layout of culmLayouts) {
+  for (const [culmIndex, layout] of culmLayouts.entries()) {
     const { pos, h, windBias } = layout;
     const windAngle = baseWind + windBias;
     const windDirX = Math.cos(windAngle);
@@ -1308,7 +1306,7 @@ function reed(b: LowPolyBuilder, def: PlantDef): void {
 
     const baseR = Math.max(0.02, h * 0.014);
     const topR = baseR * 0.4;
-    const numSegs = Math.max(3, Math.min(6, Math.floor(h / nodeStep)));
+    const numSegs = Math.max(3, Math.min(4, Math.floor(h / nodeStep)));
     const segH = h / numSegs;
 
     let curP: V3 = [pos[0], pos[1], pos[2]];
@@ -1330,25 +1328,23 @@ function reed(b: LowPolyBuilder, def: PlantDef): void {
       const len = Math.hypot(dir[0], dir[1], dir[2]);
       const normDir: V3 = [dir[0] / len, dir[1] / len, dir[2] / len];
 
-      b.limb(curP, normDir, len, r0, culmCol, { sides: 3, tipRatio: r1 / r0 });
+      b.limb(curP, normDir, len, r0, culmCol, { sides: 3, tipRatio: r1 / r0, cap: false });
 
-      if (s < numSegs - 1) {
-        b.limb(nextP, normDir, Math.max(0.015, len * 0.08), r1 * 1.3, culmDark, { sides: 3, tipRatio: 1.0 });
-
-        if (s >= 1) {
-          const leafAlternation = s % 2 === 0 ? 1 : -1;
-          const leafAngle = windAngle + (leafAlternation * Math.PI) / 2.3 + (rand() - 0.5) * 0.35;
-          const leafLen = Math.max(0.3, h * (0.16 + 0.08 * t1));
-          const leafWid = baseR * (1.6 + rand() * 0.5);
-          const rise = leafLen * 0.24;
-          const drop = leafLen * 0.55;
-          const lCol = s % 2 === 0 ? leafCol : leafDark;
-          bentLeaf(b, nextP, leafAngle, leafLen, leafWid, rise, drop, lCol, rand);
-        }
+      if (s < numSegs - 1 && s >= 1) {
+        const leafAlternation = s % 2 === 0 ? 1 : -1;
+        const leafAngle = windAngle + (leafAlternation * Math.PI) / 2.3 + (rand() - 0.5) * 0.35;
+        const leafLen = Math.max(0.3, h * (0.16 + 0.08 * t1));
+        const leafWid = baseR * (1.6 + rand() * 0.5);
+        const rise = leafLen * 0.24;
+        const drop = leafLen * 0.55;
+        const lCol = s % 2 === 0 ? leafCol : leafDark;
+        bentLeaf(b, nextP, leafAngle, leafLen, leafWid, rise, drop, lCol, rand);
       }
 
       curP = nextP;
     }
+    // 大丛只给部分苇秆抽穗，避免穗部重复堆叠
+    if (culmLayouts.length >= 5 && culmIndex % 2 === 1) continue;
 
     const plumeH = Math.max(0.3, h * 0.22);
     const plumeDir: V3 = [windDirX * 0.45, 0.88, windDirZ * 0.45];

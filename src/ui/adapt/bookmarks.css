@@ -86,11 +86,18 @@
 
 .q-bookmark-panel .world-bookmark-tabs .bookmark-label { position: static; inset: auto; }
 
-.q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"], .save-import-bookmark) {
-  color: var(--q-primary-ui);
+.q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"]) {
+  color: var(--q-primary-text);
   background-color: transparent;
   box-shadow: none;
   transform: none;
+}
+
+/* 导入是动作而非筛选项，走装饰色；选择器需压过共用书签规则 */
+.q-bookmark-panel .save-filters .save-filter-bookmark.save-import-bookmark {
+  flex-shrink: 0;
+  margin-top: auto;
+  color: var(--q-accent-text);
 }
 
 .q-bookmark-panel :is(.save-list-panel, .bookmark-content-frame) {
@@ -108,7 +115,7 @@
 .q-bookmark-panel :is(.save-filter-bookmark, .creator-tabs.world-bookmark-tabs button):hover:not(:disabled) {
   background-color: transparent;
   box-shadow: none;
-  color: var(--q-accent-ui);
+  color: var(--q-accent-text);
   transform: translate(calc(var(--q-bookmark-pull-x) * .3), calc(var(--q-bookmark-pull-y) * .3));
 }
 
@@ -118,16 +125,17 @@
 }
 
 .q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"]):hover:not(:disabled) {
+  color: var(--q-primary-text);
   transform: translate(var(--q-bookmark-pull-x), var(--q-bookmark-pull-y));
 }
 
 .q-bookmark-panel :is(.save-filter-bookmark:has(input:focus-visible), .world-bookmark-tabs button:focus-visible, .save-import-bookmark:focus-visible) {
-  outline: 2px solid var(--q-accent-ui);
+  outline: 2px solid var(--q-accent-text);
   outline-offset: 1px;
 }
 
-.q-bookmark-panel .save-import-bookmark:is([data-import-state="choosing"], [data-import-state="importing"]) {
-  color: var(--q-accent-ui);
+.q-bookmark-panel .save-filters .save-filter-bookmark.save-import-bookmark:is([data-import-state="choosing"], [data-import-state="importing"]) {
+  color: var(--q-accent-text);
   z-index: 4;
   transform: translate(var(--q-bookmark-pull-x), var(--q-bookmark-pull-y));
 }
@@ -138,6 +146,9 @@
   padding: 16px;
   border: 1px solid transparent;
   border-image: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .q-bookmark-panel .bookmark-content-frame > .settings-scroll { padding: 18px clamp(12px, 2vw, 24px); }
@@ -156,14 +167,14 @@
 
 /* 书签图形使用实时主题色 */
 .q-bookmark-panel .q-bookmark-art { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
-.q-bookmark-art .q-bookmark-rim { fill: var(--q-accent-ui); }
+.q-bookmark-art .q-bookmark-rim { fill: var(--q-accent-text); }
 .q-bookmark-art .q-bookmark-paper { fill: var(--q-surface-hi); stroke: var(--q-line-soft); stroke-width: 1; }
-.q-bookmark-art .q-bookmark-cord { fill: none; stroke: var(--q-accent-ui); stroke-width: 1; }
-.q-bookmark-art .q-bookmark-bead { fill: var(--q-surface-hi); stroke: var(--q-accent-ui); stroke-width: 1; }
+.q-bookmark-art .q-bookmark-cord { fill: none; stroke: var(--q-accent-text); stroke-width: 1; }
+.q-bookmark-art .q-bookmark-bead { fill: var(--q-surface-hi); stroke: var(--q-accent-text); stroke-width: 1; }
 .q-bookmark-art .q-bookmark-side { display: none; }
 .q-bookmark-panel[data-bookmark-side="left"] .q-bookmark-top { display: none; }
 .q-bookmark-panel[data-bookmark-side="left"] .q-bookmark-side { display: initial; }
-.q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"], .save-import-bookmark[data-import-state="importing"]) .q-bookmark-rim { fill: var(--q-primary-ui); }
+.q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"], .save-import-bookmark[data-import-state="importing"]) .q-bookmark-rim { fill: var(--q-primary-text); }
 .q-bookmark-panel :is(.save-filter-bookmark:has(input:checked), .world-bookmark-tabs button[aria-selected="true"]) .q-bookmark-paper { fill: color-mix(in oklab, var(--q-surface-hi) 92%, var(--q-primary)); }
 .q-bookmark-panel .creator-tabs button[hidden] { display: none; }
 
@@ -199,8 +210,7 @@
   padding: 16px;
   overflow: hidden;
 }
-.q-page.creator-page .atlas-placeholder { flex: 1; min-height: 0; overflow: hidden; padding: 20px; background: var(--q-bg); }
-.q-page.creator-page .atlas-placeholder .contour-art { width: min(240px, 75%); height: auto; aspect-ratio: 1; flex-shrink: 1; }
+.q-page.creator-page .atlas-placeholder { flex: 1; min-height: 0; overflow: hidden; padding: 20px; background-color: var(--ql-paper); background-image: var(--ql-paper-weave); }
 .q-page.creator-page .atlas-loading {
   position: absolute;
   z-index: 5;

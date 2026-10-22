@@ -1,7 +1,8 @@
 import { CHUNK_SIZE } from '../../core/config';
 import { hash2 } from '../../core/math/Random';
 import { Block, blockBase } from './Blocks';
-import { terrainHeightAt } from './TerrainSurface';
+import { terrainHeightAt, type HeightSampler } from './TerrainSurface';
+import {patchWaterHeight} from './planet-macro/PlanetPatchWater';
 import { waterHeightAt } from './WaterSurface';
 import { scatterablePlants, buildPlantById } from './vegetation/Plants';
 import type { ClimateZone } from './vegetation/types';
@@ -13,6 +14,9 @@ import { isRiverType } from './ChunkTypes';
 import { WaterKind, type WaterField } from './DynamicWater';
 
 export interface DecorationInput {
+  terrainBed?:HeightSampler;
+  surfaceWater?:HeightSampler;
+  macroSurface?:boolean;
   artificialType?: number;
   vegetationMultiplier?: number;
   cx: number;
@@ -24,6 +28,24 @@ export interface DecorationInput {
   waterLevels: Float32Array;
   surfaces: Uint32Array;
   waterField?: WaterField;
+}
+
+export function decorationSurfaceSamplers(cx:number,cz:number,heights:Float32Array,levels:Float32Array,
+  beds:Float32Array|undefined,seed:number,macroSurface:boolean,
+  column:(x:number,z:number)=>{bedLevel:number;level:number}) {
+  const columns=new Map<string,ReturnType<typeof column>>();
+  const sample=(x:number,z:number)=>{
+    x=Math.floor(x);z=Math.floor(z);const key=`${x},${z}`;
+    let value=columns.get(key);if(!value){value=column(x,z);columns.set(key,value);}return value;
+  };
+  const index=(x:number,z:number)=>{
+    const ix=Math.floor(x)-cx*CHUNK_SIZE,iz=Math.floor(z)-cz*CHUNK_SIZE;
+    return ix>=-1&&ix<=CHUNK_SIZE&&iz>=-1&&iz<=CHUNK_SIZE?(iz+1)*(CHUNK_SIZE+2)+ix+1:-1;
+  };
+  const bed=(x:number,z:number)=>{const i=index(x,z);return i<0?sample(x,z).bedLevel:(beds??heights)[i];};
+  const liquid=(x:number,z:number)=>{const i=index(x,z);return i<0?sample(x,z).level:levels[i];};
+  return {terrainBed:bed,macroSurface,
+    surfaceWater:macroSurface?(x:number,z:number)=>patchWaterHeight(x,z,seed,bed,liquid):undefined};
 }
 
 export interface DecorationPlacement {
@@ -180,14 +202,22 @@ export function decorationPlacements(input: DecorationInput): DecorationPlacemen
   const { cx, cz, seed, type, temperature } = input;
   if (type === 0 || !allowsNaturalDecoration(input.artificialType ?? type)) return [];
   const ox = cx * CHUNK_SIZE, oz = cz * CHUNK_SIZE, padded = CHUNK_SIZE + 2;
-  const at = (x: number, z: number) => (Math.floor(z) - oz + 1) * padded + Math.floor(x) - ox + 1;
-  const height = (x: number, z: number) => input.heights[at(x, z)];
-  const water = (x: number, z: number) => input.waterLevels[at(x, z)];
+  const at=(x:number,z:number)=>{
+    const ix=Math.floor(x)-ox,iz=Math.floor(z)-oz;
+    return ix>=-1&&ix<=CHUNK_SIZE&&iz>=-1&&iz<=CHUNK_SIZE?(iz+1)*padded+ix+1:-1;
+  };
+  const height=input.terrainBed??((x:number,z:number)=>{
+    const i=at(x,z);return i>=0?(input.waterField?.bedLevels?.[i]??input.heights[i]):NaN;
+  });
+  const water=(x:number,z:number)=>{const i=at(x,z);return i>=0?input.waterLevels[i]:-Infinity;};
   const iced = (x:number,z:number) => (input.waterField?.iceCoverages?.[at(x,z)]??0)>=.5;
   const shallow = input.waterField ? (x:number,z:number) => {
     const i=at(x,z);return input.waterField!.kinds[i]===WaterKind.STATIC&&!(input.waterField!.iceCoverages?.[i]!>=.5);
   } : undefined;
   const ground = (x: number, z: number) => terrainHeightAt(x, z, seed, height);
+  const surfaceWater=input.surfaceWater??(input.macroSurface
+    ?(x:number,z:number)=>patchWaterHeight(x,z,seed,height,water)
+    :(x:number,z:number)=>waterHeightAt(x,z,seed,height,water,true,shallow));
   const slopeGround = (x: number, z: number) => ground(Math.max(ox, Math.min(ox + CHUNK_SIZE, x)), Math.max(oz, Math.min(oz + CHUNK_SIZE, z)));
   const climate: ClimateZone = temperature >= 26 ? 'tropical' : temperature >= 18 ? 'subtropical' : temperature >= 0 ? 'temperate' : 'cold';
   const season: Season = temperature < 0 ? 'winter' : 'summer';
@@ -211,7 +241,7 @@ export function decorationPlacements(input: DecorationInput): DecorationPlacemen
           const xw = ox + (pass === 0 ? gx + 1 + randW(17) * 6 : randW(17) * CHUNK_SIZE);
           const zw = oz + (pass === 0 ? gz + 1 + randW(29) * 6 : randW(29) * CHUNK_SIZE);
           const yw = ground(xw, zw);
-          const wlw = waterHeightAt(xw, zw, seed, height, water,true,shallow);
+          const wlw = surfaceWater(xw,zw);
           if (Number.isFinite(yw) && Number.isFinite(wlw)) {
             const surfIdx = (Math.floor(zw) - oz) * CHUNK_SIZE + Math.floor(xw) - ox;
             if (iced(xw,zw) || (pass > 0 && input.surfaces[surfIdx] === Block.ICE)) continue;
@@ -231,7 +261,7 @@ export function decorationPlacements(input: DecorationInput): DecorationPlacemen
           const z = oz + (pass === 0 ? gz + 2 + rand(23) * 4 : rand(23) * CHUNK_SIZE);
           const y = ground(x, z);
           if (!Number.isFinite(y)) continue;
-          const wl = waterHeightAt(x, z, seed, height, water,true,shallow);
+          const wl = surfaceWater(x,z);
           if (wl > y - .05) continue;
           const slopes = [[.75, 0], [-.75, 0], [0, .75], [0, -.75]].map(([dx, dz]) => Math.abs(slopeGround(x + dx, z + dz) - y));
           if (slopes.some(v => !Number.isFinite(v) || v > (layer === 2 ? 1.4 : .8))) continue;

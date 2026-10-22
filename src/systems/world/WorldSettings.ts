@@ -38,11 +38,11 @@ export interface WorldGeneration {
 }
 export const DEFAULT_PLANET: PlanetSettings = {
   map: 'procedural', poleTemperature: -25, equatorTemperature: 30,
-  monsoonDirection: 90, equatorChunks: 640000, tectonicActivity: 5,
+  monsoonDirection: 90, equatorChunks: 128000, tectonicActivity: 5,
 };
 /** 宏观星球默认生成参数 */
 export const DEFAULT_GENERATION: WorldGeneration = {
-  terrainRule: 'planet-macro', macroColumns: 1024, macroTerrain: 'balanced', macroClimate: 'wind-field',
+  terrainRule: 'planet-macro', macroColumns: 512, macroTerrain: 'balanced', macroClimate: 'wind-field',
   mode: 'planet', planet: DEFAULT_PLANET, landRatio: .3, precipitation: 1,
 };
 

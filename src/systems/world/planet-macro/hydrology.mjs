@@ -9,7 +9,7 @@ const DEPTH_EPS=.01,HYPSE=.7;
 export const MIN_DEPRESSION_DEPTH=8,MIN_CLOSED_LAKE_KM2=400,MIN_WATER_DEPTH=.5,LAKE_OUTLET_SHARE=.05;
 // 湖泊可见门槛
 export const MIN_LAKE_CELLS=3,MIN_DEEP_LAKE=30;
-// 主河道最小集水面积 km²
+// 主河道参考集水面积 km²
 export const MIN_RIVER_CATCHMENT_KM2=25000;
 export const MAX_PLAIN_LAKES=4,MAX_PLAIN_LAKE_DEPTH=30;
 // 洼地状态
@@ -204,6 +204,7 @@ export function buildHydrology(g,o,height,climate,resistance){
   const oasisSlots=new Map(oases.filter(v=>v.lake).map(v=>[v.slot,v]));
   // 河网：一次判定，含湖出口
   const average=g.areas.reduce((a,b)=>a+b,0)/n;
+  const minCatchment=MIN_RIVER_CATCHMENT_KM2*Math.min(1,(o.equatorChunks/o.columns/625)**2);
   let riverCells=0;
   visited.fill(0);
   for(const i of order){
@@ -216,7 +217,7 @@ export function buildHydrology(g,o,height,climate,resistance){
     if(height[i]<=0||water[i]===2)continue;
     const basinSlot=cellSlot[i];
     if(basinSlot>=0&&(status[basinSlot]===SALT||status[basinSlot]===DRY))continue;
-    const qualifies=flow[i]>threshold&&catchment[i]>Math.max(average*4,MIN_RIVER_CATCHMENT_KM2);
+    const qualifies=flow[i]>threshold&&catchment[i]>Math.max(average*4,minCatchment);
     const slot=outletAt[i];
     const outlet=slot>=0&&status[slot]===OPEN&&flow[i]>threshold*LAKE_OUTLET_SHARE;
     const r=receiver[i];

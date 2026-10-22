@@ -110,25 +110,25 @@ h4 {
 }
 
 a {
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
   text-decoration: none;
 }
 
 a:hover {
-  color: var(--ql-cinnabar-deep);
+  color: var(--ql-cinnabar-text);
 }
 
 /* 强调色：朱砂 */
 em,
 .ql-accent {
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
   font-style: normal;
 }
 
 /* 朱砂小标题工具类。 */
 .ql-eyebrow {
   display: inline-block;
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
   font-family: var(--ql-font-display);
   font-size: calc(11.5px * var(--text-scale, 1));
   font-weight: 400;
@@ -218,7 +218,7 @@ button.is-outline {
 
 .secondary:hover:not(:disabled),
 button.is-outline:hover:not(:disabled) {
-  color: var(--ql-cinnabar-deep);
+  color: var(--ql-cinnabar-text);
   background-color: #f7ecd5;
   box-shadow:
     inset 0 0 0 1px var(--ql-cinnabar),
@@ -276,7 +276,7 @@ button.ql-plain {
 }
 
 :is(.preset-pill, .climate-pill, .qf-btn, .tool-btn, .icon-btn, .key-binding):hover:not(:disabled) {
-  color: var(--ql-cinnabar-deep);
+  color: var(--ql-cinnabar-text);
   background-color: #f8eeda;
   transform: none;
   box-shadow:
@@ -354,7 +354,7 @@ input[type="time"]:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--ql-cinnabar);
+  border-color: var(--ql-cinnabar-text);
   background-color: #fbf3df;
   box-shadow: 0 0 0 3px rgba(166, 27, 41, .16);
 }
@@ -482,7 +482,7 @@ input[type="checkbox"]:disabled { cursor: not-allowed; opacity: .45; }
 
 .ql-status.is-error,
 .menu-status.is-error {
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
 }
 
 /* 提示条 */
@@ -511,7 +511,7 @@ input[type="checkbox"]:disabled { cursor: not-allowed; opacity: .45; }
 }
 
 .ql-tag.is-accent {
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
   border-color: rgba(166, 27, 41, .35);
   background: rgba(166, 27, 41, .07);
 }
@@ -537,7 +537,7 @@ button.text-button {
 }
 
 .text-button:not([data-ui-button]):hover:not(:disabled) {
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
   background: none;
   box-shadow: none;
   transform: none;

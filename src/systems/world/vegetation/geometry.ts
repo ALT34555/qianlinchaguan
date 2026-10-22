@@ -92,7 +92,7 @@ export class LowPolyBuilder {
     bottom: number, top: number,
     sides: number,
     color: [number, number, number],
-    opts: { rotY?: number; jitter?: number; rand?: () => number; mat?: PlantMaterial } = {},
+    opts: { rotY?: number; jitter?: number; rand?: () => number; mat?: PlantMaterial; cap?: boolean } = {},
   ): void {
     const n = Math.max(3, Math.round(sides));
     const rot = opts.rotY ?? 0;
@@ -120,7 +120,7 @@ export class LowPolyBuilder {
         this.triangle(bot[0], bot[i], bot[i + 1], color, opts.mat);
       }
     }
-    for (let i = 1; i < n - 1; i++) {
+    if (opts.cap !== false) for (let i = 1; i < n - 1; i++) {
       this.triangle(topRing[0], topRing[i + 1], topRing[i], color, opts.mat);
     }
   }
@@ -348,7 +348,7 @@ export class LowPolyBuilder {
     length: number,
     radius: number,
     color: [number, number, number],
-    opts: { sides?: number; rand?: () => number; tipRatio?: number; mat?: PlantMaterial } = {},
+    opts: { sides?: number; rand?: () => number; tipRatio?: number; mat?: PlantMaterial; cap?: boolean } = {},
   ): void {
     const sides = Math.max(3, Math.round(opts.sides ?? 3));
     const tipRatio = opts.tipRatio ?? 0.35;
@@ -382,7 +382,7 @@ export class LowPolyBuilder {
       const j = (i + 1) % sides;
       this.quad(r0[i], r0[j], r1[j], r1[i], color, opts.mat);
     }
-    for (let i = 1; i < sides - 1; i++) this.triangle(r1[0], r1[i], r1[i + 1], color, opts.mat);
+    if (opts.cap !== false) for (let i = 1; i < sides - 1; i++) this.triangle(r1[0], r1[i], r1[i + 1], color, opts.mat);
   }
 
   /** 打包单株几何并按材质槽分段 */

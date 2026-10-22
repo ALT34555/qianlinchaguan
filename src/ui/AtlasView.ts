@@ -1,6 +1,9 @@
-import {zoomGameAtlas} from './atlas/zoom.mjs';
-import {drawGameAtlas,suspendGameAtlas,disposeGameAtlas} from './atlas/game-tiles.mjs';
-import {unproject} from './atlas/tiles.mjs';
+import {zoomGameAtlas,limitAtlasZoom} from './atlas/zoom.mjs';
+import {drawGameAtlas,drawGameAtlasLegend,suspendGameAtlas,disposeGameAtlas} from './atlas/game-tiles.mjs';
+import {clipExplored} from './atlas/exploration-mask.mjs';
+import {unproject,atlasCamera,levelFor,TILE} from './atlas/tiles.mjs';
+import {AtlasCameraController, type AtlasCameraSnapshot} from './atlas/camera';
+import {AtlasInputController, type AtlasInputHost} from './atlas/input';
 import { mercatorZ,inverseMercatorZ,MERCATOR_LIMIT } from './AtlasProjection';
 import { iconUrl } from './Icons';
 import { FLOW_DIRECTIONS, type ChunkInfo } from '../systems/world/WorldContract';
@@ -17,8 +20,11 @@ import {AtlasSurfaceCache} from './AtlasSurfaceCache';
 import { ArtificialWorld, type TerritoryChunkInfo } from '../systems/world/artificial/ArtificialWorld';
 import { drawTerritories } from './TerritoryAtlas';
 import type {Precipitation} from '../systems/world/weather/Precipitation';
-import { Exploration } from '../systems/world/Exploration';
-import {drawMapRelief,drawMapRiver} from './AtlasMapLayers';
+import type { Exploration } from '../systems/world/Exploration';
+import {drawMapRiver} from './AtlasMapLayers';
+import {normalizeSunHours,elevationRampValue,LAND,type SunWorld} from './atlas/relief.mjs';
+import {defaultLayers,normalizeLayers,clampDensity,type LayerState} from './atlas/layers.mjs';
+import {contourUnit,bandPosition,terraceShade} from './atlas/contour.mjs';
 import type {MapSummary} from '../systems/world/ChunkCache';
 
 /** 画布配色 */
@@ -52,6 +58,8 @@ export interface AtlasPlayerMarker {
 }
 
 export interface AtlasViewOptions {
+  initialPlanetView?: PlanetView;
+  maxZoomLevel?: number;
   previewWorkers?:number;
   worldKey?:string;
   exploration?:Exploration;
@@ -70,12 +78,15 @@ export interface AtlasViewOptions {
 }
 
 export class AtlasView {
+  readonly maxZoomLevel?: number;
   private readonly worldKey?:string;
   private readonly exploration?:Exploration;
   private readonly survivalPreview:boolean;
+  private survivalZoomLevel=8;
   private readonly onDestination?:AtlasViewOptions['onDestination'];
   setPreviewWorkers(count:number):void {this.surfaceCache.setWorkerLimit(count);}
   private showRainClouds = false;
+  private rainOpacity = 1;
   private precipitation?: Precipitation;
   private cloudLayer?: {canvas: HTMLCanvasElement; key: string};
   private readonly icons = new Map<string, HTMLImageElement>();
@@ -86,16 +97,42 @@ export class AtlasView {
   private territoryDiscovery: Generator<void> | null = null;
   private territoryDiscoveryKey = '';
 
-  // 视图控制：以中心区块坐标与像素偏移
-  private centerCx = 0;
-  private centerCz = 0;
-  private panX = 0;
-  private panY = 0;
-  private scale = 1.0;
-  private readonly baseCellSize = 36;
-  private planetView: PlanetView = 'globe';
-  private preferredOverview: PlanetView = 'globe';
+  // 视图控制与输入控制器
+  private readonly camera!: AtlasCameraController;
+  private input!: AtlasInputController;
+  private _centerCx?: number;
+  private _centerCz?: number;
+  private _panX?: number;
+  private _panY?: number;
+  private _scale?: number;
+  private _baseCellSize?: number;
+  private _planetView?: PlanetView;
+  private _preferredOverview?: PlanetView;
+
+  get centerCx(): number { return this.camera ? this.camera.centerCx : (this._centerCx ?? 0); }
+  set centerCx(v: number) { if (this.camera) this.camera.centerCx = v; else this._centerCx = v; }
+  get centerCz(): number { return this.camera ? this.camera.centerCz : (this._centerCz ?? 0); }
+  set centerCz(v: number) { if (this.camera) this.camera.centerCz = v; else this._centerCz = v; }
+  get panX(): number { return this.camera ? this.camera.panX : (this._panX ?? 0); }
+  set panX(v: number) { if (this.camera) this.camera.panX = v; else this._panX = v; }
+  get panY(): number { return this.camera ? this.camera.panY : (this._panY ?? 0); }
+  set panY(v: number) { if (this.camera) this.camera.panY = v; else this._panY = v; }
+  get scale(): number { return this.camera ? this.camera.scale : (this._scale ?? 1.0); }
+  set scale(v: number) { if (this.camera) this.camera.scale = v; else this._scale = v; }
+  get baseCellSize(): number { return this.camera ? this.camera.baseCellSize : (this._baseCellSize ?? 36); }
+  set baseCellSize(v: number) { if (this.camera) this.camera.baseCellSize = v; else this._baseCellSize = v; }
+  get planetView(): PlanetView { return this.camera ? this.camera.planetView : (this._planetView ?? 'globe'); }
+  set planetView(v: PlanetView) { if (this.camera) this.camera.planetView = v; else this._planetView = v; }
+  get preferredOverview(): PlanetView { return this.camera ? this.camera.preferredOverview : (this._preferredOverview ?? 'globe'); }
+  set preferredOverview(v: PlanetView) { if (this.camera) this.camera.preferredOverview = v; else this._preferredOverview = v; }
+  get isDragging(): boolean { return this.input?.dragging ?? false; }
+
+  getCameraSnapshot(): AtlasCameraSnapshot {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    return this.camera.snapshot(this.canvas.width / dpr, this.canvas.height / dpr);
+  }
   private readonly planetLayer: PlanetAtlasLayer;
+  private maskClimateLayer?:PlanetAtlasLayer;
   private readonly surfaceCache: AtlasSurfaceCache;
   private showChunkColors=false;
   private showSatellite=false;
@@ -103,7 +140,12 @@ export class AtlasView {
 
   // 状态控制（进入2D地图界面后，默认只显示色块）
   private showChunkInfo = false;     // 显示/隐藏区块信息（编号、类型）
-  private showProjection = false;    // 显示/隐藏具体投影（地势阴影浮雕与水系流向）
+  /** 叠加图层：顺序即合成顺序，列表在前=画在上层 */
+  private mapLayers:LayerState[]=defaultLayers();
+  /** 等高线密度档 0..4，越大越密 */
+  private contourDensity=2;
+  private sunHours=10.5;             // 拟真光照的时刻
+  private showFlowArrows=false;      // 水系流向箭头
   private showClimate = false;       // 显示气候分类
   private activeClimateFilter: number | null = null; // 单个气候高亮（0..4）
 
@@ -114,12 +156,12 @@ export class AtlasView {
   // 交互状态
   private selectedChunk: { cx: number; cz: number } | null = null;
   private hoveredChunk: { cx: number; cz: number } | null = null;
-  private isDragging = false;
-  private dragStartX = 0;
-  private dragStartY = 0;
-  private lastDragX = 0;
-  private lastDragY = 0;
-  private hasMoved = false;
+
+
+
+
+
+
 
   private onChunkSelect?: (info: TerritoryChunkInfo) => void;
   private onChunkActivate?: (info: TerritoryChunkInfo) => void;
@@ -141,24 +183,32 @@ export class AtlasView {
   }
 
   constructor(options: AtlasViewOptions) {
+    this.maxZoomLevel=options.maxZoomLevel;
     this.worldKey=options.worldKey;
     this.survivalPreview=!!options.survivalPreview;this.onDestination=options.onDestination;
     this.exploration=options.exploration;
-    if(this.survivalPreview&&!this.exploration){
-      this.exploration=new Exploration();this.exploration.reveal(options.initialCenter?.cx??0,options.initialCenter?.cz??0,2);
-    }
     this.precipitation = options.precipitation;
     this.canvas = options.canvas;
-    if(this.exploration||this.survivalPreview){this.canvas.style.backgroundColor='var(--ql-paper)';this.canvas.style.backgroundImage='var(--ql-paper-weave)';}
+    if(this.exploration){this.canvas.style.backgroundColor='var(--ql-paper)';this.canvas.style.backgroundImage='var(--ql-paper-weave)';}
     for (const name of ['flag-pin', 'flow-e', 'flow-ne', 'flow-n', 'flow-nw', 'flow-w', 'flow-sw', 'flow-s', 'flow-se']) {
       const image = new Image(); image.onload = () => { if (!this.destroyed) this.requestRender(); };
       image.src = iconUrl(name); this.icons.set(name, image);
     }
     this.ctx = this.canvas.getContext('2d')!;
     this.generator = options.generator;
+    const isPlanetMode = this.generator.generation.mode === 'planet';
+    const equatorSize = this.generator.generation.planet?.equatorChunks ?? 1024;
+    this.camera = new AtlasCameraController({
+      equatorChunks: equatorSize,
+      isPlanet: isPlanetMode,
+      initialCenter: options.initialCenter,
+      initialView: isPlanetMode ? options.initialPlanetView ?? 'globe' : 'projection',
+      preferredOverview: isPlanetMode ? options.initialPlanetView ?? 'globe' : 'projection',
+      onViewChange: () => { if (this.active) this.requestRender(); },
+    });
     this.showSatellite=this.generator.generation.terrainRule==='planet-macro';
     this.artificial = options.artificial ?? new ArtificialWorld(this.generator);
-    this.planetLayer = new PlanetAtlasLayer(this.generator, () => { if (this.active) this.requestRender(); },this.survivalPreview);
+    this.planetLayer = new PlanetAtlasLayer(this.generator, () => { if (this.active) this.requestRender(); });
     this.surfaceCache=new AtlasSurfaceCache(this.generator,()=>{if(this.active)this.requestRender();},options.worldKey,options.previewWorkers);
     this.onChunkSelect = options.onChunkSelect;
     this.onChunkActivate = options.onChunkActivate;
@@ -169,17 +219,21 @@ export class AtlasView {
     this.setupResize();
     if (options.initialCenter) {this.spawnChunk=options.initialCenter;this.centerAt(options.initialCenter.cx, options.initialCenter.cz);}
     else this.centerSpawn();
-    if (this.isPlanet) { this.planetView = 'globe'; this.showOverview(); }
+    if (this.isPlanet&&!this.exploration&&!this.survivalPreview) { this.planetView = this.preferredOverview; this.showOverview(); }
   }
 
   setGenerator(generator: WorldGenerator, artificial?: ArtificialWorld): void {
+    disposeGameAtlas(this);
     const view = this.planetView;
     this.generator = generator;
+    this.camera.equatorChunks = generator.generation.planet?.equatorChunks ?? 1024;
+    this.camera.isPlanet = generator.generation.mode === 'planet';
     if(generator.generation.terrainRule!=='planet-macro')this.showSatellite=false;
     this.artificial = artificial ?? new ArtificialWorld(generator);
     this.territoryDiscovery = null; this.territoryDiscoveryKey = '';
     this.spawnChunk = null;
     this.planetLayer.setGenerator(generator);
+    this.maskClimateLayer?.setGenerator(generator);
     this.surfaceCache.setGenerator(generator);
     this.centerSpawn();
     if (this.isPlanet) { this.planetView = view; this.showOverview(); }
@@ -199,6 +253,7 @@ export class AtlasView {
   }
 
   centerAt(cx: number, cz: number): void {
+    if(this.survivalPreview)this.survivalZoomLevel=8;
     this.scale = 1;
     this.planetView = this.preferredOverview==='mercator'?'mercator':'projection';
     this.centerCx = cx;
@@ -216,7 +271,7 @@ export class AtlasView {
   setActive(value: boolean): void {
     this.active = value;
     suspendGameAtlas(this,!value);
-    this.isDragging = false;
+    this.input?.reset();
     this.canvas.style.cursor = 'grab';
     if (value) { this.surfaceCache.resume(); this.requestRender(); } else this.surfaceCache.idle();
   }
@@ -230,6 +285,11 @@ export class AtlasView {
   }
 
   zoomBy(factor: number, clientX?: number, clientY?: number): void {
+    if(this.survivalPreview&&this.isPlanet){
+      if(!(factor>0)||!Number.isFinite(factor))return;
+      this.survivalZoomLevel=Math.max(6,Math.min(8,this.survivalZoomLevel+Math.log2(factor)));
+      this.fitSurvivalPreview();this.requestRender();return;
+    }
     if(zoomGameAtlas(this,factor,clientX,clientY))return;
     this.deferRefinement();
     const rect = this.canvas.getBoundingClientRect();
@@ -291,6 +351,7 @@ export class AtlasView {
 
   setPlanetView(view: PlanetView): void {
     if (!this.isPlanet) return;
+    if(this.survivalPreview){this.fitSurvivalPreview();this.requestRender();return;}
     const center = this.getCenterCoordinates();
     this.centerCx = Math.round(center.cx); this.centerCz = Math.round(center.cz);
     this.panX = 0; this.panY = 0; this.planetView = view;
@@ -300,8 +361,12 @@ export class AtlasView {
   }
 
   showOverview(): void {
+    if(this.survivalPreview&&this.isPlanet){this.centerSpawn();return;}
     this.panX = 0; this.panY = 0; this.scale = this.overviewScale;
-    if (this.planetView === 'globe') {
+    if (this.planetView === 'globe'&&this.exploration&&!this.survivalPreview) {
+      const marker=this.playerMarker?.();
+      if(marker){this.centerCx=marker.x/CHUNK_SIZE-.5;this.centerCz=marker.z/CHUNK_SIZE-.5;}
+    } else if (this.planetView === 'globe') {
       const size = this.generator.generation.planet.equatorChunks;
       this.centerCx = size * 20 / 360 - .5; this.centerCz = -size * 20 / 360 - .5;
     } else { this.centerCx = 0; this.centerCz = 0; }
@@ -309,6 +374,7 @@ export class AtlasView {
   }
 
   private panBy(dx: number, dy: number): void {
+    if(this.survivalPreview)return;
     this.deferRefinement();
     if (this.isGlobe) {
       const size = this.generator.generation.planet.equatorChunks;
@@ -335,14 +401,39 @@ export class AtlasView {
     return this.showChunkInfo;
   }
 
-  setShowProjection(show: boolean): void {
-    this.showProjection = show;
-    this.requestRender();
+  /** 图层状态：顺序、开关与透明度 */
+  setMapLayers(layers:LayerState[]):void{
+    const next=normalizeLayers(layers);
+    if(JSON.stringify(next)===JSON.stringify(this.mapLayers))return;
+    this.mapLayers=next;this.requestRender();
   }
-
-  getShowProjection(): boolean {
-    return this.showProjection;
+  getMapLayers():LayerState[]{return this.mapLayers;}
+  /** 等高线密度 0..4，越大越密 */
+  setContourDensity(value:number):void{
+    const next=clampDensity(value);
+    if(next===this.contourDensity)return;
+    this.contourDensity=next;this.requestRender();
   }
+  getContourDensity():number{return this.contourDensity;}
+  /** 某图层是否开启 */
+  layerEnabled(id:string):boolean{return (this.mapLayers??defaultLayers()).some(l=>l.id===id&&l.on);}
+  layerOpacity(id:string):number{const hit=(this.mapLayers??defaultLayers()).find(l=>l.id===id);return hit?hit.opacity:1;}
+  /** 日照时刻，0-24 时 */
+  setSunHours(hours:number):void{
+    const next=normalizeSunHours(hours);
+    if(next===this.sunHours)return;
+    this.sunHours=next;
+    if(this.layerEnabled('daylight'))this.requestRender();
+  }
+  getSunHours():number{return this.sunHours;}
+  /** 太阳方位输入：地轴倾角与自转方向来自世界设定 */
+  sunWorld():SunWorld{
+    const planet=this.generator.generation.planet as {axialTilt?:number;prograde?:boolean};
+    return {axialTilt:planet?.axialTilt,prograde:planet?.prograde};
+  }
+  /** 流向箭头独立开关，不再跟地势绑定 */
+  setShowFlowArrows(show:boolean):void{this.showFlowArrows=show;this.requestRender();}
+  getShowFlowArrows():boolean{return this.showFlowArrows;}
 
   setShowClimate(show: boolean): void {
     this.showClimate = show;
@@ -357,6 +448,8 @@ export class AtlasView {
   setShowChunkColors(show:boolean):void{this.showChunkColors=show;this.requestRender();}
   getShowChunkColors():boolean{return this.showChunkColors;}
   setShowRainClouds(show: boolean): void { this.showRainClouds = show && !!this.precipitation; this.requestRender(); }
+  /** 雨云层透明度 */
+  setRainOpacity(value:number):void{this.rainOpacity=Math.max(0,Math.min(1,value));this.requestRender();}
   getShowRainClouds(): boolean { return this.showRainClouds; }
 
   setActiveClimateFilter(climateIndex: number | null): void {
@@ -389,7 +482,7 @@ export class AtlasView {
 
   getSelectedChunk(): ChunkInfo | null {
     if (!this.selectedChunk) return null;
-    if(this.exploration&&(!this.exploration.has(this.selectedChunk.cx,this.selectedChunk.cz)||!this.generator.cachedChunkInfo(this.selectedChunk.cx,this.selectedChunk.cz)))return null;
+    if(this.exploration&&(!this.exploration.has(this.selectedChunk.cx,this.selectedChunk.cz)||!this.cachedMapInfo(this.selectedChunk.cx,this.selectedChunk.cz)))return null;
     return this.artificial.info(this.selectedChunk.cx, this.selectedChunk.cz);
   }
 
@@ -407,7 +500,10 @@ export class AtlasView {
   // ---- 渲染调度 ----
 
   requestRender(): void {
-    if (this.renderScheduled || this.destroyed) return;
+    if (this.destroyed) return;
+    if(this.survivalPreview)this.fitSurvivalPreview();
+    limitAtlasZoom(this);
+    if (this.renderScheduled) return;
     this.renderScheduled = true;
     requestAnimationFrame(() => {
       this.renderScheduled = false;
@@ -438,9 +534,13 @@ export class AtlasView {
     this.fitSurvivalPreview();
   }
   private fitSurvivalPreview():void {
-    if(!this.survivalPreview||this.isPlanet)return;
-    this.scale=Math.min(8,Math.max(.35,Math.min(this.canvas.clientWidth,this.canvas.clientHeight)/209));
-    this.panX=this.panY=-this.baseCellSize*this.scale/2;
+    if(!this.survivalPreview||!this.isPlanet)return;
+    const spawn=this.spawn(),marker=this.playerMarker?.();
+    this.planetView=this.preferredOverview='projection';
+    this.centerCx=marker?marker.x/CHUNK_SIZE:spawn.cx+.5;
+    this.centerCz=marker?marker.z/CHUNK_SIZE:spawn.cz+.5;
+    this.panX=this.panY=0;
+    this.scale=TILE*2**this.survivalZoomLevel/(this.generator.generation.planet.equatorChunks*this.baseCellSize)*(1-1e-10);
   }
 
   private isChunkMatched(info: ChunkInfo): boolean {
@@ -501,6 +601,25 @@ export class AtlasView {
   // ---- 核心绘制逻辑 ----
 
   private draw(): void {
+    if(!this.active)return;
+    const ctx=this.ctx,dpr=Math.min(window.devicePixelRatio||1,2),width=this.canvas.width/dpr,height=this.canvas.height/dpr,cell=this.baseCellSize*this.scale;
+    ctx.save();
+    if(this.exploration&&!this.survivalPreview){
+      ctx.scale(dpr,dpr);ctx.clearRect(0,0,width,height);
+      if(this.isGlobe){
+        const p=planetCoordinates(this.centerCx,this.centerCz,this.generator.generation.planet.equatorChunks);
+        this.maskClimateLayer??=new PlanetAtlasLayer(this.generator,()=>{if(this.active)this.requestRender();},true);
+        this.maskClimateLayer.drawGlobe(ctx,width,height,this.globeRadius,p.longitude,p.latitude,{climate:true,relief:false,rivers:false,satellite:false,climateFilter:null,filterKey:'',matches:()=>false});
+      }else this.drawClimateBackdrop(ctx,width,height,cell);
+      clipExplored(ctx,atlasCamera(this,width,height),this.exploration,this.generator.generation.planet.equatorChunks);
+      ctx.scale(1/dpr,1/dpr);
+    }
+    this.drawWorld();ctx.restore();
+    ctx.save();ctx.scale(dpr,dpr);this.drawPlayerMarker(ctx,width,height,cell);ctx.restore();
+    drawGameAtlasLegend(this);
+  }
+
+  private drawWorld(): void {
     if(drawGameAtlas(this))return;
     this.surfaceCache.beginFrame();
     const ctx = this.ctx;
@@ -512,10 +631,8 @@ export class AtlasView {
     ctx.scale(dpr, dpr);
 
     // 背景：与视口外框同为暖墨色，让地图色块浮出来
-    if(this.exploration||this.survivalPreview)ctx.clearRect(0,0,width,height);
+    if(this.exploration)ctx.clearRect(0,0,width,height);
     else{ctx.fillStyle = INK_BG;ctx.fillRect(0, 0, width, height);}
-    if(this.survivalPreview&&this.isPlanet){this.drawPlanetOverview(ctx,width,height);ctx.restore();return;}
-    if(this.exploration){this.drawExplored(ctx,width,height);ctx.restore();return;}
     if(this.isPlanet&&!this.isGlobe){this.drawFlatPlanet(ctx,width,height);ctx.restore();return;}
 
     const overviewCell = Math.max(12, Math.sqrt(width * height / 1024));
@@ -592,7 +709,7 @@ export class AtlasView {
       const wantImage=cellSize>=72&&this.refinementReady;
       const tile=surfaceMode?this.surfaceCache.get(info.cx,info.cz,(sx+cellSize/2-width/2)**2+(sy+cellSize/2-height/2)**2,wantImage):undefined;
       if(tile)color=tile.average;
-      if(this.showSatellite&&!this.showChunkColors&&!this.showClimate){const rgb=this.generator.getSatelliteColor(info.cx,info.cz,this.showProjection);if(rgb!==null)color='#'+rgb.toString(16).padStart(6,'0');}
+      if(this.showSatellite&&!this.showChunkColors&&!this.showClimate){color=def.mapColor;}
       if (this.showClimate) {
         color = CLIMATES[info.climate].color;
         // 如果激活了单项气候高亮，则弱化其他气候色块
@@ -603,10 +720,8 @@ export class AtlasView {
 
       ctx.fillStyle = color;
       ctx.fillRect(sx, sy, cellSize, cellSize);
-      if(tile?.image&&cellSize>=72){ctx.imageSmoothingEnabled=true;ctx.drawImage(tile.image,sx,sy,cellSize,cellSize);}
-      if(this.showProjection&&!this.showSatellite&&!(tile?.image&&cellSize>=72)){
-        drawMapRelief(ctx,info,sx,sy,cellSize,cellSize,(x,z)=>this.cachedMapInfo(x,z));
-      }
+      if(tile?.image&&cellSize>=72){ctx.imageSmoothingEnabled=false;ctx.drawImage(tile.image,sx,sy,cellSize,cellSize);}
+      if(this.layerEnabled('contour')&&!this.showSatellite&&!(tile?.image&&cellSize>=72))this.drawContourChunk(ctx,info,sx,sy,cellSize,cellSize);
 
       // 区块网格线（微弱分割）
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
@@ -614,10 +729,10 @@ export class AtlasView {
       ctx.strokeRect(sx, sy, cellSize, cellSize);
     }
 
-    if(this.showProjection&&(!surfaceMode||cellSize<72)&&!this.showClimate&&cellSize>=6){
+    if((!surfaceMode||cellSize<72)&&!this.showClimate&&cellSize>=6){
       ctx.save();
       this.drawRiverLayer(ctx,width,height,cellSize,minCx,maxCx,minCz,maxCz);
-      if(cellSize>=10)for(const {info,sx,sy} of visibleChunks)this.drawFlowArrow(ctx,info,sx,sy,cellSize,cellSize);
+      if(this.showFlowArrows&&cellSize>=10)for(const {info,sx,sy} of visibleChunks)this.drawFlowArrow(ctx,info,sx,sy,cellSize,cellSize);
       ctx.restore();
     }
 
@@ -729,7 +844,7 @@ export class AtlasView {
       }
     }
 
-    this.drawTerritoryLayer(ctx, width, height, cellSize);
+    this.paintCivilizationLayer(ctx, width, height, cellSize);
     this.drawRainClouds(ctx, width, height, cellSize);
 
     // 7. 出生点标记（金色罗盘星）
@@ -750,7 +865,7 @@ export class AtlasView {
       ctx.restore();
     }
 
-    this.drawPlayerMarker(ctx, width, height, cellSize);
+
 
     this.surfaceCache.endFrame();
     if(surfaceMode || pending){
@@ -796,78 +911,67 @@ export class AtlasView {
     }
   }
 
-  private drawExplored(ctx:CanvasRenderingContext2D,width:number,height:number,coordinates?:Iterable<[number,number]>):void{
+  private drawFlatDetails(ctx:CanvasRenderingContext2D,width:number,height:number,coordinates:Iterable<[number,number]>):void{
     const cell=this.baseCellSize*this.scale,size=this.generator.generation.planet.equatorChunks;
     const counts:[number,number,number,number,number]=[0,0,0,0,0];let visible=0,matched=0;
     const riverTiles:{summary:MapSummary;x:number;y:number;w:number;h:number}[]=[];
-    const center=planetCoordinates(this.centerCx,this.centerCz,size),rad=Math.PI/180;
-    const rivers=this.showProjection&&!this.survivalPreview&&!this.isGlobe&&!this.showClimate&&cell>=Math.max(12,Math.sqrt(width*height/1024));
-    if(this.isGlobe){ctx.fillStyle='rgba(145,121,83,.13)';ctx.beginPath();ctx.arc(width/2,height/2,this.globeRadius,0,Math.PI*2);ctx.fill();}
-    else if(this.exploration&&this.isPlanet&&!this.survivalPreview)this.drawClimateBackdrop(ctx,width,height,cell);
-    for(const [cx,cz] of coordinates??this.exploration!.coordinates()){
-      if(this.isMercator&&Math.abs((cz+.5)/size*Math.PI*2)>MERCATOR_LIMIT)continue;
-      let x:number,y:number,pixel=Math.max(1,cell),tileHeight=(this.mapZ(cz+1)-this.mapZ(cz))*cell;
-      if(this.isGlobe){
-        const at=planetCoordinates(cx,cz,size),phi=at.latitude*rad,origin=center.latitude*rad,dl=(at.longitude-center.longitude)*rad;
-        const depth=Math.sin(origin)*Math.sin(phi)+Math.cos(origin)*Math.cos(phi)*Math.cos(dl);if(depth<0)continue;
-        x=width/2+this.globeRadius*Math.cos(phi)*Math.sin(dl);
-        y=height/2-this.globeRadius*(Math.cos(origin)*Math.sin(phi)-Math.sin(origin)*Math.cos(phi)*Math.cos(dl));
-        pixel=Math.max(1,this.globeRadius*Math.PI*2/size);tileHeight=pixel;
-      }else{
-        const wrapped=this.isPlanet?cx+Math.round((this.centerCx-this.panX/cell-cx)/size)*size:cx;
-        x=width/2+this.panX+(wrapped-this.centerCx)*cell;y=height/2+this.panY+(this.mapZ(cz)-this.mapZ(this.centerCz))*cell;
-      }
-      if(x+pixel<0||y+tileHeight<0||x>width||y>height)continue;
-      const image=!this.showSatellite&&this.refinementReady&&!this.survivalPreview&&!this.isGlobe&&cell>=72&&!this.showClimate&&!this.showChunkColors;
-      const detail=!this.isGlobe&&(image||this.showChunkInfo&&this.refinementReady||rivers);
+    const rivers=!this.showClimate&&cell>=Math.max(12,Math.sqrt(width*height/1024));
+    for(const [cx,cz] of coordinates){
+      if(cz<-size/4||cz>=size/4||this.isMercator&&Math.abs((cz+.5)/size*Math.PI*2)>MERCATOR_LIMIT)continue;
+      const wrapped=cx+Math.round((this.centerCx-this.panX/cell-cx)/size)*size;
+      const x=width/2+this.panX+(wrapped-this.centerCx)*cell,y=height/2+this.panY+(this.mapZ(cz)-this.mapZ(this.centerCz))*cell;
+      const tileHeight=(this.mapZ(cz+1)-this.mapZ(cz))*cell;
+      if(x+cell<0||y+tileHeight<0||x>width||y>height)continue;
+      const image=!this.showSatellite&&this.refinementReady&&cell>=72&&!this.showClimate&&!this.showChunkColors;
+      const detail=image||this.showChunkInfo&&this.refinementReady||rivers;
       const tile=this.surfaceCache.get(cx,cz,(x-width/2)**2+(y-height/2)**2,image,false,detail,rivers&&(!this.refinementReady||cell<48)&&!image&&!(this.showChunkInfo&&this.refinementReady));
       const info=tile?.summary?.info??this.generator.cachedChunkInfo(cx,cz);
-      ctx.fillStyle=tile?.average??'rgba(145,121,83,.13)';ctx.fillRect(x,y,pixel+.25,tileHeight+.25);
-      if(tile?.image&&!this.survivalPreview&&!this.isGlobe&&cell>=24&&!this.showClimate&&!this.showChunkColors)ctx.drawImage(tile.image,x,y,cell+.25,tileHeight+.25);
-      if(info&&!this.survivalPreview&&(this.showClimate||this.showChunkColors)){ctx.fillStyle=`rgb(${overviewColor(info,this.showClimate,false,this.showChunkColors,this.generator.generation.terrainRule==='planet-macro').join(',')})`;ctx.fillRect(x,y,pixel+.25,tileHeight+.25);}
-      if(this.showSatellite&&info&&!this.showClimate&&!this.showChunkColors&&!this.survivalPreview){const rgb=this.generator.getSatelliteColor(cx,cz,this.showProjection);if(rgb!==null){ctx.fillStyle='#'+rgb.toString(16).padStart(6,'0');ctx.fillRect(x,y,pixel+.25,tileHeight+.25);}}
-      if(this.showProjection&&!this.showSatellite&&info&&!(tile?.image&&!this.showClimate&&!this.showChunkColors&&cell>=24)&&!this.survivalPreview&&!this.isGlobe){
-        drawMapRelief(ctx,info,x,y,pixel+.25,tileHeight+.25,(a,b)=>this.cachedMapInfo(a,b));
+      ctx.fillStyle=tile?.average??'rgba(145,121,83,.13)';ctx.fillRect(x,y,cell+.25,tileHeight+.25);
+      if(tile?.image&&cell>=24&&!this.showClimate&&!this.showChunkColors)ctx.drawImage(tile.image,x,y,cell+.25,tileHeight+.25);
+      if(info&&(this.showClimate||this.showChunkColors)){ctx.fillStyle=`rgb(${overviewColor(info,this.showClimate,false,this.showChunkColors,true).join(',')})`;ctx.fillRect(x,y,cell+.25,tileHeight+.25);}
+      if(this.showSatellite&&info&&!this.showClimate&&!this.showChunkColors){const rgb=this.generator.getSatelliteColor(cx,cz,false);if(rgb!==null){ctx.fillStyle='#'+rgb.toString(16).padStart(6,'0');ctx.fillRect(x,y,cell+.25,tileHeight+.25);}}
+      if(this.layerEnabled('contour')&&!this.showSatellite&&info&&!(tile?.image&&!this.showClimate&&!this.showChunkColors&&cell>=24)){
+        this.drawContourChunk(ctx,info,x,y,cell+.25,tileHeight+.25);
       }
       if(rivers&&!(tile?.image&&!this.showChunkColors)&&tile?.summary)riverTiles.push({summary:tile.summary,x,y,w:cell+.25,h:tileHeight+.25});
-      if(this.exploration&&!this.survivalPreview&&!this.isGlobe){
-        const boundary=this.exploration!.boundary(cx,cz),band=cell*.22;
-        const color=this.isPlanet?CLIMATES[this.generator.getClimate(cx,cz).index].color:'#e5d3aa';
-        const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16)).join(',');
-        for(const [index,ex,ez] of [[0,0,-1],[1,1,0],[2,0,1],[3,-1,0]]){
-          if(!(boundary&(1<<index)))continue;
-          const sx=x+(ex>0?cell:ex<0?0:cell/2),sy=y+(ez>0?tileHeight:ez<0?0:tileHeight/2);
-          const fog=ctx.createLinearGradient(sx,sy,sx-ex*band,sy-ez*band);
-          fog.addColorStop(0,`rgba(${rgb},.9)`);fog.addColorStop(1,`rgba(${rgb},0)`);ctx.fillStyle=fog;
-          ctx.fillRect(ex>0?x+cell-band:x,ez>0?y+tileHeight-band:y,ex?band:cell,ez?band:tileHeight);
-        }
-      }
       if(!info)continue;
-      counts[info.climate]++;visible++;if(this.isChunkMatched(info)){matched++;if(this.filterTypeId!==null||this.filterCategory!==null){ctx.strokeStyle=CINNABAR_MARK;ctx.strokeRect(x,y,pixel,tileHeight);}}
-      if(!this.survivalPreview&&this.showChunkInfo&&!this.isGlobe&&cell>=36){ctx.fillStyle=PAPER_TEXT;ctx.font=`10px ${CANVAS_FONT}`;ctx.fillText(String(info.type),x+3,y+12);}
+      counts[info.climate]++;visible++;if(this.isChunkMatched(info)){matched++;if(this.filterTypeId!==null||this.filterCategory!==null){ctx.strokeStyle=CINNABAR_MARK;ctx.strokeRect(x,y,cell,tileHeight);}}
+      if(this.showChunkInfo&&cell>=36){ctx.fillStyle=PAPER_TEXT;ctx.font=`10px ${CANVAS_FONT}`;ctx.fillText(String(info.type),x+3,y+12);}
     }
     if(rivers){
-      ctx.save();
-      ctx.beginPath();for(const r of riverTiles)ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
-      if(this.exploration){
-        for(const r of riverTiles)this.drawRiverSummary(ctx,r.summary,width,height,cell);
-      }else{
-        const minX=Math.floor(this.centerCx+(-width/2-this.panX)/cell),maxX=Math.ceil(this.centerCx+(width/2-this.panX)/cell);
-        const minZ=Math.floor(this.worldZ(this.mapZ(this.centerCz)+(-height/2-this.panY)/cell)),maxZ=Math.ceil(this.worldZ(this.mapZ(this.centerCz)+(height/2-this.panY)/cell));
-        this.drawRiverLayer(ctx,width,height,cell,minX,maxX,minZ,maxZ);
-      }
+      ctx.save();ctx.beginPath();for(const r of riverTiles)ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
+      const minX=Math.floor(this.centerCx+(-width/2-this.panX)/cell),maxX=Math.ceil(this.centerCx+(width/2-this.panX)/cell);
+      const minZ=Math.floor(this.worldZ(this.mapZ(this.centerCz)+(-height/2-this.panY)/cell)),maxZ=Math.ceil(this.worldZ(this.mapZ(this.centerCz)+(height/2-this.panY)/cell));
+      this.drawRiverLayer(ctx,width,height,cell,minX,maxX,minZ,maxZ);
       for(const r of riverTiles)this.drawFlowArrow(ctx,r.summary.info,r.x,r.y,cell,r.h);
       ctx.restore();
     }
-    this.surfaceCache.endFrame();this.drawPlayerMarker(ctx,width,height,cell);
-    if(!this.exploration){this.drawTerritoryLayer(ctx,width,height,cell);this.drawRainClouds(ctx,width,height,cell);}
-    ctx.fillStyle='#695638';ctx.font=`13px ${CANVAS_FONT}`;ctx.fillText(t(this.exploration?'atlas.exploration':this.isMercator?'atlas.canvas.mercatorHint':'atlas.canvas.projectionHint'),20,28);
+    this.surfaceCache.endFrame();this.paintCivilizationLayer(ctx,width,height,cell);this.drawRainClouds(ctx,width,height,cell);
+    ctx.fillStyle='#695638';ctx.font=`13px ${CANVAS_FONT}`;ctx.fillText(t(this.isMercator?'atlas.canvas.mercatorHint':'atlas.canvas.projectionHint'),20,28);
     const at=this.getCenterCoordinates();
     this.onStatsUpdate?.({centerCx:at.cx,centerCz:at.cz,scale:this.scale,visibleChunks:visible,climateCounts:counts,
       climatePercents:counts.map(n=>visible?n/visible*100:0) as [number,number,number,number,number],matchedCount:matched,
-      matchedPercent:visible?matched/visible*100:0,activeFilterName:this.getActiveFilterLabel(),level:this.isGlobe?'globe':cell<12?'overview':'chunks'});
+      matchedPercent:visible?matched/visible*100:0,activeFilterName:this.getActiveFilterLabel(),level:cell<12?'overview':'chunks'});
   }
-
+  /** 高度图按高程上色，叠等高线阴影 */
+  private drawContourChunk(ctx:CanvasRenderingContext2D,info:ChunkInfo,x:number,y:number,w:number,h:number):void{
+    const unit=this.textureContourUnit();
+    if(this.layerEnabled('height')){
+      const o=elevationRampValue(info.elevation)*3;
+      ctx.fillStyle=`rgb(${LAND[o]},${LAND[o+1]},${LAND[o+2]})`;
+      ctx.fillRect(x,y,w,h);
+      return;
+    }
+    if(!(unit>0)||info.elevation<=0)return;
+    const band=bandPosition(info.elevation,unit),shade=terraceShade(band);
+    ctx.fillStyle=`rgba(0,0,0,${Math.min(.3,(1-shade)*1.6)})`;
+    ctx.fillRect(x,y,w,h);
+    const cell=Math.floor(info.elevation/unit);
+    const east=this.cachedMapInfo(info.cx+1,info.cz),south=this.cachedMapInfo(info.cx,info.cz+1);
+    ctx.strokeStyle='rgba(38,30,20,.45)';ctx.lineWidth=1;
+    if(east&&Math.floor(east.elevation/unit)!==cell){ctx.beginPath();ctx.moveTo(x+w,y);ctx.lineTo(x+w,y+h);ctx.stroke();}
+    if(south&&Math.floor(south.elevation/unit)!==cell){ctx.beginPath();ctx.moveTo(x,y+h);ctx.lineTo(x+w,y+h);ctx.stroke();}
+  }
   private drawFlowArrow(ctx:CanvasRenderingContext2D,info:ChunkInfo,x:number,y:number,cell:number,h:number):void{
     if(cell<10||!isRiverType(info.type,this.generator.generation.terrainRule==='planet-macro')||info.displayFlow<0)return;
     const flow=FLOW_DIRECTIONS[info.displayFlow];if(!flow)return;
@@ -928,9 +1032,9 @@ export class AtlasView {
       const left=Math.floor(this.centerCx+(-width/2-this.panX)/cell),right=Math.ceil(left+width/cell)+1;
       const top=Math.floor(this.worldZ(this.mapZ(this.centerCz)+(-height/2-this.panY)/cell)),bottom=Math.ceil(this.worldZ(this.mapZ(this.centerCz)+(height/2-this.panY)/cell));
       const coordinates=function*():Generator<[number,number]>{for(let z=top;z<=bottom;z++)for(let x=left;x<=right;x++)yield [((x+size/2)%size+size)%size-size/2,z];};
-      this.drawExplored(ctx,width,height,coordinates());
+      this.drawFlatDetails(ctx,width,height,coordinates());
     }else{
-      this.drawPlayerMarker(ctx,width,height,cell);this.drawTerritoryLayer(ctx,width,height,cell);this.drawRainClouds(ctx,width,height,cell);
+      this.paintCivilizationLayer(ctx,width,height,cell);this.drawRainClouds(ctx,width,height,cell);
       ctx.fillStyle=PAPER_TEXT;ctx.font=`13px ${CANVAS_FONT}`;ctx.fillText(t(this.isMercator?'atlas.canvas.mercatorHint':'atlas.canvas.projectionHint'),20,28);this.drawMacroRiverHint(ctx);
       const at=this.getCenterCoordinates();this.onStatsUpdate?.({centerCx:at.cx,centerCz:at.cz,scale:this.scale,visibleChunks:0,climateCounts:[0,0,0,0,0],climatePercents:[0,0,0,0,0],matchedCount:0,matchedPercent:0,activeFilterName:this.getActiveFilterLabel(),level:'overview'});
     }
@@ -942,10 +1046,26 @@ export class AtlasView {
 
   /** 全览样式，纹理与底图共用同一标识 */
   private overviewStyle(): OverviewStyle {
-    if(this.survivalPreview)return {rivers:false,climate:false,relief:false,chunkColors:false,climateFilter:null,filterKey:'',matches:()=>false};
-    return { satellite:this.showSatellite,rivers:!this.showClimate,climate: this.showClimate, relief: this.showProjection, climateFilter: this.activeClimateFilter,
+    return { satellite:this.showSatellite,rivers:!this.showClimate,climate: this.showClimate, relief: this.layerEnabled('height'),
+      reliefMode:this.textureMode(),sunHours:this.sunHours,sunWorld:this.sunWorld(), contourUnit:this.textureContourUnit(),
+      climateFilter: this.activeClimateFilter,
       chunkColors: this.showChunkColors, filterKey: this.getActiveFilterLabel(),
       matches: (type: number) => this.isTypeMatched(type) };
+  }
+
+  /** 全览纹理只有一层，按开关挑一个近似档 */
+  private textureMode():'contour'|'daylight'|'height'|'none'{
+    if(this.layerEnabled('contour'))return 'contour';
+    if(this.layerEnabled('daylight'))return 'daylight';
+    if(this.layerEnabled('height'))return 'height';
+    return 'none';
+  }
+  /** 全览与瓦片按同一缩放档查表 */
+  private textureContourUnit():number{
+    if(!this.layerEnabled('contour'))return 0;
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    const state=atlasCamera(this,this.canvas.width/dpr,this.canvas.height/dpr);
+    return contourUnit(levelFor(state),this.generator.generation.macroColumns);
   }
 
   /** 先补中心邻域，再向四周展开 */
@@ -972,7 +1092,7 @@ export class AtlasView {
         if (this.isTypeMatched(sample.type)) matches++;
       }
     } else {
-      const texture = this.survivalPreview||cell < .7;
+      const texture = cell < .7;
       if (texture) this.planetLayer.drawProjection(ctx, width, height, cell, this.centerCx, this.centerCz, this.panX, this.panY, style);
       // 瓦片过密时放大步长，把每帧采样压在上限内
       const budget = texture ? OVERVIEW_STAT_BUDGET : OVERVIEW_TILE_BUDGET;
@@ -989,8 +1109,8 @@ export class AtlasView {
         const sy = height / 2 + this.panY + (z - this.centerCz) * cell;
         // 纹理档已有底图，这里只补统计
         if (!texture) {
-          let color = overviewColor(info, this.showClimate, this.showProjection,this.showChunkColors,this.generator.generation.terrainRule==='planet-macro');
-          if(this.showSatellite&&!this.showClimate&&!this.showChunkColors){const rgb=this.generator.getSatelliteColor(info.cx,info.cz,this.showProjection);if(rgb!==null)color=[rgb>>16,rgb>>8&255,rgb&255];}
+          let color = overviewColor(info, this.showClimate, this.layerEnabled('height'),this.showChunkColors,this.generator.generation.terrainRule==='planet-macro');
+          if(this.showSatellite&&!this.showClimate&&!this.showChunkColors){const rgb=this.generator.getSatelliteColor(info.cx,info.cz,false);if(rgb!==null)color=[rgb>>16,rgb>>8&255,rgb&255];}
           if (this.showClimate && this.activeClimateFilter !== null && info.climate !== this.activeClimateFilter) color = color.map(c => c * .35) as [number, number, number];
           ctx.fillStyle = `rgb(${color.join(',')})`; ctx.fillRect(sx, sy, tile + .5, tile + .5);
         }
@@ -1013,11 +1133,11 @@ export class AtlasView {
         ctx.lineTo(sx, Math.min(height, height / 2 + this.panY + (size / 4 - this.centerCz) * cell)); ctx.stroke();
       }
     }
-    this.drawTerritoryLayer(ctx, width, height, cell);
+    this.paintCivilizationLayer(ctx, width, height, cell);
     this.drawRainClouds(ctx, width, height, cell);
     ctx.fillStyle = PAPER_TEXT; ctx.font = `13px ${CANVAS_FONT}`; ctx.textAlign = 'left';
-    ctx.fillText(this.isGlobe ? t('atlas.canvas.globeHint') : t('atlas.canvas.projectionHint'), 20, 28);this.drawMacroRiverHint(ctx);
-    this.drawPlayerMarker(ctx, width, height, cell);
+    ctx.fillText(this.isGlobe?t('atlas.canvas.globeHint'):t('atlas.canvas.projectionHint'),20,28);this.drawMacroRiverHint(ctx);
+
     const center = this.getCenterCoordinates();
     this.onStatsUpdate?.({ centerCx: Math.round(center.cx), centerCz: Math.round(center.cz), scale: this.scale,
       visibleChunks: samples, climateCounts: counts,
@@ -1088,201 +1208,67 @@ export class AtlasView {
 
   // ---- 鼠标与触控事件监听 ----
 
+  // 接入独立输入控制器
   private initEvents(): void {
-    const canvas = this.canvas;
-
-    // 鼠标按下：启动拖拽
-    canvas.addEventListener('mousedown', (e) => {
-      if (!this.active) return;
-      if (e.button !== 0) return;
-      this.isDragging = true;
-      this.hasMoved = false;
-      this.dragStartX = e.clientX;
-      this.dragStartY = e.clientY;
-      this.lastDragX = e.clientX;
-      this.lastDragY = e.clientY;
-      canvas.style.cursor = 'grabbing';
-    }, { signal: this.events.signal });
-
-    // 鼠标移动：平移视口或更新悬停
-    window.addEventListener('mousemove', (e) => {
-      if (!this.active) return;
-      if (this.isDragging) {
-        const dx = e.clientX - this.lastDragX;
-        const dy = e.clientY - this.lastDragY;
-        if (Math.hypot(e.clientX - this.dragStartX, e.clientY - this.dragStartY) > 3) {
-          this.hasMoved = true;
+    const host: AtlasInputHost = {
+      active: this.active,
+      getChunkAtPoint: (x, y, requestInfo) => this.getChunkAtPoint(x, y, requestInfo),
+      onHover: (chunk) => {
+        if (!this.hoveredChunk || this.hoveredChunk.cx !== chunk?.cx || this.hoveredChunk.cz !== chunk?.cz) {
+          this.hoveredChunk = chunk;
+          if (!this.isPlanet || (!this.isGlobe && this.baseCellSize * this.scale >= 12)) this.requestRender();
         }
+      },
+      onSelect: (chunk) => {
+        this.selectedChunk = chunk;
+        if (this.onChunkSelect) this.onChunkSelect(this.artificial.info(chunk.cx, chunk.cz));
+      },
+      onActivate: (chunk) => {
+        const info = this.artificial.info(chunk.cx, chunk.cz);
+        if (this.onChunkActivate) {
+          this.onChunkActivate(info);
+          return;
+        }
+        if (!this.isPlanet) return;
+        this.centerCx = chunk.cx;
+        this.centerCz = chunk.cz;
+        this.panX = 0;
+        this.panY = 0;
+        this.planetView = this.preferredOverview === 'mercator' ? 'mercator' : 'projection';
+        this.scale = 1;
+        this.selectedChunk = chunk;
+        this.onChunkSelect?.(info);
+        this.requestRender();
+      },
+      onDestination: (x, y, chunk) => {
+        this.destination(x, y, chunk);
+      },
+      panBy: (dx, dy) => {
         this.panBy(dx, dy);
-        this.lastDragX = e.clientX;
-        this.lastDragY = e.clientY;
-        this.requestRender();
-      } else {
-        const rect = canvas.getBoundingClientRect();
-        if (
-          e.clientX >= rect.left &&
-          e.clientX <= rect.right &&
-          e.clientY >= rect.top &&
-          e.clientY <= rect.bottom
-        ) {
-          const chunk = this.getChunkAtPoint(e.clientX - rect.left, e.clientY - rect.top);
-          if (!chunk) { this.hoveredChunk = null; return; }
-          if (
-            !this.hoveredChunk ||
-            this.hoveredChunk.cx !== chunk.cx ||
-            this.hoveredChunk.cz !== chunk.cz
-          ) {
-            this.hoveredChunk = chunk;
-            if (!this.isPlanet || !this.isGlobe && this.baseCellSize * this.scale >= 12) this.requestRender();
-          }
-        } else if (this.hoveredChunk) {
-          this.hoveredChunk = null;
-          this.requestRender();
-        }
-      }
-    }, { signal: this.events.signal });
-
-    // 鼠标松开：若无明显拖动则视为点击选中
-    window.addEventListener('mouseup', (e) => {
-      if (!this.active) return;
-      if (!this.isDragging) return;
-      this.isDragging = false;
-      canvas.style.cursor = 'grab';
-      this.requestRender();
-
-      if (!this.hasMoved) {
-        const rect = canvas.getBoundingClientRect();
-        if (
-          e.clientX >= rect.left &&
-          e.clientX <= rect.right &&
-          e.clientY >= rect.top &&
-          e.clientY <= rect.bottom
-        ) {
-          const chunk = this.getChunkAtPoint(e.clientX - rect.left, e.clientY - rect.top);
-          if (!chunk) return;
-          this.selectedChunk = chunk;
-          this.destination(e.clientX-rect.left,e.clientY-rect.top,chunk);
-          const info = this.artificial.info(chunk.cx, chunk.cz);
-          if (this.onChunkSelect) {
-            this.onChunkSelect(info);
-          }
-          this.requestRender();
-        }
-      }
-    }, { signal: this.events.signal });
-
-    // 滚轮缩放：以鼠标指针为中心平滑缩放
-    canvas.addEventListener(
-      'wheel',
-      (e) => {
-        if (!this.active) return;
-        e.preventDefault();
-        const factor = e.deltaY < 0 ? 1.15 : 0.87;
-        this.zoomBy(factor, e.clientX, e.clientY);
       },
-      { passive: false, signal: this.events.signal }
-    );
-
-    canvas.addEventListener('dblclick', (e) => {
-      if (!this.active) return;
-      const rect = canvas.getBoundingClientRect(), chunk = this.getChunkAtPoint(e.clientX - rect.left, e.clientY - rect.top);
-      if (!chunk) return;
-      if (this.onChunkActivate) { this.onChunkActivate(this.artificial.info(chunk.cx, chunk.cz)); return; }
-      if (!this.isPlanet) return;
-      this.centerCx = chunk.cx; this.centerCz = chunk.cz; this.panX = 0; this.panY = 0;
-      this.planetView = this.preferredOverview==='mercator'?'mercator':'projection'; this.scale = 1;
-      this.selectedChunk = chunk; this.onChunkSelect?.(this.artificial.info(chunk.cx, chunk.cz));
-      this.requestRender();
-    }, { signal: this.events.signal });
-
-    // 触控支持（移动端/触摸板）
-    let touchStartDist = 0;
-    let lastTap: { time: number; x: number; y: number } | null = null;
-    canvas.addEventListener(
-      'touchstart',
-      (e) => {
-        if (!this.active) return;
-        if (e.touches.length === 1) {
-          this.isDragging = true;
-          this.hasMoved = false;
-          this.dragStartX = e.touches[0].clientX;
-          this.dragStartY = e.touches[0].clientY;
-          this.lastDragX = e.touches[0].clientX;
-          this.lastDragY = e.touches[0].clientY;
-        } else if (e.touches.length === 2) {
-          this.isDragging = false;
-          lastTap = null; this.hasMoved = true;
-          touchStartDist = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-          );
-        }
+      zoomBy: (factor, clientX, clientY) => {
+        this.zoomBy(factor, clientX, clientY);
       },
-      { passive: true, signal: this.events.signal }
-    );
-
-    canvas.addEventListener(
-      'touchmove',
-      (e) => {
-        if (!this.active) return;
-        if (e.touches.length === 1 && this.isDragging) {
-          const dx = e.touches[0].clientX - this.lastDragX;
-          const dy = e.touches[0].clientY - this.lastDragY;
-          this.panBy(dx, dy);
-          this.lastDragX = e.touches[0].clientX;
-          this.lastDragY = e.touches[0].clientY;
-          if (Math.hypot(e.touches[0].clientX - this.dragStartX, e.touches[0].clientY - this.dragStartY) > 8) this.hasMoved = true;
-          this.requestRender();
-        } else if (e.touches.length === 2 && touchStartDist > 0) {
-          const dist = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-          );
-          const factor = dist / touchStartDist;
-          touchStartDist = dist;
-          const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-          const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-          this.zoomBy(factor, midX, midY);
-        }
-      },
-      { passive: true, signal: this.events.signal }
-    );
-
-    canvas.addEventListener(
-      'touchend',
-      (e) => {
-        if (!this.active) return;
-        if (this.isDragging && !this.hasMoved && e.changedTouches.length === 1) {
-          const rect = canvas.getBoundingClientRect();
-          const t = e.changedTouches[0];
-          const chunk = this.getChunkAtPoint(t.clientX - rect.left, t.clientY - rect.top);
-          if (chunk) {
-            this.selectedChunk = chunk;
-            this.destination(t.clientX-rect.left,t.clientY-rect.top,chunk);
-            const info = this.artificial.info(chunk.cx, chunk.cz);
-            if (this.onChunkSelect) this.onChunkSelect(info);
-            const now = performance.now();
-            if (lastTap && now - lastTap.time < 350 && Math.hypot(t.clientX - lastTap.x, t.clientY - lastTap.y) < 24) {
-              lastTap = null;
-              if (this.onChunkActivate) this.onChunkActivate(info); else this.centerAt(chunk.cx, chunk.cz);
-            } else lastTap = { time: now, x: t.clientX, y: t.clientY };
-            this.requestRender();
-          }
-        }
-        this.isDragging = false;
-        touchStartDist = 0;
+      requestRender: () => {
         this.requestRender();
       },
-      { passive: true, signal: this.events.signal }
-    );
-    canvas.addEventListener('touchcancel', () => {
-      this.isDragging = false; this.hasMoved = true; touchStartDist = 0; lastTap = null;
-      this.requestRender();
-    }, { signal: this.events.signal });
+      setCursor: (cursor) => {
+        this.canvas.style.cursor = this.survivalPreview?'default':cursor;
+      },
+    };
+    Object.defineProperty(host, 'active', { get: () => this.active });
+    this.input = new AtlasInputController(this.canvas, host);
   }
 
-  // 像素坐标转换为区块坐标 (cx, cz)
-  private drawTerritoryLayer(ctx: CanvasRenderingContext2D, width: number, height: number, cell: number): void {
+  private paintCivilizationLayer(ctx: CanvasRenderingContext2D, width: number, height: number, cell: number): void {
+    if (!this.layerEnabled('civilization')) return;
+    ctx.save(); ctx.globalAlpha = this.layerOpacity('civilization');
+    this.drawTerritoryLayer(ctx, width, height, cell);
+    ctx.restore();
+  }
+
+  /** 文明层：置旗地与领地范围 */
+  drawTerritoryLayer(ctx: CanvasRenderingContext2D, width: number, height: number, cell: number): void {
     if (!this.artificial.settings.enabled && !this.artificial.playerFactionId) return;
     const size = this.generator.generation.planet.equatorChunks;
     const s = this.artificial.generator.cellSize;
@@ -1314,9 +1300,10 @@ export class AtlasView {
   }
 
   /** 降水场直接反算画布坐标，不触碰区块采样 */
-  private drawRainClouds(ctx: CanvasRenderingContext2D, width: number, height: number, cell: number): void {
+  private drawRainClouds(ctx: CanvasRenderingContext2D, width: number, height: number, cell: number, showLegend=true): void {
     const weather = this.precipitation;
     if (!this.showRainClouds || !weather) return;
+    ctx.save();ctx.globalAlpha=this.rainOpacity;
     const size = this.generator.generation.planet.equatorChunks, TAU = Math.PI * 2;
     const center = this.isGlobe ? { lon: (this.centerCx + .5) / size * TAU, lat: -(this.centerCz + .5) / size * TAU }
       : { lon: (this.centerCx - this.panX / cell) / size * TAU, lat: -this.worldZ(this.mapZ(this.centerCz) - this.panY / cell) / size * TAU };
@@ -1340,7 +1327,7 @@ export class AtlasView {
         const rain = sample.precipitation !== 'none';
         const color = rain ? (sample.precipitation === 'snow' ? [168, 155, 207] : sample.precipitation === 'mixed' ? [176, 216, 232] : [88, 155, 218]) : [222, 228, 232];
         pixels[i] = color[0]; pixels[i + 1] = color[1]; pixels[i + 2] = color[2];
-        pixels[i + 3] = 255 * (rain ? .12 + sample.intensity * .52 : Math.max(0, sample.cloudCover - .42) * .24);
+        pixels[i + 3] = 255 * (rain ? .12 + sample.intensity * .88 : Math.max(0, sample.cloudCover - .42) * .24);
       }
       layer.canvas.getContext('2d')!.putImageData(new ImageData(pixels, w, h), 0, 0);
       layer.key = key;
@@ -1349,6 +1336,7 @@ export class AtlasView {
     if (this.isGlobe) { ctx.beginPath(); ctx.arc(width / 2, height / 2, state.scale, 0, TAU); ctx.clip(); }
     ctx.imageSmoothingEnabled = true; ctx.drawImage(this.cloudLayer!.canvas, 0, 0, width, height);
     ctx.restore();
+    if(!showLegend){ctx.restore();return;}
     ctx.save(); ctx.textAlign = 'left'; ctx.font = `13px ${CANVAS_FONT}`;
     const legend = t('atlas.rainClouds.legend');
     const legendWidth = ctx.measureText(legend).width + 20, legendX = Math.max(12, width - legendWidth - 12);
@@ -1356,6 +1344,7 @@ export class AtlasView {
     const legendY = tools ? Math.max(12, tools.getBoundingClientRect().bottom - this.canvas.getBoundingClientRect().top + 12) : 12;
     ctx.fillStyle = 'rgba(36,28,19,.85)'; ctx.fillRect(legendX, legendY, legendWidth, 26);
     ctx.fillStyle = PAPER_TEXT; ctx.fillText(legend, legendX + 10, legendY + 18); ctx.restore();
+    ctx.restore();
   }
 
   private destination(px:number,py:number,chunk:{cx:number;cz:number}):void {
@@ -1369,41 +1358,29 @@ export class AtlasView {
     if(this.isPlanet){const size=this.generator.generation.planet.equatorChunks;cx=((cx+size/2)%size+size)%size-size/2;}
     return this.surfaceCache.peek(cx,cz)?.summary?.info??this.generator.cachedChunkInfo(cx,cz);
   }
-  private getChunkAtPoint(px: number, py: number): { cx: number; cz: number } | null {
+  private getChunkAtPoint(px:number,py:number,requestInfo=true):{cx:number;cz:number}|null {
     if(this.survivalPreview&&this.isPlanet)return null;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const width = this.canvas.width / dpr;
-    const height = this.canvas.height / dpr;
-    const cellSize = this.baseCellSize * this.scale;
-    const halfW = width / 2;
-    const halfH = height / 2;
-
-    if (this.isGlobe) {
-      const size = this.generator.generation.planet.equatorChunks;
-      const center = planetCoordinates(this.centerCx, this.centerCz, size);
-      const coord = globePoint((px - halfW) / this.globeRadius, (halfH - py) / this.globeRadius, center.longitude, center.latitude);
-      if(!coord)return null;
-      const point={cx:Math.floor(coord.longitude/360*size),cz:Math.max(-size/4,Math.min(size/4-1,Math.floor(-coord.latitude/360*size)))};
-      if(this.worldKey&&!this.cachedMapInfo(point.cx,point.cz)){
-        if(!this.exploration||this.exploration.has(point.cx,point.cz)){this.surfaceCache.get(point.cx,point.cz,0,false);this.surfaceCache.endFrame();}
-        return null;
-      }
-      return this.exploration&&(!this.exploration.has(point.cx,point.cz)||!this.cachedMapInfo(point.cx,point.cz))?null:point;
+    const dpr=Math.min(window.devicePixelRatio||1,2),width=this.canvas.width/dpr,height=this.canvas.height/dpr;
+    const cell=this.baseCellSize*this.scale,size=this.generator.generation.planet.equatorChunks;
+    let cx:number,cz:number;
+    if(this.isPlanet){
+      const point=unproject(atlasCamera(this,width,height),px,py);if(!point)return null;
+      cx=Math.floor(point.lon/(Math.PI*2)*size+1e-9);
+      cx=((cx+size/2)%size+size)%size-size/2;
+      cz=Math.max(-size/4,Math.min(size/4-1,Math.floor(-point.lat/(Math.PI*2)*size+1e-9)));
+    }else{
+      cx=Math.floor(this.centerCx+(px-width/2-this.panX)/cell);
+      cz=Math.floor(this.centerCz+(py-height/2-this.panY)/cell);
     }
-
-    let cx = Math.floor(this.centerCx + (px - halfW - this.panX) / cellSize);
-    if(this.isPlanet){const size=this.generator.generation.planet.equatorChunks;cx=((cx+size/2)%size+size)%size-size/2;}
-    const projected=this.mapZ(this.centerCz)+(py-halfH-this.panY)/cellSize;
-    if(this.isMercator&&Math.abs(projected)>this.generator.generation.planet.equatorChunks/2)return null;
-    const cz = Math.floor(this.worldZ(projected)+(this.isMercator?1e-9:0));
-    if (this.isPlanet && (cz < -this.generator.generation.planet.equatorChunks / 4 || cz >= this.generator.generation.planet.equatorChunks / 4)) return null;
-    if(this.worldKey&&!this.cachedMapInfo(cx,cz)){this.surfaceCache.get(cx,cz,0,false);this.surfaceCache.endFrame();return null;}
-    if(this.exploration&&(!this.exploration.has(cx,cz)||!this.cachedMapInfo(cx,cz)))return null;
-    return { cx, cz };
+    if(this.exploration&&!this.exploration.has(cx,cz))return null;
+    if(this.worldKey&&!this.cachedMapInfo(cx,cz)){
+      if(requestInfo){this.surfaceCache.get(cx,cz,0,false);this.surfaceCache.endFrame();}return null;
+    }
+    return {cx,cz};
   }
-
   destroy(): void {
     this.destroyed = true;
+    this.input?.dispose();
     disposeGameAtlas(this);
     clearTimeout(this.refinementTimer);
     this.surfaceCache.dispose();

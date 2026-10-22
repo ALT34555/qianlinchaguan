@@ -5,7 +5,7 @@ import { buildChunkMeshes, type MeshData } from './ChunkMesher';
 import {buildPlanetChunkMeshes} from './planet-macro/PlanetChunkMesher';
 import type { ChunkResultMessage, WorkerRequest } from './ChunkProtocol';
 import type { WorldGeneratorBase as WorldGenerator } from './WorldContract';
-import { decorationPlacements } from './WorldDecoration';
+import { decorationPlacements,decorationSurfaceSamplers } from './WorldDecoration';
 import { CHUNK_SIZE } from '../../core/config';
 import * as THREE from 'three';
 import { ChunkCache, chunkSignature, minimapSummary } from './ChunkCache';
@@ -74,7 +74,9 @@ async function handle(e: MessageEvent<WorkerRequest>):Promise<void> {
     const waterGenerator = generator;
     const meshes = generator.generation.terrainRule==='planet-macro'?buildPlanetChunkMeshes(chunk,generator.seed):buildChunkMeshes(msg.cx, msg.cz, chunk.heights, chunk.surfaces, generator.seed, chunk.waterLevels, chunk.surfaceColors,chunk.waterField,
       (x, z) => waterGenerator.getWaterState(msg.cx * CHUNK_SIZE + x, msg.cz * CHUNK_SIZE + z));
-    const decorationInput = { ...chunk, type:generator.generation.terrainRule==='planet-macro'?macroDecorationType(chunk.type):chunk.type, cx: msg.cx, cz: msg.cz,
+    const macroSurface=generator.generation.terrainRule==='planet-macro';
+    const decorationInput = { ...chunk,...decorationSurfaceSamplers(msg.cx,msg.cz,chunk.heights,chunk.waterLevels,
+      chunk.waterField.bedLevels,generator.seed,macroSurface,(x,z)=>waterGenerator.getWaterState(x,z)), type:generator.generation.terrainRule==='planet-macro'?macroDecorationType(chunk.type):chunk.type, cx: msg.cx, cz: msg.cz,
       artificialType: msg.artificialType,
       vegetationMultiplier: msg.vegetationMultiplier,
       seed: generator.seed, temperature: generator.getClimate(msg.cx, msg.cz).temperature };

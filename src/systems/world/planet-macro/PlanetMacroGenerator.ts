@@ -18,6 +18,7 @@ import {clipRiverSegment} from './river-geometry.mjs';
 import {satelliteMap,satelliteColor} from './satellite.mjs';
 import { cellAt } from './sphere-frame.mjs';
 import { macroSeasonStrength } from './Settings';
+import { hash2 } from '../../../core/math/Random';
 
 const TILE_BYTES=8*1024*1024, FIELDS=18, S=CHUNK_SIZE;
 
@@ -33,6 +34,7 @@ export class PlanetMacroGenerator extends WorldGenerator {
   private tileBytes=0;
   private tileHits=0;
   private tileMisses=0;
+  private spawnPoint?:{cx:number;cz:number};
   constructor(seed:number,weights:ClimateWeights,generation:WorldGeneration) {
     super(seed,weights,generation);
     this.generation=normalizeGeneration(generation);
@@ -63,7 +65,7 @@ export class PlanetMacroGenerator extends WorldGenerator {
       if(!ArrayBuffer.isView(w[field])||w[field].length!==n)throw Error('宏观快照字段长度不符');
     if(w.circumference!==o.equatorChunks*S||!validateWorld(w).ok||fingerprint(w)!==w.fingerprint)throw Error('宏观快照校验失败');
     if(this.model===w)return;
-    this.model=w;this.overviewRivers=undefined;this.pending=undefined;this.tiles.clear();this.features.clear();this.tileBytes=0;
+    this.model=w;this.overviewRivers=undefined;this.pending=undefined;this.tiles.clear();this.features.clear();this.tileBytes=0;this.spawnPoint=undefined;
   }
   cacheStats() {return {tiles:this.tiles.size,bytes:this.tileBytes,limitBytes:TILE_BYTES,hits:this.tileHits,misses:this.tileMisses};}
 
@@ -74,13 +76,13 @@ export class PlanetMacroGenerator extends WorldGenerator {
     if(wz<-C/4){wz=-C/2-wz;wx=wrap(wx+C/2);}
     return [wx,wz];
   }
-  private raw(wx:number,wz:number):MacroSurface {
+  private raw(wx:number,wz:number,cover=true):MacroSurface {
     [wx,wz]=this.coordinates(wx,wz);const w=this.macroWorld;
     if(wx-Math.floor(wx)===.5&&wz-Math.floor(wz)===.5){
       const cx=Math.floor(wx/S),cz=Math.floor(wz/S),tile=this.tiles.get(`${cx},${cz}`);
       if(tile)return this.packedPoint(tile,(Math.floor(wz)-cz*S)*S+Math.floor(wx)-cx*S);
     }
-    return samplePlanetSurface(w,wx,wz);
+    return samplePlanetSurface(w,wx,wz,true,false,cover);
   }
   override setWaterSeason(phase:number|null):boolean {
     const next=waterSeasonPhase(phase);if(next===this.seasonPhase)return false;
@@ -231,22 +233,56 @@ export class PlanetMacroGenerator extends WorldGenerator {
       bedLevel:bed,liquidDepth:Number.isFinite(level)?level-bed:0,hasLiquidWater:Number.isFinite(level),waterSurfaceLevel};
     return {height:h,block,state,color:(s as any).surfaceColor??0};
   }
+  getSurfaceColumn(wx:number,wz:number,cover=true) {
+    const x=Math.floor(wx),z=Math.floor(wz),raw=this.raw(x+.5,z+.5,cover),value=this.columnState(x,z,raw);
+    const bodyKind=raw.kind===1?'sea':raw.kind===2?'lake':raw.river?'river':'unknown';
+    const lake=this.macroWorld.lakeId[raw.cell];
+    return {...value,temperature:raw.temperature,chunkCode:raw.chunkCode??0,
+      waterBodyKind:bodyKind,waterBodyId:bodyKind==='sea'?'sea':bodyKind==='lake'&&lake>=0?`lake:${lake}`:raw.river?.id??null};
+  }
   override getHeight(wx:number,wz:number):number {const c=this.columnState(wx,wz);return Math.max(c.height,c.state.frozen?c.state.iceLevel:-Infinity);}
   override getWaterLevel(wx:number,wz:number):number {return this.columnState(wx,wz).state.level;}
   override getWaterState(wx:number,wz:number):WaterSample {return this.columnState(wx,wz).state;}
   override findSpawnChunk():{cx:number;cz:number} {
-    for(const site of this.macroWorld.flags){const x=site.cx*S+32,z=site.cz*S+32;if(this.getHeight(x,z)>this.getWaterLevel(x,z))return {cx:site.cx,cz:site.cz};}
-    const w=this.macroWorld;if(this.generation.landRatio===0)return {cx:0,cz:0};
-    let checked=0;
-    for(let i=0;i<w.height.length&&checked<512;i++){
-      if(w.height[i]<12||w.water[i]||w.riverWidth[i])continue;checked++;
-      const cx=Math.floor(((i%w.columns+.5)/w.columns-.5)*w.circumference/S),cz=Math.floor(((Math.floor(i/w.columns)+.5)/w.rows*.5-.25)*w.circumference/S);
-      const x=cx*S+32,z=cz*S+32,h=this.getHeight(x,z);
-      if(h>this.getWaterLevel(x,z)&&Math.abs(h-this.getHeight(x+2,z))<1&&Math.abs(h-this.getHeight(x,z+2))<1)return {cx,cz};
+    const w=this.macroWorld;
+    if(this.spawnPoint)return {...this.spawnPoint};
+    if(this.generation.landRatio===0)return {cx:0,cz:0};
+    const candidates:{cx:number;cz:number;tier:number;key:number;flag:boolean}[]=[];
+    const add=(i:number,cx:number,cz:number,flag=false)=>{
+      const temperature=w.temperature[i],height=w.height[i];
+      if(!Number.isFinite(temperature)||!Number.isFinite(height)||height<12||w.water[i]||w.riverWidth[i])return;
+      const row=Math.floor(i/w.columns),latitude=Math.PI/2-(row+.5)*Math.PI/w.rows;
+      const tier=temperature>=8&&temperature<=28?0:temperature>=0&&temperature<=35?1:2;
+      const moisture=Math.max(0,Math.min(1,w.moisture[i]));
+      const comfort=1/(1+Math.abs(temperature-18)/12);
+      const lowland=1/(1+Math.max(0,height-200)/1200);
+      const weight=Math.max(.001,Math.cos(latitude))*comfort*lowland*(.5+moisture*.5);
+      const random=Math.max(Number.EPSILON,hash2(cx,cz,this.seed^0x53504157));
+      candidates.push({cx,cz,tier,key:-Math.log(random)/weight,flag});
+    };
+    for(const site of w.flags)add(site.cell,site.cx,site.cz,true);
+    for(let i=0;i<w.height.length;i++){
+      const cx=Math.floor(((i%w.columns+.5)/w.columns-.5)*w.circumference/S);
+      const cz=Math.floor(((Math.floor(i/w.columns)+.5)/w.rows*.5-.25)*w.circumference/S);
+      add(i,cx,cz);
     }
-    throw Error('未找到安全置旗地，请调整陆占比、气温或种子。');
+    candidates.sort((a,b)=>a.tier-b.tier||Number(b.flag)-Number(a.flag)||a.key-b.key||a.cz-b.cz||a.cx-b.cx);
+    const checked=[0,0,0];
+    for(const candidate of candidates){
+      if(checked[candidate.tier]++>=512)continue;
+      const {cx,cz}=candidate,x=cx*S+32.5,z=cz*S+32.5,center=this.raw(x,z);
+      if(center.kind||center.river||center.wetland>.25||!(center.height>center.water))continue;
+      let safe=true;
+      for(const [dx,dz] of [[-2,0],[2,0],[0,-2],[0,2]]){
+        const s=this.raw(x+dx,z+dz);
+        if(s.kind||s.river||s.wetland>.25||!(s.height>s.water)||Math.abs(s.height-center.height)>=1){safe=false;break;}
+      }
+      if(safe){this.spawnPoint={cx,cz};return {...this.spawnPoint};}
+    }
+    throw Error('未找到安全出生地，请调整陆占比、气温或种子。');
   }
   override findSpawnOrigin():{cx:number;cz:number} {return this.findSpawnChunk();}
+  override getInitialTerritorySites():readonly {cx:number;cz:number}[] {return this.macroWorld.flags;}
   override spawnSurface(cx:number,cz:number) {const x=cx*S+32,z=cz*S+32;return {height:this.getHeight(x,z),water:this.getWaterLevel(x,z)};}
   override generateChunk(cx:number,cz:number):ChunkGenResult {
     const P=PADDED_SIZE,N=P*P,tile=this.rawTile(cx,cz),heights=new Float32Array(N),waterLevels=new Float32Array(N),surfaces=new Uint32Array(S*S),surfaceColors=new Uint8Array(N*3);

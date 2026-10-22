@@ -1,13 +1,14 @@
 // 1018 视觉层运行时：令牌、装饰、交互与配色状态
 import { loadCSV } from './csv';
 import { initDecor } from './decor';
-import { initTheme, state, resolvedTheme, setThemeMode, toggleTheme, update, reset as resetTheme } from './theme';
+import { initTheme, state, resolvedTheme, setThemeMode, toggleTheme, update, subscribeTheme, reset as resetTheme } from './theme';
 import { initUI } from './ui';
 import { nearestColor, siblingColors, normalizeHex, type PaletteEntry } from './color';
 
 export { paintAll } from './decor';
-export { toast, openDialog, openDrawer, showLoading, flowerRingSVG, setLoaderProgress, loaderSVG } from './ui';
-export { state as themeState, resolvedTheme, setThemeMode, toggleTheme, update as updateTheme, resetTheme };
+export { toast, openDialog, openDrawer, showLoading, flowerRingSVG } from './ui';
+export { createPetalLoading, motionLibrary, petalScale, coreScale } from './motion';
+export { state as themeState, resolvedTheme, setThemeMode, toggleTheme, update as updateTheme, subscribeTheme, resetTheme };
 export type { PaletteEntry };
 
 interface TokenRow { group: string; token: string; light: string; dark: string; note: string }

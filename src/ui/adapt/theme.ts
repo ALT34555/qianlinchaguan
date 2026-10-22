@@ -89,6 +89,39 @@ function clampText(): void {
   }
 }
 
+/* 主色/装饰色作前景时，按纸面自动压深或提亮 */
+const FG_FLOOR = 4.5;
+const FG_PAIRS: Array<[string, string]> = [['--q-primary-ui', '--q-primary-text'], ['--q-accent-ui', '--q-accent-text']];
+
+function readableOn(color: string, backgrounds: string[], anchor: string): string {
+  const ok = (value: string): boolean => backgrounds.every(bg => contrastRatio(value, bg) >= FG_FLOOR);
+  if (ok(color)) return color;
+  for (let step = 1; step < 20; step++) {
+    const next = mixHex(color, anchor, step / 20);
+    if (ok(next)) return next;
+  }
+  return mixHex(color, anchor, 1);
+}
+
+function clampForeground(): void {
+  const surface = readToken('--q-surface');
+  const primary = readToken('--q-primary-ui');
+  const accent = readToken('--q-accent-ui');
+  const papers = ['--q-surface', '--q-surface-hi', '--q-bg']
+    .map(readToken)
+    .filter((value): value is string => value !== null);
+  if (!papers.length) return;
+  const backgrounds = [...papers];
+  if (surface && primary) backgrounds.push(mixHex(surface, primary, .12));
+  if (surface && accent) backgrounds.push(mixHex(surface, accent, .1));
+  const anchor = resolvedTheme() === 'dark' ? '#ffffff' : '#1d1b1c';
+  const root = document.documentElement;
+  for (const [source, target] of FG_PAIRS) {
+    const color = readToken(source);
+    if (color) root.style.setProperty(target, readableOn(color, backgrounds, anchor));
+  }
+}
+
 function apply(): void {
   const root = document.documentElement;
   const dark = resolvedTheme() === 'dark';
@@ -98,6 +131,9 @@ function apply(): void {
   root.style.setProperty('--q-accent', state.accent);
   root.style.setProperty('--q-on-primary', pickOnPrimary(readToken('--q-primary-ui') || state.primary));
   clampText();
+  clampForeground();
+  // 昼夜切换后由订阅方重算 canvas 与文献色
+  document.dispatchEvent(new Event('q-theme-change'));
 }
 
 export async function initTheme(tokenRowsData: Array<{ token: string; light: string; dark: string }>): Promise<void> {
@@ -124,6 +160,13 @@ export function update(patch: Partial<ThemeState>, options: { animate?: boolean;
 export function toggleTheme(x?: number, y?: number): void {
   const next = resolvedTheme() === 'dark' ? 'light' : 'dark';
   update({ theme: next }, { animate: true, x, y });
+}
+
+/** 外部按需读取当前昼夜，不打扰主题状态 */
+export function subscribeTheme(fn: (theme: 'light' | 'dark') => void): () => void {
+  const handler = () => fn(resolvedTheme());
+  document.addEventListener('q-theme-change', handler);
+  return () => document.removeEventListener('q-theme-change', handler);
 }
 
 export function setThemeMode(mode: 'light' | 'dark' | 'auto'): void {

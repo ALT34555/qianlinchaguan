@@ -6,6 +6,7 @@ import {getLakeRegion} from './lake-regions.mjs';
 import {macroDepth,macroBandWidth,decorativeDimensions,DECORATIVE_MAX_DEPTH} from './river-dimensions.mjs';
 import {runoffM3s} from './water-balance.mjs';
 import {riverCenterline} from './river-tangents.mjs';
+import {isRiverHead} from './river-headwaters.mjs';
 import {indexVectorEdge,queryVectorSegments,carveVectorSegments} from './vector-channel.mjs';
 const caches=new WeakMap(),LIMIT=128,BIN=512;
 const curves=new WeakMap();
@@ -34,6 +35,8 @@ export function macroCurve(w,cell,geometryOnly=false){
   const cache=geometryOnly?geometries:curves;
   let stored=cache.get(w);if(!stored){stored=new Map();cache.set(w,stored);}if(stored.has(cell))return stored.get(cell);
   const receiver=w.receiver[cell];if(receiver<0||!w.riverWidth[cell])return null;
+  const head=isRiverHead(w,cell);
+  const startWidth=head?2:macroBandWidth(w.flow[cell])/2,endWidth=macroBandWidth(w.flow[receiver])/2;
   const frame=sphereFrame(w,cell),targetFrame=sphereFrame(w,receiver),target=frame.local(targetFrame.lon*w.circumference/(Math.PI*2),-targetFrame.lat*w.circumference/(Math.PI*2));
   const length=Math.hypot(target.x,target.z),rng=random(w.options.seed^Math.imul(cell+1,0x7f4a7c15)),chunks=frame.size/64;
   const gentle=1-clamp(Math.abs(w.spill[cell]-w.spill[receiver])/Math.max(1,length)/.012),centerline=riverCenterline(w,cell,frame,target);
@@ -47,21 +50,22 @@ export function macroCurve(w,cell,geometryOnly=false){
     const base=centerline(t),x=base.x-target.z/Math.max(1,length)*wave,z=base.z+target.x/Math.max(1,length)*wave,g=frame.coordinates(x,z);
     if(k===0){g.wx=frame.lon*w.circumference/(Math.PI*2);g.wz=-frame.lat*w.circumference/(Math.PI*2);}
     if(k===steps){g.wx=targetFrame.lon*w.circumference/(Math.PI*2);g.wz=-targetFrame.lat*w.circumference/(Math.PI*2);}
-    points.push({...g,level:w.spill[cell]+(w.spill[receiver]-w.spill[cell])*t});}
+    const width=startWidth+(endWidth-startWidth)*t*t*(3-2*t);
+    points.push({...g,level:w.spill[cell]+(w.spill[receiver]-w.spill[cell])*t,halfWidth:width});}
   for(const knot of knots.slice(1,-1)){
     const base=centerline(knot.t),x=base.x-target.z/Math.max(1,length)*knot.offset,z=base.z+target.x/Math.max(1,length)*knot.offset,g=frame.coordinates(x,z);
     bends.push({...g,level:w.spill[cell]+(w.spill[receiver]-w.spill[cell])*knot.t,t:knot.t});
   }
   if(geometryOnly){
-    const curve={cell,receiver,points,bends,dischargeM3s:w.flow[cell],halfWidth:Math.max(macroBandWidth(w.flow[cell]),macroBandWidth(w.flow[receiver]))/2};
+    const curve={cell,receiver,points,bends,dischargeM3s:w.flow[cell],halfWidth:Math.max(startWidth,endWidth)};
     stored.set(cell,curve);if(stored.size>1024)stored.delete(stored.keys().next().value);return curve;
   }
   // 红点与端点共用自然高度锚点
   const anchors=knots.map(knot=>{
-    const point=points[Math.round(knot.t*steps)],surface=sampleSurface(w,point.wx,point.wz);
+    const point=points[Math.round(knot.t*steps)],surface=sampleSurface(w,point.wx,point.wz,true,false,true,false,false);
     return {t:knot.t,naturalHeight:surface.height,level:Number.isFinite(surface.water)?surface.water:surface.height-.8};
   });
-  const startDepth=macroDepth(w.flow[cell]),endDepth=macroDepth(w.flow[receiver]),startWidth=macroBandWidth(w.flow[cell])/2,endWidth=macroBandWidth(w.flow[receiver])/2;
+  const startDepth=head ? .5 : macroDepth(w.flow[cell]),endDepth=macroDepth(w.flow[receiver]);
   anchors.forEach(a=>a.depth=startDepth+(endDepth-startDepth)*a.t);
   for(let k=0;k<points.length;k++){
     const t=k/steps,j=Math.min(anchors.length-2,Math.floor(t*(count+1))),a=anchors[j],b=anchors[j+1],u=clamp((t-a.t)/(b.t-a.t));
@@ -85,46 +89,67 @@ export function getTributaries(w,cell){
     let y=row+dz,x=col+dx;if(y<0){y=-y-1;x+=w.columns/2;}if(y>=w.rows){y=w.rows*2-y-1;x+=w.columns/2;}
     const i=y*w.columns+(x%w.columns+w.columns)%w.columns;if(seen.has(i))continue;seen.add(i);
     const curve=macroCurve(w,i);if(!curve)continue;
-    const edge={id:'macro:'+i,sourceType:'macro',cell:i,receiver:curve.receiver,dischargeM3s:curve.dischargeM3s,halfWidth:curve.halfWidth,depth:macroDepth(curve.dischargeM3s),
+    const edge={id:'macro:'+i,sourceType:'macro',head:isRiverHead(w,i),cell:i,receiver:curve.receiver,dischargeM3s:curve.dischargeM3s,halfWidth:curve.halfWidth,depth:macroDepth(curve.dischargeM3s),
       points:curve.points.map(p=>({...frame.local(p.wx,p.wz),level:p.level,depth:p.depth,halfWidth:p.halfWidth})),bends:curve.bends.map(p=>({...frame.local(p.wx,p.wz),level:p.level,depth:p.depth,edgeId:'macro:'+i}))};n.mainEdges.push(edge);index(n,edge);
   }
   const chunks=frame.size/64;
+  const head=isRiverHead(w,cell);
   if(w.water[cell]===2){
-    const lake=getLakeRegion(w,cell,(x,z)=>sampleSurface(w,x,z,true,false,false));n.lake=lake;
+    const lake=getLakeRegion(w,cell,(x,z)=>sampleSurface(w,x,z,true,false,false,false,false));n.lake=lake;
     n.sources=lake.sources.filter(s=>!s.lakeMember).map(s=>({...s,lakePoint:true}));
     n.lakePoints=lake.nodes.map(s=>({...s,level:Math.max(s.level,lake.level)}));
   }
   n.bends=n.mainEdges.flatMap(e=>e.bends).filter(p=>{const g=frame.coordinates(p.x,p.z);return cellAt(w,g.wx,g.wz)===cell;});
   n.hasMacroRiver=n.mainEdges.some(e=>crossesMacroCell(w,frame,e));
-  const count=chunks<10||w.height[cell]<=0||w.water[cell]===2||!n.hasMacroRiver||runoff<.03?0:wetPointCount(w.rainfall[cell]);
+  const count=chunks<10||w.height[cell]<=0||w.water[cell]===2||!n.hasMacroRiver||runoff<.03?0:Math.max(head?4:0,wetPointCount(w.rainfall[cell]));
   n.targetWetPoints=n.lake?n.sources.length:count;
+  const riverTargets=n.mainEdges.flatMap(edge=>edge.points.filter((p,k)=>k%4===0).map(p=>({...p,edgeId:edge.id})));
   const spacing=Math.max(64,frame.size*.12);
   for(let k=0;k<count;k++){
     let source=null;
-    for(let attempt=0;attempt<6;attempt++){
+    // 河源优先寻找雪线附近高地
+    if(head&&k<4&&w.height[cell]>300&&w.temperature[cell]>-15&&w.temperature[cell]<12){
+      let best=null;
+      for(let attempt=0;attempt<8;attempt++){
+        const x=(rng()-.5)*frame.size*.9,z=(rng()-.5)*frame.size*.9,g=frame.coordinates(x,z);
+        if(cellAt(w,g.wx,g.wz)!==cell||n.sources.some(p=>Math.hypot(p.x-x,p.z-z)<spacing))continue;
+        const s=sampleSurface(w,g.wx,g.wz,false,false,false);
+        if(s.kind||s.height<500||s.temperature< -8||s.temperature>0)continue;
+        const score=Math.abs(s.temperature+1);
+        if(!best||score<best.score)best={x,z,s,score};
+      }
+      if(best){
+        const {x,z}=best,g=frame.coordinates(x,z),s=sampleSurface(w,g.wx,g.wz,true,false,true,false,false),dimensions=decorativeDimensions(macroAt(w,g.wx,g.wz,'rainfall'),macroAt(w,g.wx,g.wz,'evaporation'));
+        if(!s.kind&&s.height>=500&&dimensions.dischargeM3s>0)source={id:'source:'+cell+':'+k,x,z,level:s.height-.3,weight:1,chunkType:2,connected:false,attempts:0,...dimensions,halfWidth:Math.min(3,dimensions.halfWidth),depth:Math.min(.7,dimensions.depth),sourceKind:'snowmelt'};
+      }
+    }
+    for(let attempt=0;!source&&attempt<6;attempt++){
       const anchor=n.bends.length?n.bends[k%n.bends.length]:null,angle=rng()*Math.PI*2,radius=frame.size*(.12+rng()*.22);
       const x=anchor?anchor.x+Math.cos(angle)*radius:(rng()-.5)*frame.size*.9,z=anchor?anchor.z+Math.sin(angle)*radius:(rng()-.5)*frame.size*.9,g=frame.coordinates(x,z);
       if(cellAt(w,g.wx,g.wz)!==cell||n.sources.some(p=>Math.hypot(p.x-x,p.z-z)<spacing))continue;
-      const s=sampleSurface(w,g.wx,g.wz);if(s.kind||s.height<0)continue;
+      const s=sampleSurface(w,g.wx,g.wz,true,false,true,false,false);if(s.kind||s.height<0)continue;
       const rainfall=macroAt(w,g.wx,g.wz,'rainfall'),evaporation=macroAt(w,g.wx,g.wz,'evaporation'),dimensions=decorativeDimensions(rainfall,evaporation);
-      source={id:'source:'+cell+':'+k,x,z,level:s.height-.8,weight:.5+rng(),chunkType:rainfall>=1000&&w.moisture[cell]>=.6?22:2,connected:false,attempts:0,...dimensions};break;
+      source={id:'source:'+cell+':'+k,x,z,level:s.height-.8,weight:.5+rng(),chunkType:rainfall>=1000&&w.moisture[cell]>=.6?22:2,connected:false,attempts:0,...dimensions,halfWidth:Math.min(8,dimensions.halfWidth)};break;
     }
     if(!source)continue;n.sources.push(source);if(source.dischargeM3s<=0)continue;
-    const targets=n.bends.filter(p=>p.level<source.level-.8&&Math.hypot(p.x-source.x,p.z-source.z)>=64).sort((a,b)=>Math.hypot(a.x-source.x,a.z-source.z)-Math.hypot(b.x-source.x,b.z-source.z));
+    const streamTargets=n.edges.flatMap(edge=>edge.points.filter((p,k)=>k>0&&k%4===0).map(p=>({...p,edgeId:edge.id})));
+    const targets=[...n.bends,...riverTargets,...streamTargets].filter(p=>p.level<source.level-.8&&Math.hypot(p.x-source.x,p.z-source.z)>=64).sort((a,b)=>Math.hypot(a.x-source.x,a.z-source.z)-Math.hypot(b.x-source.x,b.z-source.z));
     const target=targets[0];if(!target)continue;
     for(let attempt=0;attempt<3;attempt++){
       source.attempts++;const dx=target.x-source.x,dz=target.z-source.z,length=Math.hypot(dx,dz),bend=(attempt===0?0:(rng()<.5?-1:1)*(.5+rng()*.5)*Math.min(frame.size*.05,length*.2)),candidate=[];
       for(let j=0;j<=24;j++){
         const t=j/24,wave=Math.sin(Math.PI*t)**2*bend;candidate.push({x:source.x+dx*t-dz/length*wave,z:source.z+dz*t+dx/length*wave});
       }
-      const hit=firstMainIntersection(candidate,n.mainEdges);if(!hit){n.rejectedPaths++;continue;}
+      const hit=firstMainIntersection(candidate,[...n.mainEdges,...n.edges]);if(!hit){n.rejectedPaths++;continue;}
       const floor=hit.target.level-hit.target.depth;
       const points=assignTributaryBed(hit.points,source.level,source.depth);
-      if(!points||points.some(p=>{const g=frame.coordinates(p.x,p.z),s=sampleSurface(w,g.wx,g.wz);return cellAt(w,g.wx,g.wz)!==cell||s.kind||s.height<0;})){n.rejectedPaths++;continue;}
+      if(!points||points.some(p=>{const g=frame.coordinates(p.x,p.z),s=sampleSurface(w,g.wx,g.wz,true,false,true,false,false);return cellAt(w,g.wx,g.wz)!==cell||s.kind||s.height<0;})){n.rejectedPaths++;continue;}
       source.connected=true;source.target={...hit.target,bedHeight:floor};
-      n.edges.push({id:source.id,sourceId:source.id,sourceType:'source',cell,receiver:w.receiver[cell],points,confluenceBed:floor,confluence:source.target,halfWidth:source.halfWidth,depth:source.depth,dischargeM3s:source.dischargeM3s,dischargeRole:source.dischargeRole});break;
+      points.forEach((p,j)=>p.halfWidth=source.halfWidth*(.3+.7*j/(points.length-1)));
+      n.edges.push({id:source.id,sourceId:source.id,sourceType:'source',sourceKind:source.sourceKind??'rainfall',cell,receiver:w.receiver[cell],points,confluenceBed:floor,confluence:source.target,halfWidth:source.halfWidth,depth:source.depth,dischargeM3s:source.dischargeM3s,dischargeRole:source.dischargeRole});break;
     }
   }
+  n.sources=n.sources.filter(s=>s.sourceKind!=='snowmelt'||s.connected);
   for(const source of n.sources)if(!source.connected&&!source.lakeMember)source.chunkType=22;
   n.informationalFlowM3s=0;
   for(const edge of n.edges){
@@ -141,7 +166,7 @@ function probeWater(n,cx,cz){
   const key=cx+','+cz;if(cache.has(key))return cache.get(key);
   const samples=[],saltLakeIds=new Set(),half=n.frame.size/2;let sea=0,lake=0,saltLake=0,lakeLevel=Infinity;
   for(const dz of [0,32,64])for(const dx of [0,32,64]){
-    const g=n.frame.coordinates(cx*64-half+dx,cz*64-half+dz),s=sampleSurface(n.world,g.wx,g.wz);samples.push(s);
+    const g=n.frame.coordinates(cx*64-half+dx,cz*64-half+dz),s=sampleSurface(n.world,g.wx,g.wz,true,false,true,false,dx===32&&dz===32);samples.push(s);
     if(!Number.isFinite(s.water)||s.water<=s.height)continue;
     if(s.kind===1)sea++;
     else if(s.kind===2){lake++;lakeLevel=Math.min(lakeLevel,s.water);if(s.salinity==='salt'){saltLake++;saltLakeIds.add(s.saltLakeId);}}
@@ -230,13 +255,17 @@ function smoothWidth(n,profile,k){
 }
 // 区块宽度沿河线连续插值
 function channelWidth(n,seg,t){
-  if(seg.edge.sourceType!=='macro')return {left:seg.edge.halfWidth,right:seg.edge.halfWidth};
+  if(seg.edge.sourceType!=='macro'){const a=seg.a.halfWidth??seg.edge.halfWidth,b=seg.b.halfWidth??seg.edge.halfWidth,width=a+(b-a)*t;return {left:width,right:width};}
   const profile=edgeProfile(n,seg.edge),distance=profile.lengths[seg.pointIndex]+seg.length*t,k=Math.floor(distance/PROFILE_STEP),u=distance/PROFILE_STEP-k;
   const a=smoothWidth(n,profile,k),b=smoothWidth(n,profile,k+1),blend=u*u*(3-2*u);
   let left=a.left+(b.left-a.left)*blend,right=a.right+(b.right-a.right)*blend;
   const start=1-clamp(distance/profile.startRange),end=1-clamp((profile.total-distance)/profile.endRange),head=start*start*(3-2*start),tail=end*end*(3-2*end);
   left+=(profile.startWidth-left)*head+(profile.endWidth-left)*tail;
   right+=(profile.startWidth-right)*head+(profile.endWidth-right)*tail;
+  if(seg.edge.head){
+    const t=clamp(distance/profile.total),limit=profile.startWidth+(profile.endWidth-profile.startWidth)*t*t*(3-2*t);
+    left=Math.min(left,limit);right=Math.min(right,limit);
+  }
   return {left,right};
 }
 // 沿河线切分64米区块，不采地表
@@ -307,7 +336,9 @@ export function applyTributaries(w,wx,wz,s,n,chunkLabels=true){
   for(const source of n.sources){const d=Math.hypot(p.x-source.x,p.z-source.z),radius=source.chunkType===22?20:10;
     if(source.lakeMember||staticKind)continue;
     if(d<radius){s.height=Math.min(s.height,source.level-.3-.5*(1-d/radius));s.water=Math.max(s.water,source.level);s.kind=4;s.salinity='fresh';s.saltLakeId=null;if(source.chunkType===22)s.wetland=Math.max(s.wetland,1-d/radius);}}
-  const natural=s.height,channel=channelChunk(n,cx,cz),{winner:nearest}=carveVectorSegments(s,p,channel.segments,({seg,t})=>{
+  const natural=s.height,channel=channelChunk(n,cx,cz);
+  if(!channel.segments.length)return s;
+  const {winner:nearest}=carveVectorSegments(s,p,channel.segments,({seg,t})=>{
     const width=channelWidth(n,seg,t),riverLevel=seg.a.level+(seg.b.level-seg.a.level)*t;
     const level=mouthLevel(n,cx,cz,p.x,p.z,riverLevel),macro=seg.edge.sourceType==='macro';
     const bed=macro?level-Math.max(0,seg.a.depth+(seg.b.depth-seg.a.depth)*t)
@@ -315,14 +346,14 @@ export function applyTributaries(w,wx,wz,s,n,chunkLabels=true){
     return {left:width.left,right:width.right,level,bed,priority:macro?1:0};
   });
   if(!nearest)return s;
-  label??=riverChunkLabel(n,cx,cz);
+  if(chunkLabels)label??=riverChunkLabel(n,cx,cz);
   {
     const {seg,t,shape}=nearest,{a,b,vx,vz,length,edge}=seg;
     const localLevel=edge.sourceType==='macro'?shape.level:Math.min(shape.level,s.height+edge.depth);
     const level=staticKind?Math.max(staticWater,localLevel):localLevel;
     s.water=level;s.kind=staticKind||3;if(!staticKind){s.salinity='fresh';s.saltLakeId=null;}
     const lon=wx/w.circumference*Math.PI*2,lat=-wz/w.circumference*Math.PI*2,east=[-Math.sin(lon),0,Math.cos(lon)],north=[-Math.sin(lat)*Math.cos(lon),Math.cos(lat),-Math.sin(lat)*Math.sin(lon)],v=n.frame.east.map((c,i)=>c*vx/length+n.frame.south[i]*vz/length),dot=a=>a.reduce((sum,c,i)=>sum+c*v[i],0);
-    s.river={id:edge.id,source:edge.sourceType,cell:edge.cell,receiver:edge.receiver,dischargeM3s:edge.dischargeM3s,dischargeRole:edge.dischargeRole??'macro',widthM:shape.left+shape.right,widthSource:edge.sourceType==='macro'?'smooth-chunk-band':'decorative-rainfall',targetDepthM:edge.sourceType==='macro'?a.depth+(b.depth-a.depth)*t:edge.depth,centerSinkM:Math.max(0,natural-nearest.height),confluenceBed:edge.confluenceBed,waterfallDropM:label.waterfallDropM??0,directionEast:dot(east),directionNorth:dot(north)};
+    s.river={id:edge.id,source:edge.sourceType,sourceKind:edge.sourceKind,cell:edge.cell,receiver:edge.receiver,dischargeM3s:edge.dischargeM3s,dischargeRole:edge.dischargeRole??'macro',widthM:shape.left+shape.right,widthSource:edge.sourceType==='macro'?'smooth-chunk-band':'decorative-rainfall',targetDepthM:edge.sourceType==='macro'?a.depth+(b.depth-a.depth)*t:edge.depth,centerSinkM:Math.max(0,natural-nearest.height),confluenceBed:edge.confluenceBed,waterfallDropM:label?.waterfallDropM??0,directionEast:dot(east),directionNorth:dot(north)};
   }
   return s;
 }

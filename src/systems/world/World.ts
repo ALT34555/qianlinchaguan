@@ -1,3 +1,7 @@
+import {ShorelineWorkerClient} from './planet-macro/ShorelineWorkerClient';
+import type {ShorelineRequest,ShorelineResult} from './planet-macro/shoreline-query.mjs';
+import {worldSignature} from './WorldSignature';
+import {chunkSignature} from './ChunkCache';
 import {IceShell} from './IceShell';
 import { createWorldGenerator } from './GeneratorFactory';
 import {patchWaterHeight} from './planet-macro/PlanetPatchWater';
@@ -84,6 +88,7 @@ export class World {
   readonly artificial: ArtificialWorld;
   private artificialRevision = -1;
   private waterRevision = 0;
+  private shorelineClient?:ShorelineWorkerClient;
   private readonly waterStale=new Set<string>();
   private iceShell?:IceShell;
   readonly generator: WorldGenerator;
@@ -164,6 +169,10 @@ export class World {
 
   setAdvancedVisuals(enabled: boolean): void {
     this.waterMaterial.setAdvancedVisuals(enabled);
+  }
+
+  setWaterWaves(enabled: boolean): void {
+    this.waterMaterial.setWaterWaves(enabled);
   }
 
   setWaterAppearance(cx: number, cz: number, appearance: WaterAppearanceUpdate | null): void {
@@ -256,9 +265,18 @@ export class World {
     return this.artificial.getClaim(cx, cz)?.type ?? this.getChunk(cx, cz)?.type ?? this.generator.getChunkType(cx, cz);
   }
 
-  /** 精确采样可见三角面，跨区块/负坐标也采用同一规则。 */
+  /** 固定三角面碰撞 */
   getHeight(wx: number, wz: number): number {
     return Math.max(terrainHeightAt(wx, wz, this.seed, this.columnBed), iceHeightAt(wx,wz,this.seed,this.columnIce,this.columnIceCoverage));
+  }
+
+  async queryShorelines(request:Omit<ShorelineRequest,'worldRevision'|'hydrologyRevision'|'cancelled'>,signal?:AbortSignal):Promise<ShorelineResult> {
+    const worldRevision=worldSignature(this.generator),hydrologyRevision=`${this.waterRevision}:${chunkSignature(this.generator)}`;
+    this.shorelineClient??=new ShorelineWorkerClient(this.generator,worldRevision);
+    const result=await this.shorelineClient.query({...request,worldRevision,hydrologyRevision},signal);
+    if(hydrologyRevision!==`${this.waterRevision}:${chunkSignature(this.generator)}`)
+      throw Object.assign(new Error('Old shoreline hydrology'),{name:'StaleShorelineRevision'});
+    return result;
   }
 
   getBedHeight(wx:number,wz:number):number {return terrainHeightAt(wx,wz,this.seed,this.columnBed);}
@@ -498,6 +516,7 @@ export class World {
   }
 
   dispose(): void {
+    this.shorelineClient?.dispose();
     for (const c of this.chunks.values()) this.disposeChunk(c);
     this.chunks.clear();this.waterStale.clear();this.iceShell?.clear();
     this.pool.dispose();

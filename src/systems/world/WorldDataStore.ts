@@ -2,6 +2,7 @@ const DATABASE = 'qianlin-world-data';
 const CACHE_BUDGET = 256 * 1024 * 1024;
 let database: Promise<IDBDatabase> | undefined;
 let backend: 'file' | 'browser' | undefined;
+export function setWorldDataBackend(value: 'file' | 'browser'): void { backend = value; }
 
 function openDatabase(): Promise<IDBDatabase> {
   return database ??= new Promise((resolve,reject)=>{
@@ -17,7 +18,7 @@ async function fileBackend(): Promise<boolean> {
   try {
     const response = await fetch('/api/world-data',{cache:'no-store'});
     backend = response.ok && (await response.json()).worldData === true ? 'file' : 'browser';
-  } catch { backend = 'browser'; }
+  } catch { throw new Error('无法连接世界数据服务，请检查本地游戏服务后重试。'); }
   return backend === 'file';
 }
 

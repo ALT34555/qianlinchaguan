@@ -74,6 +74,7 @@ export interface GameSettings {
   particles?: boolean;
   advancedVisuals?: boolean;
   waterReflections?: boolean;
+  waterWaves?: boolean;
   mirrorReflections?: boolean;
   weatherAtmosphere?: boolean;
   naturalPhysics?: boolean;
@@ -95,7 +96,7 @@ export function graphicsPreset(preset: NonNullable<GameSettings['graphicsPreset'
     minimal: { resolution: '320x240', renderDistance: 2, vegetationDistance: 2, frameRate: 24 },
   };
   return { ...display[preset], graphicsPreset: preset, denseVegetation: denseVegetationLevel(preset), advancedVisuals: visuals, antialias: visuals,
-    waterReflections: visuals, weatherAtmosphere: visuals, naturalPhysics: visuals, decorativeClouds: visuals,
+    waterReflections: visuals, waterWaves: preset === 'extreme', weatherAtmosphere: visuals, naturalPhysics: visuals, decorativeClouds: visuals,
     mirrorReflections: false, particles: visuals, statusFeedback: preset !== 'minimal' };
 }
 export function defaultSettings(): GameSettings {
@@ -165,6 +166,7 @@ export function validateSettings(value: GameSettings): GameSettings {
   const legacyVisuals = typeof value.advancedVisuals === 'boolean' ? value.advancedVisuals : defaults.advancedVisuals;
   return { interfacePalette: { mainColor: interfacePalette.mainColor, trimColor: interfacePalette.trimColor }, applyPaletteToInterface: value.applyPaletteToInterface !== false, graphicsPreset: preset, antialias: typeof value.antialias === 'boolean' ? value.antialias : defaults.antialias, ren_ming: profile.name, profile, font, crosshair, resolution, vegetationDistance, denseVegetation, touchLayout, joystickStyle,
     waterReflections: typeof value.waterReflections === 'boolean' ? value.waterReflections : legacyVisuals,
+    waterWaves: typeof value.waterWaves === 'boolean' ? value.waterWaves : preset === 'extreme',
     weatherAtmosphere: typeof value.weatherAtmosphere === 'boolean' ? value.weatherAtmosphere : legacyVisuals,
     naturalPhysics: typeof value.naturalPhysics === 'boolean' ? value.naturalPhysics : legacyVisuals,
     decorativeClouds: typeof value.decorativeClouds === 'boolean' ? value.decorativeClouds : legacyVisuals,

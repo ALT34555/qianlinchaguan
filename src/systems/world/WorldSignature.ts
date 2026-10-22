@@ -7,6 +7,6 @@ export function worldSignature(options: {seed:number;climateWeights:ClimateWeigh
   const {mode,planet,landRatio,precipitation,terrainRule,macroColumns,macroTerrain,macroClimate}=options.generation;
   const artificial=options.generation.artificial;
   const flagCount=artificial?.enabled?Math.min(32,artificial.initialCivilizationLimit??8):0;
-  const rule={terrainRule,macroColumns,macroTerrain,macroClimate,flagCount};
+  const rule={terrainRule,macroColumns,macroTerrain,macroClimate,flagCount,initialSites:2};
   return JSON.stringify([CURRENT_RULE_ID,CONTENT_DATA_VERSION,options.seed,options.climateWeights,{mode,planet,landRatio,precipitation,...rule}]);
 }

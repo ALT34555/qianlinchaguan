@@ -75,7 +75,7 @@ export class StartScreen {
   /** 茶席外壳：左侧书签栏 + 一张卷面 */
   private chrome(active: TabKey, body: string): string {
     const dark = resolvedTheme() === 'dark';
-    return `<div class="q-shell${this.railCollapsed ? ' is-rail-collapsed' : ''}"><nav class="q-rail" aria-label="${t('menu.navAria')}"><a class="q-rail-brand" href="#" data-home aria-label="${t('app.name')}" aria-expanded="${!this.railCollapsed}"><img class="q-rail-logo" src="${teacupUrl}" alt="" draggable="false"><span class="q-rail-word">${t('app.name')}</span></a><div class="q-rail-nav">${TABS.map(([key, label, graphic]) => `<button class="q-tab${key === active ? ' is-active' : ''}" data-tab="${key}" aria-label="${t(label)}">${graphic}<span class="q-tab-label">${t(label)}</span></button>`).join('')}</div><div class="q-rail-acts"><button class="theme-pill tip" data-theme-toggle data-tip="${t('settings.theme')}" aria-label="${t('settings.theme')}" aria-pressed="${dark}"><span class="tp-knob">${SUN_GLYPH}${MOON_GLYPH}</span></button></div><p class="q-rail-foot">${t('nav.foot')}</p></nav><main class="q-sheet"><div class="q-sheet-mark" data-decor="flower" aria-hidden="true"></div>${body}</main></div>`;
+    return `<div class="q-shell${this.railCollapsed ? ' is-rail-collapsed' : ''}"><nav class="q-rail" aria-label="${t('menu.navAria')}"><a class="q-rail-brand" href="#" data-home aria-label="${t('app.name')}" aria-expanded="${!this.railCollapsed}"><img class="q-rail-logo" src="${teacupUrl}" alt="" draggable="false"></a><div class="q-rail-nav">${TABS.map(([key, label, graphic]) => `<button class="q-tab${key === active ? ' is-active' : ''}" data-tab="${key}" aria-label="${t(label)}">${graphic}<span class="q-tab-label">${t(label)}</span></button>`).join('')}</div><div class="q-rail-acts"><button class="theme-pill tip" data-theme-toggle data-tip="${t('settings.theme')}" aria-label="${t('settings.theme')}" aria-pressed="${dark}"><span class="tp-knob">${SUN_GLYPH}${MOON_GLYPH}</span></button></div><p class="q-rail-foot">${t('nav.foot')}</p></nav><main class="q-sheet"><div class="q-sheet-mark" data-decor="flower" aria-hidden="true"></div>${body}</main></div>`;
   }
   /** 外壳事件：书签页签、品牌回封面、日夜开关 */
   private bindChrome(): void {
@@ -165,12 +165,18 @@ export class StartScreen {
       if (!signal.aborted) host.innerHTML = `<p class="q-status">${t('saves.listFailed')}</p>`;
     }
   }
+  /** 存档类型统一用装饰色标识 */
+  private modeTag(mode: PlayMode): HTMLSpanElement {
+    const badge = document.createElement('span');
+    badge.className = 'q-tag q-tag--accent';
+    badge.textContent = t(`mode.${mode}`);
+    return badge;
+  }
   private compactSave(item: LocalSave): HTMLElement {
     const card = document.createElement('article'); card.className = 'q-save';
     const line = document.createElement('div'); line.className = 'q-save-line';
     const name = document.createElement('span'); name.className = 'q-save-name'; name.textContent = item.name;
-    const badge = document.createElement('span'); badge.className = 'q-tag q-tag--primary';
-    badge.textContent = t(`mode.${parsePlayMode(item.save.playMode)}`);
+    const badge = this.modeTag(parsePlayMode(item.save.playMode));
     const player = document.createElement('span'); player.className = 'save-player-name';
     player.textContent = renName(item.save.playerState?.name ?? item.save.ren_ming);
     player.style.color = item.save.profile?.mainColor ?? item.save.playerFaction?.mainColor ?? DEFAULT_PLAYER_FACTION.mainColor;
@@ -284,8 +290,7 @@ export class StartScreen {
     const card = document.createElement('article'); card.className = 'q-save';
     const line = document.createElement('div'); line.className = 'q-save-line';
     const title = document.createElement('span'); title.className = 'q-save-name'; title.textContent = item.name;
-    const badge = document.createElement('span'); badge.className = `q-tag ${parsePlayMode(item.save.playMode) === 'survival' ? 'q-tag--primary' : 'q-tag--tea'}`;
-    badge.textContent = t(`mode.${parsePlayMode(item.save.playMode)}`);
+    const badge = this.modeTag(parsePlayMode(item.save.playMode));
     const player = document.createElement('span'); player.className = 'save-player-name';
     player.textContent = renName(item.save.playerState?.name ?? item.save.ren_ming);
     player.style.color = item.save.profile?.mainColor ?? item.save.playerFaction?.mainColor ?? DEFAULT_PLAYER_FACTION.mainColor;

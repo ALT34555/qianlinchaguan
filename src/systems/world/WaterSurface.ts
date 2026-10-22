@@ -1,5 +1,6 @@
+import {iceVertexLevel,iceVertexCoverage} from './planet-macro/water-geometry.mjs';
+import {waterVertexLevel} from './planet-macro/water-geometry.mjs';
 import { terrainDiagonal, terrainHeightAt, triangleHeight, type HeightSampler } from './TerrainSurface';
-import { SEA_LEVEL } from '../../core/config';
 
 export const WATER_OFFSET = .12;
 export const SHALLOW_STATIC_DEPTH = 1.2;
@@ -24,16 +25,7 @@ function shallowCellLimit(x: number, z: number, height: HeightSampler, water: He
   }
   return count ? SHALLOW_STATIC_DEPTH : Infinity;
 }
-export function waterVertexLevel(x: number, z: number, height: HeightSampler, water: HeightSampler, seed: number, seaFallback = true): number {
-  let total = 0, count = 0;
-  for (const [dx, dz] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
-    const level = water(x + dx, z + dz);
-    if (Number.isFinite(level) && height(x + dx, z + dz) < level) { total += level; count++; }
-  }
-  if (count) return Math.fround(total / count - WATER_OFFSET);
-  // 低模坡面可能在原始干格中穿过海平面
-  return seaFallback && terrainHeightAt(x, z, seed, height) < SEA_LEVEL - WATER_OFFSET ? Math.fround(SEA_LEVEL - WATER_OFFSET) : -Infinity;
-}
+export {waterVertexLevel} from './planet-macro/water-geometry.mjs';
 
 export function isWaterCascade(x: number, z: number, height: HeightSampler, water: HeightSampler): boolean {
   const level = water(x, z);
@@ -42,49 +34,43 @@ export function isWaterCascade(x: number, z: number, height: HeightSampler, wate
 }
 
 /** 与水面网格相同的三角采样 */
-function cellWaterHeight(x: number, z: number, ix: number, iz: number, seed: number, height: HeightSampler, water: HeightSampler, seaFallback = true, shallow?: ShallowSampler): number {
-  const level = water(ix, iz);
+function cellWaterHeight(x: number, z: number, ix: number, iz: number, seed: number, height: HeightSampler, water: HeightSampler, seaFallback = true, shallow?: ShallowSampler, offset = WATER_OFFSET): number {
+  const level = water(ix - .5, iz - .5);
   let result: number;
   {
     const vertices = [[ix, iz], [ix, iz + 1], [ix + 1, iz + 1], [ix + 1, iz]]
-      .map(([px, pz]) => waterVertexLevel(px, pz, height, water, seed, seaFallback));
+      .map(([px, pz]) => waterVertexLevel(px, pz, height, water, seed, seaFallback, offset));
     const finite = vertices.filter(Number.isFinite);
     if (!finite.length) return -Infinity;
-    const fallback = Number.isFinite(level) && height(ix, iz) < level ? level - WATER_OFFSET : Math.min(...finite);
+    const fallback = Number.isFinite(level) && height(ix - .5, iz - .5) < level ? level - offset : Math.min(...finite);
     const [a, b, c, d] = vertices.map(value => Number.isFinite(value) ? value : fallback);
     result = triangleHeight(x - ix, z - iz, a, b, c, d, terrainDiagonal(ix, iz, seed));
   }
   const depth = result - terrainHeightAt(x, z, seed, height);
-  const limit = shallow ? shallowCellLimit(ix, iz, height, water, shallow) : Infinity;
+  const limit = shallow ? shallowCellLimit(ix - .5, iz - .5, height, water, shallow) : Infinity;
   return depth > 0 && depth <= limit + 1e-5 ? result : -Infinity;
 }
 
-export function waterHeightAt(x: number, z: number, seed: number, height: HeightSampler, water: HeightSampler, seaFallback = true, shallow?: ShallowSampler): number {
-  const ix = Math.floor(x), iz = Math.floor(z);
-  let result = cellWaterHeight(x, z, ix, iz, seed, height, water, seaFallback, shallow);
+export function waterHeightAt(x: number, z: number, seed: number, height: HeightSampler, water: HeightSampler, seaFallback = true, shallow?: ShallowSampler, offset = WATER_OFFSET): number {
+  const ix = Math.floor(x - .5) + .5, iz = Math.floor(z - .5) + .5;
+  let result = cellWaterHeight(x, z, ix, iz, seed, height, water, seaFallback, shallow, offset);
   // 格线上的点也属于左/上侧的面
   const xs = x === ix ? [ix, ix - 1] : [ix], zs = z === iz ? [iz, iz - 1] : [iz];
   for (const px of xs) for (const pz of zs) {
     if (px === ix && pz === iz) continue;
-    result = Math.max(result, cellWaterHeight(x, z, px, pz, seed, height, water, seaFallback, shallow));
+    result = Math.max(result, cellWaterHeight(x, z, px, pz, seed, height, water, seaFallback, shallow, offset));
   }
   return result;
 }
 
-export function iceVertexLevel(x: number, z: number, ice: HeightSampler): number {
-  let sum=0,count=0;
-  for(const [dx,dz] of [[-1,-1],[0,-1],[-1,0],[0,0]]) {
-    const value=ice(x+dx,z+dz);
-    if(Number.isFinite(value)) {sum+=value;count++;}
-  }
-  return count ? sum/count : -Infinity;
-}
+export {iceVertexLevel,iceVertexCoverage,clipIce} from './planet-macro/water-geometry.mjs';
+export type {IceVertex} from './planet-macro/water-geometry.mjs';
 
 export function iceHeightAt(x: number, z: number, seed: number, ice: HeightSampler, coverage?: HeightSampler): number {
-  const ix=Math.floor(x),iz=Math.floor(z);
+  const ix=Math.floor(x-.5)+.5,iz=Math.floor(z-.5)+.5;
   let result=-Infinity;
   for(const px of x===ix ? [ix,ix-1] : [ix]) for(const pz of z===iz ? [iz,iz-1] : [iz]) {
-    if(!coverage&&!Number.isFinite(ice(px,pz)))continue;
+    if(!coverage&&!Number.isFinite(ice(px-.5,pz-.5)))continue;
     const vertices=[[px,pz],[px,pz+1],[px+1,pz+1],[px+1,pz]].map(([vx,vz])=>iceVertexLevel(vx,vz,ice));
     const finite=vertices.filter(Number.isFinite);
     if(!finite.length)continue;
@@ -98,23 +84,3 @@ export function iceHeightAt(x: number, z: number, seed: number, ice: HeightSampl
   return result;
 }
 
-export function iceVertexCoverage(x: number, z: number, coverage: HeightSampler): number {
-  let sum=0;
-  for(const [dx,dz] of [[-1,-1],[0,-1],[-1,0],[0,0]])sum+=coverage(x+dx,z+dz);
-  return sum*.25;
-}
-
-export interface IceVertex {x:number;y:number;z:number;depth:number;coverage:number;bottom:number}
-export function clipIce(vertices: IceVertex[], field: 'coverage' | 'depth'): IceVertex[] {
-  const out:IceVertex[]=[],threshold=field==='coverage'?.5:0;
-  for(let i=0;i<vertices.length;i++) {
-    const a=vertices[i],b=vertices[(i+1)%vertices.length],av=a[field]-threshold,bv=b[field]-threshold;
-    if(av>=0)out.push(a);
-    if((av>=0)!==(bv>=0)) {
-      const t=av/(av-bv),point={} as IceVertex;
-      for(const key of ['x','y','z','depth','coverage','bottom'] as const)point[key]=a[key]+(b[key]-a[key])*t;
-      out.push(point);
-    }
-  }
-  return out;
-}

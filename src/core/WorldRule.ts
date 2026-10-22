@@ -9,7 +9,7 @@ export interface WorldRuleId {
 }
 
 /** 宏观星球当前规则身份 */
-export const MACRO_RULE_ID: WorldRuleId = Object.freeze({ generator: 'planet-macro', skeleton: 2, detail: 3, chunk: 4 });
+export const MACRO_RULE_ID: WorldRuleId = Object.freeze({ generator: 'planet-macro', skeleton: 4, detail: 4, chunk: 4 });
 
 const PATTERN = /^([a-z][a-z0-9-]*)\.(\d+)\.(\d+)\.(\d+)$/;
 

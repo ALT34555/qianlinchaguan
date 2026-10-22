@@ -50,16 +50,16 @@ function field(w,p,scale,layer){
   return mix(mix(mix(v[0],v[1],tx),mix(v[2],v[3],tx),ty),mix(mix(v[4],v[5],tx),mix(v[6],v[7],tx),ty),tz);
 }
 
-function weights(temperature,aridity,exposure){
+function weights(temperature,aridity,exposure,out=[0,0,0,0,0,0]){
   const snow=1-smooth(-3,1,temperature),rock=(1-snow)*smooth(.48,.72,exposure),rest=1-snow-rock;
   const sand=rest*(1-smooth(.25,.55,aridity)),gravel=(rest-sand)*smooth(.25,.55,exposure)*(1-smooth(.65,1.1,aridity));
-  return [0,rock,rest-sand-gravel,snow,sand,gravel];
+  out[0]=0;out[1]=rock;out[2]=rest-sand-gravel;out[3]=snow;out[4]=sand;out[5]=gravel;return out;
 }
 function dominant(values){let best=1;for(let i=2;i<values.length;i++)if(values[i]>values[best])best=i;return best;}
 export function landMaterial(temperature,aridity,relief,slope,relative,exposure=.28){
   return dominant(landMaterialWeights(temperature,aridity,relief,slope,relative,exposure));
 }
-export function landMaterialWeights(temperature,aridity,relief,slope,relative,exposure=.28){return weights(temperature,aridity,exposure+slope*.7+clamp((relief-3)/20)*.18+clamp(relative/3)*.05);}
+export function landMaterialWeights(temperature,aridity,relief,slope,relative,exposure=.28,out=[0,0,0,0,0,0]){return weights(temperature,aridity,exposure+slope*.7+clamp((relief-3)/20)*.18+clamp(relative/3)*.05,out);}
 
 export function sampleCover(w,p,{temperature,rainfall,evaporation,waterAccess=0,uplift=0,slope=0}){
   const broad=field(w,p,512,0),patch=field(w,p,96,1),aridity=Math.max(rainfall/Math.max(150,evaporation),waterAccess*1.15)*(1+broad*.3+patch*.14);

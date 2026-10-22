@@ -8,10 +8,12 @@ export interface MacroRiver {
   cell:number;receiver:number;dischargeM3s:number;widthM:number;directionEast:number;directionNorth:number;
   id?:string;visualWet?:number;visualDry?:number;source?:'template'|'macro'|'source';waterfallDropM?:number;confluenceBed?:number;
   dischargeRole?:'macro'|'decorative-estimate';hasDecorativeStream?:boolean;
+  sourceKind?:'snowmelt'|'rainfall';
 }
 export interface MacroSurface {height:number;water:number;kind:number;cell:number;temperature:number;river:MacroRiver|null;wetland:number;wetlandId?:string;chunkCode?:string;salinity?:'salt'|'fresh'|null;saltLakeId?:number|null;surfaceBlock?:number;surfaceColor?:number}
 export interface MacroWorld {
   rule:string;ruleVersion:string;options:MacroOptions;columns:number;rows:number;circumference:number;radius:number;
+  heightScale:number;heightCap:number;
   macroIslands?:unknown[];poles:Record<string,number[]>;lakeSalinityEnabled?:boolean;
   plate:Uint16Array;boundary:Uint8Array;uplift:Float32Array;rift:Float32Array;shear:Float32Array;height:Float32Array;
   areas:Float32Array|Float64Array;temperature:Float32Array;rainfall:Float32Array;evaporation:Float32Array;moisture:Float32Array;
@@ -27,9 +29,13 @@ export const MACRO_RULE:string;
 export function setRuleVersion(value:string):void;
 export function getRuleVersion():string;
 export function normalizeOptions(input?:Partial<MacroOptions>):MacroOptions;
+export function terrainHeightCap(options:MacroOptions):number;
 export function generateWorld(input?:Partial<MacroOptions>,progress?:(stage:string)=>void):MacroWorld;
 export function sampleSurface(world:MacroWorld,wx:number,wz:number,details?:boolean,carveRivers?:boolean,shapeLakes?:boolean):MacroSurface;
 export function macroAt(world:MacroWorld,wx:number,wz:number,field?:string):number;
+export function macroAtMany<T extends string>(world:MacroWorld,wx:number,wz:number,fields:readonly T[]):Record<T,number>;
+export function landHeight(world:MacroWorld,wx:number,wz:number):number;
+export function lakeMask(world:MacroWorld,wx:number,wz:number,land:number):{kind:number;water:number};
 export function fingerprint(world:MacroWorld):string;
 export function validateWorld(world:MacroWorld):MacroAudit;
 export function dataBytes(value:unknown):number;

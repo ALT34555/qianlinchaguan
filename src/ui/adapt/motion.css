@@ -100,14 +100,16 @@
   100% { scale: 1; opacity: 1; }
 }
 
-/* 加载完成：花整体微微涨开再淡出 */
-@keyframes bloom-out {
-  0% { scale: 1; opacity: 1; }
-  40% { scale: 1.12; opacity: 1; }
-  100% { scale: 1.2; opacity: 0; }
+/* 载入遮罩：右缘推入，原路退出 */
+@keyframes load-push-in {
+  from { translate: 102% 0; }
+  to { translate: 0 0; }
 }
 
-.load-veil.is-done .pl-svg { animation: bloom-out 420ms var(--q-ease-out) both; }
+@keyframes load-push-out {
+  from { translate: 0 0; }
+  to { translate: 102% 0; }
+}
 
 @keyframes draw-line {
   from { stroke-dashoffset: 60; }
@@ -121,11 +123,11 @@
 
 @keyframes q-switch-track-on {
   0%, 22% { background-color: var(--q-switch-off); border-color: var(--q-line-soft); }
-  45%, 100% { background-color: var(--q-primary-ui); border-color: var(--q-primary-ui); }
+  45%, 100% { background-color: var(--q-primary-text); border-color: var(--q-primary-text); }
 }
 
 @keyframes q-switch-track-off {
-  0%, 22% { background-color: var(--q-primary-ui); border-color: var(--q-primary-ui); }
+  0%, 22% { background-color: var(--q-primary-text); border-color: var(--q-primary-text); }
   55%, 100% { background-color: var(--q-switch-off); border-color: var(--q-line-soft); }
 }
 
@@ -186,7 +188,28 @@
 }
 
 .demo-petal { width: 44px; height: 44px; color: var(--q-petal); }
-.demo-steam { width: 54px; height: 54px; color: var(--q-primary-ui); opacity: .7; }
+.demo-steam { width: 54px; height: 54px; color: var(--q-primary-text); opacity: .7; }
+
+/* 动效模板：逐瓣展开加载 */
+.pl-svg { overflow: visible; }
+
+.pl-petal {
+  fill: var(--q-primary-ui);
+  stroke: none;
+  transform: scale(var(--s, 0));
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  transition: transform .24s var(--q-ease-out);
+}
+
+.pl-core {
+  fill: var(--q-gold);
+  stroke: none;
+  transform: scale(var(--s, 0));
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform .24s var(--q-ease-out);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,

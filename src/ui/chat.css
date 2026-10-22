@@ -1,16 +1,40 @@
 /* 游戏内聊天：毛玻璃对话板，与 HUD 同一套材质 */
 
+/* 文献色按昼夜切换：日间暖纸黑字，夜间墨底暖字 */
 .chat-panel {
   --chat-top: var(--safe-y);
   --chat-available: var(--safe-width);
+  --chat-paper: color-mix(in oklab, var(--q-surface-hi) 82%, transparent);
+  --chat-paper-strong: color-mix(in oklab, var(--q-surface-hi) 94%, transparent);
+  --chat-edge: var(--q-line-soft);
+  --chat-edge-strong: var(--q-line);
+  --chat-ink: var(--q-ink);
+  --chat-ink-soft: var(--q-ink-2);
+  --chat-accent: var(--q-primary-ui);
+  --chat-gloss: linear-gradient(180deg, rgba(255, 255, 255, .38) 0%, rgba(255, 255, 255, .10) 46%, rgba(255, 255, 255, .02) 72%, rgba(255, 255, 255, .16) 100%);
+  --chat-shadow: var(--q-shadow);
   position: fixed;
   inset: var(--chat-top) auto auto var(--safe-x);
   z-index: 10009;
   width: min(330px, var(--chat-available));
   max-height: calc(100dvh - var(--safe-y) - var(--chat-top));
   pointer-events: none;
-  color: #f7ece2;
+  color: var(--chat-ink);
+  text-shadow: none;
   font-size: calc(13px * var(--text-scale, 1));
+  transition: color var(--q-d3) var(--q-ease);
+}
+
+:root[data-theme="dark"] .chat-panel {
+  --chat-paper: color-mix(in oklab, #1d1b1c 48%, transparent);
+  --chat-paper-strong: color-mix(in oklab, #1d1b1c 68%, transparent);
+  --chat-edge: rgba(255, 236, 222, .22);
+  --chat-edge-strong: rgba(255, 236, 222, .3);
+  --chat-ink: #f7ece2;
+  --chat-ink-soft: rgba(247, 236, 226, .82);
+  --chat-accent: color-mix(in oklab, var(--q-primary-ui) 74%, #ffd9df);
+  --chat-gloss: linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .03) 46%, rgba(255, 255, 255, .01) 72%, rgba(255, 255, 255, .08) 100%);
+  --chat-shadow: 0 10px 28px rgba(20, 12, 14, .32);
 }
 
 body:has(.game-bar:not(.hidden)) .chat-panel { --chat-top: calc(var(--safe-y) + var(--game-bar-h, 56px)); }
@@ -20,15 +44,16 @@ body .chat-panel.chat-atlas:not(.sidebar-open) { --chat-top: var(--chat-atlas-to
   height: max(0px, min(420px, calc(var(--safe-height) * .72 - var(--chat-top) + var(--safe-y))));
   padding: 12px 14px;
   overflow: hidden;
-  background-color: color-mix(in oklab, #1d1b1c 42%, transparent);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .03) 46%, rgba(255, 255, 255, .01) 72%, rgba(255, 255, 255, .08) 100%);
+  background-color: var(--chat-paper);
+  background-image: var(--chat-gloss);
   backdrop-filter: blur(14px) saturate(1.3);
   -webkit-backdrop-filter: blur(14px) saturate(1.3);
-  border: 1px solid rgba(255, 236, 222, .22);
+  border: 1px solid var(--chat-edge);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .3),
-    0 10px 28px rgba(20, 12, 14, .32);
+    inset 0 1px 0 var(--chat-edge),
+    var(--chat-shadow);
   mask-image: linear-gradient(#000 0%, #000 72%, transparent 100%);
+  transition: background-color var(--q-d3) var(--q-ease), border-color var(--q-d3) var(--q-ease);
 }
 
 .chat-message {
@@ -40,12 +65,12 @@ body .chat-panel.chat-atlas:not(.sidebar-open) { --chat-top: var(--chat-atlas-to
   animation: msg-in 380ms cubic-bezier(.16, 1, .3, 1) both;
 }
 
-.chat-author { color: #ff9db1; -webkit-text-stroke: .35px rgba(255, 255, 255, .5); paint-order: stroke fill; }
+.chat-author { color: var(--chat-accent); -webkit-text-stroke: .35px var(--chat-paper-strong); paint-order: stroke fill; }
 
 .chat-player {
-  color: #ff9db1;
-  text-shadow: 0 0 2px rgba(0, 0, 0, .55);
-  -webkit-text-stroke: .35px rgba(255, 255, 255, .55);
+  color: var(--chat-accent);
+  text-shadow: 0 0 2px var(--chat-paper-strong);
+  -webkit-text-stroke: .35px var(--chat-paper-strong);
   paint-order: stroke fill;
 }
 
@@ -59,11 +84,11 @@ body .chat-panel.chat-atlas:not(.sidebar-open) { --chat-top: var(--chat-atlas-to
   width: min(330px, var(--chat-available));
   height: calc(100dvh - var(--safe-y) - var(--chat-top));
   padding: calc(var(--game-bar-h, 56px) + 14px) 14px 14px;
-  background-color: color-mix(in oklab, #1d1b1c 62%, transparent);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .02));
+  background-color: var(--chat-paper-strong);
+  background-image: var(--chat-gloss);
   backdrop-filter: blur(18px) saturate(1.3);
   -webkit-backdrop-filter: blur(18px) saturate(1.3);
-  border-right: 1px solid rgba(255, 236, 222, .2);
+  border-right: 1px solid var(--chat-edge);
   display: flex;
   flex-direction: column;
   pointer-events: auto;
@@ -98,7 +123,7 @@ body:has(#start-screen:not(.hidden) .pause-settings) .chat-panel.sidebar-open {
   width: var(--chat-available);
   height: calc(var(--game-bar-h, 56px) + 0px);
   background: transparent;
-  border-bottom: 1px solid rgba(255, 236, 222, .16);
+  border-bottom: 1px solid var(--chat-edge);
 }
 
 .chat-composer input {
@@ -108,12 +133,13 @@ body:has(#start-screen:not(.hidden) .pause-settings) .chat-panel.sidebar-open {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #f7ece2;
+  color: var(--chat-ink);
+  text-shadow: none;
   font-size: calc(12px * var(--text-scale, 1));
   outline: none;
 }
 
-.chat-composer input::placeholder { color: rgba(247, 236, 226, .45); }
+.chat-composer input::placeholder { color: color-mix(in oklab, var(--chat-ink) 46%, transparent); }
 
 .sidebar-open .chat-clear {
   display: block;
@@ -121,14 +147,14 @@ body:has(#start-screen:not(.hidden) .pause-settings) .chat-panel.sidebar-open {
   width: 100%;
   margin-top: 8px;
   padding: 6px 8px;
-  color: rgba(247, 236, 226, .8);
-  background: rgba(255, 255, 255, .06);
-  border: 1px solid rgba(255, 236, 222, .2);
+  color: var(--chat-ink-soft);
+  background: color-mix(in oklab, var(--chat-ink) 6%, transparent);
+  border: 1px solid var(--chat-edge);
   font-size: calc(11px * var(--text-scale, 1));
   cursor: pointer;
 }
 
-.sidebar-open .chat-clear:hover { background: rgba(255, 255, 255, .12); }
+.sidebar-open .chat-clear:hover { background: color-mix(in oklab, var(--chat-ink) 13%, transparent); }
 
 @media (max-width: 600px) {
   .chat-panel { width: min(260px, var(--safe-width)); }

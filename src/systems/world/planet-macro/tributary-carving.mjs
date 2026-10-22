@@ -11,7 +11,8 @@ export function firstMainIntersection(points,mainEdges){
       const ux=d.x-c.x,uz=d.z-c.z,den=vx*uz-vz*ux;if(Math.abs(den)<1e-9)continue;
       const px=c.x-a.x,pz=c.z-a.z,t=(px*uz-pz*ux)/den,u=(px*vz-pz*vx)/den;
       if(t< -1e-7||t>1+1e-7||u< -1e-7||u>1+1e-7||best&&t>=best.t)continue;
-      best={t:clamp(t),point:{x:a.x+vx*clamp(t),z:a.z+vz*clamp(t),level:c.level+(d.level-c.level)*clamp(u),depth:c.depth+(d.depth-c.depth)*clamp(u)},edgeId:edge.id};
+      const startDepth=c.depth??edge.depth,endDepth=d.depth??edge.depth;
+      best={t:clamp(t),point:{x:a.x+vx*clamp(t),z:a.z+vz*clamp(t),level:c.level+(d.level-c.level)*clamp(u),depth:startDepth+(endDepth-startDepth)*clamp(u)},edgeId:edge.id};
     }
     if(best)return {points:[...points.slice(0,j),best.point],target:{...best.point,edgeId:best.edgeId}};
   }

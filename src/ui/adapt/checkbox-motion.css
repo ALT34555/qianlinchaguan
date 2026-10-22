@@ -19,7 +19,7 @@ input.q-checkbox-source {
 .q-checkbox-art .cb-b { fill: none; stroke: var(--q-ink); stroke-opacity: .36; stroke-width: 1.5; }
 .q-checkbox-art .cb-k {
   fill: none;
-  stroke: #f8f4ed;
+  stroke: var(--q-on-primary);
   stroke-width: 2.2;
   stroke-linecap: square;
   stroke-linejoin: bevel;
@@ -28,7 +28,7 @@ input.q-checkbox-source {
 }
 
 input.q-checkbox-source:checked + .q-checkbox-art .cb-f { opacity: 1; }
-input.q-checkbox-source:checked + .q-checkbox-art .cb-b { stroke: var(--q-primary-ui); stroke-opacity: 1; }
+input.q-checkbox-source:checked + .q-checkbox-art .cb-b { stroke: var(--q-primary-text); stroke-opacity: 1; }
 input.q-checkbox-source:checked + .q-checkbox-art .cb-k { stroke-dashoffset: 0; }
 input.q-checkbox-source:focus-visible + .q-checkbox-art { outline: 2px solid var(--q-primary-ui); outline-offset: 3px; }
 input.q-checkbox-source:disabled + .q-checkbox-art { opacity: .45; }
@@ -44,12 +44,12 @@ input.q-checkbox-source:disabled + .q-checkbox-art { opacity: .45; }
 @keyframes q-cb-draw { 0%, 26% { stroke-dashoffset: 26; } 44%, 100% { stroke-dashoffset: 0; } }
 @keyframes q-cb-box {
   0%, 20% { stroke: var(--q-ink); stroke-opacity: .36; }
-  40%, 100% { stroke: var(--q-primary-ui); stroke-opacity: 1; }
+  40%, 100% { stroke: var(--q-primary-text); stroke-opacity: 1; }
 }
 @keyframes q-cb-unfill { from { opacity: 1; } to { opacity: 0; } }
 @keyframes q-cb-undraw { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 26; } }
 @keyframes q-cb-unbox {
-  from { stroke: var(--q-primary-ui); stroke-opacity: 1; }
+  from { stroke: var(--q-primary-text); stroke-opacity: 1; }
   to { stroke: var(--q-ink); stroke-opacity: .36; }
 }
 

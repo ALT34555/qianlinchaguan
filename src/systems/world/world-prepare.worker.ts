@@ -4,7 +4,7 @@ import { WorldDataStore } from './WorldDataStore';
 import { encodeWorldData, decodeWorldData } from './WorldDataCodec';
 import { ArtificialWorld } from './artificial/ArtificialWorld';
 import { playerFlagSpawn } from './artificial/PlayerFaction';
-import type { GameOptions } from '../../core/Game';
+import type { GameOptions } from '../../core/GameOptions';
 import type { WatershedState } from './Watershed';
 import { worldSignature } from './WorldSignature';
 import { transferBuffers } from './planet-macro/backend.mjs';
@@ -30,6 +30,10 @@ ctx.onmessage=async(event:MessageEvent<GameOptions & {worldKey:string}>)=>{
     const artificial=new ArtificialWorld(generator,options.unixMs,options.calendarType,options.utcOffsetMinutes,options.save?.artificialState);
     const flag=options.initialPlayer?null:options.playerFaction&&options.generation.artificial?.enabled?playerFlagSpawn(artificial,options.playerFaction,message=>ctx.postMessage({kind:'progress',message})):null;
     const spawn=options.initialPlayer?{cx:Math.floor(options.initialPlayer.x/64),cz:Math.floor(options.initialPlayer.z/64)}:flag??generator.findSpawnChunk();
+    if(!options.save?.artificialState){
+      ctx.postMessage({kind:'progress',message:'分布全球宜居置旗地'});
+      artificial.seedInitialTerritories();
+    }
     generator.getWaterState(spawn.cx*64+32.5,spawn.cz*64+32.5);
     const state=generator.exposeHydrology();
     if(!hit){try{await store.put('hydrology',encodeWorldData({signature,state}));}catch(error){console.warn('[Skeleton write]',error);}}
