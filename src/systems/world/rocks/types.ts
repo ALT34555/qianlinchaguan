@@ -1,4 +1,7 @@
 /** 岩石（地表点缀）系统数据模型 */
+import type { Season } from '../Season';
+export type { Season } from '../Season';
+export { SEASONS } from '../Season';
 
 /** 岩性（视觉材质族） */
 export type RockMaterialFamily =
@@ -39,11 +42,6 @@ export const ROCK_FORM_CODES: Readonly<Record<RockForm, number>> = Object.freeze
 export function rockFormOfCode(code: number): RockForm {
   return ROCK_FORMS[code] ?? 'outcrop';
 }
-
-/** 季节 */
-export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
-
-export const SEASONS: readonly Season[] = ['spring', 'summer', 'autumn', 'winter'];
 
 /** 色板键 */
 export type RockPaletteKey =

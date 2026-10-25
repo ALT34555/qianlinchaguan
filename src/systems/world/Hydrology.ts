@@ -1,5 +1,5 @@
-import { SEA_LEVEL } from '../../core/config';
-import {freezeState, snowLine, smooth, SNOW_MARGIN} from './TerrainLayers';
+import { SEA_LEVEL } from '../../core/config.ts';
+import {freezeState, snowLine, smooth, SNOW_MARGIN} from './TerrainLayers.ts';
 
 export const FLOW_DIRECTIONS = [
   { dx: 0, dz: -1, arrow: '↑' }, { dx: 1, dz: -1, arrow: '↗' },
@@ -13,6 +13,10 @@ export interface DrainageNode { height: number; moisture: number; temperature: n
 export const liquidRiverAllowed=(n:DrainageNode):boolean=>n.height>SEA_LEVEL&&freezeState(n.height,n.temperature)==='liquid';
 export const waterfallDrop=(drop:number):boolean=>drop>=16&&drop<=256;
 export const splashWetlandDrop=(drop:number):boolean=>drop>=64&&drop<=256;
+/** 连续跌水（白水）分段坡度阈值，约 14° */
+export const CASCADE_GRADE=.25;
+/** 落差水区块内的陡坡段才算跌水，平段仍是普通流水 */
+export const cascadeFall=(grade:number,drop:number):boolean=>drop>0&&grade>=CASCADE_GRADE;
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
 
 /** 水源在封冻边界之前连续减弱。 */

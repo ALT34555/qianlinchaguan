@@ -24,6 +24,8 @@ export interface ArtificialClaim {
 }
 
 export interface ArtificialState {
+  initialPlacementDone?:boolean;
+  discoveredTiles?:[number,number][];
   playerFactionId?: string;
   epochUnixMs: number;
   lastDay: number;
@@ -48,10 +50,13 @@ export function parseArtificialState(value: unknown): ArtificialState | undefine
   const fail = (): never => { throw new Error('存档中的人工领地数据无效。'); };
   if (!value || typeof value !== 'object') return fail();
   const s = value as ArtificialState;
+  if(s.initialPlacementDone!==undefined&&typeof s.initialPlacementDone!=='boolean')return fail();
   if (!Number.isFinite(s.epochUnixMs) || Math.abs(s.epochUnixMs) > 8640000000000000 || !Number.isSafeInteger(s.lastDay) ||
       !Array.isArray(s.territories) || !Array.isArray(s.claims)) return fail();
   const coord = (n: number) => Number.isInteger(n) && Math.abs(n) <= 10000000;
   const integer = (n: number) => Number.isSafeInteger(n) && n >= 0;
+  const discoveredTiles=s.discoveredTiles??[];
+  if(!Array.isArray(discoveredTiles)||discoveredTiles.length>100000||discoveredTiles.some(p=>!Array.isArray(p)||p.length!==2||!p.every(coord)))return fail();
   const ids = new Set<string>(), cells = new Set<string>();
   const territories = s.territories.map(t => {
     if (!t || !/^[0-9a-f]{16}$/.test(t.id) || ids.has(t.id) || !/^#[0-9a-f]{6}$/i.test(t.mainColor) ||
@@ -73,5 +78,5 @@ export function parseArtificialState(value: unknown): ArtificialState | undefine
   const byCell = new Map(claims.map(c => [claimKey(c.cx, c.cz), c]));
   for (const t of territories) if (byCell.get(claimKey(t.cx, t.cz))?.faction !== t.id) return fail();
   if (s.playerFactionId !== undefined && !ids.has(s.playerFactionId)) return fail();
-  return { ...(s.playerFactionId !== undefined ? { playerFactionId: s.playerFactionId } : {}), epochUnixMs: s.epochUnixMs, lastDay: s.lastDay, territories, claims };
+  return { ...(s.initialPlacementDone!==undefined?{initialPlacementDone:s.initialPlacementDone}:{}),...(s.discoveredTiles?{discoveredTiles}:{}),...(s.playerFactionId !== undefined ? { playerFactionId: s.playerFactionId } : {}), epochUnixMs: s.epochUnixMs, lastDay: s.lastDay, territories, claims };
 }

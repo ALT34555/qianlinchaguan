@@ -1,8 +1,29 @@
+import type { ChunkWaterAppearance } from './WaterAppearance';
 /** 自然水是连续高度/来水/速度场 */
 export const WaterKind = {DRY:0, SEA:1, LAKE:2, RIVER:3, FALL:4, STATIC:5} as const;
 export interface WaterState {level: number; kind: number; vx: number; vz: number; discharge: number}
+export interface WaterSample extends WaterState {
+  form: ChunkWaterAppearance['form'];
+  freezing: ChunkWaterAppearance['freezing'];
+  temperature: number;
+  hasWater: boolean;
+  frozen: boolean;
+  iceCoverage: number;
+  iceLevel: number;
+  iceBottomLevel: number;
+  iceThickness: number;
+  bedLevel: number;
+  liquidDepth: number;
+  hasLiquidWater: boolean;
+  waterSurfaceLevel: number;
+}
 export interface WaterField {
+  appearance?: ChunkWaterAppearance;
   levels: Float32Array;
+  bedLevels?: Float32Array;
+  iceLevels?: Float32Array;
+  iceBottomLevels?: Float32Array;
+  iceCoverages?: Float32Array;
   kinds: Uint8Array;
   /** 每列两个分量，方块/秒；静水为零。 */
   velocities: Float32Array;

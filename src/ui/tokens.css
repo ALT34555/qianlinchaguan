@@ -1,0 +1,44 @@
+/* 旧 --ql-* 兼容层：只做别名与推导
+   颜色真值在 adapt/tokens.css 与 content/data/ui/tokens.csv */
+:root {
+  --ql-paper: var(--q-surface);
+  --ql-ink: var(--q-ink);
+  --ql-cinnabar: var(--q-primary);
+  --ql-cinnabar-text: var(--q-primary-text);
+  --ql-seal-on: var(--q-accent);
+  --ql-seal-off: var(--q-ink-3);
+  --ql-paper-hi: var(--q-surface-hi);
+  --ql-paper-card: color-mix(in oklab, var(--q-bg) 84%, #ffffff);
+  --ql-paper-lo: var(--q-surface-lo);
+  --ql-paper-deep: color-mix(in oklab, var(--q-bg) 82%, #000000);
+  --ql-ink-2: var(--q-ink-2);
+  --ql-ink-3: var(--q-ink-3);
+  --ql-ink-inv: var(--q-ink-inv);
+  --ql-cinnabar-soft: color-mix(in oklab, var(--q-primary) 76%, #ffffff);
+  --ql-cinnabar-deep: var(--q-primary-deep);
+  --ql-seal-on-hi: color-mix(in oklab, var(--q-accent) 86%, #ffffff);
+  --ql-seal-on-lo: color-mix(in oklab, var(--q-accent) 84%, #000000);
+  --ql-line: var(--q-line);
+  --ql-line-soft: var(--q-line-soft);
+  --ql-line-faint: var(--q-line-faint);
+  --ql-line-seal: color-mix(in oklab, var(--q-accent) 45%, transparent);
+  --ql-shadow-sm: var(--q-shadow-sm);
+  --ql-shadow: var(--q-shadow);
+  --ql-shadow-lg: var(--q-shadow-lg);
+  --ql-radius: var(--q-r);
+  --ql-radius-lg: var(--q-r-lg);
+  --ql-radius-pill: var(--q-r-pill);
+  --ql-paper-weave:
+    repeating-linear-gradient(90deg, color-mix(in oklab, var(--q-accent) 7%, transparent) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, color-mix(in oklab, var(--q-accent) 7%, transparent) 0 1px, transparent 1px 6px),
+    radial-gradient(ellipse at 20% 8%, color-mix(in oklab, #ffffff 55%, transparent), transparent 60%);
+  --ql-glow: var(--q-glow);
+}
+
+:root[data-theme='dark'] {
+  --ql-paper-card: color-mix(in oklab, var(--q-bg) 82%, #ffffff);
+  --ql-paper-deep: color-mix(in oklab, var(--q-bg) 62%, #000000);
+  --ql-paper-weave:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 6px);
+}

@@ -1,15 +1,15 @@
 {
   "counts": {
-    "files": 49,
-    "species": 49,
-    "entries": 294,
+    "files": 54,
+    "species": 54,
+    "entries": 324,
     "byState": {
-      "normal": 49,
-      "seedling": 49,
-      "subadult": 49,
-      "flowering": 49,
-      "fruiting": 49,
-      "withered": 49
+      "normal": 54,
+      "seedling": 54,
+      "subadult": 54,
+      "flowering": 54,
+      "fruiting": 54,
+      "withered": 54
     }
   },
   "states": [
@@ -58,14 +58,15 @@
   ],
   "species": [
     {
-      "id": "guan.aili",
-      "name": "矮桦",
-      "latin": "aihua",
+      "id": "shu.yunshan",
+      "name": "云杉",
+      "latin": "yunshan",
       "climate": "cold",
-      "archetype": "shrub",
+      "archetype": "conifer",
       "tags": [
-        "shrub",
-        "tundra",
+        "tree",
+        "conifer",
+        "timber",
         "snow"
       ],
       "states": [
@@ -76,7 +77,564 @@
         "fruiting",
         "withered"
       ],
-      "file": "woody/guan.aili.json"
+      "file": "woody/shu.yunshan.json"
+    },
+    {
+      "id": "shu.lengshan",
+      "name": "冷杉",
+      "latin": "lengshan",
+      "climate": "cold",
+      "archetype": "conifer",
+      "tags": [
+        "tree",
+        "conifer",
+        "timber",
+        "snow"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.lengshan.json"
+    },
+    {
+      "id": "shu.luoye",
+      "name": "落叶松",
+      "latin": "luoyesong",
+      "climate": "cold",
+      "archetype": "conifer",
+      "tags": [
+        "tree",
+        "conifer",
+        "autumn_color",
+        "snow"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.luoye.json"
+    },
+    {
+      "id": "shu.chuizhi",
+      "name": "垂枝桦",
+      "latin": "chuizhihua",
+      "climate": "cold",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "pioneer",
+        "snow"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.chuizhi.json"
+    },
+    {
+      "id": "shu.gaoshan",
+      "name": "高山栎",
+      "latin": "gaoshanli",
+      "climate": "temperate",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "canopy",
+        "fruit",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.gaoshan.json"
+    },
+    {
+      "id": "shu.hongpi",
+      "name": "红皮松",
+      "latin": "hongpisong",
+      "climate": "temperate",
+      "archetype": "conifer",
+      "tags": [
+        "tree",
+        "conifer",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.hongpi.json"
+    },
+    {
+      "id": "shu.wujiaofeng",
+      "name": "五角枫",
+      "latin": "wujiaofeng",
+      "climate": "temperate",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "ornamental",
+        "autumn_color"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.wujiaofeng.json"
+    },
+    {
+      "id": "shu.yinxing",
+      "name": "银杏",
+      "latin": "yinxing",
+      "climate": "temperate",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "ornamental",
+        "autumn_color",
+        "fruit"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.yinxing.json"
+    },
+    {
+      "id": "shu.chuilui",
+      "name": "垂柳",
+      "latin": "chuiliu",
+      "climate": "temperate",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "riparian"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.chuilui.json"
+    },
+    {
+      "id": "shu.baigan",
+      "name": "白干桦",
+      "latin": "baiganhua",
+      "climate": "temperate",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "pioneer"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.baigan.json"
+    },
+    {
+      "id": "shu.xiangzhang",
+      "name": "香樟",
+      "latin": "xiangzhang",
+      "climate": "subtropical",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "canopy",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.xiangzhang.json"
+    },
+    {
+      "id": "shu.cha",
+      "name": "茶树",
+      "latin": "chashu",
+      "climate": "subtropical",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "crop",
+        "cash_crop",
+        "flowering",
+        "fruit"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.cha.json"
+    },
+    {
+      "id": "shu.masan",
+      "name": "马尾松",
+      "latin": "maweisong",
+      "climate": "subtropical",
+      "archetype": "conifer",
+      "tags": [
+        "tree",
+        "conifer",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.masan.json"
+    },
+    {
+      "id": "shu.ganju",
+      "name": "柑橘",
+      "latin": "ganju",
+      "climate": "subtropical",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "orchard",
+        "fruit"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.ganju.json"
+    },
+    {
+      "id": "shu.paotong",
+      "name": "泡桐",
+      "latin": "paotong",
+      "climate": "subtropical",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "flowering",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.paotong.json"
+    },
+    {
+      "id": "shu.maozhu",
+      "name": "毛竹",
+      "latin": "maozhu",
+      "climate": "subtropical",
+      "archetype": "bamboo",
+      "tags": [
+        "bamboo",
+        "grove",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.maozhu.json"
+    },
+    {
+      "id": "shu.longnao",
+      "name": "龙脑香巨木",
+      "latin": "longnaoxiang",
+      "climate": "tropical",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "canopy",
+        "jungle",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.longnao.json"
+    },
+    {
+      "id": "shu.mumian",
+      "name": "木棉",
+      "latin": "mumian",
+      "climate": "tropical",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "canopy",
+        "jungle",
+        "flowering"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.mumian.json"
+    },
+    {
+      "id": "shu.yezi",
+      "name": "椰子棕榈",
+      "latin": "yezizonglv",
+      "climate": "tropical",
+      "archetype": "palm",
+      "tags": [
+        "tree",
+        "palm",
+        "coast",
+        "fruit"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.yezi.json"
+    },
+    {
+      "id": "shu.binglang",
+      "name": "槟榔",
+      "latin": "binglang",
+      "climate": "tropical",
+      "archetype": "palm",
+      "tags": [
+        "tree",
+        "palm",
+        "fruit",
+        "cash_crop"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.binglang.json"
+    },
+    {
+      "id": "shu.mangguo",
+      "name": "芒果",
+      "latin": "mangguo",
+      "climate": "tropical",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "fruit",
+        "orchard"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.mangguo.json"
+    },
+    {
+      "id": "shu.fenghuang",
+      "name": "凤凰木",
+      "latin": "fenghuangmu",
+      "climate": "tropical",
+      "archetype": "broadleaf",
+      "tags": [
+        "tree",
+        "flowering",
+        "ornamental"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/shu.fenghuang.json"
+    },
+    {
+      "id": "guan.zhen",
+      "name": "榛丛",
+      "latin": "zhencong",
+      "climate": "temperate",
+      "archetype": "shrub",
+      "tags": [
+        "shrub",
+        "understory",
+        "fruit"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/guan.zhen.json"
+    },
+    {
+      "id": "guan.lianqiao",
+      "name": "连翘",
+      "latin": "lianqiao",
+      "climate": "temperate",
+      "archetype": "shrub",
+      "tags": [
+        "shrub",
+        "flowering",
+        "ornamental",
+        "medicine"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/guan.lianqiao.json"
+    },
+    {
+      "id": "guan.huanglu",
+      "name": "黄栌",
+      "latin": "huanglu",
+      "climate": "temperate",
+      "archetype": "shrub",
+      "tags": [
+        "shrub",
+        "ornamental",
+        "autumn_color"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/guan.huanglu.json"
+    },
+    {
+      "id": "guan.zhizi",
+      "name": "栀子",
+      "latin": "zhizi",
+      "climate": "subtropical",
+      "archetype": "shrub",
+      "tags": [
+        "shrub",
+        "flowering",
+        "ornamental",
+        "fragrant"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/guan.zhizi.json"
+    },
+    {
+      "id": "guan.moli",
+      "name": "茉莉",
+      "latin": "moli",
+      "climate": "subtropical",
+      "archetype": "shrub",
+      "tags": [
+        "shrub",
+        "flowering",
+        "ornamental",
+        "fragrant"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "woody/guan.moli.json"
     },
     {
       "id": "guan.dujuan",
@@ -119,71 +677,6 @@
         "withered"
       ],
       "file": "woody/guan.fusang.json"
-    },
-    {
-      "id": "guan.huanglu",
-      "name": "黄栌",
-      "latin": "huanglu",
-      "climate": "temperate",
-      "archetype": "shrub",
-      "tags": [
-        "shrub",
-        "ornamental",
-        "autumn_color"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/guan.huanglu.json"
-    },
-    {
-      "id": "guan.lianqiao",
-      "name": "连翘",
-      "latin": "lianqiao",
-      "climate": "temperate",
-      "archetype": "shrub",
-      "tags": [
-        "shrub",
-        "flowering",
-        "ornamental",
-        "medicine"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/guan.lianqiao.json"
-    },
-    {
-      "id": "guan.moli",
-      "name": "茉莉",
-      "latin": "moli",
-      "climate": "subtropical",
-      "archetype": "shrub",
-      "tags": [
-        "shrub",
-        "flowering",
-        "ornamental",
-        "fragrant"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/guan.moli.json"
     },
     {
       "id": "guan.xuangouzi",
@@ -231,142 +724,14 @@
       "file": "woody/guan.yueju.json"
     },
     {
-      "id": "guan.zhen",
-      "name": "榛丛",
-      "latin": "zhencong",
-      "climate": "temperate",
+      "id": "guan.aili",
+      "name": "矮桦",
+      "latin": "aihua",
+      "climate": "cold",
       "archetype": "shrub",
       "tags": [
         "shrub",
-        "understory",
-        "fruit"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/guan.zhen.json"
-    },
-    {
-      "id": "guan.zhizi",
-      "name": "栀子",
-      "latin": "zhizi",
-      "climate": "subtropical",
-      "archetype": "shrub",
-      "tags": [
-        "shrub",
-        "flowering",
-        "ornamental",
-        "fragrant"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/guan.zhizi.json"
-    },
-    {
-      "id": "shu.baigan",
-      "name": "白干桦",
-      "latin": "baiganhua",
-      "climate": "temperate",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "pioneer"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.baigan.json"
-    },
-    {
-      "id": "shu.binglang",
-      "name": "槟榔",
-      "latin": "binglang",
-      "climate": "tropical",
-      "archetype": "palm",
-      "tags": [
-        "tree",
-        "palm",
-        "fruit",
-        "cash_crop"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.binglang.json"
-    },
-    {
-      "id": "shu.cha",
-      "name": "茶树",
-      "latin": "chashu",
-      "climate": "subtropical",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "crop",
-        "cash_crop",
-        "flowering",
-        "fruit"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.cha.json"
-    },
-    {
-      "id": "shu.chuilui",
-      "name": "垂柳",
-      "latin": "chuiliu",
-      "climate": "temperate",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "riparian"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.chuilui.json"
-    },
-    {
-      "id": "shu.chuizhi",
-      "name": "垂枝桦",
-      "latin": "chuizhihua",
-      "climate": "cold",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "pioneer",
+        "tundra",
         "snow"
       ],
       "states": [
@@ -377,61 +742,16 @@
         "fruiting",
         "withered"
       ],
-      "file": "woody/shu.chuizhi.json"
+      "file": "woody/guan.aili.json"
     },
     {
-      "id": "shu.fenghuang",
-      "name": "凤凰木",
-      "latin": "fenghuangmu",
-      "climate": "tropical",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "flowering",
-        "ornamental"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.fenghuang.json"
-    },
-    {
-      "id": "shu.ganju",
-      "name": "柑橘",
-      "latin": "ganju",
-      "climate": "subtropical",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "orchard",
-        "fruit"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.ganju.json"
-    },
-    {
-      "id": "shu.gaoshan",
-      "name": "高山栎",
-      "latin": "gaoshanli",
+      "id": "cao.yangmao",
+      "name": "羊茅草",
+      "latin": "yangmaocao",
       "climate": "temperate",
-      "archetype": "broadleaf",
+      "archetype": "grassClump",
       "tags": [
-        "tree",
-        "canopy",
-        "fruit",
-        "timber"
+        "ground"
       ],
       "states": [
         "normal",
@@ -441,18 +761,17 @@
         "fruiting",
         "withered"
       ],
-      "file": "woody/shu.gaoshan.json"
+      "file": "herbaceous/cao.yangmao.json"
     },
     {
-      "id": "shu.hongpi",
-      "name": "红皮松",
-      "latin": "hongpisong",
+      "id": "cao.jue",
+      "name": "蕨",
+      "latin": "jue",
       "climate": "temperate",
-      "archetype": "conifer",
+      "archetype": "grassClump",
       "tags": [
-        "tree",
-        "conifer",
-        "timber"
+        "ground",
+        "understory"
       ],
       "states": [
         "normal",
@@ -462,287 +781,7 @@
         "fruiting",
         "withered"
       ],
-      "file": "woody/shu.hongpi.json"
-    },
-    {
-      "id": "shu.lengshan",
-      "name": "冷杉",
-      "latin": "lengshan",
-      "climate": "cold",
-      "archetype": "conifer",
-      "tags": [
-        "tree",
-        "conifer",
-        "timber",
-        "snow"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.lengshan.json"
-    },
-    {
-      "id": "shu.longnao",
-      "name": "龙脑香巨木",
-      "latin": "longnaoxiang",
-      "climate": "tropical",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "canopy",
-        "jungle",
-        "timber"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.longnao.json"
-    },
-    {
-      "id": "shu.luoye",
-      "name": "落叶松",
-      "latin": "luoyesong",
-      "climate": "cold",
-      "archetype": "conifer",
-      "tags": [
-        "tree",
-        "conifer",
-        "autumn_color",
-        "snow"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.luoye.json"
-    },
-    {
-      "id": "shu.mangguo",
-      "name": "芒果",
-      "latin": "mangguo",
-      "climate": "tropical",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "fruit",
-        "orchard"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.mangguo.json"
-    },
-    {
-      "id": "shu.maozhu",
-      "name": "毛竹",
-      "latin": "maozhu",
-      "climate": "subtropical",
-      "archetype": "bamboo",
-      "tags": [
-        "bamboo",
-        "grove",
-        "timber"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.maozhu.json"
-    },
-    {
-      "id": "shu.masan",
-      "name": "马尾松",
-      "latin": "maweisong",
-      "climate": "subtropical",
-      "archetype": "conifer",
-      "tags": [
-        "tree",
-        "conifer",
-        "timber"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.masan.json"
-    },
-    {
-      "id": "shu.mumian",
-      "name": "木棉",
-      "latin": "mumian",
-      "climate": "tropical",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "canopy",
-        "jungle",
-        "flowering"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.mumian.json"
-    },
-    {
-      "id": "shu.paotong",
-      "name": "泡桐",
-      "latin": "paotong",
-      "climate": "subtropical",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "flowering",
-        "timber"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.paotong.json"
-    },
-    {
-      "id": "shu.wujiaofeng",
-      "name": "五角枫",
-      "latin": "wujiaofeng",
-      "climate": "temperate",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "ornamental",
-        "autumn_color"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.wujiaofeng.json"
-    },
-    {
-      "id": "shu.xiangzhang",
-      "name": "香樟",
-      "latin": "xiangzhang",
-      "climate": "subtropical",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "canopy",
-        "timber"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.xiangzhang.json"
-    },
-    {
-      "id": "shu.yezi",
-      "name": "椰子棕榈",
-      "latin": "yezizonglv",
-      "climate": "tropical",
-      "archetype": "palm",
-      "tags": [
-        "tree",
-        "palm",
-        "coast",
-        "fruit"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.yezi.json"
-    },
-    {
-      "id": "shu.yinxing",
-      "name": "银杏",
-      "latin": "yinxing",
-      "climate": "temperate",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "ornamental",
-        "autumn_color",
-        "fruit"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.yinxing.json"
-    },
-    {
-      "id": "shu.yunshan",
-      "name": "云杉",
-      "latin": "yunshan",
-      "climate": "cold",
-      "archetype": "conifer",
-      "tags": [
-        "tree",
-        "conifer",
-        "timber",
-        "snow"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "woody/shu.yunshan.json"
+      "file": "herbaceous/cao.jue.json"
     },
     {
       "id": "cao.dixue",
@@ -766,67 +805,6 @@
       "file": "herbaceous/cao.dixue.json"
     },
     {
-      "id": "cao.hanji",
-      "name": "旱棘丛",
-      "latin": "hanjicong",
-      "climate": "subtropical",
-      "archetype": "bramble",
-      "tags": [
-        "shrub",
-        "arid",
-        "thorny"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "herbaceous/cao.hanji.json"
-    },
-    {
-      "id": "cao.jue",
-      "name": "蕨",
-      "latin": "jue",
-      "climate": "temperate",
-      "archetype": "grassClump",
-      "tags": [
-        "ground",
-        "understory"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "herbaceous/cao.jue.json"
-    },
-    {
-      "id": "cao.luwei",
-      "name": "芦苇",
-      "latin": "luwei",
-      "climate": "subtropical",
-      "archetype": "grassClump",
-      "tags": [
-        "ground",
-        "riparian"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "herbaceous/cao.luwei.json"
-    },
-    {
       "id": "cao.shamo",
       "name": "荒漠多肉",
       "latin": "shamoduorou",
@@ -848,12 +826,35 @@
       "file": "herbaceous/cao.shamo.json"
     },
     {
-      "id": "cao.yangmao",
-      "name": "羊茅草",
-      "latin": "yangmaocao",
-      "climate": "temperate",
+      "id": "cao.hanji",
+      "name": "旱棘丛",
+      "latin": "hanjicong",
+      "climate": "subtropical",
+      "archetype": "bramble",
+      "tags": [
+        "shrub",
+        "arid",
+        "thorny"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/cao.hanji.json"
+    },
+    {
+      "id": "shui.pucao",
+      "name": "蒲草",
+      "latin": "pucao",
+      "climate": "subtropical",
       "archetype": "grassClump",
       "tags": [
+        "water",
+        "wet",
         "ground"
       ],
       "states": [
@@ -864,41 +865,18 @@
         "fruiting",
         "withered"
       ],
-      "file": "herbaceous/cao.yangmao.json"
+      "file": "herbaceous/shui.pucao.json"
     },
     {
-      "id": "hua.ju",
-      "name": "菊",
-      "latin": "ju",
-      "climate": "temperate",
-      "archetype": "shrub",
-      "tags": [
-        "ornamental",
-        "flowering",
-        "ground",
-        "zhongguo_sijunzi"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "herbaceous/hua.ju.json"
-    },
-    {
-      "id": "hua.lan",
-      "name": "兰",
-      "latin": "lan",
+      "id": "shui.lian",
+      "name": "莲",
+      "latin": "lian",
       "climate": "subtropical",
-      "archetype": "orchid",
+      "archetype": "succulent",
       "tags": [
-        "ornamental",
-        "flowering",
-        "ground",
-        "zhongguo_sijunzi"
+        "water",
+        "wet",
+        "flowering"
       ],
       "states": [
         "normal",
@@ -908,40 +886,19 @@
         "fruiting",
         "withered"
       ],
-      "file": "herbaceous/hua.lan.json"
+      "file": "herbaceous/shui.lian.json"
     },
     {
-      "id": "hua.mei",
-      "name": "梅",
-      "latin": "mei",
-      "climate": "temperate",
-      "archetype": "blossomTree",
-      "tags": [
-        "ornamental",
-        "flowering",
-        "shrub",
-        "zhongguo_sijunzi"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "herbaceous/hua.mei.json"
-    },
-    {
-      "id": "hua.zhu",
-      "name": "庭竹",
-      "latin": "tingzhu",
+      "id": "shui.luwei",
+      "name": "芦苇",
+      "latin": "luwei",
       "climate": "subtropical",
-      "archetype": "bamboo",
+      "archetype": "reed",
       "tags": [
-        "ornamental",
-        "bamboo",
-        "zhongguo_sijunzi"
+        "water",
+        "wet",
+        "riparian",
+        "ground"
       ],
       "states": [
         "normal",
@@ -951,19 +908,19 @@
         "fruiting",
         "withered"
       ],
-      "file": "herbaceous/hua.zhu.json"
+      "file": "herbaceous/shui.luwei.json"
     },
     {
-      "id": "nong.da",
-      "name": "大豆",
-      "latin": "dadou",
-      "climate": "temperate",
-      "archetype": "shrub",
+      "id": "shui.luweicong",
+      "name": "芦苇丛",
+      "latin": "luweicong",
+      "climate": "subtropical",
+      "archetype": "reed",
       "tags": [
-        "crop",
-        "oil_crop",
-        "farm",
-        "fruit"
+        "water",
+        "wet",
+        "riparian",
+        "ground"
       ],
       "states": [
         "normal",
@@ -973,7 +930,99 @@
         "fruiting",
         "withered"
       ],
-      "file": "herbaceous/nong.da.json"
+      "file": "herbaceous/shui.luweicong.json"
+    },
+    {
+      "id": "shui.luweidang",
+      "name": "芦苇荡",
+      "latin": "luweidang",
+      "climate": "subtropical",
+      "archetype": "reed",
+      "tags": [
+        "water",
+        "wet",
+        "riparian",
+        "ground",
+        "grove"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/shui.luweidang.json"
+    },
+    {
+      "id": "shui.kucao",
+      "name": "苦草",
+      "latin": "kucao",
+      "climate": "subtropical",
+      "archetype": "waterweed",
+      "tags": [
+        "water",
+        "wet",
+        "submerged",
+        "riverbed",
+        "ribbon"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/shui.kucao.json"
+    },
+    {
+      "id": "shui.changpu",
+      "name": "水菖蒲",
+      "latin": "shuichangpu",
+      "climate": "temperate",
+      "archetype": "waterweed",
+      "tags": [
+        "water",
+        "wet",
+        "riparian",
+        "ground",
+        "sword"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/shui.changpu.json"
+    },
+    {
+      "id": "shui.pingpeng",
+      "name": "萍蓬草",
+      "latin": "pingpengcao",
+      "climate": "temperate",
+      "archetype": "floatingPad",
+      "tags": [
+        "water",
+        "wet",
+        "riparian",
+        "flowering",
+        "floating"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/shui.pingpeng.json"
     },
     {
       "id": "nong.dao",
@@ -1021,29 +1070,6 @@
       "file": "herbaceous/nong.mai.json"
     },
     {
-      "id": "nong.sang",
-      "name": "桑树",
-      "latin": "sangshu",
-      "climate": "temperate",
-      "archetype": "broadleaf",
-      "tags": [
-        "tree",
-        "crop",
-        "cash_crop",
-        "fruit",
-        "orchard"
-      ],
-      "states": [
-        "normal",
-        "seedling",
-        "subadult",
-        "flowering",
-        "fruiting",
-        "withered"
-      ],
-      "file": "herbaceous/nong.sang.json"
-    },
-    {
       "id": "nong.su",
       "name": "粟",
       "latin": "su",
@@ -1067,15 +1093,16 @@
       "file": "herbaceous/nong.su.json"
     },
     {
-      "id": "shui.lian",
-      "name": "莲",
-      "latin": "lian",
-      "climate": "subtropical",
-      "archetype": "succulent",
+      "id": "nong.da",
+      "name": "大豆",
+      "latin": "dadou",
+      "climate": "temperate",
+      "archetype": "shrub",
       "tags": [
-        "water",
-        "wet",
-        "flowering"
+        "crop",
+        "oil_crop",
+        "farm",
+        "fruit"
       ],
       "states": [
         "normal",
@@ -1085,18 +1112,20 @@
         "fruiting",
         "withered"
       ],
-      "file": "herbaceous/shui.lian.json"
+      "file": "herbaceous/nong.da.json"
     },
     {
-      "id": "shui.pucao",
-      "name": "蒲草",
-      "latin": "pucao",
-      "climate": "subtropical",
-      "archetype": "grassClump",
+      "id": "nong.sang",
+      "name": "桑树",
+      "latin": "sangshu",
+      "climate": "temperate",
+      "archetype": "broadleaf",
       "tags": [
-        "water",
-        "wet",
-        "ground"
+        "tree",
+        "crop",
+        "cash_crop",
+        "fruit",
+        "orchard"
       ],
       "states": [
         "normal",
@@ -1106,7 +1135,94 @@
         "fruiting",
         "withered"
       ],
-      "file": "herbaceous/shui.pucao.json"
+      "file": "herbaceous/nong.sang.json"
+    },
+    {
+      "id": "hua.mei",
+      "name": "梅",
+      "latin": "mei",
+      "climate": "temperate",
+      "archetype": "blossomTree",
+      "tags": [
+        "ornamental",
+        "flowering",
+        "shrub",
+        "zhongguo_sijunzi"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.mei.json"
+    },
+    {
+      "id": "hua.lan",
+      "name": "兰",
+      "latin": "lan",
+      "climate": "subtropical",
+      "archetype": "orchid",
+      "tags": [
+        "ornamental",
+        "flowering",
+        "ground",
+        "zhongguo_sijunzi"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.lan.json"
+    },
+    {
+      "id": "hua.zhu",
+      "name": "庭竹",
+      "latin": "tingzhu",
+      "climate": "subtropical",
+      "archetype": "bamboo",
+      "tags": [
+        "ornamental",
+        "bamboo",
+        "zhongguo_sijunzi"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.zhu.json"
+    },
+    {
+      "id": "hua.ju",
+      "name": "菊",
+      "latin": "ju",
+      "climate": "temperate",
+      "archetype": "shrub",
+      "tags": [
+        "ornamental",
+        "flowering",
+        "ground",
+        "zhongguo_sijunzi"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.ju.json"
     }
   ]
 }

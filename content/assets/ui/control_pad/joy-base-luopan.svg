@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<circle cx="64" cy="64" r="58" fill="none" stroke="#f8f4ed" stroke-width="4" opacity="0.88"/>
+  <circle cx="64" cy="64" r="58" fill="#4d4030"/>
+  <circle cx="64" cy="64" r="53" fill="none" stroke="#f8f4ed" stroke-width="1.5" stroke-opacity="0.75"/>
+  <circle cx="64" cy="64" r="44" fill="#f8f4ed" fill-opacity="0.92" stroke="#4d4030" stroke-width="2"/>
+  <circle cx="64" cy="64" r="39" fill="none" stroke="#a61b29" stroke-width="1.2" stroke-opacity="0.5"/>
+  <g stroke="#f8f4ed" stroke-width="2.5" stroke-linecap="round" opacity="0.85">
+    <line x1="64" y1="11" x2="64" y2="17"/>
+    <line x1="117" y1="64" x2="111" y2="64"/>
+    <line x1="64" y1="117" x2="64" y2="111"/>
+    <line x1="11" y1="64" x2="17" y2="64"/>
+    <line x1="101" y1="27" x2="97" y2="31"/>
+    <line x1="101" y1="101" x2="97" y2="97"/>
+    <line x1="27" y1="101" x2="31" y2="97"/>
+    <line x1="27" y1="27" x2="31" y2="31"/>
+  </g>
+  <g stroke="#4d4030" stroke-opacity="0.22" stroke-width="1.5">
+    <line x1="64" y1="22" x2="64" y2="106"/>
+    <line x1="22" y1="64" x2="106" y2="64"/>
+  </g>
+  <polygon points="64,18 69,30 64,27 59,30" fill="#a61b29"/>
+  <circle cx="64" cy="64" r="10" fill="none" stroke="#4d4030" stroke-opacity="0.35" stroke-width="1.8"/>
+  <circle cx="64" cy="64" r="3.5" fill="#4d4030"/>
+</svg>

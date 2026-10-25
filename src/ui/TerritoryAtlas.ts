@@ -2,9 +2,10 @@ import type { ArtificialWorld } from '../systems/world/artificial/ArtificialWorl
 import { claimKey } from '../systems/world/artificial/ArtificialState';
 
 export function drawTerritories(ctx: CanvasRenderingContext2D, world: ArtificialWorld,
-  project: (cx: number, cz: number) => [number, number] | null, width: number, height: number, labels: boolean): void {
+  project: (cx: number, cz: number) => [number, number] | null, width: number, height: number, labels: boolean,ownOnly=false): void {
   ctx.save(); ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
   for (const c of world.claims.values()) {
+    if(ownOnly&&c.faction!==world.playerFactionId)continue;
     const t = world.territories.get(c.faction)!;
     const corners = [[c.cx, c.cz], [c.cx + 1, c.cz], [c.cx + 1, c.cz + 1], [c.cx, c.cz + 1]];
     const points = corners.map(([x, z]) => project(x, z));

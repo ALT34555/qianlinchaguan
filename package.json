@@ -6,11 +6,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node platforms/windows/build-runtime.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "desktop": "npm run build && node platforms/windows/build-desktop.mjs && electron .",
-    "build:windows": "npm run build && node platforms/windows/build-desktop.mjs --package"
+    "build:windows": "npm run build && node platforms/windows/build-desktop.mjs --package",
+    "build:windows:compat": "tsc --noEmit && vite build --mode desktop-compat && node platforms/windows/build-desktop.mjs --compat --package"
   },
   "repository": {
     "type": "git",

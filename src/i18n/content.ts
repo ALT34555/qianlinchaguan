@@ -17,13 +17,13 @@ export function chunkDescription(def: ChunkTypeDef): string {
 }
 
 /** 按区块类型 ID 取本地化名称。 */
-export function chunkNameById(id: number): string {
-  return chunkName(getChunkTypeDef(id));
+export function chunkNameById(id: number,macro=false): string {
+  return chunkName(getChunkTypeDef(id,macro));
 }
 
 /** 按区块类型 ID 取本地化描述。 */
-export function chunkDescriptionById(id: number): string {
-  return chunkDescription(getChunkTypeDef(id));
+export function chunkDescriptionById(id: number,macro=false): string {
+  return chunkDescription(getChunkTypeDef(id,macro));
 }
 
 /** 气候带名称（下标对应 WorldSettings */

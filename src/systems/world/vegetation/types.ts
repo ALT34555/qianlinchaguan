@@ -1,14 +1,12 @@
 /** 植被（植物）系统数据模型 */
+import type { Season } from '../Season';
+export type { Season } from '../Season';
+export { SEASONS } from '../Season';
 
 /** 生长带（气候 + 地貌），决定默认尺寸与默认色板 */
 export type ClimateZone = 'tropical' | 'subtropical' | 'temperate' | 'cold';
 
 export const CLIMATE_ZONES: readonly ClimateZone[] = ['tropical', 'subtropical', 'temperate', 'cold'];
-
-/** 四季 */
-export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
-
-export const SEASONS: readonly Season[] = ['spring', 'summer', 'autumn', 'winter'];
 
 /** 植物状态 */
 export type PlantState = 'planted' | 'normal' | 'seedling' | 'subadult' | 'flowering' | 'fruiting' | 'withered';
@@ -88,6 +86,12 @@ export type PaletteKey =
   | 'lotusBloom'
   /** 花粉颗粒色（针叶树花期用 */
   | 'pollen'
+  // ---- 水生 / 芦苇专类色阶 ----
+  | 'reedCulm'
+  | 'reedPlume'
+  | 'waterweed'
+  | 'waterweedPale'
+  | 'spadix'
   // ---- 果实 / 谷粒 ----
   | 'fruit'
   | 'fruitYellow'
@@ -247,6 +251,8 @@ export interface PlantParams {
   sizeScale?: number;
   /** 是否有刺（荆棘、多肉），0 表示无 */
   thorns?: number;
+  /** 派生前成株原型基类 */
+  baseArchetype?: string;
 }
 
 export type SnowTarget = 'canopy' | 'top' | 'ground';
@@ -357,6 +363,8 @@ export interface PlantBloomOptions {
 export interface PlantDef {
   id: string;
   archetype: string;
+  /** 派生前成株原型基类 */
+  baseArchetype?: string;
   climate: ClimateZone;
   name: string;
   latin?: string;

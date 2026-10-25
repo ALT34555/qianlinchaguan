@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<path d="M46,8 L82,8 L82,46 L120,46 L120,82 L82,82 L82,120 L46,120 L46,82 L8,82 L8,46 L46,46 Z" fill="none" stroke="#f8f4ed" stroke-width="4.5" stroke-linejoin="round" opacity="0.9"/>
+  <path d="M46,8 L82,8 L82,46 L120,46 L120,82 L82,82 L82,120 L46,120 L46,82 L8,82 L8,46 L46,46 Z" fill="#4d4030"/>
+  <path d="M50,12 L78,12 L78,50 L116,50 L116,78 L78,78 L78,116 L50,116 L50,78 L12,78 L12,50 L50,50 Z" fill="none" stroke="#f8f4ed" stroke-width="1.5" stroke-opacity="0.78"/>
+  <g fill="#6a5942">
+    <rect x="53" y="15" width="22" height="28" rx="2"/>
+    <rect x="53" y="85" width="22" height="28" rx="2"/>
+    <rect x="15" y="53" width="28" height="22" rx="2"/>
+    <rect x="85" y="53" width="28" height="22" rx="2"/>
+  </g>
+  <g fill="#a61b29" stroke="#f8f4ed" stroke-width="1.4" stroke-linejoin="round">
+    <polygon points="64,18 73,34 55,34"/>
+    <polygon points="64,110 73,94 55,94"/>
+    <polygon points="18,64 34,55 34,73"/>
+    <polygon points="110,64 94,55 94,73"/>
+  </g>
+  <rect x="52" y="52" width="24" height="24" rx="2" fill="#f8f4ed" stroke="#4d4030" stroke-width="2"/>
+  <polygon points="64,56 72,64 64,72 56,64" fill="#a61b29"/>
+  <circle cx="64" cy="64" r="2.2" fill="#f8f4ed"/>
+</svg>

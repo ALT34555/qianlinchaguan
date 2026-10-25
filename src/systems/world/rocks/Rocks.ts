@@ -1,4 +1,6 @@
 /** 岩石注册表 */
+import { scaleGeometry } from '../Geometry';
+export { scaleGeometry } from '../Geometry';
 
 import palettesJson from '../../../../content/data/world/rocks/palettes.json';
 import chunkTypesJson from '../../../../content/data/world/chunk_types.json';
@@ -19,8 +21,9 @@ import {
   ROCK_COLOR_SLOTS, ROCK_FORMS, ROCK_FORM_CODES, ROCK_MATERIAL_FAMILIES, ROCK_MATERIALS,
   type ResolvedRockPalette, type RockBuildOptions, type RockBuildDef, type RockDef, type RockFile,
   type RockForm, type RockMaterial, type RockMaterialFamily, type RockPalette, type RockPaletteEntry,
-  type RockPaletteFile, type RockPaletteKey, type RockParams, type Season,
+  type RockPaletteFile, type RockPaletteKey, type RockParams,
 } from './types';
+import { type Season } from '../Season';
 
 /** 岩性色板语义槽 */
 const PALETTE_SLOTS: readonly string[] = ['body', 'band', 'cap', 'base', 'crust'];
@@ -359,15 +362,6 @@ export function buildRockById(id: string, season: Season = 'summer', options: Ro
   const scale = options.scale ?? 1;
   if (scale !== 1) scaleGeometry(geo, scale);
   return geo;
-}
-
-/** 就地缩放几何与包围盒 */
-export function scaleGeometry(geo: RockGeometry, scale: number): void {
-  if (scale === 1) return;
-  for (let i = 0; i < geo.positions.length; i++) geo.positions[i] *= scale;
-  geo.radius *= scale;
-  geo.height *= scale;
-  geo.bottom *= scale;
 }
 
 /** 四形态档几何集合 */

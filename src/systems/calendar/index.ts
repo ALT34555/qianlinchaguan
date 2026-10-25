@@ -99,5 +99,16 @@ export {
 export { CalendarClock, CalendarSystem } from './CalendarSystem';
 export type { CalendarClockOptions, CalendarSystemOptions } from './CalendarSystem';
 
+export {
+  formatUtcOffset,
+  localDayFraction,
+  longitudeOfWorldX,
+  timeZoneOfLongitude,
+  timeZoneOffsetMinutes,
+  sunHoursOf,
+  utcDayFraction,
+  utcHourOfDay,
+} from './TimeZone';
+
 export { CalendarHud, injectHudStyles } from './CalendarHud';
 export type { CalendarHudOptions, CalendarHudPosition } from './CalendarHud';

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
+<style>.i-l{fill:none;stroke:var(--li-ink,#4d4030);stroke-width:var(--li-w,2.4);stroke-linecap:square;stroke-linejoin:miter}.i-s{fill:none;stroke:var(--li-acc,#a61b29);stroke-width:var(--li-w,2.4);stroke-linecap:square;stroke-linejoin:miter}.i-a{fill:var(--li-acc,#a61b29)}.i-k{fill:var(--li-ink,#4d4030)}.i-p{fill:var(--li-plane,#4d4030);fill-opacity:var(--li-po,.13)}.i-w{fill:var(--li-paper,#f8f4ed)}</style>
+<rect class="i-p" x="13" y="25" width="28" height="18"/><rect class="i-l" x="10" y="22" width="28" height="18"/><path class="i-l" d="M16 22V10H32V22"/><rect class="i-a" x="22" y="28" width="4" height="6"/>
+</svg>

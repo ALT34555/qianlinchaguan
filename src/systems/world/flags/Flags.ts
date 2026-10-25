@@ -1,4 +1,5 @@
 /** 旗帜注册表 */
+import { normalizeHex, validateHex } from '../../../core/math/Color';
 
 import emblemsJson from '../../../../content/data/world/flags/emblems.json';
 import flagsJson from '../../../../content/data/world/flags/flags.json';
@@ -11,18 +12,20 @@ import {
   FLAGPOLE_GLOBAL_DEFAULTS, FLAGPOLE_KIND_DEFAULTS, buildFlagCloth, buildFlagpole,
   chargePainterOf, resolveFlagMount, type FlagShapeDef,
 } from './archetypes';
-import { FlagBuilder, scaleGeometry } from './geometry';
+import { FlagBuilder } from './geometry';
+import { flagpoleColliders } from './FlagPoleColliders';
+import { scaleGeometry } from '../Geometry';
 import type { FlagGeometry } from './geometry';
 import {
   FLAG_COLOR_SLOTS, FLAG_MOUNTS, FLAG_SHAPES, FLAGPOLE_BASE_STYLES, FLAGPOLE_COLLAR_STYLES,
-  FLAGPOLE_FINIAL_STYLES, FLAGPOLE_KINDS, FLAGPOLE_PLATE_STYLES,
-  type FlagAssemblyOptions, type FlagAttachment, type FlagBuildOptions, type FlagClothDef, type FlagDef,
-  type FlagEmblemDef, type FlagEmblemFile, type FlagFile, type FlagMount, type FlagMountSolution, type FlagOrientation,
+  FLAGPOLE_FINIAL_STYLES, FLAGPOLE_KINDS, FLAGPOLE_PLATE_STYLES, type FlagAssemblyOptions,
+  type FlagAttachment, type FlagBuildOptions, type FlagClothDef, type FlagDef, type FlagEmblemDef,
+  type FlagEmblemFile, type FlagFile, type FlagMount, type FlagMountSolution, type FlagOrientation,
   type FlagPalette, type FlagPaletteEntry, type FlagPaletteFile, type FlagParams, type FlagShape,
   type FlagpoleBuildDef, type FlagpoleBuildOptions, type FlagpoleDef, type FlagpoleFile, type FlagpoleKind,
   type FlagpoleParams, type ResolvedFlagCharge, type ResolvedFlagPalette, type ResolvedFlagpoleParams,
-  type V3,
 } from './types';
+import { type V3 } from '../../../core/math/Geometry';
 
 const palettes = palettesJson as FlagPaletteFile;
 
@@ -32,14 +35,12 @@ export const FLAG_PALETTES: ReadonlyMap<string, FlagPaletteEntry> = new Map<stri
   ...Object.entries(palettes.hardware ?? {}),
 ]);
 
-const HEX = /^#[0-9a-fA-F]{6}$/;
-
 export function resolveFlagColor(value: string): string {
-  if (/^#[0-9a-fA-F]{3}$/.test(value)) return '#' + [...value.slice(1)].map(c => c + c).join('');
-  if (HEX.test(value)) return value;
+  const hex = normalizeHex(value);
+  if (hex !== null) return hex;
   if (value.startsWith('#')) throw new Error(`[Flags] 颜色须为 #RGB 或 #RRGGBB: ${value}`);
   const color = paletteEntry(value).default;
-  if (!HEX.test(color)) throw new Error(`[Flags] 色板键 ${value} 的色值非法: ${color}`);
+  if (!validateHex(color, { allowShort: false })) throw new Error(`[Flags] 色板键 ${value} 的色值非法: ${color}`);
   return color;
 }
 
@@ -441,6 +442,7 @@ export function buildFlagpoleById(id: string, options: FlagpoleBuildOptions & { 
   const geo = buildFlagpole(poleBuildDef(unit, params, options, options.collars ?? []));
   const scale = options.scale ?? 1;
   if (scale !== 1) scaleGeometry(geo, scale);
+  geo.colliders=flagpoleColliders(params,scale);
   return geo;
 }
 
@@ -516,6 +518,7 @@ export function assemblySocketsOf(assembly: {
 }
 
 export interface FlagAssembly {
+  colliders:Float32Array;
   flag: string;
   pole: string;
   mount: FlagMount;
@@ -576,15 +579,18 @@ export function buildFlagAssembly(options: FlagAssemblyOptions): FlagAssembly {
   const fly = clothDef.fly * scale;
   const hoist = clothDef.hoist * scale;
   const sockets = assemblySocketsOf({ attachment, fly, hoist, scale, mount });
+  const geometry=merged.build(),colliders=flagpoleColliders(params,scale);
+  geometry.colliders=colliders;
   return {
     flag: flagUnit.id,
+    colliders,
     pole: poleUnit.id,
     mount,
     orientation: mountDef.orientation,
     attachment,
     cloth,
     poleGeometry,
-    geometry: merged.build(),
+    geometry,
     clothDef,
     poleDef,
     fly,

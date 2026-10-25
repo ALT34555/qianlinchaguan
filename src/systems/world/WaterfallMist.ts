@@ -1,27 +1,39 @@
 import * as THREE from 'three';
+import { MIST_EMITTER_STRIDE } from './WaterfallSpray';
 
-const PARTICLES_PER_EMITTER = 16;
+const DROPS_PER_EMITTER = 16;
+const MIST_PER_EMITTER = 8;
 
 const mistVertexShader = `
 uniform float uMistTime;
 uniform float uMistDaylight;
 uniform float uMistProj;
 attribute vec4 aDrift;
+attribute vec3 aZone;
 attribute float aSeed;
 varying float vFade;
+varying float vKind;
+varying vec4 vZone;
 #include <fog_pars_vertex>
 void main() {
-  float life = mix(1.4, 2.8, fract(aSeed * 7.13));
+  vKind = aZone.z;
+  float life = vKind < 0.5 ? mix(1.4, 2.8, fract(aSeed * 7.13)) : mix(0.28, 0.58, fract(aSeed * 7.13));
   float age = fract(uMistTime / life + aSeed);
-  float ease = 1.0 - (1.0 - age) * (1.0 - age);
-  vec3 p = position + vec3(aDrift.x, 0.0, aDrift.z) * ease;
-  p.y += aDrift.y * age * (1.6 - age * 0.6);
-  p.x += sin(uMistTime * 0.9 + aSeed * 17.0) * 0.18 * age;
-  p.z += cos(uMistTime * 0.7 + aSeed * 23.0) * 0.18 * age;
-  vFade = smoothstep(0.0, 0.18, age) * (1.0 - smoothstep(0.5, 1.0, age)) * (0.3 + 0.7 * uMistDaylight);
+  vec3 p = position;
+  float size;
+  if (vKind < 0.5) {
+    float ease = 1.0 - (1.0 - age) * (1.0 - age);
+    p += vec3(aDrift.x * ease, aDrift.y * age, aDrift.z * ease);
+    size = aDrift.w * (0.7 + age * 0.6);
+  } else {
+    p += vec3(aDrift.x * age, aDrift.y * 4.0 * age * (1.0 - age) - 0.2 * age * age, aDrift.z * age);
+    size = aDrift.w;
+  }
+  vFade = smoothstep(0.0, 0.12, age) * (1.0 - smoothstep(0.65, 1.0, age)) * (0.3 + 0.7 * uMistDaylight);
   vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-  float size = aDrift.w * (0.5 + age * 1.5) * 1.4;
-  gl_PointSize = clamp(size * uMistProj / max(1.0, -mvPosition.z), 1.0, 220.0);
+  float projection = uMistProj / max(1.0, -mvPosition.z);
+  gl_PointSize = clamp(size * projection, 1.0, vKind < 0.5 ? 180.0 : 7.0);
+  vZone = vec4(aZone.xy, (modelMatrix * vec4(p, 1.0)).y, gl_PointSize / projection * viewMatrix[1][1]);
   gl_Position = projectionMatrix * mvPosition;
   #include <fog_vertex>
 }
@@ -29,12 +41,23 @@ void main() {
 
 const mistFragmentShader = `
 varying float vFade;
+varying float vKind;
+varying vec4 vZone;
 #include <fog_pars_fragment>
 void main() {
   float d = length(gl_PointCoord - 0.5);
-  float alpha = smoothstep(0.5, 0.08, d) * vFade * 0.34;
+  float alpha;
+  if (vKind < 0.5) {
+    float worldY = vZone.z + (0.5 - gl_PointCoord.y) * vZone.w;
+    if (worldY < vZone.x || worldY > vZone.y) discard;
+    float edge = max(0.001, (vZone.y - vZone.x) * 0.12);
+    float zoneFade = smoothstep(vZone.x, vZone.x + edge, worldY) * (1.0 - smoothstep(vZone.y - edge, vZone.y, worldY));
+    alpha = (1.0 - smoothstep(0.08, 0.5, d)) * vFade * zoneFade * 0.25;
+  } else {
+    alpha = (1.0 - smoothstep(0.25, 0.5, d)) * vFade * 0.8;
+  }
   if (alpha < 0.004) discard;
-  gl_FragColor = vec4(0.82, 0.9, 0.95, alpha);
+  gl_FragColor = vec4(mix(vec3(0.82, 0.9, 0.95), vec3(0.9, 0.97, 1.0), vKind), alpha);
   #include <fog_fragment>
 }
 `;
@@ -52,50 +75,53 @@ export class WaterfallMist {
     uniforms.uMistTime = { value: 0 };
     uniforms.uMistDaylight = { value: 1 };
     uniforms.uMistProj = { value: 420 };
-    this.material = new THREE.ShaderMaterial({
-      uniforms,
-      vertexShader: mistVertexShader,
-      fragmentShader: mistFragmentShader,
-      transparent: true,
-      depthWrite: false,
-      fog: true,
-    });
+    this.material = new THREE.ShaderMaterial({uniforms, vertexShader: mistVertexShader, fragmentShader: mistFragmentShader,
+      transparent: true, depthWrite: false, fog: true});
   }
 
   build(emitters: Float32Array, cx: number, cz: number, chunkSize: number): THREE.Points | null {
-    const count = Math.floor(emitters.length / 6);
+    const count = Math.floor(emitters.length / MIST_EMITTER_STRIDE);
     if (!count) return null;
-    const total = count * PARTICLES_PER_EMITTER;
-    const positions = new Float32Array(total * 3);
-    const drifts = new Float32Array(total * 4);
-    const seeds = new Float32Array(total);
-    const center = new THREE.Vector3();
-    for (let e = 0; e < count; e++) center.add(new THREE.Vector3(emitters[e * 6], emitters[e * 6 + 1], emitters[e * 6 + 2]));
-    center.multiplyScalar(1 / count);
-    let radius = 1;
-    let cursor = 0;
+    const positions: number[] = [], drifts: number[] = [], zones: number[] = [], seeds: number[] = [];
+    const bounds = new THREE.Box3();
+    const append = (x: number, y: number, z: number, dx: number, rise: number, dz: number, size: number, base: number, ceiling: number, kind: number, seed: number) => {
+      positions.push(x, y, z); drifts.push(dx, rise, dz, size); zones.push(base, ceiling, kind); seeds.push(seed);
+      const padding = size + .3;
+      bounds.expandByPoint(new THREE.Vector3(x + Math.min(0, dx) - padding, y - padding, z + Math.min(0, dz) - padding));
+      bounds.expandByPoint(new THREE.Vector3(x + Math.max(0, dx) + padding, y + rise + padding, z + Math.max(0, dz) + padding));
+    };
     for (let e = 0; e < count; e++) {
-      const x = emitters[e * 6], y = emitters[e * 6 + 1], z = emitters[e * 6 + 2], scale = emitters[e * 6 + 3];
-      const dx = emitters[e * 6 + 4], dz = emitters[e * 6 + 5];
-      radius = Math.max(radius, Math.hypot(x - center.x, y - center.y, z - center.z) + scale * 4);
-      for (let k = 0; k < PARTICLES_PER_EMITTER; k++, cursor++) {
-        const seed = mistRandom(x * 12.99 + z * 78.23 + k * 3.71);
-        const angle = mistRandom(seed * 91.7 + k) * Math.PI * 2;
-        const spread = (0.8 + mistRandom(seed * 41.3) * 1.3) * scale;
-        const out = spread * 0.7;
-        positions[cursor * 3] = x; positions[cursor * 3 + 1] = y; positions[cursor * 3 + 2] = z;
-        drifts[cursor * 4] = Math.cos(angle) * out + dx * spread * 0.9;
-        drifts[cursor * 4 + 1] = (1.1 + mistRandom(seed * 17.9) * 1.7) * scale;
-        drifts[cursor * 4 + 2] = Math.sin(angle) * out + dz * spread * 0.9;
-        drifts[cursor * 4 + 3] = scale * (0.7 + mistRandom(seed * 29.7) * 0.6);
-        seeds[cursor] = seed;
+      const o = e * MIST_EMITTER_STRIDE;
+      const x = emitters[o], y = emitters[o + 1], z = emitters[o + 2], scale = emitters[o + 3];
+      const dx = emitters[o + 4], dz = emitters[o + 5], localTop = emitters[o + 6];
+      const base = emitters[o + 7], ceiling = base + (emitters[o + 8] - base) * emitters[o + 9];
+      const globalSeed = (x + cx * chunkSize) * 12.99 + (z + cz * chunkSize) * 78.23;
+      for (let k = 0; k < DROPS_PER_EMITTER; k++) {
+        const seed = mistRandom(globalSeed + k * 3.71), side = (mistRandom(seed * 41.3) - .5) * .8;
+        const drift = .25 + mistRandom(seed * 91.7) * .55;
+        const rise = .08 + mistRandom(seed * 17.9) * .18;
+        append(x - dz * side, y + (localTop - y) * seed + .04, z + dx * side,
+          dx * drift - dz * side * .35, rise, dz * drift + dx * side * .35,
+          .045 + mistRandom(seed * 29.7) * .065, 0, 0, 1, seed);
+      }
+      if (emitters[o + 9] <= 0 || y > ceiling || localTop < base) continue;
+      const zoneHeight = ceiling - base;
+      for (let k = 0; k < MIST_PER_EMITTER; k++) {
+        const seed = mistRandom(globalSeed + 101 + k * 3.71), angle = seed * Math.PI * 2;
+        const spread = (.5 + mistRandom(seed * 41.3)) * scale;
+        const size = Math.min(scale * (.5 + seed * .5), zoneHeight * .45);
+        const start = Math.min(ceiling - size * .5, Math.max(base + size * .5, y));
+        const rise = Math.max(0, Math.min(zoneHeight * .35, ceiling - start - size * .65));
+        append(x, start, z, Math.cos(angle) * spread + dx * spread * .65, rise,
+          Math.sin(angle) * spread + dz * spread * .65, size, base, ceiling, 0, seed);
       }
     }
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('aDrift', new THREE.BufferAttribute(drifts, 4));
-    geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
-    geometry.boundingSphere = new THREE.Sphere(center, radius);
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('aDrift', new THREE.Float32BufferAttribute(drifts, 4));
+    geometry.setAttribute('aZone', new THREE.Float32BufferAttribute(zones, 3));
+    geometry.setAttribute('aSeed', new THREE.Float32BufferAttribute(seeds, 1));
+    geometry.boundingSphere = bounds.getBoundingSphere(new THREE.Sphere());
     const points = new THREE.Points(geometry, this.material);
     points.position.set(cx * chunkSize, 0, cz * chunkSize);
     points.matrixAutoUpdate = false;

@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-compat/
 *.log
 .vite/
 userdata/*
@@ -12,3 +13,4 @@ userdata/mods/fonts/*
 !userdata/mods/fonts/fonts.json
 release/
 platforms/windows/runtime/
+platforms/windows/runtime-compat/

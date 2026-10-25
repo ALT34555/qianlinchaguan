@@ -2,7 +2,9 @@
 
 import { CHUNK_SIZE, SEA_LEVEL } from '../../../core/config';
 import { hash2 } from '../../../core/math/Random';
-import type { FlagPlacement, FlagpoleKind, SurfaceQuery, V3 } from './types';
+import type { FlagPlacement, FlagpoleKind } from './types';
+import type { SurfaceQuery } from '../SurfaceQuery';
+import type { V3 } from '../../../core/math/Geometry';
 
 export type { SurfaceQuery } from './types';
 

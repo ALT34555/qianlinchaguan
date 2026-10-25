@@ -1,14 +1,31 @@
 import type { PlayerFactionOptions } from './PlayerFaction';
-import type { ChunkInfo, WorldGenerator } from '../WorldGenerator';
-import { ArtificialGenerator } from './ArtificialGenerator';
+import type { ChunkInfo } from '../WorldContract';
+import type { WorldGeneratorBase as WorldGenerator } from '../WorldContract';
+import { ArtificialGenerator, MIN_TERRITORY_SCORE } from './ArtificialGenerator';
 import { normalizeArtificial } from './ArtificialSettings';
 import { calendarYear, claimKey, DAY_MS, EXCLUSION_RADIUS, FLAG_LAND, OWNED_LAND,
   type ArtificialClaim, type ArtificialState, type Territory } from './ArtificialState';
 import { expandTerritory } from './NaturalExpansion';
 import { evolveTerritory } from './NaturalEvolution';
 import { flagIndependence } from './FlagIndependence';
+import type { WatershedState } from '../Watershed';
+import { hash2 } from '../../../core/math/Random';
 
 export type TerritoryChunkInfo = ChunkInfo & { territory?: Territory };
+
+/** 出生点置旗地扫描半径 */
+export const SPAWN_SCAN_RADIUS = 16;
+
+/** 由近及远的方形扫描偏移，确定性排序 */
+function scanOffsets(radius: number): readonly [number, number][] {
+  const list: [number, number][] = [];
+  for (let dz = -radius; dz <= radius; dz++) for (let dx = -radius; dx <= radius; dx++) list.push([dx, dz]);
+  list.sort((a, b) => a[0] ** 2 + a[1] ** 2 - b[0] ** 2 - b[1] ** 2 ||
+    Math.abs(a[0]) + Math.abs(a[1]) - Math.abs(b[0]) - Math.abs(b[1]) || a[0] - b[0] || a[1] - b[1]);
+  return list;
+}
+
+const SPAWN_SCAN = scanOffsets(SPAWN_SCAN_RADIUS);
 
 export class ArtificialWorld {
   readonly generator: ArtificialGenerator;
@@ -16,13 +33,27 @@ export class ArtificialWorld {
   readonly territories = new Map<string, Territory>();
   readonly claims = new Map<string, ArtificialClaim>();
   revision = 0;
+  private initialCivilizations=0;
+  private initialPlacementDone=false;
   playerFactionId?: string;
+  private playerColors?: { mainColor: string; trimColor: string };
   private readonly tiles = new Set<string>();
+  private queryDiscovery=true;
   private readonly buckets = new Map<string, ArtificialClaim[]>();
   private readonly epochUnixMs: number;
   private lastDay: number;
   private work: Generator<void> | null = null;
   private needsCatchup = false;
+  private background?:Worker;
+  private busy=false;
+  private pending?:{ms:number;cx:number;cz:number};
+  private latest?:{ms:number;cx:number;cz:number};
+  private region?:number[];
+  private lastRequest=0;
+  private backgroundWake?:ReturnType<typeof setTimeout>;
+  private backgroundError?:Error;
+  private flushing=false;
+  private waiters:{resolve:()=>void;reject:(error:Error)=>void}[]=[];
 
   constructor(readonly terrain: WorldGenerator, unixMs = 0, private readonly mode: 'real' | 'yuan' = 'real',
     private readonly offset = 0, state?: ArtificialState) {
@@ -30,13 +61,88 @@ export class ArtificialWorld {
     this.generator = new ArtificialGenerator(terrain);
     this.epochUnixMs = state?.epochUnixMs ?? unixMs;
     this.lastDay = state?.lastDay ?? this.day(unixMs);
+    this.initialPlacementDone=state?.initialPlacementDone??!!state;
     if (state) {
       this.playerFactionId = state.playerFactionId;
       for (const t of state.territories) this.territories.set(t.id, { ...t });
       for (const c of state.claims) this.addClaim({ ...c });
       this.needsCatchup = true;
+      for(const [x,z] of state.discoveredTiles??[])this.tiles.add(claimKey(x,z));
     }
+    this.countInitialCivilizations();
   }
+
+  private countInitialCivilizations():void {
+    this.initialCivilizations=0;
+    for(const t of this.territories.values())if(t.id!==this.playerFactionId&&t.bornYear===0)this.initialCivilizations++;
+  }
+  private get initialLimitReached():boolean {return this.initialCivilizations>=this.settings.initialCivilizationLimit;}
+
+  enableBackground(worker:Worker,ms:number,cx:number,cz:number,hydrology:WatershedState,onChange?:()=>void):void {
+    if(!this.settings.enabled||this.background)return;
+    this.background=worker;
+    worker.onmessage=event=>{
+      this.busy=false;
+      if(event.data.error){this.failBackground(new Error(event.data.error));return;}
+      if(event.data.state){this.adoptBackground(event.data.state);onChange?.();}
+      this.pumpBackground();
+      if(!this.busy&&!this.pending){this.flushing=false;this.waiters.splice(0).forEach(w=>w.resolve());}
+      if(event.data.moreWork&&!this.busy&&!this.backgroundError){
+        this.backgroundWake=setTimeout(()=>{this.pending=this.latest;this.pumpBackground();},150);
+      }
+    };
+    worker.onerror=event=>this.failBackground(new Error(event.message));
+    worker.postMessage({kind:'init',seed:this.terrain.seed,climateWeights:this.terrain.climateWeights,generation:this.terrain.generation,
+      hydrology,state:this.snapshot(),ms,mode:this.mode,offset:this.offset,entries:this.terrain.cacheLimit});
+    this.update(ms,cx,cz);
+  }
+  setCacheBudget(entries:number):void {this.background?.postMessage({kind:'budget',entries});}
+
+  setPlayerColors(mainColor: string, trimColor: string): void {
+    if (this.playerColors?.mainColor === mainColor && this.playerColors.trimColor === trimColor) return;
+    this.playerColors = { mainColor, trimColor };
+    const territory = this.playerFactionId ? this.territories.get(this.playerFactionId) : undefined;
+    if (territory) { Object.assign(territory, this.playerColors); this.revision++; }
+    this.background?.postMessage({ kind: 'player-colors', mainColor, trimColor });
+  }
+
+  private adoptBackground(state:ArtificialState):void {
+    this.initialPlacementDone=state.initialPlacementDone??true;
+    this.territories.clear();this.claims.clear();this.buckets.clear();this.tiles.clear();
+    this.playerFactionId=state.playerFactionId;this.lastDay=state.lastDay;
+    for(const territory of state.territories)this.territories.set(territory.id,territory);
+    const owned = this.playerFactionId ? this.territories.get(this.playerFactionId) : undefined;
+    if (owned && this.playerColors) Object.assign(owned, this.playerColors);
+    for(const claim of state.claims)this.addClaim(claim);
+    for(const [x,z] of state.discoveredTiles??[])this.tiles.add(claimKey(x,z));
+    this.countInitialCivilizations();this.revision++;
+  }
+
+  private pumpBackground():void {
+    if(this.busy||this.backgroundError||!this.background||!this.pending)return;
+    clearTimeout(this.backgroundWake);this.backgroundWake=undefined;
+    this.busy=true;const pending=this.pending;this.pending=undefined;
+    this.background.postMessage({kind:'update',...pending,region:this.region});this.region=undefined;
+  }
+
+  private failBackground(error:Error):void {
+    console.error('[Artificial worker]',error);
+    this.backgroundError=error;
+    clearTimeout(this.backgroundWake);
+    this.flushing=false;
+    this.busy=false;this.pending=undefined;
+    this.waiters.splice(0).forEach(w=>w.reject(error));
+    this.background?.terminate();
+    // 保持只读，避免同步回退卡顿
+  }
+
+  flushBackground():Promise<void>{
+    if(this.backgroundError)return Promise.reject(this.backgroundError);
+    if(!this.busy&&!this.pending)return Promise.resolve();
+    this.flushing=true;
+    return new Promise((resolve,reject)=>this.waiters.push({resolve,reject}));
+  }
+  dispose():void {clearTimeout(this.backgroundWake);this.background?.terminate();this.background=undefined;this.busy=false;this.pending=undefined;this.waiters.splice(0).forEach(w=>w.resolve());}
 
   private day(ms: number): number { return Math.floor((ms + this.offset * 60000) / DAY_MS); }
   private year(ms: number): number {
@@ -51,13 +157,17 @@ export class ArtificialWorld {
     this.revision++;
   }
 
-  private found(cx: number, cz: number, type: number, year: number, salt: string): void {
+  private found(cx: number, cz: number, type: number, year: number, salt: string): boolean {
+    const initial=salt==='initial'||salt==='spawn';
+    if(initial&&this.initialLimitReached)return false;
     cx = this.generator.wrap(cx);
     const t = this.generator.faction(cx, cz, year, salt);
-    if (this.territories.has(t.id) || this.claims.has(claimKey(cx, cz))) return;
+    if (this.territories.has(t.id) || this.claims.has(claimKey(cx, cz))) return false;
     this.territories.set(t.id, t);
+    if(initial)this.initialCivilizations++;
     this.addClaim({ cx, cz, type, faction: t.id, step: 0 });
     this.needsCatchup = true;
+    return true;
   }
 
   createPlayerFaction(cx: number, cz: number, options: PlayerFactionOptions): void {
@@ -70,43 +180,76 @@ export class ArtificialWorld {
     this.addClaim({ cx, cz, type: FLAG_LAND, faction: t.id, step: 0 });
   }
 
-  discover(cx: number, cz: number, radius = 0): void {
-    if (!this.settings.enabled) return;
-    const s = this.generator.cellSize;
-    const planet = this.terrain.generation.mode === 'planet';
-    const size = this.terrain.generation.planet.equatorChunks;
-    const ox = planet ? -size / 2 : 0, oz = planet ? -size / 4 : 0;
-    cx = this.generator.wrap(cx);
-    const columns = Math.round(size / s);
-    for (let z = Math.floor((cz - radius - oz) / s); z <= Math.floor((cz + radius - oz) / s); z++) {
-      if (planet && (z < 0 || z * s >= size / 2)) continue;
-      for (let x = Math.floor((cx - radius - ox) / s); x <= Math.floor((cx + radius - ox) / s); x++) {
-        const tx = planet ? (x % columns + columns) % columns : x;
-        const key = claimKey(tx, z);
-        if (this.tiles.has(key)) continue;
-        this.tiles.add(key);
-        const c = this.generator.candidate(tx, z);
-        if (c && this.hasSpace(c.cx, c.cz)) this.found(c.cx, c.cz, OWNED_LAND, 0, 'initial');
+  /** 出生点附近保底立一处自然置旗地 */
+  seedNearby(cx: number, cz: number, radius = SPAWN_SCAN_RADIUS): boolean {
+    if (!this.settings.enabled||this.initialLimitReached) return false;
+    const offsets = radius === SPAWN_SCAN_RADIUS ? SPAWN_SCAN : scanOffsets(radius);
+    for (const strict of [true, false]) {
+      for (const [dx, dz] of offsets) {
+        const x = this.generator.wrap(cx + dx), z = cz + dz;
+        if (!this.generator.inWorld(z) || this.claims.has(claimKey(x, z)) || !this.hasSpace(x, z)) continue;
+        const value = this.generator.score(x, z);
+        if (value < 0 || (strict && value < MIN_TERRITORY_SCORE)) continue;
+        if (this.found(x, z, FLAG_LAND, 0, 'spawn')) return true;
       }
+    }
+    return false;
+  }
+
+  discover(_cx: number, _cz: number, _radius = 0): void {
+    this.seedInitialTerritories();
+  }
+
+  /** 开局一次性选定全球初始领地 */
+  seedInitialTerritories():void {
+    if(!this.settings.enabled||this.initialPlacementDone)return;
+    this.initialPlacementDone=true;
+    if(this.initialLimitReached||this.terrain.generation.landRatio===0)return;
+    const owned=this.playerFactionId?this.territories.get(this.playerFactionId):undefined;
+    const spawn=owned??this.terrain.findSpawnChunk();
+    if(!owned&&!this.initialCivilizations)this.seedNearby(spawn.cx,spawn.cz);
+    if(this.initialLimitReached)return;
+    const g=this.generator,planet=this.terrain.generation.mode==='planet';
+    const size=planet?this.terrain.generation.planet.equatorChunks:g.cellSize*64;
+    const nearby=Math.max(EXCLUSION_RADIUS*2,Math.min(size/8,g.cellSize*4));
+    const accept=(cx:number,cz:number)=>{
+      if(g.distance2(cx,cz,spawn.cx,spawn.cz)<=nearby**2||!g.inWorld(cz)||!this.hasSpace(cx,cz))return;
+      if(g.score(cx,cz)<MIN_TERRITORY_SCORE)return;
+      this.found(cx,cz,FLAG_LAND,0,'initial');
+    };
+    for(const site of this.terrain.getInitialTerritorySites()){
+      if(this.initialLimitReached)return;
+      accept(site.cx,site.cz);
+    }
+    const columns=Math.max(1,Math.round(size/g.cellSize));
+    const tried=new Set<string>();
+    for(let attempt=0;attempt<1024&&!this.initialLimitReached;attempt++){
+      const tx=Math.floor(hash2(attempt,0,this.terrain.seed^0x474c4f42)*columns);
+      const draw=hash2(attempt,1,this.terrain.seed^0x474c4f42);
+      const tz=Math.min(Math.ceil(columns/2)-1,Math.floor(draw*columns/2));
+      const x=planet?tx:tx-Math.floor(columns/2),row=planet?tz:tz-Math.floor(columns/4);
+      const key=claimKey(x,row);
+      if(tried.has(key))continue;
+      tried.add(key);
+      const candidate=g.candidate(x,row);
+      if(candidate)accept(candidate.cx,candidate.cz);
     }
   }
 
   getClaim(cx: number, cz: number): ArtificialClaim | undefined {
-    this.discover(cx, cz);
+    if(!this.background&&this.queryDiscovery)this.discover(cx, cz);
     return this.claims.get(claimKey(this.generator.wrap(cx), cz));
   }
+  useCachedQueries():void {this.queryDiscovery=false;}
 
   *discoverRegion(minX: number, minZ: number, maxX: number, maxZ: number): Generator<void> {
-    if (!this.settings.enabled) return;
-    const s = this.generator.cellSize, planet = this.terrain.generation.mode === 'planet';
-    const size = this.terrain.generation.planet.equatorChunks;
-    const ox = planet ? -size / 2 : 0, oz = planet ? -size / 4 : 0;
-    for (let z = Math.floor((minZ - oz) / s); z <= Math.floor((maxZ - oz) / s); z++) {
-      for (let x = Math.floor((minX - ox) / s); x <= Math.floor((maxX - ox) / s); x++) {
-        this.discover(Math.floor(ox + (x + .5) * s), Math.floor(Math.min(oz + (z + .5) * s, planet ? size / 4 - 1 : Infinity)));
-        yield;
-      }
+    if (!this.settings.enabled||this.initialPlacementDone) return;
+    if(this.background){
+      if(this.backgroundError||this.flushing)return;
+      this.region=[minX,minZ,maxX,maxZ];this.pending=this.latest;this.pumpBackground();yield;return;
     }
+    this.seedInitialTerritories();
+    yield;
   }
 
   info(cx: number, cz: number): TerritoryChunkInfo {
@@ -173,6 +316,13 @@ export class ArtificialWorld {
 
   update(ms: number, playerCx: number, playerCz: number, budgetMs = 3): void {
     if (!this.settings.enabled) return;
+    if(this.background){
+      if(this.backgroundError||this.flushing)return;
+      this.latest={ms,cx:playerCx,cz:playerCz};
+      const now=performance.now();
+      if(this.lastRequest&&now-this.lastRequest<250&&!this.region)return;
+      this.lastRequest=now;this.pending=this.latest;this.pumpBackground();return;
+    }
     this.discover(playerCx, playerCz);
     const day = this.day(ms);
     if (!this.work && (day > this.lastDay || this.needsCatchup)) this.work = this.simulate(day, playerCx, playerCz);
@@ -185,7 +335,7 @@ export class ArtificialWorld {
 
   snapshot(): ArtificialState | undefined {
     if (!this.settings.enabled && !this.playerFactionId) return undefined;
-    return { ...(this.playerFactionId ? { playerFactionId: this.playerFactionId } : {}), epochUnixMs: this.epochUnixMs, lastDay: this.lastDay,
+    return { initialPlacementDone:this.initialPlacementDone,discoveredTiles:[...this.tiles].map(k=>k.split(',').map(Number) as [number,number]),...(this.playerFactionId ? { playerFactionId: this.playerFactionId } : {}), epochUnixMs: this.epochUnixMs, lastDay: this.lastDay,
       territories: [...this.territories.values()].map(t => ({ ...t })), claims: [...this.claims.values()].map(c => ({ ...c })) };
   }
 }

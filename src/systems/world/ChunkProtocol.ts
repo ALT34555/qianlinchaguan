@@ -1,16 +1,32 @@
+import type { WaterFreezeRules } from './WaterFreezing';
+import type { WaterAppearanceEntry } from './WaterAppearance';
 /**
  * 主线程 <-> 区块 Worker 消息协议。
  */
 import type { ClimateWeights, WorldGeneration } from './WorldSettings';
 import type { MeshData } from './ChunkMesher';
 import type {WaterField} from './DynamicWater';
+import type { DecorationPlacement } from './WorldDecoration';
+import type { WatershedState } from './Watershed';
+import type { DecorationBatch } from './DecorationInstances';
 
 export type WorkerRequest =
-  | { kind: 'init'; seed: number; climateWeights: ClimateWeights; generation: WorldGeneration }
-  | { kind: 'generate'; cx: number; cz: number; artificialType?: number };
+  | { kind:'budget'; entries:number; meshBytes:number }
+  | { kind: 'flush'; id: number }
+  | { kind: 'init'; seed: number; climateWeights: ClimateWeights; generation: WorldGeneration; worldKey?:string; hydrology?:WatershedState }
+  | { kind: 'generate'; profile?:boolean; cx: number; cz: number; artificialType?: number; waterOverrides?: WaterAppearanceEntry[]; waterRevision?: number; waterFreezeRules?: WaterFreezeRules; vegetationMultiplier?: number; waterSeason?:number|null };
+
+/** 舆图预览请求，image 为假仅返平均色 */
+export type SurfacePreviewRequest =
+  | {kind:'budget';entries:number}
+  | { kind: 'init'; seed: number; climateWeights: ClimateWeights; generation: WorldGeneration; worldKey?:string; hydrology?:WatershedState }
+  | { kind: 'generate'; cx: number; cz: number; image?: boolean; detail?:boolean; cachedOnly?:boolean;nodes?:boolean;base?:boolean;waterSeason?:number|null };
 
 export interface ChunkResultMessage {
+  meshCacheHit?:boolean;
+  profile?:Record<string,number>;
   kind: 'chunk';
+  waterRevision?: number;
   cx: number;
   cz: number;
   type: number;
@@ -22,10 +38,15 @@ export interface ChunkResultMessage {
   water: MeshData | null;
   decoration: MeshData | null;
   rocks?: MeshData | null;
+  /** 装饰落位（世界坐标），供准心检视 */
+  decorations: DecorationPlacement[];
   minimap: Uint8ClampedArray<ArrayBuffer>;
   mist?: Float32Array;
   /** 生成 + 构建网格耗时（毫秒） */
   elapsed: number;
+  cacheHit?: boolean;
+  instances?:DecorationBatch[];
+  colliders?:Float32Array;
 }
 
 export type WorkerResponse = ChunkResultMessage;

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4d4030" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter">
+<title>主页</title>
+<desc>欢迎。</desc>
+<path class="nav-accent" d="M2.5 11L12 2.5 21.5 11" stroke="#a61b29"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-5.5h4V21"/>
+</svg>

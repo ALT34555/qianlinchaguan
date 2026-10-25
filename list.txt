@@ -1,5 +1,5 @@
-content\assets\ui\fonts\NanoOldSongA-Regular.ttf - https://github.com/Hansha2011/NanoOldSong
-content\assets\ui\fonts\ResourceHanRoundedCN-Medium.ttf - https://github.com/CyanoHao/Resource-Han-Rounded
+userdata\mods\fonts\NanoOldSongA-Regular.ttf - https://github.com/Hansha2011/NanoOldSong
+userdata\mods\fonts\ResourceHanRoundedCN-Medium.ttf - https://github.com/CyanoHao/Resource-Han-Rounded
 content\maps\earth\land.json (Natural Earth 1:110m land 海岸距离场) - https://github.com/nvkelso/natural-earth-vector
 node_modules\three - https://github.com/mrdoob/three.js
 node_modules\simplex-noise - https://github.com/jwagner/simplex-noise.js
@@ -8,8 +8,6 @@ node_modules\typescript - https://github.com/microsoft/TypeScript
 node_modules\@types\three - https://github.com/three-types/three-ts-types
 node_modules\electron - https://github.com/electron/electron
 node_modules\@electron\packager - https://github.com/electron/packager
-node_modules\@electron\get - https://github.com/electron/get
-node_modules\@electron-internal\extract-zip - https://github.com/electron/extract-zip
 node_modules\@types\node - https://github.com/DefinitelyTyped/DefinitelyTyped
 src\core\math\Random.ts (mulberry32) - https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
 src\systems\calendar\ (astronomia 的 sun / moon / deltat 级数参考，MIT，用于校对系数) - https://github.com/commenthol/astronomia

@@ -1,0 +1,132 @@
+/* 尺度与回退色；颜色真值在 data/tokens.csv */
+:root {
+  color-scheme: light;
+  --q-bg: #fbecde;
+  --q-surface: #fdf4ec;
+  --q-surface-hi: #fffaf6;
+  --q-surface-lo: #f0dccd;
+  --q-surface-glass: rgba(253, 244, 236, .72);
+  --q-ink: #452e3b;
+  --q-ink-2: #6f5261;
+  --q-ink-3: #a0878c;
+  --q-ink-inv: #fff6ee;
+  --q-line: rgba(93, 63, 81, .34);
+  --q-line-soft: rgba(93, 63, 81, .16);
+  --q-line-faint: rgba(93, 63, 81, .09);
+  --q-line-primary: rgba(203, 58, 86, .48);
+  --q-primary: #CB3A56;
+  --q-primary-ui: #CB3A56;
+  --q-primary-text: color-mix(in oklab, var(--q-primary) 72%, var(--q-ink));
+  --q-primary-soft: rgba(203, 58, 86, .10);
+  --q-primary-deep: #a02a44;
+  --q-on-primary: #FBECDE;
+  --q-accent: #5d3f51;
+  --q-accent-ui: #5d3f51;
+  --q-accent-text: color-mix(in oklab, var(--q-accent) 82%, var(--q-ink));
+  --q-accent-soft: rgba(93, 63, 81, .08);
+  --q-highlight: #C70039;
+  --q-highlight-ui: #C70039;
+  --q-highlight-soft: rgba(199, 0, 57, .10);
+  --q-tea: #8fa97f;
+  --q-tea-text: color-mix(in oklab, var(--q-tea) 50%, var(--q-ink));
+  --q-gold: #d9a94e;
+  --q-celadon: #a8c7c1;
+  --q-wood: #4a2c1e;
+  --q-petal: #f0a9b8;
+  --q-neu-light: #fffdfa;
+  --q-neu-dark: #e4d2c6;
+  --q-neu-sm: 2px 2px 6px var(--q-neu-dark), -2px -2px 5px var(--q-neu-light);
+  --q-neu: 6px 6px 15px var(--q-neu-dark), -6px -6px 15px var(--q-neu-light);
+  --q-neu-lg: 10px 10px 26px var(--q-neu-dark), -10px -10px 26px var(--q-neu-light);
+  --q-neu-in: inset 3px 3px 7px var(--q-neu-dark), inset -3px -3px 7px var(--q-neu-light);
+  --q-neu-in-sm: inset 2px 2px 4px var(--q-neu-dark), inset -2px -2px 4px var(--q-neu-light);
+  --q-aero-tint: rgba(253, 244, 236, .62);
+  --q-aero-gloss: linear-gradient(180deg, rgba(255, 255, 255, .62) 0%, rgba(255, 255, 255, .14) 42%, rgba(255, 255, 255, .04) 64%, rgba(255, 255, 255, .2) 100%);
+  --q-aero-line: rgba(255, 255, 255, .78);
+  --q-shadow-sm: 0 1px 2px rgba(93, 63, 81, .10);
+  --q-shadow: 0 6px 18px rgba(93, 63, 81, .13), 0 1px 2px rgba(93, 63, 81, .08);
+  --q-shadow-lg: 0 26px 70px rgba(93, 63, 81, .26), 0 2px 8px rgba(93, 63, 81, .12);
+  --q-glow: 0 0 0 1px rgba(203, 58, 86, .26), 0 6px 18px rgba(203, 58, 86, .16);
+
+  /* 直角：所有圆角令牌归零 */
+  --q-r-xs: 0;
+  --q-r-sm: 0;
+  --q-r: 0;
+  --q-r-lg: 0;
+  --q-r-xl: 0;
+  --q-r-pill: 0;
+
+  /* 元素尺寸：只缩放留白与控件高度，不动字号 */
+  --q-size: 1;
+  --q-ctl-h: calc(36px * var(--q-size));
+  --q-ctl-h-sm: calc(28px * var(--q-size));
+  --q-ctl-h-lg: calc(44px * var(--q-size));
+  --q-pad-card: calc(13px * var(--q-size));
+  --q-pad-sheet: calc(clamp(14px, 1.5vw, 22px) * var(--q-size));
+  --q-rhythm: calc(clamp(12px, 1.1vw, 17px) * var(--q-size));
+  --q-gap-grid: calc(10px * var(--q-size));
+  --q-tab-h: calc(44px * var(--q-size));
+
+  /* 间距 */
+  --q-sp-1: calc(4px * var(--q-size));
+  --q-sp-2: calc(8px * var(--q-size));
+  --q-sp-3: calc(12px * var(--q-size));
+  --q-sp-4: calc(16px * var(--q-size));
+  --q-sp-5: calc(24px * var(--q-size));
+  --q-sp-6: calc(32px * var(--q-size));
+  --q-sp-7: calc(48px * var(--q-size));
+  --q-sp-8: calc(64px * var(--q-size));
+
+  /* 动效 */
+  --q-ease: cubic-bezier(.2, .8, .2, 1);
+  --q-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --q-ease-in: cubic-bezier(.4, 0, 1, 1);
+  --q-ease-spring: cubic-bezier(.34, 1.46, .52, 1);
+  --q-d1: 140ms;
+  --q-d2: 240ms;
+  --q-d3: 380ms;
+  --q-d4: 640ms;
+  --q-d5: 1200ms;
+
+  /* 字体：全部走系统栈，兼容设备自定义字体 */
+  --q-font-body: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --q-font-display: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --q-font-mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  --q-scale: 1;
+  --q-shell: 1800px;
+  --q-safe-x: 0px;
+  --q-safe-y: 0px;
+  --q-blur: blur(18px) saturate(1.35);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --q-bg: #1D1B1C;
+  --q-surface: #2a2829;
+  --q-surface-hi: #343233;
+  --q-surface-lo: #141213;
+  --q-surface-glass: rgba(42, 40, 41, .74);
+  --q-ink: #dfd6ce;
+  --q-ink-2: #a9a29d;
+  --q-ink-3: #7f7a77;
+  --q-ink-inv: #241d1e;
+  --q-line: rgba(251, 236, 222, .24);
+  --q-line-soft: rgba(251, 236, 222, .13);
+  --q-line-faint: rgba(251, 236, 222, .08);
+  --q-primary-ui: #d9556c;
+  --q-primary-text: color-mix(in oklab, var(--q-primary) 55%, #fdf3ea);
+  --q-primary-deep: #f07d8f;
+  --q-accent-ui: #a8879b;
+  --q-accent-text: color-mix(in oklab, var(--q-accent) 55%, #fdf3ea);
+  --q-tea-text: color-mix(in oklab, #9db98c 60%, var(--q-ink));
+  --q-neu-light: #3a3738;
+  --q-neu-dark: #161516;
+  --q-aero-tint: rgba(42, 40, 41, .58);
+  --q-aero-gloss: linear-gradient(180deg, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, .04) 45%, rgba(255, 255, 255, .01) 66%, rgba(255, 255, 255, .07) 100%);
+  --q-aero-line: rgba(255, 255, 255, .26);
+  --q-shadow-sm: 0 1px 2px rgba(0, 0, 0, .40);
+  --q-shadow: 0 8px 22px rgba(0, 0, 0, .45), 0 1px 2px rgba(0, 0, 0, .50);
+  --q-shadow-lg: 0 30px 80px rgba(0, 0, 0, .60), 0 2px 8px rgba(0, 0, 0, .55);
+  --q-glow: 0 0 0 1px rgba(203, 58, 86, .36), 0 6px 22px rgba(203, 58, 86, .26);
+}

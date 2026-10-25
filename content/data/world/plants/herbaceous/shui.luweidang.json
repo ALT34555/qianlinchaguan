@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shui.luweidang","archetype":"reed","climate":"subtropical","name":"芦苇荡","latin":"luweidang","seed":703,"tags":["water","wet","riparian","ground","grove"],"params":{"height":3.2,"culms":11,"spread":1.25,"nodeStep":0.58,"blades":5,"bloomCount":8,"bloomRadius":0.24},"palette":{"foliage":"foliage","foliageDark":"foliageDeep","reedCulm":"reedCulm","bloom":"reedPlume"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shui.luweidang@seedling","state":"seedling"},
+    {"id":"shui.luweidang@subadult","state":"subadult"},
+    {"id":"shui.luweidang@flowering","state":"flowering"},
+    {"id":"shui.luweidang@fruiting","state":"fruiting"},
+    {"id":"shui.luweidang@withered","state":"withered"}
+  ]
+}

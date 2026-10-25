@@ -4,7 +4,7 @@
     "code": "000",
     "key": "void",
     "name": "虚空",
-    "mapColor": "#111111",
+    "mapColor": "#2e2e2e",
     "generate": false,
     "description": "占位，暂不生成"
   },
@@ -13,7 +13,7 @@
     "code": "001",
     "key": "land",
     "name": "陆",
-    "mapColor": "#62a03c",
+    "mapColor": "#a4c2a8",
     "generate": true,
     "description": "普通陆地"
   },
@@ -22,7 +22,7 @@
     "code": "002",
     "key": "water",
     "name": "静水",
-    "mapColor": "#2f66c9",
+    "mapColor": "#4b6c8c",
     "generate": true,
     "description": "海洋或内流湖泊；可穿插于所有气候带"
   },
@@ -31,7 +31,7 @@
     "code": "003",
     "key": "hills",
     "name": "山丘",
-    "mapColor": "#8a8a8a",
+    "mapColor": "#97846c",
     "generate": true,
     "description": "起伏山地"
   },
@@ -40,7 +40,7 @@
     "code": "004",
     "key": "dryland",
     "name": "旱地",
-    "mapColor": "#c9a066",
+    "mapColor": "#b6a476",
     "generate": true,
     "description": "干燥平原"
   },
@@ -49,7 +49,7 @@
     "code": "005",
     "key": "river",
     "name": "河",
-    "mapColor": "#3b82f6",
+    "mapColor": "#7ba4b8",
     "generate": true,
     "description": "相邻支流下降汇集，干流随流量加宽加深；缓坡可分汊成河网，大河可覆盖整个区块并跨块延伸"
   },
@@ -58,7 +58,7 @@
     "code": "006",
     "key": "forest",
     "name": "林地",
-    "mapColor": "#228b22",
+    "mapColor": "#497568",
     "generate": true,
     "description": "森林"
   },
@@ -67,7 +67,7 @@
     "code": "007",
     "key": "valley",
     "name": "谷地",
-    "mapColor": "#556b2f",
+    "mapColor": "#70887d",
     "generate": true,
     "description": "低谷"
   },
@@ -76,7 +76,7 @@
     "code": "008",
     "key": "plateau",
     "name": "高原",
-    "mapColor": "#cd853f",
+    "mapColor": "#a88a6f",
     "generate": true,
     "description": "高原；基准高度随区域地势变化"
   },
@@ -85,7 +85,7 @@
     "code": "009",
     "key": "rift_valley",
     "name": "裂谷",
-    "mapColor": "#8b4513",
+    "mapColor": "#624941",
     "generate": true,
     "description": "深裂谷"
   },
@@ -94,7 +94,7 @@
     "code": "010",
     "key": "waterfall",
     "name": "落差水（瀑布）",
-    "mapColor": "#70b7dc",
+    "mapColor": "#8abcd1",
     "generate": true,
     "description": "大落差河段；上游水面沿陡坎落向下游，仍参与汇流"
   },
@@ -103,7 +103,7 @@
     "code": "011",
     "key": "wetland",
     "name": "湿地",
-    "mapColor": "#608b78",
+    "mapColor": "#6a8d8c",
     "generate": true,
     "description": "大瀑布落点两岸及缓坡河湾；浅滩、泥炭岸与细支流共同塑造湿地"
   },
@@ -112,7 +112,7 @@
     "code": "101",
     "key": "tropical_savanna",
     "name": "热带草原",
-    "mapColor": "#d2b48c",
+    "mapColor": "#c3b787",
     "generate": true,
     "description": "热带草原"
   },
@@ -121,7 +121,7 @@
     "code": "102",
     "key": "tropical_sea",
     "name": "热带海",
-    "mapColor": "#00ced1",
+    "mapColor": "#648e93",
     "generate": true,
     "description": "热带海"
   },
@@ -130,7 +130,7 @@
     "code": "103",
     "key": "tropical_hills",
     "name": "热带山丘",
-    "mapColor": "#6b8e23",
+    "mapColor": "#8e804b",
     "generate": true,
     "description": "热带山丘"
   },
@@ -139,7 +139,7 @@
     "code": "104",
     "key": "desert",
     "name": "沙漠",
-    "mapColor": "#edc9af",
+    "mapColor": "#d9c7a9",
     "generate": true,
     "description": "沙漠"
   },
@@ -148,7 +148,7 @@
     "code": "105",
     "key": "swamp",
     "name": "沼泽",
-    "mapColor": "#2f4f4f",
+    "mapColor": "#617172",
     "generate": true,
     "description": "沼泽"
   },
@@ -157,7 +157,7 @@
     "code": "106",
     "key": "tropical_rainforest",
     "name": "热带雨林",
-    "mapColor": "#006400",
+    "mapColor": "#3b5f3a",
     "generate": true,
     "description": "热带雨林"
   },
@@ -166,7 +166,7 @@
     "code": "107",
     "key": "tropical_valley",
     "name": "热带山谷",
-    "mapColor": "#3cb371",
+    "mapColor": "#6e8b74",
     "generate": true,
     "description": "热带山谷"
   },
@@ -175,7 +175,7 @@
     "code": "108",
     "key": "tropical_highlands",
     "name": "热带高地",
-    "mapColor": "#8fbc8f",
+    "mapColor": "#b8a996",
     "generate": true,
     "description": "热带高地；基准高度随区域地势变化"
   },
@@ -184,7 +184,7 @@
     "code": "109",
     "key": "tropical_monsoon_forest",
     "name": "热带季风林",
-    "mapColor": "#2e8b57",
+    "mapColor": "#4a7856",
     "generate": true,
     "description": "热带季风林"
   },
@@ -193,7 +193,7 @@
     "code": "201",
     "key": "subtropical_plains",
     "name": "亚热带平原",
-    "mapColor": "#9acd32",
+    "mapColor": "#b8c7a0",
     "generate": true,
     "description": "亚热带平原"
   },
@@ -202,7 +202,7 @@
     "code": "202",
     "key": "subtropical_sea",
     "name": "亚热带海",
-    "mapColor": "#4682b4",
+    "mapColor": "#6b8e99",
     "generate": true,
     "description": "亚热带海"
   },
@@ -211,7 +211,7 @@
     "code": "203",
     "key": "subtropical_hills",
     "name": "亚热带山丘",
-    "mapColor": "#556b2f",
+    "mapColor": "#5e665b",
     "generate": true,
     "description": "亚热带山丘"
   },
@@ -220,7 +220,7 @@
     "code": "204",
     "key": "subtropical_shrubland",
     "name": "亚热带灌木林",
-    "mapColor": "#bdb76b",
+    "mapColor": "#b5aa90",
     "generate": true,
     "description": "亚热带灌木林"
   },
@@ -229,7 +229,7 @@
     "code": "205",
     "key": "subtropical_monsoon_forest",
     "name": "亚热带季风林",
-    "mapColor": "#32cd32",
+    "mapColor": "#3b7a57",
     "generate": true,
     "description": "亚热带季风林"
   },
@@ -238,7 +238,7 @@
     "code": "206",
     "key": "subtropical_jungle",
     "name": "亚热带丛林",
-    "mapColor": "#228b22",
+    "mapColor": "#3a5f4b",
     "generate": true,
     "description": "亚热带丛林"
   },
@@ -247,7 +247,7 @@
     "code": "207",
     "key": "subtropical_valley",
     "name": "亚热带山谷",
-    "mapColor": "#66cdaa",
+    "mapColor": "#83a78d",
     "generate": true,
     "description": "亚热带山谷"
   },
@@ -256,7 +256,7 @@
     "code": "208",
     "key": "subtropical_highlands",
     "name": "亚热带高地",
-    "mapColor": "#8b008b",
+    "mapColor": "#8a6e8b",
     "generate": true,
     "description": "亚热带高地；基准高度随区域地势变化"
   },
@@ -265,7 +265,7 @@
     "code": "301",
     "key": "temperate_plains",
     "name": "温带平原",
-    "mapColor": "#7cfc00",
+    "mapColor": "#b2c9b2",
     "generate": true,
     "description": "温带平原"
   },
@@ -274,7 +274,7 @@
     "code": "302",
     "key": "temperate_sea",
     "name": "温带海",
-    "mapColor": "#4169e1",
+    "mapColor": "#5e7987",
     "generate": true,
     "description": "温带海"
   },
@@ -283,7 +283,7 @@
     "code": "303",
     "key": "temperate_hills",
     "name": "温带山丘",
-    "mapColor": "#808000",
+    "mapColor": "#9fa39a",
     "generate": true,
     "description": "温带山丘"
   },
@@ -292,7 +292,7 @@
     "code": "304",
     "key": "temperate_shrubland",
     "name": "温带灌木林",
-    "mapColor": "#b8860b",
+    "mapColor": "#b4a992",
     "generate": true,
     "description": "温带灌木林"
   },
@@ -301,7 +301,7 @@
     "code": "305",
     "key": "temperate_monsoon_forest",
     "name": "温带季风林",
-    "mapColor": "#00fa9a",
+    "mapColor": "#485b4d",
     "generate": true,
     "description": "温带季风林"
   },
@@ -310,7 +310,7 @@
     "code": "306",
     "key": "temperate_jungle",
     "name": "温带丛林",
-    "mapColor": "#00ff7f",
+    "mapColor": "#5d655f",
     "generate": true,
     "description": "温带丛林"
   },
@@ -319,7 +319,7 @@
     "code": "307",
     "key": "temperate_valley",
     "name": "温带山谷",
-    "mapColor": "#20b2aa",
+    "mapColor": "#9abeaf",
     "generate": true,
     "description": "温带山谷"
   },
@@ -328,7 +328,7 @@
     "code": "308",
     "key": "temperate_highlands",
     "name": "温带高地",
-    "mapColor": "#cd5c5c",
+    "mapColor": "#b7a091",
     "generate": true,
     "description": "温带高地；基准高度随区域地势变化"
   },
@@ -337,7 +337,7 @@
     "code": "401",
     "key": "cold_plains",
     "name": "寒带平原",
-    "mapColor": "#e0ffff",
+    "mapColor": "#cad3c3",
     "generate": true,
     "description": "寒带平原"
   },
@@ -346,7 +346,7 @@
     "code": "402",
     "key": "cold_sea",
     "name": "寒带海",
-    "mapColor": "#5f9ea0",
+    "mapColor": "#86a1a7",
     "generate": true,
     "description": "寒带海"
   },
@@ -355,7 +355,7 @@
     "code": "403",
     "key": "cold_hills",
     "name": "寒带山丘",
-    "mapColor": "#a9a9a9",
+    "mapColor": "#b2bbbe",
     "generate": true,
     "description": "寒带山丘"
   },
@@ -364,7 +364,7 @@
     "code": "404",
     "key": "cold_shrubland",
     "name": "寒带灌木林",
-    "mapColor": "#d3d3d3",
+    "mapColor": "#bbb5ac",
     "generate": true,
     "description": "寒带灌木林"
   },
@@ -373,7 +373,7 @@
     "code": "405",
     "key": "cold_monsoon_forest",
     "name": "寒带季风林",
-    "mapColor": "#b0c4de",
+    "mapColor": "#a4aca7",
     "generate": true,
     "description": "寒带季风林"
   },
@@ -382,7 +382,7 @@
     "code": "406",
     "key": "cold_snowy_mountains",
     "name": "寒带雪山",
-    "mapColor": "#ffffff",
+    "mapColor": "#d8e3e7",
     "generate": true,
     "description": "寒带雪山"
   },
@@ -391,7 +391,7 @@
     "code": "407",
     "key": "cold_valley",
     "name": "寒带山谷",
-    "mapColor": "#afeeee",
+    "mapColor": "#c4d7d6",
     "generate": true,
     "description": "寒带山谷"
   },
@@ -400,7 +400,7 @@
     "code": "408",
     "key": "cold_highlands",
     "name": "寒带高地",
-    "mapColor": "#778899",
+    "mapColor": "#8a9a9c",
     "generate": true,
     "description": "寒带高地；基准高度随区域地势变化"
   },
@@ -409,7 +409,7 @@
     "code": "409",
     "key": "ice_snowfield",
     "name": "冰封雪原",
-    "mapColor": "#f0ffff",
+    "mapColor": "#e0e7ef",
     "generate": true,
     "description": "冰封雪原"
   },
@@ -418,7 +418,7 @@
     "code": "9000",
     "key": "owned_land",
     "name": "有主之地",
-    "mapColor": "#b48a50",
+    "mapColor": "#8b6d47",
     "generate": false,
     "description": "属于某个阵营的土地，保留自然植被和岩石。",
     "artificial": true
@@ -428,7 +428,7 @@
     "code": "9001",
     "key": "flag_land",
     "name": "置旗地",
-    "mapColor": "#c99b58",
+    "mapColor": "#8b614d",
     "generate": false,
     "description": "新阵营的置旗之地，不自然生成植被和岩石。",
     "artificial": true

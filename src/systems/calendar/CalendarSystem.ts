@@ -1,9 +1,9 @@
 /** 日历系统门面 */
-import { dayTimeFromUnixMs, unixMsFromDayTime } from './JulianDay';
+import { dayTimeFromUnixMs, unixMsFromDayTime, civilJdnOfJd, julianDayOf } from './JulianDay';
+import { CHINESE_UTC_OFFSET_MINUTES, ChineseCalendar } from './ChineseCalendar';
 import { GregorianCalendar } from './GregorianCalendar';
-import { ChineseCalendar } from './ChineseCalendar';
 import { YuanCalendar } from './YuanCalendar';
-import type { CalendarSnapshot, DayTime, CalendarMode, ShichenInfo, SeasonInfo } from './types';
+import type { CalendarSnapshot, DayTime, CalendarMode, GregorianDate, ShichenInfo, SeasonInfo, YuanDate } from './types';
 
 /** 日历系统配置。 */
 export interface CalendarSystemOptions {
@@ -30,11 +30,13 @@ export class CalendarSystem {
   }
 
   /** 由"日序 + 当日比例"取三历快照。 */
-  snapshotFromDayTime(dayTime: DayTime): CalendarSnapshot {
+  snapshotFromDayTime(dayTime: DayTime, civilOffsetMinutes = this.utcOffsetMinutes): CalendarSnapshot {
+    // 农历固定东八区日界
+    const chineseJdn = civilJdnOfJd(julianDayOf(dayTime.jdn, dayTime.frac) - civilOffsetMinutes / 1440, CHINESE_UTC_OFFSET_MINUTES);
     const snap: CalendarSnapshot = {
       instant: dayTime,
       gregorian: this.gregorian.fromDayTime(dayTime.jdn, dayTime.frac),
-      chinese: this.chinese.fromJdn(dayTime.jdn),
+      chinese: this.chinese.fromJdn(chineseJdn),
       yuan: this.yuan.fromDayTime(dayTime),
     };
     snap.shichen = this.calculateShichen(dayTime);
@@ -45,6 +47,16 @@ export class CalendarSystem {
   /** 由 Unix 毫秒时间戳取三历快照。 */
   snapshotFromUnixMs(ms: number): CalendarSnapshot {
     return this.snapshotFromDayTime(dayTimeFromUnixMs(ms, this.utcOffsetMinutes));
+  }
+
+  /** 取给定时区下的公历与元历日期（不重算节气）。 */
+  dateAt(unixMs: number, utcOffsetMinutes = this.utcOffsetMinutes): { dayTime: DayTime; gregorian: GregorianDate; yuan: YuanDate } {
+    const dayTime = dayTimeFromUnixMs(unixMs, utcOffsetMinutes);
+    return {
+      dayTime,
+      gregorian: this.gregorian.fromDayTime(dayTime.jdn, dayTime.frac),
+      yuan: this.yuan.fromDayTime(dayTime),
+    };
   }
 
   /** 取当前系统时刻的三历快照。 */

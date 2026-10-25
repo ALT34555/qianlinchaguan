@@ -1,8 +1,13 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import type { Socket } from 'node:net';
 import { ModResourceService, modResourceMiddleware } from '../mods/resources';
 import { resolve, sep, extname } from 'node:path';
 import { FileSaveService, fileSaveMiddleware } from '../saves/local-saves';
+export { FileSaveService, fileSaveMiddleware, ModResourceService, modResourceMiddleware };
+export { CURRENT_RULE_ID } from '../../src/core/WorldRule';
+export { DEFAULT_CLIMATE_WEIGHTS, DEFAULT_GENERATION } from '../../src/systems/world/WorldSettings';
+export { decodeSaveArchive } from '../../src/systems/world/SaveArchive';
 
 /** 启动回环本地存档服务 */
 export async function startDesktopServer(root: string, directory: string) {
@@ -28,8 +33,16 @@ export async function startDesktopServer(root: string, directory: string) {
       })().catch(() => { if (!response.headersSent) response.writeHead(400); response.end(); });
     }));
   });
+  const sockets = new Set<Socket>();
+  server.on('connection', socket => {
+    sockets.add(socket);
+    socket.once('close', () => sockets.delete(socket));
+  });
   await new Promise<void>((done, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', done); });
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('无法启动本地存档服务。');
-  return { server, url: `http://127.0.0.1:${address.port}/` };
+  return { server, url: `http://127.0.0.1:${address.port}/`, close() {
+    server.close();
+    for (const socket of sockets) socket.destroy();
+  } };
 }

@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shui.luweicong","archetype":"reed","climate":"subtropical","name":"芦苇丛","latin":"luweicong","seed":702,"tags":["water","wet","riparian","ground"],"params":{"height":2.8,"culms":7,"spread":0.58,"nodeStep":0.55,"blades":6,"bloomCount":5,"bloomRadius":0.22},"palette":{"foliage":"foliage","foliageDark":"foliageDeep","reedCulm":"reedCulm","bloom":"reedPlume"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shui.luweicong@seedling","state":"seedling"},
+    {"id":"shui.luweicong@subadult","state":"subadult"},
+    {"id":"shui.luweicong@flowering","state":"flowering"},
+    {"id":"shui.luweicong@fruiting","state":"fruiting"},
+    {"id":"shui.luweicong@withered","state":"withered"}
+  ]
+}

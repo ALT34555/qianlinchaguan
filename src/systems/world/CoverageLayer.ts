@@ -4,8 +4,11 @@ export type CoverageField = (point: SurfacePoint) => number;
 /** 通用实地/空域覆盖场，不负责水、虚空或地表材质。 */
 export class CoverageLayer {
   readonly threshold: number;
+  readonly field: CoverageField;
+  readonly ratio: number;
 
-  constructor(readonly field: CoverageField, readonly ratio: number, probes: readonly SurfacePoint[], fixedThreshold?: number) {
+  constructor(field: CoverageField, ratio: number, probes: readonly SurfacePoint[], fixedThreshold?: number) {
+    this.field=field;this.ratio=ratio;
     const values = probes.map(field).sort((a, b) => a - b);
     this.threshold = fixedThreshold ?? values[Math.min(values.length - 1, Math.floor((1 - ratio) * values.length))];
   }

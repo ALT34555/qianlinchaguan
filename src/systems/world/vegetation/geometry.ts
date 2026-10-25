@@ -1,5 +1,9 @@
 /** 低多边形几何构建器（植物专用） */
+import { clampByte, hexToRgb } from '../../../core/math/Color';
+import { faceNormal } from '../../../core/math/Geometry';
+import { shadeOf } from '../LowPolyShading';
 import { PLANT_MATERIALS, type PlantMaterial, type ShapeSpec, type ShapeType } from './types';
+import { colorWindPart, type PlantWindPart } from './WindParts';
 
 /** 单个多边形面 */
 export interface Face {
@@ -7,6 +11,7 @@ export interface Face {
   col: number[];
   nrm: number[];
   mat: PlantMaterial;
+  windPart: PlantWindPart;
 }
 
 /** 单株植物的低模几何 */
@@ -15,6 +20,7 @@ export interface PlantGeometry {
   normals: Float32Array;
   colors: Uint8Array;
   indices: Uint32Array;
+  windParts: Uint8Array;
   /** 包围半径，用于视锥剔除 */
   radius: number;
   /** 几何高度（含枝顶） */
@@ -26,27 +32,10 @@ export interface PlantGeometry {
   triangleCount: number;
 }
 
-/** 方向明暗预烘焙阶梯 */
-const SHADE_STEPS = [0.58, 0.7, 0.84, 1.0];
-
-/** 太阳方向（标准化为整数权重即可） */
-const SUN: readonly [number, number, number] = [0.42, 0.84, -0.34];
-
 const TAU = Math.PI * 2;
 
 export function parseColor(hex: string, fallback: readonly [number, number, number] = [255, 0, 255]): [number, number, number] {
-  const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex).trim());
-  if (!m) return [fallback[0], fallback[1], fallback[2]];
-  const v = parseInt(m[1], 16);
-  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-}
-
-/** 方向明暗 */
-function shadeOf(nx: number, ny: number, nz: number): number {
-  const d = nx * SUN[0] + ny * SUN[1] + nz * SUN[2];
-  const t = (d + 1) / 2;
-  const i = Math.round(t * (SHADE_STEPS.length - 1));
-  return SHADE_STEPS[i < 0 ? 0 : i > SHADE_STEPS.length - 1 ? SHADE_STEPS.length - 1 : i];
+  return hexToRgb(hex, fallback);
 }
 
 export class LowPolyBuilder {
@@ -64,6 +53,7 @@ export class LowPolyBuilder {
       col: [clampByte(col[0] * s), clampByte(col[1] * s), clampByte(col[2] * s)],
       nrm,
       mat,
+      windPart: mat === 'solid' ? colorWindPart(col) : 3,
     });
   }
 
@@ -73,15 +63,7 @@ export class LowPolyBuilder {
     bx: number, by: number, bz: number,
     cx: number, cy: number, cz: number,
   ): [number, number, number] {
-    const ux = bx - ax, uy = by - ay, uz = bz - az;
-    const vx = cx - ax, vy = cy - ay, vz = cz - az;
-    let nx = uy * vz - uz * vy;
-    let ny = uz * vx - ux * vz;
-    let nz = ux * vy - uy * vx;
-    const len = Math.hypot(nx, ny, nz);
-    if (len < 1e-9) return [0, 1, 0];
-    nx /= len; ny /= len; nz /= len;
-    return [nx, ny, nz];
+    return faceNormal(ax, ay, az, bx, by, bz, cx, cy, cz);
   }
 
   /** 三角面：自动求法线 */
@@ -110,7 +92,7 @@ export class LowPolyBuilder {
     bottom: number, top: number,
     sides: number,
     color: [number, number, number],
-    opts: { rotY?: number; jitter?: number; rand?: () => number; mat?: PlantMaterial } = {},
+    opts: { rotY?: number; jitter?: number; rand?: () => number; mat?: PlantMaterial; cap?: boolean } = {},
   ): void {
     const n = Math.max(3, Math.round(sides));
     const rot = opts.rotY ?? 0;
@@ -130,7 +112,7 @@ export class LowPolyBuilder {
     // 侧面
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
-      this.quad(bot[i], bot[j], topRing[j], topRing[i], color, opts.mat);
+      this.quad(bot[i], topRing[i], topRing[j], bot[j], color, opts.mat);
     }
     // 端盖按扇形三角剖分
     if (Math.abs(bottom) > 1e-6) {
@@ -138,7 +120,7 @@ export class LowPolyBuilder {
         this.triangle(bot[0], bot[i], bot[i + 1], color, opts.mat);
       }
     }
-    for (let i = 1; i < n - 1; i++) {
+    if (opts.cap !== false) for (let i = 1; i < n - 1; i++) {
       this.triangle(topRing[0], topRing[i + 1], topRing[i], color, opts.mat);
     }
   }
@@ -169,14 +151,14 @@ export class LowPolyBuilder {
       const top: [number, number, number][] = ring.map((p) => [cx + (p[0] - cx) * ratio, cy + height, cz + (p[2] - cz) * ratio]);
       for (let i = 0; i < n; i++) {
         const j = (i + 1) % n;
-        this.quad(ring[i], ring[j], top[j], top[i], color, opts.mat);
+        this.quad(ring[i], top[i], top[j], ring[j], color, opts.mat);
       }
       for (let i = 1; i < n - 1; i++) this.triangle(top[0], top[i + 1], top[i], color, opts.mat);
       return;
     }
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
-      this.triangle(ring[i], ring[j], apex, color, opts.mat);
+      this.triangle(ring[i], apex, ring[j], color, opts.mat);
     }
     if (opts.cap) for (let i = 1; i < n - 1; i++) this.triangle(ring[0], ring[i], ring[i + 1], color, opts.mat);
   }
@@ -213,20 +195,20 @@ export class LowPolyBuilder {
       const cur = ring(Math.cos(phi), cy + ry * Math.sin(phi));
       for (let i = 0; i < n; i++) {
         const j = (i + 1) % n;
-        this.quad(prev[i], prev[j], cur[j], cur[i], color, opts.mat);
+        this.quad(prev[i], cur[i], cur[j], prev[j], color, opts.mat);
       }
       prev = cur;
     }
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
-      this.triangle(prev[i], prev[j], apex, color, opts.mat);
+      this.triangle(prev[i], apex, prev[j], color, opts.mat);
     }
     // 底面（可选）：灌木贴地、叶团朝下的那半边
     if (opts.floor !== false) {
       const belly: [number, number, number] = [cx, cy - ry * (opts.squash ?? 1), cz];
       for (let i = 0; i < n; i++) {
         const j = (i + 1) % n;
-        this.triangle(equator[i], belly, equator[j], color, opts.mat);
+        this.triangle(equator[i], equator[j], belly, color, opts.mat);
       }
     }
   }
@@ -265,7 +247,7 @@ export class LowPolyBuilder {
     const north: [number, number, number] = [cx, cy + ry, cz];
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
-      this.triangle(rows[0][i], south, rows[0][j], color, opts.mat);
+      this.triangle(rows[0][i], north, rows[0][j], color, opts.mat);
     }
     for (let l = 0; l + 1 < rings; l++) {
       for (let i = 0; i < n; i++) {
@@ -276,7 +258,7 @@ export class LowPolyBuilder {
     const top = rows[rings - 1];
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
-      this.triangle(top[i], top[j], north, color, opts.mat);
+      this.triangle(top[i], top[j], south, color, opts.mat);
     }
   }
 
@@ -304,7 +286,7 @@ export class LowPolyBuilder {
       [v(0, 1, 0), v(1, 1, 0), v(1, 1, 1), v(0, 1, 1)], // +Y
       [v(0, 0, 0), v(0, 0, 1), v(1, 0, 1), v(1, 0, 0)], // -Y
     ];
-    for (const f of faces) this.quad(f[0], f[1], f[2], f[3], color, opts.mat);
+    for (const f of faces) this.quad(f[0], f[3], f[2], f[1], color, opts.mat);
   }
 
   /** 交叉面片 */
@@ -325,8 +307,7 @@ export class LowPolyBuilder {
       const br: [number, number, number] = [cx + (px * width) / 2, cy, cz + (pz * width) / 2];
       const tr: [number, number, number] = [tipX + (px * width * 0.32) / 2, cy + height, tipZ + (pz * width * 0.32) / 2];
       const tl: [number, number, number] = [tipX - (px * width * 0.32) / 2, cy + height, tipZ - (pz * width * 0.32) / 2];
-      this.push([...bl, ...br, ...tr, ...tl], color, [0, 1, 0], opts.mat);
-      this.push([...bl, ...tr, ...tl], color, [0, 1, 0], opts.mat);
+      this.quad(bl, br, tr, tl, color, opts.mat);
     }
   }
 
@@ -356,8 +337,8 @@ export class LowPolyBuilder {
     const tip: [number, number, number] = [cx + dx * len, cy + lift, cz + dz * len];
     const left: [number, number, number] = [midX - sx * wid * 0.5, midY, midZ - sz * wid * 0.5];
     const right: [number, number, number] = [midX + sx * wid * 0.5, midY, midZ + sz * wid * 0.5];
-    this.quad(base, right, tip, left, color, opts.mat);
-    if (opts.both) this.quad(base, left, tip, right, color, opts.mat);
+    this.quad(base, left, tip, right, color, opts.mat);
+    if (opts.both) this.quad(base, right, tip, left, color, opts.mat);
   }
 
   /** 细枝条 */
@@ -367,7 +348,7 @@ export class LowPolyBuilder {
     length: number,
     radius: number,
     color: [number, number, number],
-    opts: { sides?: number; rand?: () => number; tipRatio?: number; mat?: PlantMaterial } = {},
+    opts: { sides?: number; rand?: () => number; tipRatio?: number; mat?: PlantMaterial; cap?: boolean } = {},
   ): void {
     const sides = Math.max(3, Math.round(opts.sides ?? 3));
     const tipRatio = opts.tipRatio ?? 0.35;
@@ -401,7 +382,7 @@ export class LowPolyBuilder {
       const j = (i + 1) % sides;
       this.quad(r0[i], r0[j], r1[j], r1[i], color, opts.mat);
     }
-    for (let i = 1; i < sides - 1; i++) this.triangle(r1[0], r1[i], r1[i + 1], color, opts.mat);
+    if (opts.cap !== false) for (let i = 1; i < sides - 1; i++) this.triangle(r1[0], r1[i], r1[i + 1], color, opts.mat);
   }
 
   /** 打包单株几何并按材质槽分段 */
@@ -416,6 +397,7 @@ export class LowPolyBuilder {
     const normals = new Float32Array(vertexCount * 3);
     const colors = new Uint8Array(vertexCount * 3);
     const indices = new Uint32Array(indexCount);
+    const windParts = new Uint8Array(vertexCount);
     const groups: { mat: PlantMaterial; start: number; count: number }[] = [];
     let v = 0;
     let idx = 0;
@@ -428,6 +410,7 @@ export class LowPolyBuilder {
         if (f.mat !== mat) continue;
         const n = f.pos.length / 3;
         positions.set(f.pos, v * 3);
+        windParts.fill(f.windPart, v, v + n);
         // 面法线
         // 补全法线避免着色异常
         const N = LowPolyBuilder.normal(
@@ -462,18 +445,13 @@ export class LowPolyBuilder {
       if (idx > start) groups.push({ mat, start, count: idx - start });
     }
     return {
-      positions, normals, colors, indices, groups,
+      positions, normals, colors, indices, groups, windParts,
       radius: maxR,
       height: maxY,
       vertexCount,
       triangleCount: indexCount / 3,
     };
   }
-}
-
-function clampByte(v: number): number {
-  const r = Math.round(v);
-  return r < 0 ? 0 : r > 255 ? 255 : r;
 }
 
 /** 形状枚举映射构建方法 */

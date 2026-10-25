@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shui.kucao","archetype":"waterweed","climate":"subtropical","name":"苦草","latin":"kucao","seed":704,"tags":["water","wet","submerged","riverbed","ribbon"],"params":{"height":0.95,"blades":12,"spread":0.45,"layers":1},"palette":{"foliage":"waterweed","foliageDark":"waterweed","foliageDeep":"waterweedPale"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shui.kucao@seedling","state":"seedling"},
+    {"id":"shui.kucao@subadult","state":"subadult"},
+    {"id":"shui.kucao@flowering","state":"flowering"},
+    {"id":"shui.kucao@fruiting","state":"fruiting"},
+    {"id":"shui.kucao@withered","state":"withered"}
+  ]
+}

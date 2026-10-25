@@ -1,14 +1,17 @@
 /** F12 调试面板与实时监控 */
-import { FLOW_DIRECTIONS } from '../systems/world/WorldGenerator';
+import { FLOW_DIRECTIONS } from '../systems/world/WorldContract';
 import { CHUNK_SIZE } from '../core/config';
 import type { Player } from '../entities/Player';
-import { CHUNK_TYPES, formatChunkId, getChunkTypeDef, isRiverType } from '../systems/world/ChunkTypes';
+import { getChunkTypes, formatChunkId, getChunkTypeDef, isRiverType } from '../systems/world/ChunkTypes';
 import type { LoadedChunk, World } from '../systems/world/World';
 import type { Game } from '../core/Game';
 import { chunkName, seasonName } from '../i18n/content';
 import { t } from '../i18n';
 import { daysInMonth, gregorianToJdn, unixMsFromDayTime } from '../systems/calendar/JulianDay';
 import { yuanCalendar } from '../systems/calendar/YuanCalendar';
+import { AIM_DISTANCE, flowLabel, probeAim } from '../systems/world/AimProbe';
+import { formatBlockId, getBlockDef } from '../systems/world/Blocks';
+import { SEASONS } from '../systems/world/Season';
 
 const GRID = 5;
 const HALF = Math.floor(GRID / 2);
@@ -21,7 +24,14 @@ const INK_TEXT_DIM = '#8a7a5f';
 const CINNABAR_MARK = '#c2333f';
 const CANVAS_FONT = '"Qianlin Song", "Songti SC", serif';
 
+const escapeHtml = (value: string): string =>
+  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+
+const swatch = (hex: string): string =>
+  /^#[0-9a-f]{6}$/i.test(hex) ? `<span style="color:${hex}">■</span> ${hex}` : escapeHtml(hex);
+
 export class DebugOverlay {
+  destroy(): void { this.root.remove(); }
   private readonly root: HTMLDivElement;
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
@@ -174,7 +184,7 @@ export class DebugOverlay {
   setKeyLabel(label: string): void { this.root.querySelector('.debug-key')!.textContent = label; }
 
   setVisible(v: boolean): void {
-    this.visible = v;
+    this.visible = v = v && this.game.allowsCheats;
     this.root.classList.toggle('hidden', !v);
     this.dirty = true;
   }
@@ -232,14 +242,14 @@ export class DebugOverlay {
     if (now - this.lastTextUpdate > 100) {
       this.lastTextUpdate = now;
       const typeId = this.world.getChunkType(pcx, pcz);
-      const def = getChunkTypeDef(typeId);
+      const def = getChunkTypeDef(typeId,this.world.generator.generation.terrainRule==='planet-macro');
       const codeStr = formatChunkId(typeId);
       this.typeEl.innerHTML = `${t('debug.currentChunk')}<b style="color:${def.mapColor}">${codeStr} = ${chunkName(def)}</b>`;
       const mode = p.flying ? t('debug.mode.flying') : p.inWater ? t('debug.mode.water') : p.onGround ? t('debug.mode.ground') : t('debug.mode.air');
       this.infoEl.textContent = t('debug.info', {
         cx: pcx, cz: pcz, x: p.x.toFixed(1), y: p.y.toFixed(1), z: p.z.toFixed(1), mode,
       });
-      this.aimEl.textContent = this.aimText();
+      this.aimEl.innerHTML = this.aimInfo();
 
       if (this.game && this.game.currentSnapshot) {
         const snap = this.game.currentSnapshot;
@@ -262,23 +272,48 @@ export class DebugOverlay {
     }
   }
 
-  private aimText(): string {
+  private aimInfo(): string {
     const p = this.player;
     const cosPitch = Math.cos(p.pitch);
-    const dx = -cosPitch * Math.sin(p.yaw), dy = Math.sin(p.pitch), dz = -cosPitch * Math.cos(p.yaw);
-    for (let d = 1; d <= 256; d += 0.5) {
-      const x = p.x + dx * d, y = p.eyeY + dy * d, z = p.z + dz * d;
-      if (y > 512) break;
-      const ground = this.world.getHeight(x, z);
-      const water = this.world.getWaterLevel(x, z);
-      if (y <= Math.max(ground, water)) {
-        const cx = Math.floor(x / CHUNK_SIZE), cz = Math.floor(z / CHUNK_SIZE);
-        const kind = y <= ground ? t('debug.aim.ground') : t('debug.aim.water');
-        const name = chunkName(getChunkTypeDef(this.world.getChunkType(cx, cz)));
-        return t('debug.aim.hit', { kind, name, cx, cz, distance: d.toFixed(1) });
-      }
+    const { hit, river } = probeAim(this.world, {
+      x: p.x, y: p.eyeY, z: p.z,
+      dx: -cosPitch * Math.sin(p.yaw), dy: Math.sin(p.pitch), dz: -cosPitch * Math.cos(p.yaw),
+    });
+    if (!hit) return escapeHtml(t('debug.aim.none', { distance: AIM_DISTANCE }));
+    const distance = hit.distance.toFixed(1);
+    let line: string;
+    if (hit.kind === 'model') {
+      line = t(hit.model === 'plant' ? 'debug.aim.plantModel' : 'debug.aim.model', {
+        kind: t(hit.model === 'plant' ? 'debug.aim.plant' : 'debug.aim.rock'),
+        name: escapeHtml(hit.name), cx: hit.cx, cz: hit.cz, distance,
+        modelState: t(`debug.aim.state.${hit.modelState ?? 'normal'}`),
+        colorState: seasonName(SEASONS.indexOf(hit.colorState)),
+      });
+    } else if (hit.kind === 'flag') {
+      line = t('debug.aim.flag', {
+        name: escapeHtml(hit.territory.name ?? hit.territory.id), id: escapeHtml(hit.territory.id),
+        owner: t(hit.player ? 'debug.aim.owner.player' : 'debug.aim.owner.natural'),
+        main: swatch(hit.territory.mainColor), trim: swatch(hit.territory.trimColor),
+        cx: hit.cx, cz: hit.cz, distance,
+      });
+    } else {
+      const block = hit.blockId === null ? undefined : getBlockDef(hit.blockId);
+      line = t('debug.aim.hit', {
+        kind: t(hit.surface === 'ground' ? 'debug.aim.ground' : 'debug.aim.water'),
+        name: escapeHtml(block?.name ?? t('debug.aim.blockUnavailable')),
+        id: hit.blockId === null ? '?' : formatBlockId(hit.blockId), distance,
+      });
     }
-    return t('debug.aim.none');
+    if (hit.kind === 'surface' && hit.waterAppearance) {
+      const water = hit.waterAppearance;
+      line += `<br>${t('debug.aim.waterState', { state: t(`debug.aim.waterForm.${water.form}`),
+        code: water.form, freezing: t(`debug.aim.waterFreeze.${water.freezing}`), freezeCode: water.freezing, temperature: water.temperature.toFixed(1), cx: hit.cx, cz: hit.cz })}`;
+    }
+    if (!river) return line;
+    return `${line}<br>${t('debug.aim.river', {
+      discharge: river.discharge.toFixed(1),
+      flow: river.direction >= 0 ? flowLabel(river.direction) : escapeHtml(t('detail.noFlow')),
+    })}`;
   }
 
   private redrawBase(): void {
@@ -303,8 +338,10 @@ export class DebugOverlay {
         const cz = this.centerCz - HALF + gz;
         const ox = gx * CHUNK_SIZE;
         const oz = gz * CHUNK_SIZE;
-        const typeId = this.world.getChunkType(cx, cz);
-        const def = getChunkTypeDef(typeId);
+        const loaded=this.world.getChunk(cx,cz),cached=this.world.generator.cachedChunkInfo(cx,cz);
+        if(!loaded&&!cached)continue;
+        const typeId = this.world.artificial.getClaim(cx,cz)?.type??loaded?.type??cached!.type;
+        const def = getChunkTypeDef(typeId,this.world.generator.generation.terrainRule==='planet-macro');
         present.add(typeId);
         const chunk = this.world.getChunk(cx, cz);
         if (this.mapStyle.colors) {
@@ -336,8 +373,8 @@ export class DebugOverlay {
           ctx.fillText(codeStr, ox + 9, oz + 10);
         }
         if (this.mapStyle.relief) {
-          const info = this.world.generator.getChunkInfo(cx, cz);
-          if (isRiverType(typeId) && info.displayFlow >= 0) {
+          const info = cached;
+          if (info && isRiverType(typeId,this.world.generator.generation.terrainRule==='planet-macro') && info.displayFlow >= 0) {
             ctx.font = `bold 22px ${CANVAS_FONT}`;
             ctx.textAlign = 'center';
             ctx.strokeStyle = '#164b73'; ctx.lineWidth = 3;
@@ -349,7 +386,7 @@ export class DebugOverlay {
       }
     }
 
-    this.legendEl.innerHTML = CHUNK_TYPES.filter((def) => def.id !== 0 && present.has(def.id))
+    this.legendEl.innerHTML = getChunkTypes(this.world.generator.generation.terrainRule==='planet-macro').filter((def) => def.id !== 0 && present.has(def.id))
       .map((def) => `<span><i style="background:${def.mapColor}"></i>${formatChunkId(def.id)} ${chunkName(def)}</span>`)
       .join('');
 

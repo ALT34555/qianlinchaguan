@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { WorldLighting } from './WorldLighting';
+import { WaterWaves } from './WaterWaves';
 
 /** 生成器的 Uint8 RGB 为 sRGB */
 export function decodeSurfaceColors(shader: { fragmentShader: string }): void {
@@ -12,6 +13,8 @@ export function decodeSurfaceColors(shader: { fragmentShader: string }): void {
 
 /** 原创程序水面 */
 export class WaterMaterial extends THREE.MeshStandardMaterial {
+  private advanced = true;
+  private readonly waves = new WaterWaves();
   private readonly waterUniforms = {
     uWaterTime: { value: 0 }, uWaterDaylight: { value: 1 }, uWaterNight: { value: 0 },
     uWaterHorizon: { value: new THREE.Color() }, uWaterZenith: { value: new THREE.Color() },
@@ -23,8 +26,12 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
       side: THREE.DoubleSide, roughness: .24, metalness: .08 });
     this.onBeforeCompile = shader => {
       decodeSurfaceColors(shader);
+      if (!this.advanced) return;
       Object.assign(shader.uniforms, this.waterUniforms);
+      if (this.waves.active) this.waves.attach(shader);
       shader.vertexShader = `
+        attribute vec3 waterFoam;
+        varying vec3 vWaterFoam;
         attribute float waterDepth;
         attribute vec2 waterFlow;
         attribute float waterFall;
@@ -38,11 +45,13 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         #include <worldpos_vertex>
         vWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
         vWaterLocal = transformed;
+        vWaterFoam = waterFoam;
         vWaterDepth = waterDepth;
         vWaterFlow = waterFlow;
         vWaterFall = waterFall;
       `);
       shader.fragmentShader = `
+        varying vec3 vWaterFoam;
         uniform float uWaterTime;
         uniform float uWaterDaylight;
         uniform float uWaterNight;
@@ -55,6 +64,7 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         varying float vWaterFall;
         varying vec3 vWaterWorld;
         varying vec3 vWaterLocal;
+        ${this.waves.active ? this.waves.header : ''}
       ` + shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `
         #include <normal_fragment_maps>
@@ -62,15 +72,21 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         float waterTop = smoothstep(0.45, 0.9, abs(waterBaseNormal.y));
         // 仅扰动法线，保持几何岸线贴合
         vec2 wp = vWaterWorld.xz - vWaterFlow * uWaterTime;
+        wp += vec2(sin(wp.y * 0.17 + 1.7), cos(wp.x * 0.21 - 0.9)) * 1.6;
         float w1 = dot(wp, vec2(0.72, 0.43)) - uWaterTime * 0.85;
         float w2 = dot(wp, vec2(-0.38, 1.12)) + uWaterTime * 0.62;
         float w3 = dot(wp, vec2(1.63, -0.82)) - uWaterTime * 1.14;
-        vec2 slope = cos(w1) * vec2(0.72, 0.43) * 0.045
+        // 远处与掠射角按像素足迹收敛，避免波纹走样
+        float waterFar = 1.0 - smoothstep(18.0, 70.0, length(cameraPosition - vWaterWorld));
+        float waterFootprint = 1.0 - clamp(max(fwidth(w1), max(fwidth(w2), fwidth(w3))) * 2.0, 0.0, 1.0);
+        float waterRipple = waterFar * waterFootprint;
+        vec2 slope = (cos(w1) * vec2(0.72, 0.43) * 0.045
           + cos(w2) * vec2(-0.38, 1.12) * 0.022
-          + cos(w3) * vec2(1.63, -0.82) * 0.012;
+          + cos(w3) * vec2(1.63, -0.82) * 0.012 * waterRipple) * waterRipple;
         vec3 rippleNormal = normalize(vec3(-slope.x, 1.0, -slope.y)) * faceDirection;
         vec3 waterWorldNormal = normalize(mix(waterBaseNormal, rippleNormal, waterTop));
         normal = normalize(mat3(viewMatrix) * waterWorldNormal);
+        ${this.waves.active ? this.waves.normalSnippet : ''}
       `);
       shader.fragmentShader = shader.fragmentShader.replace('#include <opaque_fragment>', `
         vec3 waterView = normalize(cameraPosition - vWaterWorld);
@@ -84,8 +100,9 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
         outgoingLight += (vec3(1.0, 0.82, 0.55) * sunGlint * 0.8
           + vec3(0.65, 0.79, 1.0) * moonGlint * 0.35) * waterTop * float(gl_FrontFacing);
         float shore = (1.0 - smoothstep(0.08, 0.7, vWaterDepth)) * smoothstep(0.0, 0.08, vWaterDepth);
-        float shoreWave = smoothstep(0.55, 0.95, sin(vWaterDepth * 18.0 - uWaterTime * 1.4 + sin(w1) * 0.6));
-        outgoingLight += vec3(0.4, 0.48, 0.45) * shore * shoreWave * (0.08 + 0.32 * uWaterDaylight) * waterTop;
+        // 低频浅滩细浪：平坦大陆架不再出现密排弧纹
+        float shoreWave = smoothstep(0.6, 0.95, sin(vWaterDepth * 5.5 - uWaterTime * 1.4 + sin(w1) * 0.6));
+        outgoingLight += vec3(0.4, 0.48, 0.45) * shore * shoreWave * (0.06 + 0.22 * uWaterDaylight) * waterTop * waterFar;
         float falling=(1.0-waterTop)*max(smoothstep(1.2,4.0,length(vWaterFlow))*.35,smoothstep(.3,.7,vWaterFall));
         float streak=0.0;
         if(falling>0.003){
@@ -98,18 +115,31 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
           streak=smoothstep(.05,.9,thread1*.6+thread2*.4);
           streak*=.55+.45*sin(across*.7+vWaterWorld.y*.045+rush*.35+2.0);
           float foam=smoothstep(.55,.95,thread1*.5+thread2*.5);
-          vec3 fallColor=mix(vec3(.55,.72,.78),vec3(.97,1.0,1.0),streak)*(.28+uWaterDaylight*.72);
-          fallColor+=vec3(.9,.96,1.0)*foam*.3*(.2+uWaterDaylight*.8);
+          vec3 fallColor=mix(diffuseColor.rgb,sRGBTransferEOTF(vec4(vWaterFoam,1.0)).rgb,streak)*(.28+uWaterDaylight*.72);
+          fallColor+=sRGBTransferEOTF(vec4(vWaterFoam,1.0)).rgb*foam*.3*(.2+uWaterDaylight*.8);
           outgoingLight=mix(outgoingLight,fallColor,falling*(.4+streak*.6));
         }
         diffuseColor.a = clamp(0.18 + 0.58 * (1.0 - exp(-vWaterDepth * 0.32)) + reflectionWeight * 0.25, 0.18, 0.9);
+        diffuseColor.a *= smoothstep(0.0, 0.04, vWaterDepth);
         diffuseColor.a=max(diffuseColor.a,falling*(.5+streak*.5));
+        ${this.waves.active ? this.waves.surfaceSnippet : ''}
         #include <opaque_fragment>
       `);
     };
   }
 
-  override customProgramCacheKey(): string { return 'qianlin-water-v4-falls-mist'; }
+  setAdvancedVisuals(enabled: boolean): void {
+    if (this.advanced === enabled) return;
+    this.advanced = enabled;
+    this.needsUpdate = true;
+  }
+
+  setWaterWaves(enabled: boolean): void {
+    if (!this.waves.setEnabled(enabled)) return;
+    this.needsUpdate = true;
+  }
+
+  override customProgramCacheKey(): string { return `qianlin-water-palette-${this.advanced}-${this.waves.active}`; }
 
   update(time: number, lighting: WorldLighting, daylight: number, night: number): void {
     // 周期远大于一次游玩
@@ -121,5 +151,6 @@ export class WaterMaterial extends THREE.MeshStandardMaterial {
     this.waterUniforms.uWaterSun.value.copy(lighting.sunDirection);
     this.waterUniforms.uWaterMoon.value.copy(lighting.moonDirection);
     this.color.copy(lighting.tint);
+    this.waves.update(time, lighting, daylight, night);
   }
 }

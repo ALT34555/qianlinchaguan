@@ -1,19 +1,11 @@
 /** 植被散布 */
+import type { SurfaceQuery } from '../SurfaceQuery';
+export type { SurfaceQuery } from '../SurfaceQuery';
 import { hash2 } from '../../../core/math/Random';
 import { CHUNK_SIZE, SEA_LEVEL } from '../../../core/config';
 import { Block, blockBase } from '../Blocks';
 import { getPlantVariant, scatterablePlants } from './Plants';
 import type { ClimateZone } from './types';
-
-/** 每个方块都重复调用的相邻查询函数 */
-export interface SurfaceQuery {
-  /** 地表顶面高度；未加载区域返回 NaN */
-  height(x: number, z: number): number;
-  /** 水面高度；未加载区域返回 NaN */
-  waterLevel(x: number, z: number): number;
-  /** 表层方块 id；未加载区域返回 0（空气） */
-  surface(x: number, z: number): number;
-}
 
 export interface PlantPlacement {
   /** 世界坐标（方块） */
@@ -45,13 +37,14 @@ export function canHostPlant(q: SurfaceQuery, x: number, z: number, maxSlope = 3
   const h = q.height(x, z);
   if (!Number.isFinite(h)) return false;
   const wl = q.waterLevel(x, z);
-  if (Number.isFinite(wl) && h < wl) return false;
+  if (Number.isFinite(wl) && h < wl - 2.2) return false;
   const s = blockBase(q.surface(x, z));
-  if (s !== Block.GRASS && s !== Block.FOREST_SOIL && s !== Block.DRY_DIRT && s !== Block.SAND) return false;
+  if (s !== Block.GRASS && s !== Block.FOREST_SOIL && s !== Block.DRY_DIRT && s !== Block.SAND
+    && s !== Block.MUD && s !== Block.ALLUVIUM && s !== Block.SILT && s !== Block.PEAT) return false;
   let maxDelta = 0;
   for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
     const nh = q.height(x + dx, z + dz);
-    if (!Number.isFinite(nh)) return false; // 邻居未加载：先不长，等区块齐了再说
+    if (!Number.isFinite(nh)) return false;
     const d = Math.abs(nh - h);
     if (d > maxDelta) maxDelta = d;
   }
@@ -79,17 +72,25 @@ export function scatterPlants(
       const z = oz + lz;
       if (hash2(x, z, seed ^ 0x5bf03635) >= k) continue;
       if (!canHostPlant(q, x, z)) continue;
-      // 物种挑选：同一地块的三种独立哈希，保证同种子同结果
+      const h = q.height(x, z);
+      const wl = q.waterLevel(x, z);
+      const inWater = Number.isFinite(wl) && h < wl;
+      const filtered = candidates.filter((id) => {
+        const v = getPlantVariant(id);
+        const tags = v?.tags ?? [];
+        if (inWater) return tags.includes('water') || tags.includes('riparian');
+        return !tags.includes('water');
+      });
+      const pool = filtered.length > 0 ? filtered : candidates;
       const pick = hash2(x, z, seed ^ 0x1b873593);
-      const idx = Math.min(candidates.length - 1, Math.floor(pick * candidates.length));
-      const id = candidates[idx];
+      const idx = Math.min(pool.length - 1, Math.floor(pick * pool.length));
+      const id = pool[idx];
       const variant = getPlantVariant(id);
-      // 沙地只长带 'arid' 标签的物种，其余地块不限
       if (blockBase(q.surface(x, z)) === Block.SAND && !(variant?.tags ?? []).includes('arid')) continue;
       out.push({
         x,
         z,
-        y: q.height(x, z),
+        y: inWater && (variant?.tags ?? []).includes('floating') ? wl - 0.01 : h,
         plant: id,
         yaw: hash2(x, z, seed ^ 0x27d4eb2d) * Math.PI * 2,
         size: 0.85 + hash2(x, z, seed ^ 0x165667b1) * 0.35,

@@ -1,18 +1,21 @@
 /** 旗帜与旗杆几何原型 */
 
 import { hashString, mulberry32 } from '../../../core/math/Random';
-import {
-  FlagBuilder, addV3, clamp, clamp01, crossV3, hexToRgb, lighten, mix,
-  normV3, scaleV3, subV3,
-} from './geometry';
+import { FlagBuilder } from './geometry';
+import { flagpoleColliders } from './FlagPoleColliders';
+import { addV3, crossV3, normV3, scaleV3, subV3 } from '../../../core/math/Geometry';
+import { clamp, clamp01 } from '../../../core/math/Scalar';
+import { hexToRgb, lighten, mix } from '../../../core/math/Color';
 import type { FlagGeometry } from './geometry';
 import {
-  FLAG_MOUNTS, FLAGPOLE_BASE_STYLES, FLAGPOLE_FINIAL_STYLES,
-  type FlagChargeContext, type FlagChargeKind, type FlagChargePainter, type FlagClothDef,
-  type FlagClothSurface, type FlagMaterial, type FlagMount, type FlagMountDef, type FlagMountSolution,
-  type FlagOrientation, type FlagShape, type FlagpoleBaseSpec, type FlagpoleBuildDef, type FlagpoleFinialSpec,
-  type FlagpoleKind, type FlagpoleParams, type ResolvedFlagWave, type RGB, type V3,
+  FLAG_MOUNTS, FLAGPOLE_BASE_STYLES, FLAGPOLE_FINIAL_STYLES, type FlagChargeContext, type FlagChargeKind,
+  type FlagChargePainter, type FlagClothDef, type FlagClothSurface, type FlagMaterial, type FlagMount,
+  type FlagMountDef, type FlagMountSolution, type FlagOrientation, type FlagShape, type FlagpoleBaseSpec,
+  type FlagpoleBuildDef, type FlagpoleFinialSpec, type FlagpoleKind, type FlagpoleParams,
+  type ResolvedFlagWave,
 } from './types';
+import { type RGB } from '../../../core/math/Color';
+import { type V3 } from '../../../core/math/Geometry';
 
 const TAU = Math.PI * 2;
 const GAP = 0.04;
@@ -503,9 +506,9 @@ export function buildFlagpole(def: FlagpoleBuildDef): FlagGeometry {
   if (params.tiltX !== 0 || params.tiltZ !== 0) {
     const tilted = new FlagBuilder(rand);
     tilted.bake(built, { rotX: params.tiltX, rotZ: params.tiltZ });
-    return tilted.build();
+    const geometry=tilted.build();geometry.colliders=flagpoleColliders(params);return geometry;
   }
-  return built;
+  built.colliders=flagpoleColliders(params);return built;
 }
 
 export interface MountInput {

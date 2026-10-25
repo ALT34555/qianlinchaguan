@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    
+    <linearGradient id="palWood" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#75624b" />
+      <stop offset="28%" stop-color="#5a4b39" />
+      <stop offset="62%" stop-color="#4d4030" />
+      <stop offset="88%" stop-color="#33291e" />
+      <stop offset="100%" stop-color="#221a12" />
+    </linearGradient>
+
+    
+    <linearGradient id="palPaper" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="35%" stop-color="#f8f4ed" />
+      <stop offset="78%" stop-color="#ece3d2" />
+      <stop offset="100%" stop-color="#dcd0b8" />
+    </linearGradient>
+
+    
+    </defs>
+
+      <g>
+        <rect x="8" y="8" width="112" height="112" rx="6" fill="url(#palWood)" stroke="#f8f4ed" stroke-width="2.2" />
+        <rect x="18" y="18" width="92" height="92" rx="3" fill="url(#palPaper)" stroke="#221a12" stroke-width="2.5" />
+        <rect x="22" y="22" width="84" height="84" fill="none" stroke="#a61b29" stroke-width="1" stroke-dasharray="6 3" />
+        
+        <path d="M8 28 V8 H28" fill="none" stroke="#a61b29" stroke-width="5" stroke-linecap="square" />
+        <path d="M100 8 H120 V28" fill="none" stroke="#a61b29" stroke-width="5" stroke-linecap="square" />
+        <path d="M8 100 V120 H28" fill="none" stroke="#a61b29" stroke-width="5" stroke-linecap="square" />
+        <path d="M100 120 H120 V100" fill="none" stroke="#a61b29" stroke-width="5" stroke-linecap="square" />
+      </g>
+    
+</svg>

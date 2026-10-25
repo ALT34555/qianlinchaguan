@@ -13,19 +13,6 @@
   transition: background 0.3s ease;
 }
 
-/* 顶部导航条 */
-.planet-settings {
-  margin-top: 12px;
-  padding: 14px;
-  background: var(--ql-paper-hi);
-  border: 1px solid var(--ql-line-soft);
-  border-radius: var(--ql-radius);
-}
-
-.planet-settings .field-title {
-  margin-top: 0;
-}
-
 .planet-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -51,6 +38,16 @@
 
 .planet-fields .tectonic-setting {
   grid-column: 1 / -1;
+}
+
+.planet-fields > .field-wide,
+#macro-dimensions {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.planet-fields select {
+  width: 100%;
 }
 
 .tectonic-heading {
@@ -117,7 +114,7 @@
 }
 
 .wordmark:hover {
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
   transform: translateY(-1px);
 }
 
@@ -163,7 +160,7 @@
 }
 
 .world-settings h1 span {
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
 }
 
 .menu-intro {
@@ -221,7 +218,7 @@
 }
 
 .seed-field:focus-within {
-  border-color: var(--ql-cinnabar);
+  border-color: var(--ql-cinnabar-text);
   box-shadow: 0 0 0 3px rgba(166, 27, 41, .16);
 }
 
@@ -405,7 +402,7 @@ button:hover:not(:disabled) .btn-arrow {
     var(--ql-shadow);
 }
 
-/* 未开启地图时的占位视觉卡片：以等高线画"山" */
+/* 暂无舆图时显示纸面网格 */
 .atlas-placeholder {
   min-height: 580px;
   display: flex;
@@ -415,42 +412,8 @@ button:hover:not(:disabled) .btn-arrow {
   text-align: center;
   padding: 40px 20px;
   border-radius: var(--ql-radius);
-  /* 柔光与宣纸底纹叠加层。 */
   background-color: var(--ql-paper);
-  background-image:
-    radial-gradient(ellipse at 50% 38%, rgba(255, 253, 246, .7) 0%, rgba(255, 253, 246, 0) 68%),
-    var(--ql-paper-weave);
-}
-
-.contour-art {
-  width: 220px;
-  height: 220px;
-  border-radius: 48% 52% 66% 34% / 52% 43% 57% 48%;
-  border: 1.5px solid var(--ql-line-seal);
-  box-shadow:
-    0 0 0 16px rgba(137, 78, 84, .08),
-    0 0 0 17px rgba(137, 78, 84, .22),
-    0 0 0 34px rgba(137, 78, 84, .05),
-    0 0 0 35px rgba(137, 78, 84, .16),
-    0 0 0 52px rgba(137, 78, 84, .03),
-    0 0 0 53px rgba(137, 78, 84, .1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  /* 摆正：等高线圈不再倾斜，悬停只做轻微放大 */
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.contour-art:hover {
-  transform: scale(1.03);
-}
-
-.atlas-placeholder .contour-art {
-  width: 300px;
-  height: 300px;
-  margin-bottom: 26px;
-  opacity: .5;
+  background-image: var(--ql-paper-weave);
 }
 
 .placeholder-caption {
@@ -462,6 +425,8 @@ button:hover:not(:disabled) .btn-arrow {
 }
 
 .atlas-stale {
+  background-color: var(--ql-paper);
+  background-image: var(--ql-paper-weave);
   position: absolute;
   inset: 0;
   z-index: 3;
@@ -469,13 +434,6 @@ button:hover:not(:disabled) .btn-arrow {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-}
-
-.atlas-stale .contour-art {
-  width: min(340px, 58%);
-  height: auto;
-  aspect-ratio: 1;
-  opacity: .5;
 }
 
 .fold-group {
@@ -504,7 +462,7 @@ button:hover:not(:disabled) .btn-arrow {
 }
 
 .fold-group > summary:hover .fold-name {
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
 }
 
 .fold-mark {
@@ -531,8 +489,16 @@ button:hover:not(:disabled) .btn-arrow {
 }
 
 .fold-group.locked .fold-lock {
-  display: inline;
-  font-size: calc(11px * var(--text-scale, 1));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.fold-lock-icon {
+  width: calc(18px * var(--text-scale, 1));
+  height: calc(18px * var(--text-scale, 1));
+  display: block;
 }
 
 .fold-group.locked .fold-lock-hint {
@@ -582,9 +548,9 @@ button:hover:not(:disabled) .btn-arrow {
 }
 
 .color-scheme-toggle:hover:not(:disabled) {
-  color: var(--ql-cinnabar-deep);
+  color: var(--ql-cinnabar-text);
   background-color: var(--ql-paper-hi);
-  border-color: var(--ql-cinnabar);
+  border-color: var(--ql-cinnabar-text);
   box-shadow: 0 0 0 3px rgba(166, 27, 41, .12);
 }
 
@@ -755,7 +721,7 @@ button:hover:not(:disabled) .btn-arrow {
   font-family: var(--ql-font-body);
   font-size: calc(10.5px * var(--text-scale, 1));
   letter-spacing: var(--ql-track-body);
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
 }
 
 /* 开关行 */
@@ -792,7 +758,7 @@ button:hover:not(:disabled) .btn-arrow {
   color: var(--ql-ink-3);
 }
 
-/* 方形滑钮开关。 */
+/* 方形滑钮开关 */
 input.switch-input {
   position: absolute;
   opacity: 0;
@@ -804,15 +770,17 @@ input.switch-input {
 }
 
 .switch-slider {
+  --q-switch-off: color-mix(in srgb, var(--q-ink) 8%, var(--q-surface));
+  --q-switch-travel: 18px;
   position: relative;
   flex-shrink: 0;
   width: 38px;
   height: 20px;
   margin-left: 10px;
-  background-color: var(--ql-paper-deep);
-  border: 1px solid var(--ql-line);
-  border-radius: var(--ql-radius-pill);
-  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  background-color: var(--q-switch-off);
+  border: 1px solid var(--q-line-soft);
+  border-radius: 0;
+  animation: q-switch-track-off .9s ease-in-out both;
 }
 
 .switch-slider::before {
@@ -821,24 +789,26 @@ input.switch-input {
   height: 14px;
   width: 14px;
   left: 2px;
-  bottom: 1px;
-  background-color: var(--ql-paper-hi);
-  border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(58, 47, 33, .4);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  top: 2px;
+  background-color: var(--q-surface-hi);
+  border-radius: 0;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--q-ink) 24%, transparent);
+  animation: q-switch-thumb-off .9s cubic-bezier(.34, 1.3, .52, 1) both;
 }
 
 .switch-input:checked + .switch-slider {
-  background-color: var(--ql-cinnabar);
-  border-color: var(--ql-cinnabar-deep);
+  background-color: var(--q-primary-ui);
+  border-color: var(--q-primary-ui);
+  animation-name: q-switch-track-on;
 }
 
 .switch-input:checked + .switch-slider::before {
   transform: translateX(18px);
+  animation-name: q-switch-thumb-on;
 }
 
 .switch-input:focus-visible + .switch-slider {
-  outline: 2px solid var(--ql-cinnabar);
+  outline: 2px solid var(--q-primary-ui);
   outline-offset: 2px;
 }
 
@@ -909,13 +879,13 @@ input.switch-input {
 }
 
 .qf-btn.clear-btn:hover:not(:disabled) {
-  color: var(--ql-cinnabar);
+  color: var(--ql-cinnabar-text);
 }
 
 .filter-match-status {
   padding: 5px 9px;
   font-size: calc(11px * var(--text-scale, 1));
-  color: var(--ql-cinnabar-deep);
+  color: var(--ql-cinnabar-text);
   background: rgba(166, 27, 41, .08);
   border: 1px solid rgba(166, 27, 41, .28);
   border-radius: var(--ql-radius);
@@ -1070,4 +1040,25 @@ input.switch-input {
   .atlas-panel {
     padding: 14px;
   }
+}
+
+/* 下拉型控制行：与开关行同排版 */
+.ctrl-select-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--ql-line-faint);
+}
+
+.ctrl-select-row select {
+  font-family: var(--ql-font-body);
+  font-size: calc(11px * var(--text-scale, 1));
+  color: var(--ql-ink);
+  background: transparent;
+  border: 1px solid var(--ql-line-faint);
+  border-radius: 3px;
+  padding: 2px 4px;
+  max-width: 40%;
 }

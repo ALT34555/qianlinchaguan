@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"shui.luwei","archetype":"reed","climate":"subtropical","name":"芦苇","latin":"luwei","seed":701,"tags":["water","wet","riparian","ground"],"params":{"height":2.4,"culms":2,"spread":0.22,"nodeStep":0.52,"blades":5,"bloomCount":2,"bloomRadius":0.18},"palette":{"foliage":"foliage","foliageDark":"foliageDeep","reedCulm":"reedCulm","bloom":"reedPlume"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shui.luwei@seedling","state":"seedling"},
+    {"id":"shui.luwei@subadult","state":"subadult"},
+    {"id":"shui.luwei@flowering","state":"flowering"},
+    {"id":"shui.luwei@fruiting","state":"fruiting"},
+    {"id":"shui.luwei@withered","state":"withered"}
+  ]
+}

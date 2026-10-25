@@ -1,7 +1,9 @@
 /** 旗帜与旗杆系统数据模型 */
-
-export type V3 = [number, number, number];
-export type RGB = [number, number, number];
+export type { SurfaceQuery } from '../SurfaceQuery';
+import type { RGB } from '../../../core/math/Color';
+export type { RGB } from '../../../core/math/Color';
+import type { V3 } from '../../../core/math/Geometry';
+export type { V3 } from '../../../core/math/Geometry';
 
 export type FlagShape =
   | 'rect'
@@ -435,10 +437,4 @@ export interface FlagPlacement {
   scale: number;
   wind: number;
   shapeSeed: number;
-}
-
-export interface SurfaceQuery {
-  height(x: number, z: number): number;
-  waterLevel(x: number, z: number): number;
-  surface(x: number, z: number): number;
 }

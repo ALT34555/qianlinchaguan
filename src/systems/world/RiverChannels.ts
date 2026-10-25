@@ -14,6 +14,13 @@ export function riverWidth(discharge:number,blocks=discharge>=2500?2:1):number{
   if(blocks===5)return 144+16*smooth((q-60000)/100000);
   return 160+32*smooth((q-160000)/200000);
 }
+/** 陡坡收窄起始坡度、完全生效坡度与最大半宽损失比例 */
+export const STEEP_WIDTH_FLOOR = .24;
+export const STEEP_WIDTH_FULL = .7;
+export const STEEP_WIDTH_LOSS = .62;
+/** 坡度越大河槽越窄：急流下切为峡谷，缓坡河段不受影响 */
+export const steepWidthFactor = (grade: number): number => 1 - STEEP_WIDTH_LOSS *
+  smooth(clamp((grade - STEEP_WIDTH_FLOOR) / (STEEP_WIDTH_FULL - STEEP_WIDTH_FLOOR)));
 /** 分级深度上限（格，自水面起算）：1~6 区块河宽 */
 export const RIVER_TIER_DEPTH = [16, 32, 64, 128, 256, 256];
 export const riverDepthLimit = (blocks: number): number =>
@@ -27,6 +34,10 @@ export const riverDepth = (discharge: number,blocks=discharge>=2500?2:1): number
 export const RIVER_BED_CORE = .65;
 /** 深槽平底半宽比例：越宽的河越平，1 级仍是 V 形 */
 export const riverBedFlat = (width: number): number => clamp((width / 32 - 1) * .11, 0, .5);
+export function riverBedShape(width: number, character: number): {core: number; flat: number} {
+  const core = RIVER_BED_CORE + .19 * clamp(character, -1, 1);
+  return {core, flat: Math.min(core * .6, riverBedFlat(width))};
+}
 export const riverShore = (width: number): number => Math.min(22, 5 + width * .45);
 export const riverFloodplain = (width: number): number => Math.min(48, 18 + width * .4);
 /** 水边半径扰动幅度（湖面另用更大噪声） */

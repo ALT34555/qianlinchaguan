@@ -20,32 +20,7 @@ const DEFAULT_PORT = 17873;
 const DEFAULT_HOST = '127.0.0.1';
 const IS_WINDOWS = process.platform === 'win32';
 
-// 0. Node 版本守卫
-const [NODE_MAJOR, NODE_MINOR] = process.versions.node.split('.').map(Number);
-
-function stripMode() {
-  // 版本特性支持档位
-  if (NODE_MAJOR > 23) return 'native';
-  if (NODE_MAJOR === 23) return NODE_MINOR >= 6 ? 'native' : 'flag';
-  if (NODE_MAJOR === 22) return NODE_MINOR >= 18 ? 'native' : NODE_MINOR >= 6 ? 'flag' : 'none';
-  return 'none';
-}
-
-const STRIP = stripMode();
-if (STRIP === 'none') {
-  console.error(`本启动器需要 Node.js 22.6 或更高版本（当前 v${process.versions.node}）。`);
-  console.error('请从 https://nodejs.org/ 安装 Node.js 22 LTS 或更高版本后重试。');
-  process.exit(1);
-}
-if (STRIP === 'flag' && !process.execArgv.includes('--experimental-strip-types')) {
-  // 子进程重启并转发退出码
-  const result = spawnSync(process.execPath,
-    ['--experimental-strip-types', fileURLToPath(import.meta.url), ...process.argv.slice(2)],
-    { stdio: 'inherit' });
-  process.exit(result.status ?? 1);
-}
-
-const { ModResourceService, modResourceMiddleware } = await import('../mods/resources.ts');
+let ModResourceService, modResourceMiddleware;
 
 // 1. 命令行参数
 function fail(message) {
@@ -104,7 +79,7 @@ function help() {
 }
 
 // 2. 检查并按需构建
-const WATCHED = ['src', 'content', 'index.html', 'vite.config.ts', 'tsconfig.json', 'package.json'];
+const WATCHED = ['src', 'content', 'platforms', 'index.html', 'vite.config.ts', 'tsconfig.json', 'package.json'];
 
 async function newestMtime(target) {
   const info = await stat(target).catch(() => null);
@@ -113,7 +88,7 @@ async function newestMtime(target) {
   const entries = await readdir(target, { withFileTypes: true }).catch(() => []);
   let newest = 0;
   for (const entry of entries) {
-    if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+    if (entry.name === 'node_modules' || entry.name === 'runtime' || entry.name.startsWith('.')) continue;
     newest = Math.max(newest, await newestMtime(join(target, entry.name)));
   }
   return newest;
@@ -128,15 +103,15 @@ function runBuild() {
 
 async function ensureBuild(options, { allowBuild = true } = {}) {
   const marker = join(DIST_DIR, 'index.html');
-  const hasDist = existsSync(marker);
+  const hasDist = existsSync(marker) && existsSync(join(HERE, 'runtime/server.mjs'));
   if (options.build === 'never') {
-    if (!hasDist) fail(`未找到构建产物 ${marker}。请先运行 npm run build，或去掉 --no-build 让启动器自动构建。`);
+    if (!hasDist) fail('未找到 dist 或桌面 runtime。请先运行 npm run build，或去掉 --no-build 让启动器自动构建。');
     return;
   }
-  let stale = !hasDist;
+  let stale = !hasDist || options.build === 'always';
   let reason = hasDist ? '' : '尚未生成构建产物 dist\\index.html';
   if (hasDist && options.build === 'auto') {
-    const distTime = (await stat(marker)).mtimeMs;
+    const distTime = Math.min((await stat(marker)).mtimeMs,(await stat(join(HERE,'runtime/server.mjs'))).mtimeMs);
     let newest = 0;
     for (const item of WATCHED) newest = Math.max(newest, await newestMtime(join(PROJECT_ROOT, item)));
     if (newest > distTime) { stale = true; reason = '源码比构建产物更新'; }
@@ -154,10 +129,12 @@ async function ensureBuild(options, { allowBuild = true } = {}) {
 // 3. 挂载本地存档服务
 async function loadSaveService() {
   try {
-    return await import('../../platforms/saves/local-saves.ts');
+    const runtime = await import('./runtime/server.mjs');
+    ({ ModResourceService, modResourceMiddleware } = runtime);
+    return runtime;
   } catch (error) {
-    fail(`无法加载存档服务 platforms/saves/local-saves.ts：${error instanceof Error ? error.message : String(error)}
-请确认 Node.js 版本 >= 22.6（当前 v${process.versions.node}），且 platforms\\saves\\local-saves.ts 未被移动或删除。`);
+    fail(`无法加载桌面 runtime：${error instanceof Error ? error.message : String(error)}
+请先运行 npm run build 生成 platforms/windows/runtime/server.mjs。`);
   }
 }
 
@@ -349,7 +326,7 @@ function shutdown(server) {
 }
 
 // 6. 自检（--check）
-async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
+async function runCheck(options, { FileSaveService, fileSaveMiddleware, CURRENT_RULE_ID, DEFAULT_CLIMATE_WEIGHTS, DEFAULT_GENERATION, decodeSaveArchive }) {
   const results = [];
   const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`  ${ok ? '✓' : '✗'} ${name}${detail ? ` — ${detail}` : ''}`); };
 
@@ -386,9 +363,7 @@ async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
     const empty = await fetch(`${base}/api/saves`).then(r => r.json());
     check('GET /api/saves 初始为空', Array.isArray(empty.saves) && empty.saves.length === 0);
 
-    const { GENERATOR_VERSION } = await import('../../src/core/version.ts');
-    const { DEFAULT_CLIMATE_WEIGHTS, DEFAULT_GENERATION } = await import('../../src/systems/world/WorldSettings.ts');
-    const makeSave = (name) => ({ generatorVersion: GENERATOR_VERSION, seed: 20261004,
+    const makeSave = (name) => ({ ruleVersion: CURRENT_RULE_ID, seed: 20261004,
       climateWeights: DEFAULT_CLIMATE_WEIGHTS, generation: DEFAULT_GENERATION, calendarType: 'real',
       unixMs: Date.now(), utcOffsetMinutes: 480, worldName: name,
       player: { x: 32.5, y: 12, z: -40.25, yaw: 1.57, pitch: -0.2 } });
@@ -396,16 +371,15 @@ async function runCheck(options, { FileSaveService, fileSaveMiddleware }) {
       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => ({ status: r.status, data: await r.json() }));
 
     const created = await post('/api/saves', { save: makeSave('启动器自检'), name: '启动器自检' });
-    check('POST /api/saves 新建存档', created.status === 200 && !!created.data.id, `HTTP ${created.status}`);
+    check('POST /api/saves 新建存档', created.status === 200 && !!created.data.id, `HTTP ${created.status} ${created.data.error ?? ''}`);
     const updated = await post('/api/saves', { save: makeSave('启动器自检'), name: '启动器自检(改名)', id: created.data.id });
     check('POST /api/saves 覆盖同一条存档', updated.status === 200 && updated.data.id === created.data.id);
     const listed = await fetch(`${base}/api/saves`).then(r => r.json());
     check('GET /api/saves 读回 1 条且名称已更新', listed.saves.length === 1 && listed.saves[0].name === '启动器自检(改名)', listed.saves[0]?.name ?? '');
     const onDisk = (await readdir(scratch)).filter(f => f.endsWith('.sav'));
     check('存档已落盘为独立 .sav 压缩包', onDisk.length === 1, onDisk.join(', '));
-    const { decodeSaveArchive } = await import('../../src/systems/world/SaveArchive.ts');
-    const archive = decodeSaveArchive(await readFile(resolve(scratch, onDisk[0])));
-    check('压缩存档读回玩家位置', archive.save.player.x === 32.5 && archive.id === created.data.id);
+    const archive = onDisk.length ? decodeSaveArchive(await readFile(resolve(scratch, onDisk[0]))) : null;
+    check('压缩存档读回玩家位置', archive?.save.player.x === 32.5 && archive?.id === created.data.id);
     const bad = await post('/api/saves', { save: { seed: 'x' }, name: '非法存档' });
     check('非法存档被拒绝', bad.status >= 400, bad.data.error ?? '');
   } finally {
@@ -425,14 +399,13 @@ async function main() {
   if (options.help) { help(); return 0; }
   if (options.stop) return await stopRunning(options);
 
-  const { FileSaveService, fileSaveMiddleware } = await loadSaveService();
+  await ensureBuild(options);
+  const runtime = await loadSaveService();
+  const { FileSaveService, fileSaveMiddleware } = runtime;
 
   if (options.check) {
-    await ensureBuild(options, { allowBuild: options.build !== 'never' });
-    return await runCheck(options, { FileSaveService, fileSaveMiddleware });
+    return await runCheck(options, runtime);
   }
-
-  await ensureBuild(options);
 
   const running = await existingLauncher(options.port, options.host);
   if (running) {
