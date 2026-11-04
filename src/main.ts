@@ -1,6 +1,3 @@
-import {renderSupport} from './core/RenderSupport';
-import {ChunkWorkerPool} from './systems/world/ChunkWorkerPool';
-import {performanceBudget} from './core/PerformanceBudget';
 import { mountModResources } from './modding_api/Resources';
 import { applyAppearance } from './ui/Appearance';
 import './ui/theme.css';
@@ -89,34 +86,26 @@ async function enterWorld(options: StartOptions): Promise<void> {
   const wave=(from:number,steps:number)=>{stageStart=from;stageSteps=steps;stageDone=0;};
   wave(.04,4);
   const ticker=window.setInterval(()=>{if(stageDone<stageSteps)stageDone+=1;},260);
-  let preparingPool:ChunkWorkerPool|undefined;
   try{
   const worldKey=options.save?.worldKey??options.worldKey??crypto.randomUUID();
   const runtimeOptions={ ...options,worldKey,initialPlayer:options.save?.player,showOverlay:params.get('overlay')==='1',settings,saveStore,
     persistSettings:(value:typeof settings)=>{settings=saveSettings(storage,value);applyAppearance(settings);} };
-  if(settings.graphicsPreset==='balanced'&&renderSupport.available){
-    const budget=performanceBudget(settings);
-    preparingPool=new ChunkWorkerPool(options.seed,options.climateWeights,options.generation,()=>{},budget.chunkWorkers,worldKey,undefined,undefined,true);
-    preparingPool.setBudget(budget.generatorEntries,budget.derivedMeshBytes);
-  }
   const prepared=await prepareWorld(runtimeOptions,message=>{wave(.26,10);loading.set(message,progress);});
-  preparingPool?.initializeHydrology(prepared.generator.exposeHydrology());
   loading.set(t('loading.terrain'),progress);
   // 先验证出生点，失败时保持设置界面可用。
   const game = new Game(document.getElementById('app')!, {
     start: document.getElementById('start-screen')!,
     loading: document.getElementById('loading')!,
     waterTint: document.getElementById('water-tint')!,
-  }, { ...options,worldKey,prepared,preparedChunkPool:preparingPool, initialPlayer: options.save?.player, showOverlay: params.get('overlay') === '1',
+  }, { ...options,worldKey,prepared, initialPlayer: options.save?.player, showOverlay: params.get('overlay') === '1',
     settings, saveStore, persistSettings: value => { settings = saveSettings(storage, value); applyAppearance(settings); } });
-  preparingPool=undefined;
   started = true;
   menu.destroy();
   menuRoot.classList.add('hidden');
   game.start();
   loadingEl.classList.add('hidden');
   await loading.done();
-  }catch(error){preparingPool?.dispose();started=false;loading.cancel();loadingEl.classList.add('hidden');document.getElementById('menu-status')!.textContent=error instanceof Error?error.message:String(error);}
+  }catch(error){started=false;loading.cancel();loadingEl.classList.add('hidden');document.getElementById('menu-status')!.textContent=error instanceof Error?error.message:String(error);}
   finally{window.clearInterval(ticker);}
 }
 

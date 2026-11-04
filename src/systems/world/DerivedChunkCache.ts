@@ -10,7 +10,6 @@ export class DerivedChunkCache {
     this.entries.delete(key);this.entries.set(key,entry);return structuredClone(entry.value);
   }
   put(key:string,value:ChunkResultMessage):void {
-    if(this.limit<=0)return;
     const buffers=new Set<ArrayBufferLike>();
     const visit=(item:unknown):void=>{
       if(ArrayBuffer.isView(item)){buffers.add(item.buffer);return;}

@@ -3,7 +3,6 @@ import { createWorldGenerator } from './GeneratorFactory';
 /** 区块生成 Worker */
 import { buildChunkMeshes, type MeshData } from './ChunkMesher';
 import {buildPlanetChunkMeshes} from './planet-macro/PlanetChunkMesher';
-import {PlanetMacroGenerator} from './planet-macro/PlanetMacroGenerator';
 import type { ChunkResultMessage, WorkerRequest } from './ChunkProtocol';
 import type { WorldGeneratorBase as WorldGenerator } from './WorldContract';
 import { decorationPlacements,decorationSurfaceSamplers } from './WorldDecoration';
@@ -11,7 +10,6 @@ import { CHUNK_SIZE } from '../../core/config';
 import * as THREE from 'three';
 import { ChunkCache, chunkSignature, minimapSummary } from './ChunkCache';
 import { decorationInstances } from './DecorationInstances';
-import {decorationEnvironmentSampler} from './DecorationHabitat';
 import { DerivedChunkCache } from './DerivedChunkCache';
 
 const ctx = self as unknown as Worker;
@@ -58,7 +56,7 @@ async function handle(e: MessageEvent<WorkerRequest>):Promise<void> {
   }
   if (msg.kind === 'init') {
     generator = createWorldGenerator(msg.seed, msg.climateWeights, msg.generation,{state:msg.hydrology});
-    cache=msg.worldKey&&generator.generation.terrainRule!=='planet-macro'?new ChunkCache(msg.worldKey):null;
+    cache=msg.worldKey?new ChunkCache(msg.worldKey):null;
     return;
   }
   if (msg.kind === 'generate') {
@@ -66,38 +64,29 @@ async function handle(e: MessageEvent<WorkerRequest>):Promise<void> {
     if (msg.waterFreezeRules) generator.setWaterFreezeRules(msg.waterFreezeRules);
     generator.replaceWaterAppearanceOverrides(msg.waterOverrides ?? []);
     generator.setWaterSeason(msg.waterSeason??null);
-    const t0 = performance.now(),profile=msg.profile?{} as Record<string,number>:undefined;
-    let profileAt=t0;
-    const mark=(name:string)=>{if(profile){const now=performance.now();profile[name]=now-profileAt;profileAt=now;}};
+    const t0 = performance.now();
     const signature=chunkSignature(generator);
     const meshKey=JSON.stringify([signature,msg.cx,msg.cz,msg.artificialType,msg.vegetationMultiplier ?? 1]);
     const reused=derived.get(meshKey);
     if(reused){reused.waterRevision=msg.waterRevision;reused.elapsed=performance.now()-t0;reused.cacheHit=true;reused.meshCacheHit=true;ctx.postMessage(reused,transferResult(reused));return;}
     const stored=await cache?.chunk(msg.cx,msg.cz,signature);
     const chunk = stored??generator.generateChunk(msg.cx, msg.cz);
-    mark('generation');
     const waterGenerator = generator;
     const meshes = generator.generation.terrainRule==='planet-macro'?buildPlanetChunkMeshes(chunk,generator.seed):buildChunkMeshes(msg.cx, msg.cz, chunk.heights, chunk.surfaces, generator.seed, chunk.waterLevels, chunk.surfaceColors,chunk.waterField,
       (x, z) => waterGenerator.getWaterState(msg.cx * CHUNK_SIZE + x, msg.cz * CHUNK_SIZE + z));
-    mark('mesh');
     const macroSurface=generator.generation.terrainRule==='planet-macro';
     const decorationInput = { ...chunk,...decorationSurfaceSamplers(msg.cx,msg.cz,chunk.heights,chunk.waterLevels,
       chunk.waterField.bedLevels,generator.seed,macroSurface,(x,z)=>waterGenerator.getWaterState(x,z)), type:generator.generation.terrainRule==='planet-macro'?macroDecorationType(chunk.type):chunk.type, cx: msg.cx, cz: msg.cz,
       artificialType: msg.artificialType,
-      springRocks:generator instanceof PlanetMacroGenerator?generator.getSpringRockSites(msg.cx,msg.cz):undefined,
-      environment:generator instanceof PlanetMacroGenerator?decorationEnvironmentSampler((x,z)=>(generator as PlanetMacroGenerator).getDecorationEnvironment(x,z)):undefined,
       vegetationMultiplier: msg.vegetationMultiplier,
       seed: generator.seed, temperature: generator.getClimate(msg.cx, msg.cz).temperature };
-    mark('decorationInput');
     const placements = decorationPlacements(decorationInput);
-    mark('placements');
     const collisionData:number[]=[];
     const instances=decorationInstances(decorationInput,placements,collisionData);
     const colliders=new Float32Array(collisionData);
-    mark('instances');
     const decoration=null,rocks=null;
+    const summary=minimapSummary(generator,msg.cx,msg.cz,meshes.minimap);
     if(cache){
-      const summary=minimapSummary(generator,msg.cx,msg.cz,meshes.minimap);
       cache.queueWrite(`preview_${msg.cx}_${msg.cz}`,signature,summary);
       if(!stored)cache.queueWrite(`chunk_${msg.cx}_${msg.cz}`,signature,chunk,8);
     }
@@ -150,7 +139,6 @@ async function handle(e: MessageEvent<WorkerRequest>):Promise<void> {
     pushBuffers(decoration, transfer);
     pushBuffers(rocks, transfer);
     for(const batch of instances){pushBuffers(batch.geometry,transfer);transfer.push(batch.transforms.buffer);}
-    mark('pack');if(profile)result.profile=profile;
     result.elapsed = performance.now() - t0;
     derived.put(meshKey,result);
     ctx.postMessage(result, transfer);

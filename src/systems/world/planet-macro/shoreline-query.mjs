@@ -14,19 +14,18 @@ export function createPlanetShorelineSource(world,options={}) {
       let wx=wrap(x+.5),wz=wrap(z+.5);
       if(wz>C/4){wz=C/2-wz;wx=wrap(wx+C/2);}
       if(wz<-C/4){wz=-C/2-wz;wx=wrap(wx+C/2);}
-      const s=samplePlanetSurface(world,wx,wz,true,false,false,options.includeDecorative!==false);
+      const s=samplePlanetSurface(world,wx,wz,true,false,false);
       const kind=s.kind===1?'sea':s.kind===2?'lake':s.river?'river':'unknown';
       return {bed:Math.fround(s.height),water:Math.fround(s.water)>Math.fround(s.height)?Math.fround(s.water):-Infinity,
-        waterBodyKind:kind,waterBodyId:kind==='sea'?'sea':kind==='lake'?`lake:${s.lakeTemplateId??world.lakeId[s.cell]}`:s.river?.id??null};
+        waterBodyKind:kind,waterBodyId:kind==='sea'?'sea':kind==='lake'?(world.lakeId[s.cell]>=0?`lake:${world.lakeId[s.cell]}`:null):s.river?.id??null};
     })};
   const indices=new Map();let indexBytes=0;
-  // 排除装饰水域时保守返回可能相交
-  source.mayCross=options.includeDecorative===false?()=>true:b=>{
+  source.mayCross=b=>{
     const wx=wrap((b.minX+b.maxX)/2),wz=Math.max(-C/4+.5,Math.min(C/4-.5,(b.minZ+b.maxZ)/2));
     const network=getTributaries(world,cellAt(world,wx,wz));let entry=indices.get(network);
     if(!entry) {
       const values=[];
-      for(const edge of options.includeDecorative===false?network.mainEdges:[...network.mainEdges,...network.edges])for(let i=1;i<edge.points.length;i++) {
+      for(const edge of [...network.mainEdges,...network.edges])for(let i=1;i<edge.points.length;i++) {
         const a=edge.points[i-1],c=edge.points[i],pad=Math.max(4,(edge.halfWidth??1)*2+4);
         values.push(Math.min(a.x,c.x)-pad,Math.min(a.z,c.z)-pad,Math.max(a.x,c.x)+pad,Math.max(a.z,c.z)+pad);
       }

@@ -108,28 +108,7 @@ export function sampleCoverAt(w,wx,wz,sampler){
 
 export function finishCover(s){
   const wet=Number.isFinite(s.water)&&s.water>s.height;
-  if(s.wetPoint?.underwater){const def=blocks.get(s.wetPoint.style==='woodland'?'gravel':'sand');s.surfaceBlock=def.id;s.surfaceColor=(def.rgb[0]<<16)|(def.rgb[1]<<8)|def.rgb[2];}
-  else if(s.wetland>.08||wet){const def=blocks.get(s.wetland>.08?'peat':'mud');s.surfaceBlock=def.id;s.surfaceColor=(def.rgb[0]<<16)|(def.rgb[1]<<8)|def.rgb[2];}
-  else if(s.wetPoint){
-    if(s.wetPoint.colored)return s;
-    const t=s.wetPoint.damp*.6,rgb=s.wetPoint.salinity==='salt'?[183,180,157]:s.wetPoint.style==='oasis'?[100,119,67]:[91,112,75],color=s.surfaceColor??0;
-    const channel=i=>Math.round(((color>>>(16-i*8))&255)*(1-t)+rgb[i]*t);s.surfaceColor=(channel(0)<<16)|(channel(1)<<8)|channel(2);s.wetPoint.colored=true;
-  }
-  else if(s.lakeShore&&s.temperature>1&&!s.lakeShore.colored){
-    const shore=s.lakeShore,rock=smooth(.08,.24,shore.slope),gravel=smooth(.2,.8,shore.patch);
-    const salt=shore.salinity==='salt'?(1-smooth(.04,.12,shore.slope))*smooth(.25,.75,shore.patch):0;
-    const sandRGB=blocks.get('sand').rgb,gravelRGB=blocks.get('gravel').rgb,rockRGB=blocks.get('stone').rgb;
-    const rgb=sandRGB.map((v,i)=>mix(mix(mix(v,gravelRGB[i],gravel),rockRGB[i],rock),[196,188,159][i],salt));
-    const t=shore.band*mix(mix(.55,.7,rock),.8,salt),color=s.surfaceColor??0;
-    const channel=i=>Math.round(((color>>>(16-i*8))&255)*(1-t)+rgb[i]*t);
-    s.surfaceColor=(channel(0)<<16)|(channel(1)<<8)|channel(2);
-    if(t>.45){s.surfaceBlock=blocks.get(rock>.5?'stone':gravel>.5?'gravel':'sand').id;s.groundMaterial=salt>.5?3:rock>.5?1:gravel>.5?5:4;}
-    shore.colored=true;
-  }
-  else if(s.springDamp>.08){
-    const def=blocks.get('mud'),t=s.springDamp*.65,color=s.surfaceColor??0,r=Math.round(((color>>>16)&255)*(1-t)+def.rgb[0]*t),g=Math.round(((color>>>8)&255)*(1-t)+def.rgb[1]*t),b=Math.round((color&255)*(1-t)+def.rgb[2]*t);
-    s.surfaceColor=(r<<16)|(g<<8)|b;
-  }
+  if(s.wetland>.08||wet){const def=blocks.get(s.wetland>.08?'peat':'mud');s.surfaceBlock=def.id;s.surfaceColor=(def.rgb[0]<<16)|(def.rgb[1]<<8)|def.rgb[2];}
   return s;
 }
 export function coverRGB(s){const value=s.surfaceColor;return [(value>>>16)&255,(value>>>8)&255,value&255];}

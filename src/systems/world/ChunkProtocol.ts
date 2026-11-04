@@ -14,7 +14,7 @@ export type WorkerRequest =
   | { kind:'budget'; entries:number; meshBytes:number }
   | { kind: 'flush'; id: number }
   | { kind: 'init'; seed: number; climateWeights: ClimateWeights; generation: WorldGeneration; worldKey?:string; hydrology?:WatershedState }
-  | { kind: 'generate'; profile?:boolean; cx: number; cz: number; artificialType?: number; waterOverrides?: WaterAppearanceEntry[]; waterRevision?: number; waterFreezeRules?: WaterFreezeRules; vegetationMultiplier?: number; waterSeason?:number|null };
+  | { kind: 'generate'; cx: number; cz: number; artificialType?: number; waterOverrides?: WaterAppearanceEntry[]; waterRevision?: number; waterFreezeRules?: WaterFreezeRules; vegetationMultiplier?: number; waterSeason?:number|null };
 
 /** 舆图预览请求，image 为假仅返平均色 */
 export type SurfacePreviewRequest =
@@ -24,7 +24,6 @@ export type SurfacePreviewRequest =
 
 export interface ChunkResultMessage {
   meshCacheHit?:boolean;
-  profile?:Record<string,number>;
   kind: 'chunk';
   waterRevision?: number;
   cx: number;
