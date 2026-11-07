@@ -1,0 +1,78 @@
+{
+  "plants": [
+    {
+      "id": "shu.huangbo",
+      "archetype": "broadleaf",
+      "climate": "cold",
+      "name": "黄檗",
+      "latin": "huangbo",
+      "seed": 107,
+      "tags": [
+        "tree",
+        "canopy",
+        "autumn_color",
+        "fruit",
+        "snow"
+      ],
+      "params": {
+        "height": 13.5,
+        "trunk": 5.4,
+        "trunkRadius": 0.58,
+        "limbCount": 4,
+        "canopy": 4.2,
+        "blobs": 7,
+        "branchAngle": 0.65,
+        "form": "umbrella",
+        "leafShape": "oval",
+        "twigs": 3,
+        "rootFlare": 0.4,
+        "barkRidges": 6,
+        "fruitStyle": "cluster",
+        "snow": 0.2,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ]
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "barkWarm",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "fruit": "berryDark"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.huangbo@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.huangbo@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.huangbo@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.huangbo@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 6
+      }
+    },
+    {
+      "id": "shu.huangbo@withered",
+      "state": "withered"
+    }
+  ]
+}

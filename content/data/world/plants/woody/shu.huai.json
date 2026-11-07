@@ -1,0 +1,112 @@
+{
+  "plants": [
+    {
+      "id": "shu.huai",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "name": "国槐",
+      "latin": "Huai",
+      "seed": 85,
+      "scale": 0.85,
+      "params": {
+        "height": 11.8,
+        "trunk": 4.6,
+        "trunkRadius": 0.5,
+        "canopy": 4.8,
+        "canopyRatio": 0.52,
+        "blobs": 9,
+        "limbCount": 5,
+        "limbLength": 2.8,
+        "branchAngle": 0.72,
+        "bloomCount": 10,
+        "bloomRadius": 0.16,
+        "petals": 5,
+        "fruitCount": 6,
+        "fruitRadius": 0.1,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "vase",
+        "leafShape": "oval",
+        "flowerStyle": "panicle",
+        "fruitStyle": "legume"
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "bark",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomWhite",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "flowering",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.huai@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.2,
+        "trunk": 1.1,
+        "trunkRadius": 0.09,
+        "canopy": 0.9,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.huai@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 6.2,
+        "trunk": 2.7,
+        "trunkRadius": 0.26,
+        "canopy": 2.5,
+        "limbLength": 1.5,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.huai@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 15
+      }
+    },
+    {
+      "id": "shu.huai@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.huai@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 9.2,
+        "trunk": 3.7,
+        "trunkRadius": 0.38,
+        "canopy": 3.6,
+        "snow": 0
+      }
+    }
+  ]
+}

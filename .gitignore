@@ -1,16 +1,20 @@
-node_modules/
-dist/
-dist-compat/
-*.log
-.vite/
-userdata/*
-!userdata/mods/
-userdata/mods/*
-!userdata/mods/fonts/
-userdata/mods/fonts/*
-!userdata/mods/fonts/NanoOldSongA-Regular.ttf
-!userdata/mods/fonts/ResourceHanRoundedCN-Medium.ttf
-!userdata/mods/fonts/fonts.json
+# 构建产物
+obj/
+*.exe
+*.obj
+*.pdb
+*.ilk
+*.lib
+*.exp
+*.res
+
+# 运行时数据
+userdata/saves/
+userdata/exports/
+userdata/settings.bin
+userdata/mods/fonts/
+
+# 本地临时
+*.bmp
+sources.rsp
 release/
-platforms/windows/runtime/
-platforms/windows/runtime-compat/

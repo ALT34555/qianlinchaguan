@@ -1,0 +1,68 @@
+{
+  "blocks": [
+    {
+      "id": "rock.stone-forest.plinth", "name": "磐座岩",
+      "seed": 12031, "heightMeters": 5,
+      "params": {
+        "widthMeters": 13.2, "depthMeters": 10.4, "foot": 1, "lower": 1.04, "waist": 0.82, "upper": 0.59, "head": 0.42,
+        "leanX": 0.22, "leanZ": 0.15, "twist": -0.06, "fracture": 0.18, "bedding": 0.035, "tiers": 14, "beds": 4
+      }
+    },
+    {
+      "id": "rock.stone-forest.strata", "name": "节叠岩",
+      "seed": 12203, "heightMeters": 8,
+      "params": {
+        "widthMeters": 10.4, "depthMeters": 8.4, "foot": 0.7, "lower": 0.97, "waist": 0.66, "upper": 0.91, "head": 0.73,
+        "leanX": -0.36, "leanZ": 0.18, "twist": 0.18, "fracture": 0.3, "bedding": 0.05, "tiers": 20, "beds": 7
+      }
+    },
+    {
+      "id": "rock.stone-forest.blade", "name": "棱墙岩",
+      "seed": 12341, "heightMeters": 12,
+      "params": {
+        "widthMeters": 11.8, "depthMeters": 5.2, "foot": 0.84, "lower": 1.02, "waist": 0.98, "upper": 0.83, "head": 0.75,
+        "leanX": 0.41, "leanZ": -0.33, "twist": 0.08, "fracture": 0.19, "bedding": 0.12, "tiers": 19, "beds": 5
+      }
+    },
+    {
+      "id": "rock.stone-forest.leaning-ridge", "name": "斜脊岩",
+      "seed": 12491, "heightMeters": 15,
+      "params": {
+        "widthMeters": 8.1, "depthMeters": 6.9, "foot": 0.86, "lower": 0.95, "waist": 0.89, "upper": 0.79, "head": 0.63,
+        "leanX": 2.95, "leanZ": -1.2, "twist": 0.3, "fracture": 0.22, "bedding": 0.13, "tiers": 20, "beds": 5
+      }
+    },
+    {
+      "id": "rock.stone-forest.waisted-column", "name": "束腰岩",
+      "seed": 12653, "heightMeters": 10,
+      "params": {
+        "widthMeters": 10.8, "depthMeters": 8.9, "foot": 0.87, "lower": 0.92, "waist": 0.43, "upper": 0.68, "head": 0.89,
+        "leanX": -0.43, "leanZ": 0.3, "twist": -0.13, "fracture": 0.16, "bedding": 0.07, "tiers": 18, "beds": 5
+      }
+    },
+    {
+      "id": "rock.stone-forest.flared-ledge", "name": "盘肩岩",
+      "seed": 12743, "heightMeters": 7,
+      "params": {
+        "widthMeters": 13.2, "depthMeters": 10.8, "foot": 0.47, "lower": 0.58, "waist": 0.72, "upper": 1.04, "head": 1.05,
+        "leanX": 0.44, "leanZ": 0.28, "twist": 0.14, "fracture": 0.23, "bedding": 0.082, "tiers": 17, "beds": 5
+      }
+    },
+    {
+      "id": "rock.stone-forest.rift-wedge", "name": "破楔岩",
+      "seed": 12907, "heightMeters": 11,
+      "params": {
+        "widthMeters": 10.4, "depthMeters": 8.2, "foot": 0.97, "lower": 0.98, "waist": 0.84, "upper": 0.59, "head": 0.43,
+        "leanX": -1.9, "leanZ": 1.05, "twist": -0.39, "fracture": 0.32, "bedding": 0.17, "tiers": 20, "beds": 6
+      }
+    },
+    {
+      "id": "rock.stone-forest.spire-block", "name": "抽峰岩",
+      "seed": 13007, "heightMeters": 19,
+      "params": {
+        "widthMeters": 6.5, "depthMeters": 6.2, "foot": 0.83, "lower": 0.91, "waist": 0.75, "upper": 0.71, "head": 0.66,
+        "leanX": 0.89, "leanZ": -0.61, "twist": 0.23, "fracture": 0.21, "bedding": 0.076, "tiers": 22, "beds": 6
+      }
+    }
+  ]
+}

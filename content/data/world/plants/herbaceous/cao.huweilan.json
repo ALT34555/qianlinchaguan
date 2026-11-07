@@ -1,0 +1,82 @@
+{
+  "plants": [
+    {
+      "id": "cao.huweilan",
+      "archetype": "succulent",
+      "climate": "tropical",
+      "name": "虎尾兰",
+      "latin": "Huweilan",
+      "seed": 60,
+      "params": {
+        "height": 0.85,
+        "spread": 0.42,
+        "layers": 4,
+        "blobs": 5,
+        "thorns": 0,
+        "bloomCount": 2,
+        "petals": 6,
+        "fruitless": true,
+        "snow": 0,
+        "form": "strap",
+        "flowerStyle": "raceme"
+      },
+      "palette": {
+        "foliage": "foliageDark",
+        "foliageDark": "jungleDeep",
+        "bloom": "bloomWhite"
+      },
+      "tags": [
+        "ground",
+        "arid",
+        "succulent",
+        "tropical",
+        "ornamental",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.huweilan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.2,
+        "spread": 0.1,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.huweilan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.47,
+        "spread": 0.23
+      }
+    },
+    {
+      "id": "cao.huweilan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 4
+      }
+    },
+    {
+      "id": "cao.huweilan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.7,
+        "spread": 0.34,
+        "snow": 0
+      }
+    }
+  ]
+}

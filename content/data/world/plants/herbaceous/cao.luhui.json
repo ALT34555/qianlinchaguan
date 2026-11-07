@@ -1,0 +1,83 @@
+{
+  "plants": [
+    {
+      "id": "cao.luhui",
+      "archetype": "succulent",
+      "climate": "tropical",
+      "name": "芦荟",
+      "latin": "Luhui",
+      "seed": 59,
+      "params": {
+        "height": 0.78,
+        "spread": 0.56,
+        "layers": 3,
+        "blobs": 6,
+        "thorns": 1,
+        "bloomCount": 4,
+        "petals": 4,
+        "fruitless": true,
+        "snow": 0,
+        "form": "rosette",
+        "flowerStyle": "raceme"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "thorn": "thorn",
+        "bloom": "bloomWarm"
+      },
+      "tags": [
+        "ground",
+        "arid",
+        "succulent",
+        "medicine",
+        "tropical",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.luhui@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.19,
+        "spread": 0.13,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.luhui@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.43,
+        "spread": 0.31
+      }
+    },
+    {
+      "id": "cao.luhui@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "cao.luhui@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.64,
+        "spread": 0.46,
+        "snow": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "plants": [
+    {
+      "id": "shui.wanglian",
+      "archetype": "floatingPad",
+      "climate": "tropical",
+      "name": "王莲",
+      "latin": "Wanglian",
+      "seed": 63,
+      "params": {
+        "height": 0.38,
+        "spread": 1.1,
+        "blobs": 5,
+        "bloomCount": 2,
+        "bloomRadius": 0.22,
+        "petals": 8,
+        "fruitless": true,
+        "snow": 0,
+        "form": "wanglian"
+      },
+      "palette": {
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "foliageDeep": "jungleDeep",
+        "bloom": "bloomWhite"
+      },
+      "tags": [
+        "water",
+        "wet",
+        "tropical",
+        "flowering",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.wanglian@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.1,
+        "spread": 0.26,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.wanglian@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.21,
+        "spread": 0.6
+      }
+    },
+    {
+      "id": "shui.wanglian@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 3
+      }
+    },
+    {
+      "id": "shui.wanglian@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.31,
+        "spread": 0.9,
+        "snow": 0
+      }
+    }
+  ]
+}

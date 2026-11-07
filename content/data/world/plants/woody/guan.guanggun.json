@@ -1,0 +1,88 @@
+{
+  "plants": [
+    {
+      "id": "guan.guanggun",
+      "archetype": "shrub",
+      "climate": "tropical",
+      "name": "光棍树",
+      "latin": "Guanggunshu",
+      "seed": 55,
+      "params": {
+        "height": 1.9,
+        "canopy": 1.15,
+        "blobs": 5,
+        "stems": 8,
+        "spread": 0.65,
+        "aspect": 1.1,
+        "leafPetals": 4,
+        "bloomCount": 3,
+        "petals": 4,
+        "fruitless": true,
+        "snow": 0,
+        "form": "sparse",
+        "leafShape": "needle",
+        "twigs": 3
+      },
+      "palette": {
+        "barkLight": "bamboo",
+        "foliage": "bamboo",
+        "foliageDark": "foliageDeep",
+        "bloom": "bloomGold"
+      },
+      "tags": [
+        "shrub",
+        "arid",
+        "succulent",
+        "tropical",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.guanggun@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.45,
+        "canopy": 0.28,
+        "spread": 0.16,
+        "trunkRadius": 0.05,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.guanggun@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 1.05,
+        "canopy": 0.63,
+        "spread": 0.36
+      }
+    },
+    {
+      "id": "guan.guanggun@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "guan.guanggun@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.55,
+        "canopy": 0.94,
+        "spread": 0.53,
+        "snow": 0
+      }
+    }
+  ]
+}

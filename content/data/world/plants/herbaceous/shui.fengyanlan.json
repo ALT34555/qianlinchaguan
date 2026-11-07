@@ -1,0 +1,80 @@
+{
+  "plants": [
+    {
+      "id": "shui.fengyanlan",
+      "archetype": "floatingPad",
+      "climate": "tropical",
+      "name": "凤眼蓝",
+      "latin": "Fengyanlan",
+      "seed": 64,
+      "params": {
+        "height": 0.42,
+        "spread": 0.68,
+        "blobs": 8,
+        "bloomCount": 4,
+        "bloomRadius": 0.16,
+        "petals": 6,
+        "fruitless": true,
+        "snow": 0,
+        "form": "hyacinth"
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "jungleDark",
+        "foliageDeep": "jungleDeep",
+        "bloom": "bloom"
+      },
+      "tags": [
+        "water",
+        "wet",
+        "tropical",
+        "flowering",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.fengyanlan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.1,
+        "spread": 0.16,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.fengyanlan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.23,
+        "spread": 0.37
+      }
+    },
+    {
+      "id": "shui.fengyanlan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shui.fengyanlan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.34,
+        "spread": 0.56,
+        "snow": 0
+      }
+    }
+  ]
+}

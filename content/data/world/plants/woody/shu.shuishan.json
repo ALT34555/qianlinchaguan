@@ -1,0 +1,95 @@
+{
+  "plants": [
+    {
+      "id": "shu.shuishan",
+      "archetype": "conifer",
+      "climate": "subtropical",
+      "name": "水杉",
+      "latin": "Shuishan",
+      "seed": 81,
+      "scale": 0.8,
+      "params": {
+        "height": 13.5,
+        "trunk": 3.4,
+        "trunkRadius": 0.52,
+        "canopy": 3.2,
+        "layers": 6,
+        "layerStep": 0.82,
+        "spikeCount": 1,
+        "lean": 0.04,
+        "bloomCount": 0,
+        "fruitless": true,
+        "snow": 0.16,
+        "snowOn": [
+          "canopy",
+          "top"
+        ],
+        "crownStyle": "metasequoia"
+      },
+      "palette": {
+        "bark": "barkWarm",
+        "barkWarm": "barkLight",
+        "foliage": "larch",
+        "foliageDark": "conifer"
+      },
+      "tags": [
+        "tree",
+        "conifer",
+        "wet",
+        "riparian",
+        "autumn_color",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.shuishan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.8,
+        "trunk": 0.8,
+        "trunkRadius": 0.11,
+        "canopy": 0.75,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.shuishan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 7.4,
+        "trunk": 1.9,
+        "trunkRadius": 0.28,
+        "canopy": 1.8,
+        "snow": 0.09
+      }
+    },
+    {
+      "id": "shu.shuishan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shu.shuishan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 11,
+        "trunk": 2.8,
+        "trunkRadius": 0.42,
+        "canopy": 2.6,
+        "snow": 0
+      }
+    }
+  ]
+}

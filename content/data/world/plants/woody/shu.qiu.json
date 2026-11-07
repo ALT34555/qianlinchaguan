@@ -1,0 +1,111 @@
+{
+  "plants": [
+    {
+      "id": "shu.qiu",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "name": "楸树",
+      "latin": "Qiushu",
+      "seed": 87,
+      "scale": 0.82,
+      "params": {
+        "height": 13,
+        "trunk": 5.8,
+        "trunkRadius": 0.46,
+        "canopy": 4,
+        "canopyRatio": 0.44,
+        "blobs": 7,
+        "limbCount": 4,
+        "limbLength": 2.3,
+        "branchAngle": 0.6,
+        "bloomCount": 15,
+        "bloomRadius": 0.22,
+        "petals": 5,
+        "fruitCount": 5,
+        "fruitRadius": 0.07,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "vase",
+        "leafShape": "broad",
+        "flowerStyle": "panicle"
+      },
+      "palette": {
+        "bark": "barkPale",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "plumBloom",
+        "fruit": "grainPale"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "flowering",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.qiu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.3,
+        "trunk": 1.2,
+        "trunkRadius": 0.08,
+        "canopy": 0.85,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.qiu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 6.8,
+        "trunk": 3.1,
+        "trunkRadius": 0.24,
+        "canopy": 2.2,
+        "limbLength": 1.3,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.qiu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 18
+      }
+    },
+    {
+      "id": "shu.qiu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.qiu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 10.2,
+        "trunk": 4.5,
+        "trunkRadius": 0.36,
+        "canopy": 3.2,
+        "snow": 0
+      }
+    }
+  ]
+}

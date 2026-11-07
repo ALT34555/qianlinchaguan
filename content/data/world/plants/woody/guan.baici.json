@@ -1,0 +1,99 @@
+{
+  "plants": [
+    {
+      "id": "guan.baici",
+      "archetype": "bramble",
+      "climate": "temperate",
+      "name": "白刺",
+      "latin": "Baici",
+      "seed": 38,
+      "params": {
+        "height": 1.15,
+        "spread": 1.15,
+        "stems": 8,
+        "blobs": 5,
+        "thorns": 1,
+        "bloomCount": 5,
+        "petals": 5,
+        "fruitCount": 6,
+        "fruitRadius": 0.08,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "fruitStyle": "cluster",
+        "twigs": 2
+      },
+      "palette": {
+        "barkLight": "barkPale",
+        "thorn": "barkPale",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomWhite",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "shrub",
+        "arid",
+        "thorny",
+        "fruit",
+        "耐盐",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.baici@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.28,
+        "spread": 0.28,
+        "trunkRadius": 0.05,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.baici@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.63,
+        "spread": 0.63,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "guan.baici@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "guan.baici@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "guan.baici@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.94,
+        "spread": 0.94,
+        "snow": 0
+      }
+    }
+  ]
+}

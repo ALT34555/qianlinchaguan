@@ -1,0 +1,100 @@
+{
+  "plants": [
+    {
+      "id": "shu.bailan",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "白兰",
+      "latin": "Bailan",
+      "seed": 73,
+      "scale": 0.75,
+      "params": {
+        "height": 9.8,
+        "trunk": 4.8,
+        "trunkRadius": 0.34,
+        "canopy": 3.4,
+        "canopyRatio": 0.5,
+        "blobs": 7,
+        "limbCount": 4,
+        "limbLength": 2.1,
+        "branchAngle": 0.82,
+        "bloomCount": 10,
+        "bloomRadius": 0.16,
+        "petals": 6,
+        "fruitless": true,
+        "snow": 0,
+        "form": "round",
+        "leafShape": "broad",
+        "flowerStyle": "single",
+        "twigs": 3,
+        "rootFlare": 0.25
+      },
+      "palette": {
+        "bark": "barkLight",
+        "barkLight": "barkPale",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomWhite"
+      },
+      "tags": [
+        "tree",
+        "flowering",
+        "fragrant",
+        "evergreen",
+        "耐热",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.bailan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.9,
+        "trunk": 0.9,
+        "trunkRadius": 0.07,
+        "canopy": 0.7,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.bailan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5.3,
+        "trunk": 2.6,
+        "trunkRadius": 0.19,
+        "canopy": 1.9,
+        "limbLength": 1.1
+      }
+    },
+    {
+      "id": "shu.bailan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 14
+      }
+    },
+    {
+      "id": "shu.bailan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 7.8,
+        "trunk": 3.8,
+        "trunkRadius": 0.27,
+        "canopy": 2.7,
+        "snow": 0
+      }
+    }
+  ]
+}

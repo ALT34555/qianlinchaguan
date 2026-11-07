@@ -1,0 +1,81 @@
+{
+  "plants": [
+    {
+      "id": "shui.redaishuilian",
+      "archetype": "floatingPad",
+      "climate": "tropical",
+      "name": "热带睡莲",
+      "latin": "Redaishuilian",
+      "seed": 65,
+      "params": {
+        "height": 0.32,
+        "spread": 0.72,
+        "blobs": 7,
+        "bloomCount": 3,
+        "bloomRadius": 0.18,
+        "petals": 8,
+        "fruitless": true,
+        "snow": 0,
+        "form": "lily"
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "foliageDeep": "foliageDeep",
+        "bloom": "bloomPink"
+      },
+      "tags": [
+        "water",
+        "wet",
+        "tropical",
+        "flowering",
+        "ornamental",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.redaishuilian@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.08,
+        "spread": 0.17,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.redaishuilian@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.18,
+        "spread": 0.4
+      }
+    },
+    {
+      "id": "shui.redaishuilian@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "shui.redaishuilian@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.26,
+        "spread": 0.59,
+        "snow": 0
+      }
+    }
+  ]
+}

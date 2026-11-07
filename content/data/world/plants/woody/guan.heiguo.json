@@ -1,0 +1,103 @@
+{
+  "plants": [
+    {
+      "id": "guan.heiguo",
+      "archetype": "bramble",
+      "climate": "cold",
+      "name": "黑果枸杞",
+      "latin": "Heiguogouqi",
+      "seed": 37,
+      "params": {
+        "height": 1.25,
+        "spread": 1.05,
+        "stems": 7,
+        "blobs": 5,
+        "thorns": 1,
+        "bloomCount": 5,
+        "petals": 5,
+        "fruitCount": 7,
+        "fruitRadius": 0.08,
+        "snow": 0.16,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ],
+        "fruitStyle": "cluster",
+        "twigs": 2
+      },
+      "palette": {
+        "barkLight": "barkPale",
+        "thorn": "thorn",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloom",
+        "fruit": "berryDark"
+      },
+      "tags": [
+        "shrub",
+        "arid",
+        "thorny",
+        "berry",
+        "fruit",
+        "medicine",
+        "snow",
+        "耐盐",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.heiguo@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.3,
+        "spread": 0.25,
+        "trunkRadius": 0.05,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.heiguo@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.69,
+        "spread": 0.58,
+        "snow": 0.09
+      }
+    },
+    {
+      "id": "guan.heiguo@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "guan.heiguo@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 9,
+        "fruitScale": 1.22
+      }
+    },
+    {
+      "id": "guan.heiguo@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.02,
+        "spread": 0.86,
+        "snow": 0
+      }
+    }
+  ]
+}

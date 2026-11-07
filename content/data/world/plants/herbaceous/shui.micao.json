@@ -1,0 +1,100 @@
+{
+  "plants": [
+    {
+      "id": "shui.micao",
+      "archetype": "reed",
+      "climate": "subtropical",
+      "name": "盐沼米草",
+      "latin": "Yanzhaomicao",
+      "seed": 43,
+      "params": {
+        "height": 1.55,
+        "culms": 6,
+        "spread": 0.52,
+        "nodeStep": 0.42,
+        "blades": 6,
+        "bloomCount": 5,
+        "bloomRadius": 0.15,
+        "petals": 4,
+        "fruitCount": 4,
+        "snow": 0.1,
+        "snowOn": [
+          "ground"
+        ]
+      },
+      "palette": {
+        "reedCulm": "salineFoliage",
+        "reedPlume": "grainPale",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "foliageDeep": "salineFoliageDark",
+        "bloom": "grainPale",
+        "fruit": "grain"
+      },
+      "tags": [
+        "water",
+        "wet",
+        "coast",
+        "riparian",
+        "ground",
+        "耐盐",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.micao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.36,
+        "spread": 0.14,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.micao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.85,
+        "spread": 0.29,
+        "nodeStep": 0.24,
+        "snow": 0.05
+      }
+    },
+    {
+      "id": "shui.micao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shui.micao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "shui.micao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.27,
+        "spread": 0.42,
+        "snow": 0
+      }
+    }
+  ]
+}

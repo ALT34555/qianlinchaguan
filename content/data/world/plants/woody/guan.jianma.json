@@ -1,0 +1,83 @@
+{
+  "plants": [
+    {
+      "id": "guan.jianma",
+      "archetype": "succulent",
+      "climate": "tropical",
+      "name": "剑麻",
+      "latin": "Jianma",
+      "seed": 56,
+      "params": {
+        "height": 1.45,
+        "spread": 0.88,
+        "layers": 4,
+        "blobs": 7,
+        "thorns": 1,
+        "bloomCount": 4,
+        "petals": 5,
+        "fruitless": true,
+        "snow": 0,
+        "form": "rosette",
+        "flowerStyle": "spike"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "thorn": "barkDark",
+        "bloom": "bloomWhite"
+      },
+      "tags": [
+        "shrub",
+        "arid",
+        "succulent",
+        "tropical",
+        "fiber",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.jianma@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.35,
+        "spread": 0.21,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.jianma@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.8,
+        "spread": 0.48
+      }
+    },
+    {
+      "id": "guan.jianma@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "guan.jianma@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.18,
+        "spread": 0.72,
+        "snow": 0
+      }
+    }
+  ]
+}

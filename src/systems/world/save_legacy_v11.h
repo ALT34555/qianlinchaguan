@@ -1,0 +1,77 @@
+#ifndef QLCG_SAVE_LEGACY_V11_H
+#define QLCG_SAVE_LEGACY_V11_H
+#include "planet_macro.h"
+typedef struct {
+    char               world_name[240];
+    char               ren_ming[256];
+    int                height_cm;
+    PlayMode           play_mode;
+
+    uint32_t           seed;
+    char               seed_str[64];
+    WorldPresetId      preset;
+    MacroTerrainRecipe terrain_recipe;
+    MacroClimateRule   climate_rule;   
+    int                macro_size_idx;
+    int                macro_scale_idx;
+    int                columns;
+    int                chunks_per_cell;
+    int                equator_chunks;
+    float              pole_temp;
+    float              equator_temp;
+    int                tectonic_activity;
+    float              land_ratio;
+    float              precipitation;
+
+    bool               astronomy_enabled;
+    uint32_t           astronomy_version;
+
+    
+    float              creation_time_speed;
+    CalendarMode       calendar_mode;
+    int                start_year;
+    int                start_month;
+    int                start_day;
+
+    
+    bool               artificial_enabled;
+    bool               spawn_as_flag;
+    char               faction_name[40];
+    uint32_t           faction_main_color;
+    uint32_t           faction_trim_color;
+    int                initial_civ_limit;
+    float              natural_expansion;
+    float              natural_evolution;
+    bool               flag_independence;
+    int                monsoon_direction;   
+    char               culture[32];
+    float              axial_tilt_deg;      
+    bool               prograde;            
+    char               culture_choices[QLCG_MAX_LOCALES][32];
+} WorldCreatorOptionsV11;
+typedef struct {    bool                valid;
+    char                id[64];
+    char                file_path[260];
+    char                world_name[240];
+    char                ren_ming[256];
+    uint32_t            main_color;
+    PlayMode            play_mode;
+    uint32_t            seed;
+    CalendarMode        calendar_mode;
+    double              unix_ms;
+    int                 year, month, day;
+    char                saved_at_str[32];
+    float               player_x, player_y, player_z;
+    float               player_yaw, player_pitch;
+    bool                flying;
+    WorldCreatorOptionsV11 opt;
+    AtlasDisplayState   atlas_display;
+    
+    float               mystery_time_speed;
+    bool                mystery_menu_auto_pause;
+    int                 delta_count;
+    SparseDeltaRecord   deltas[64];
+    uint32_t            save_version;   
+    uint32_t            disk_version;   
+} SaveSlotInfoV11;
+#endif

@@ -1,0 +1,100 @@
+{
+  "rocks": [
+    {
+      "id": "rock.large.granite-hummock", "name": "花岗岩丘",
+      "archetype": "boulder", "family": "igneous", "seed": 500, "heightMeters": 0.68,
+      "params": {"sides": 9, "shells": 5, "aspect": 0.69, "shellTaper": 0.82},
+      "palette": {"body": "granite", "band": "graniteDark", "cap": "granitePale"}
+    },
+    {
+      "id": "rock.large.basalt-block", "name": "玄武方岩",
+      "archetype": "block", "family": "igneous", "seed": 507, "heightMeters": 0.89,
+      "params": {"sides": 5, "shells": 4, "aspect": 0.85, "shellTaper": 0.94, "shellTwist": 0.12},
+      "palette": {"body": "basalt", "band": "basaltDark", "cap": "basaltPale"}
+    },
+    {
+      "id": "rock.large.slate-shelf", "name": "青板岩席",
+      "archetype": "slab", "family": "metamorphic", "seed": 514, "heightMeters": 0.54,
+      "params": {"sides": 7, "plates": 3, "plateThickness": 0.13, "plateSkew": 0.13, "plateRise": 0.72},
+      "palette": {"body": "slate", "band": "slateDark", "cap": "slatePale"}
+    },
+    {
+      "id": "rock.large.limestone-terrace", "name": "灰岩层坎",
+      "archetype": "ledge", "family": "sedimentary", "seed": 521, "heightMeters": 0.74,
+      "params": {"sides": 7, "aspect": 0.62, "tiltX": 0.1, "tiltZ": -0.08, "baseFlatten": 0.86},
+      "palette": {"body": "limestone", "band": "limestoneDark", "cap": "limestonePale"}
+    },
+    {
+      "id": "rock.large.sandstone-crag", "name": "赭砂岩崖",
+      "archetype": "block", "family": "sedimentary", "seed": 528, "heightMeters": 0.96,
+      "params": {"sides": 5, "shells": 5, "aspect": 0.91, "shellSkew": 0.18, "shellTaper": 0.89},
+      "palette": {"body": "sandstone", "band": "sandstoneDark", "cap": "sandstonePale"}
+    },
+    {
+      "id": "rock.large.chalk-boulder", "name": "白垩圆岩",
+      "archetype": "boulder", "family": "sedimentary", "seed": 535, "heightMeters": 0.63,
+      "params": {"sides": 8, "shells": 4, "aspect": 0.82, "shellTaper": 0.83, "jitter": 0.12},
+      "palette": {"body": "chalk", "band": "limestoneDark", "cap": "limestonePale"}
+    },
+    {
+      "id": "rock.large.quartzite-fin", "name": "石英岩鳍",
+      "archetype": "shard", "family": "metamorphic", "seed": 542, "heightMeters": 0.78,
+      "params": {"sides": 6, "aspect": 1.2, "tiltX": 0.18, "tiltZ": -0.12},
+      "palette": {"body": "quartzite", "band": "quartziteDark", "cap": "quartzitePale"}
+    },
+    {
+      "id": "rock.large.travertine-buttress", "name": "钙华岩垛",
+      "archetype": "ledge", "family": "sedimentary", "seed": 549, "heightMeters": 0.87,
+      "params": {"sides": 6, "aspect": 0.78, "tiltX": 0.12, "tiltZ": 0.06, "baseFlatten": 0.94},
+      "palette": {"body": "travertine", "band": "travertineDark", "cap": "limestonePale"}
+    },
+    {
+      "id": "rock.large.shale-fan", "name": "扇叠页岩",
+      "archetype": "slab", "family": "metamorphic", "seed": 556, "heightMeters": 0.59,
+      "params": {"sides": 5, "plates": 4, "plateThickness": 0.11, "plateSkew": 0.22, "plateTilt": 0.13, "plateRise": 0.72},
+      "palette": {"body": "shale", "band": "shaleDark", "cap": "slatePale"}
+    },
+    {
+      "id": "rock.large.glacial-erratic", "name": "冰碛孤岩",
+      "archetype": "boulder", "family": "clastic", "seed": 563, "heightMeters": 0.92,
+      "params": {"sides": 7, "shells": 4, "aspect": 0.94, "shellTaper": 0.79, "shellSkew": 0.18},
+      "palette": {"body": "conglomerate", "band": "conglomerateDark", "cap": "glacialTill"}
+    },
+    {
+      "id": "rock.large.basalt-stump", "name": "黑柱断墩",
+      "archetype": "stub", "family": "igneous", "seed": 570, "heightMeters": 0.85,
+      "params": {"sides": 8, "segments": 2, "aspect": 1.05, "tipRatio": 0.8, "nodeTwist": 0.11},
+      "palette": {"body": "basalt", "band": "basaltDark", "cap": "basaltPale"}
+    },
+    {
+      "id": "rock.large.granite-talus", "name": "花岗碎岩堆",
+      "archetype": "rubble", "family": "clastic", "seed": 577, "heightMeters": 0.65,
+      "params": {"sides": 6, "chunks": 5, "spread": 0.26, "jitter": 0.2},
+      "palette": {"body": "scree", "band": "screeDark", "cap": "glacialTill"}
+    },
+    {
+      "id": "rock.large.sandstone-cap", "name": "砂岩厚台",
+      "archetype": "ledge", "family": "sedimentary", "seed": 584, "heightMeters": 0.82,
+      "params": {"sides": 5, "aspect": 0.77, "tiltX": -0.04, "tiltZ": 0.03, "baseFlatten": 0.78},
+      "palette": {"body": "sandstone", "band": "sandstoneDark", "cap": "sandstonePale"}
+    },
+    {
+      "id": "rock.large.slate-splinter", "name": "板岩斜峰",
+      "archetype": "shard", "family": "metamorphic", "seed": 591, "heightMeters": 0.99,
+      "params": {"sides": 5, "aspect": 1.25, "tiltX": 0.33, "tiltZ": 0.15},
+      "palette": {"body": "slate", "band": "slateDark", "cap": "slatePale"}
+    },
+    {
+      "id": "rock.large.limestone-pillar", "name": "灰岩粗柱",
+      "archetype": "stub", "family": "sedimentary", "seed": 598, "heightMeters": 0.93,
+      "params": {"sides": 6, "segments": 3, "aspect": 1.15, "tipRatio": 0.67, "nodeSkew": 0.12},
+      "palette": {"body": "limestone", "band": "limestoneDark", "cap": "limestonePale"}
+    },
+    {
+      "id": "rock.large.quartzite-mound", "name": "石英岩阜",
+      "archetype": "boulder", "family": "metamorphic", "seed": 605, "heightMeters": 0.71,
+      "params": {"sides": 7, "shells": 3, "aspect": 0.71, "shellTaper": 0.91, "shellTwist": 0.36},
+      "palette": {"body": "quartzite", "band": "quartziteDark", "cap": "quartzitePale"}
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "plants": [
+    {
+      "id": "shu.yangzijing",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "洋紫荆",
+      "latin": "Yangzijing",
+      "seed": 74,
+      "scale": 0.72,
+      "params": {
+        "height": 8,
+        "trunk": 3.5,
+        "trunkRadius": 0.32,
+        "canopy": 4,
+        "canopyRatio": 0.46,
+        "blobs": 7,
+        "limbCount": 5,
+        "limbLength": 2.4,
+        "branchAngle": 0.65,
+        "bloomCount": 12,
+        "bloomRadius": 0.18,
+        "petals": 5,
+        "fruitCount": 5,
+        "fruitRadius": 0.08,
+        "snow": 0,
+        "form": "vase",
+        "leafShape": "broad",
+        "flowerStyle": "cluster"
+      },
+      "palette": {
+        "bark": "bark",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomPink",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "tree",
+        "flowering",
+        "ornamental",
+        "evergreen",
+        "耐热",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.yangzijing@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.7,
+        "trunk": 0.8,
+        "trunkRadius": 0.07,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.yangzijing@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.4,
+        "trunk": 1.9,
+        "trunkRadius": 0.18,
+        "canopy": 2.2,
+        "limbLength": 1.3
+      }
+    },
+    {
+      "id": "shu.yangzijing@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 16
+      }
+    },
+    {
+      "id": "shu.yangzijing@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 7,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.yangzijing@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 6.4,
+        "trunk": 2.8,
+        "trunkRadius": 0.26,
+        "canopy": 3.2,
+        "snow": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "rocks": [
+    {
+      "id": "rock.small.river-pebble", "name": "河磨卵石",
+      "archetype": "boulder", "family": "metamorphic", "seed": 300, "heightMeters": 0.12,
+      "params": {"sides": 9, "shells": 3, "aspect": 0.46, "shellTaper": 0.78, "jitter": 0.08},
+      "palette": {"body": "quartzite", "band": "quartziteDark", "cap": "quartzitePale"}
+    },
+    {
+      "id": "rock.small.charcoal-chip", "name": "炭黑岩片",
+      "archetype": "slab", "family": "igneous", "seed": 307, "heightMeters": 0.13,
+      "params": {"sides": 4, "plates": 1, "plateThickness": 0.2, "plateTilt": 0.11},
+      "palette": {"body": "basalt", "band": "basaltDark", "cap": "basaltPale"}
+    },
+    {
+      "id": "rock.small.slate-scale", "name": "鱼鳞板石",
+      "archetype": "slab", "family": "metamorphic", "seed": 314, "heightMeters": 0.15,
+      "params": {"sides": 7, "plates": 2, "plateThickness": 0.11, "plateSkew": 0.17, "plateRise": 0.72},
+      "palette": {"body": "slate", "band": "slateDark", "cap": "slatePale"}
+    },
+    {
+      "id": "rock.small.chalk-nodule", "name": "白垩结核",
+      "archetype": "boulder", "family": "sedimentary", "seed": 321, "heightMeters": 0.16,
+      "params": {"sides": 8, "shells": 3, "aspect": 0.66, "shellTaper": 0.85, "jitter": 0.12},
+      "palette": {"body": "chalk", "band": "limestoneDark", "cap": "limestonePale"}
+    },
+    {
+      "id": "rock.small.sandstone-wedge", "name": "砂岩楔片",
+      "archetype": "block", "family": "sedimentary", "seed": 328, "heightMeters": 0.17,
+      "params": {"sides": 4, "shells": 2, "aspect": 0.47, "shellTaper": 0.73, "tiltZ": 0.19},
+      "palette": {"body": "sandstone", "band": "sandstoneDark", "cap": "sandstonePale"}
+    },
+    {
+      "id": "rock.small.granite-cobble", "name": "花岗圆砾",
+      "archetype": "boulder", "family": "igneous", "seed": 335, "heightMeters": 0.18,
+      "params": {"sides": 7, "shells": 4, "aspect": 0.69, "shellTaper": 0.83, "shellTwist": 0.36},
+      "palette": {"body": "granite", "band": "graniteDark", "cap": "granitePale"}
+    },
+    {
+      "id": "rock.small.flint-splinter", "name": "燧石短楔",
+      "archetype": "shard", "family": "metamorphic", "seed": 342, "heightMeters": 0.19,
+      "params": {"sides": 5, "aspect": 0.51, "tiltX": 0.27, "tiltZ": -0.18},
+      "palette": {"body": "shale", "band": "shaleDark", "cap": "slatePale"}
+    },
+    {
+      "id": "rock.small.basalt-button", "name": "玄武石扣",
+      "archetype": "stub", "family": "igneous", "seed": 349, "heightMeters": 0.2,
+      "params": {"sides": 7, "segments": 1, "aspect": 0.67, "tipRatio": 0.81},
+      "palette": {"body": "basalt", "band": "basaltDark", "cap": "basaltPale"}
+    },
+    {
+      "id": "rock.small.shell-limestone", "name": "贝纹石片",
+      "archetype": "slab", "family": "sedimentary", "seed": 356, "heightMeters": 0.14,
+      "params": {"sides": 6, "plates": 1, "plateThickness": 0.19, "plateTilt": 0.08},
+      "palette": {"body": "limestone", "band": "limestoneDark", "cap": "limestonePale"}
+    },
+    {
+      "id": "rock.small.creek-gravel", "name": "溪滩碎砾",
+      "archetype": "rubble", "family": "clastic", "seed": 363, "heightMeters": 0.12,
+      "params": {"sides": 7, "chunks": 5, "spread": 0.26, "jitter": 0.09},
+      "palette": {"body": "gravel", "band": "gravelDark", "cap": "glacialTill"}
+    },
+    {
+      "id": "rock.small.scree-cluster", "name": "坡脚碎石",
+      "archetype": "rubble", "family": "clastic", "seed": 370, "heightMeters": 0.17,
+      "params": {"sides": 5, "chunks": 4, "spread": 0.23, "jitter": 0.23},
+      "palette": {"body": "scree", "band": "screeDark", "cap": "glacialTill"}
+    },
+    {
+      "id": "rock.small.broken-brick", "name": "赤砂岩角",
+      "archetype": "block", "family": "sedimentary", "seed": 377, "heightMeters": 0.21,
+      "params": {"sides": 5, "shells": 2, "aspect": 0.67, "shellSkew": 0.16},
+      "palette": {"body": "sandstone", "band": "sandstoneDark", "cap": "sandstonePale"}
+    },
+    {
+      "id": "rock.small.shale-stack", "name": "薄页叠片",
+      "archetype": "slab", "family": "metamorphic", "seed": 384, "heightMeters": 0.19,
+      "params": {"sides": 5, "plates": 3, "plateThickness": 0.075, "plateSkew": 0.12, "plateRise": 0.72},
+      "palette": {"body": "shale", "band": "shaleDark", "cap": "slatePale"}
+    },
+    {
+      "id": "rock.small.conglomerate-knuckle", "name": "砾岩小结",
+      "archetype": "boulder", "family": "clastic", "seed": 391, "heightMeters": 0.2,
+      "params": {"sides": 6, "shells": 3, "aspect": 0.8, "shellTaper": 0.71, "jitter": 0.21},
+      "palette": {"body": "conglomerate", "band": "conglomerateDark", "cap": "glacialTill"}
+    },
+    {
+      "id": "rock.small.travertine-step", "name": "钙华碎台",
+      "archetype": "ledge", "family": "sedimentary", "seed": 398, "heightMeters": 0.21,
+      "params": {"sides": 5, "aspect": 0.49, "tiltX": 0.03, "tiltZ": -0.05, "baseFlatten": 0.78},
+      "palette": {"body": "travertine", "band": "travertineDark", "cap": "limestonePale"}
+    },
+    {
+      "id": "rock.small.quartz-knob", "name": "石英短墩",
+      "archetype": "stub", "family": "metamorphic", "seed": 405, "heightMeters": 0.18,
+      "params": {"sides": 5, "segments": 2, "aspect": 0.92, "tipRatio": 0.57},
+      "palette": {"body": "quartzite", "band": "quartziteDark", "cap": "quartzitePale"}
+    }
+  ]
+}

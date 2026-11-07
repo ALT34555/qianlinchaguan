@@ -1,0 +1,96 @@
+{
+  "plants": [
+    {
+      "id": "guan.chengliu",
+      "archetype": "shrub",
+      "climate": "temperate",
+      "name": "柽柳",
+      "latin": "Chengliu",
+      "seed": 35,
+      "params": {
+        "height": 2.1,
+        "canopy": 1.35,
+        "blobs": 6,
+        "stems": 5,
+        "spread": 0.7,
+        "aspect": 1.25,
+        "leafPetals": 10,
+        "bloomCount": 10,
+        "bloomRadius": 0.14,
+        "petals": 5,
+        "fruitless": true,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "upright",
+        "leafShape": "needle",
+        "flowerStyle": "spike",
+        "twigs": 1
+      },
+      "palette": {
+        "barkLight": "tamariskBark",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomPink"
+      },
+      "tags": [
+        "shrub",
+        "arid",
+        "riparian",
+        "flowering",
+        "ornamental",
+        "耐盐",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.chengliu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.5,
+        "canopy": 0.32,
+        "spread": 0.17,
+        "trunkRadius": 0.06,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.chengliu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 1.16,
+        "canopy": 0.74,
+        "spread": 0.38,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "guan.chengliu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 14
+      }
+    },
+    {
+      "id": "guan.chengliu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.72,
+        "canopy": 1.1,
+        "spread": 0.56,
+        "snow": 0
+      }
+    }
+  ]
+}

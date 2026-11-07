@@ -1,0 +1,136 @@
+{
+  "categories": [
+    {
+      "id": "cao",
+      "species": [
+        "cao.yangmao",
+        "cao.jue",
+        "cao.dixue",
+        "cao.shamo",
+        "cao.hanji",
+        "cao.bamao",
+        "cao.gouyagen",
+        "cao.huweilan",
+        "cao.jianpeng",
+        "cao.jiji",
+        "cao.luhui",
+        "cao.luobuma",
+        "cao.yanjiao",
+        "cao.maozhu"
+      ]
+    },
+    {
+      "id": "guan",
+      "species": [
+        "guan.zhen",
+        "guan.lianqiao",
+        "guan.huanglu",
+        "guan.zhizi",
+        "guan.moli",
+        "guan.dujuan",
+        "guan.fusang",
+        "guan.xuangouzi",
+        "guan.yueju",
+        "guan.aili",
+        "guan.baici",
+        "guan.chengliu",
+        "guan.guanggun",
+        "guan.heiguo",
+        "guan.jianma",
+        "guan.shamomeigui",
+        "guan.suosuo",
+        "guan.xianrenzhu"
+      ]
+    },
+    {
+      "id": "hua",
+      "species": [
+        "hua.mei",
+        "hua.lan",
+        "hua.zhu",
+        "hua.ju"
+      ]
+    },
+    {
+      "id": "nong",
+      "species": [
+        "nong.dao",
+        "nong.mai",
+        "nong.su",
+        "nong.da",
+        "nong.sang"
+      ]
+    },
+    {
+      "id": "shu",
+      "species": [
+        "shu.yunshan",
+        "shu.lengshan",
+        "shu.luoye",
+        "shu.chuizhi",
+        "shu.gaoshan",
+        "shu.hongpi",
+        "shu.wujiaofeng",
+        "shu.yinxing",
+        "shu.chuiliu",
+        "shu.baigan",
+        "shu.xiangzhang",
+        "shu.cha",
+        "shu.masan",
+        "shu.ganju",
+        "shu.paotong",
+        "shu.longnao",
+        "shu.mumian",
+        "shu.yezi",
+        "shu.binglang",
+        "shu.mangguo",
+        "shu.fenghuang",
+        "shu.bailan",
+        "shu.bajiao",
+        "shu.cebai",
+        "shu.chamu",
+        "shu.haizao",
+        "shu.hongshu",
+        "shu.hongsong",
+        "shu.houmianbao",
+        "shu.huai",
+        "shu.huangbo",
+        "shu.huyang",
+        "shu.jinheguan",
+        "shu.lizhi",
+        "shu.mumahuang",
+        "shu.qingtan",
+        "shu.qiu",
+        "shu.rongshu",
+        "shu.shazao",
+        "shu.shi",
+        "shu.shuiqueliu",
+        "shu.shuishan",
+        "shu.yangzijing",
+        "shu.ziduan",
+        "shu.zishu"
+      ]
+    },
+    {
+      "id": "shui",
+      "species": [
+        "shui.pucao",
+        "shui.lian",
+        "shui.luwei",
+        "shui.luweicong",
+        "shui.luweidang",
+        "shui.kucao",
+        "shui.changpu",
+        "shui.pingpeng",
+        "shui.biaocao",
+        "shui.chuanman",
+        "shui.dayezao",
+        "shui.fengyanlan",
+        "shui.micao",
+        "shui.redaishuilian",
+        "shui.redaitun",
+        "shui.wanglian"
+      ]
+    }
+  ]
+}

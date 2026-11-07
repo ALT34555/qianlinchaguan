@@ -1,0 +1,45 @@
+#include "guan_model.h"
+
+static void build_fruit(LpBuilder *b, const PdDef *def, const double point[3],
+                        double spread, LpRng *rng) {
+    double radius = qlcg_pa_pnum(def, "fruitRadius", 0);
+    radius = radius > 0 ? qlcg_pa_clampd(radius, .02, .5)
+                        : qlcg_pa_clampd(spread * .075, .035, .24);
+    double size[3] = {radius, radius, radius};
+    LpOpts opts = qlcg_lp_opts();
+    opts.mat = LP_MAT_FRUIT;
+    opts.rings = 1;
+    opts.jitter = .15;
+    opts.rand = rng;
+    qlcg_lp_ico(b, point, size, 5, qlcg_pa_tone(def, "fruit", 1), &opts);
+}
+
+void qlcg_plant_guan_fusang(LpBuilder *b, const PdDef *def, int season, int form) {
+    ShrubProfile profile = {
+        .habit = SHRUB_WOODY, .stems = 4, .forks = 3,
+        .reach = .52, .bend = .33, .leaf = .28, .width = .71,
+        .winter_leaf = .13, .cold = 4, .heat = 2,
+        .bloom_season = PD_SEASON_SUMMER, .bloom_size = .17,
+        .crown_height = 0.72, .leaf_sites = 10,
+        .build_fruit = build_fruit,
+    };
+    switch (qlcg_pa_shape_variant(def)) {
+    case 1:
+        profile.height_scale = 1.19;
+        profile.spread_scale = 0.78;
+        profile.stems = 3;
+        profile.reach = 0.48;
+        profile.bend = 0.44;
+        profile.leaf_sites = 9;
+        break;
+    case 2:
+        profile.height_scale = 0.91;
+        profile.spread_scale = 1.31;
+        profile.stems = 5;
+        profile.reach = 0.58;
+        profile.bend = 0.2;
+        profile.leaf_sites = 11;
+        break;
+    }
+    qlcg_pa_build_shrub(b, def, season, form, &profile);
+}

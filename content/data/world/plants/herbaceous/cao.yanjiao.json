@@ -1,0 +1,87 @@
+{
+  "plants": [
+    {
+      "id": "cao.yanjiao",
+      "archetype": "succulent",
+      "climate": "cold",
+      "name": "盐角草",
+      "latin": "Yanjiaocao",
+      "seed": 42,
+      "params": {
+        "height": 0.42,
+        "spread": 0.38,
+        "layers": 3,
+        "blobs": 6,
+        "thorns": 0,
+        "bloomCount": 3,
+        "petals": 3,
+        "fruitless": true,
+        "snow": 0.12,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ],
+        "form": "mat"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "halophyteRed",
+        "bloom": "bloomWarm"
+      },
+      "tags": [
+        "ground",
+        "wet",
+        "coast",
+        "succulent",
+        "snow",
+        "耐盐",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.yanjiao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.12,
+        "spread": 0.1,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.yanjiao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.24,
+        "spread": 0.21,
+        "snow": 0.06
+      }
+    },
+    {
+      "id": "cao.yanjiao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "cao.yanjiao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.34,
+        "spread": 0.31,
+        "snow": 0
+      }
+    }
+  ]
+}

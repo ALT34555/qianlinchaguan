@@ -1,0 +1,95 @@
+{
+  "plants": [
+    {
+      "id": "cao.jianpeng",
+      "archetype": "succulent",
+      "climate": "temperate",
+      "name": "碱蓬",
+      "latin": "Jianpeng",
+      "seed": 39,
+      "params": {
+        "height": 0.52,
+        "spread": 0.44,
+        "layers": 4,
+        "blobs": 6,
+        "thorns": 0,
+        "bloomCount": 3,
+        "petals": 4,
+        "fruitCount": 3,
+        "snow": 0.1,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "mat"
+      },
+      "palette": {
+        "foliage": "halophyteRed",
+        "foliageDark": "halophyteDark",
+        "bloom": "bloomRed",
+        "fruit": "grain"
+      },
+      "tags": [
+        "ground",
+        "wet",
+        "coast",
+        "succulent",
+        "autumn_color",
+        "耐盐"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.jianpeng@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.14,
+        "spread": 0.12,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.jianpeng@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.29,
+        "spread": 0.25,
+        "snow": 0.05
+      }
+    },
+    {
+      "id": "cao.jianpeng@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "cao.jianpeng@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 4,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.jianpeng@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.42,
+        "spread": 0.36,
+        "snow": 0
+      }
+    }
+  ]
+}

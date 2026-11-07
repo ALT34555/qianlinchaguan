@@ -1,0 +1,95 @@
+{
+  "plants": [
+    {
+      "id": "shui.biaocao",
+      "archetype": "waterweed",
+      "climate": "temperate",
+      "name": "海三棱藨草",
+      "latin": "Haisanlengbiaocao",
+      "seed": 45,
+      "params": {
+        "height": 0.92,
+        "blades": 8,
+        "spread": 0.38,
+        "bloomCount": 2,
+        "fruitCount": 2,
+        "snow": 0.08,
+        "snowOn": [
+          "ground"
+        ],
+        "form": "sword"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "foliageDeep": "waterweed",
+        "bloom": "spadix",
+        "fruit": "spadix"
+      },
+      "tags": [
+        "water",
+        "wet",
+        "coast",
+        "riparian",
+        "ground",
+        "sword",
+        "耐盐"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.biaocao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.22,
+        "spread": 0.11,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.biaocao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.51,
+        "spread": 0.21,
+        "blades": 6,
+        "snow": 0.04
+      }
+    },
+    {
+      "id": "shui.biaocao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 3
+      }
+    },
+    {
+      "id": "shui.biaocao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 3,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "shui.biaocao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.75,
+        "spread": 0.31,
+        "snow": 0
+      }
+    }
+  ]
+}

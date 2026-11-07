@@ -1,0 +1,73 @@
+{
+  "plants": [
+    {
+      "id": "shu.cebai",
+      "archetype": "conifer",
+      "climate": "temperate",
+      "name": "侧柏",
+      "latin": "Cebai",
+      "seed": 86,
+      "scale": 0.82,
+      "params": {
+        "height": 10.2,
+        "trunk": 2.2,
+        "trunkRadius": 0.44,
+        "canopy": 2.2,
+        "layers": 6,
+        "layerRadius": 2,
+        "layerStep": 0.76,
+        "sides": 6,
+        "jitter": 0.12,
+        "snow": 0.22,
+        "snowOn": [
+          "canopy",
+          "top"
+        ],
+        "crownStyle": "arborvitae"
+      },
+      "palette": {
+        "bark": "bark",
+        "barkWarm": "barkLight",
+        "foliage": "conifer",
+        "foliageDark": "coniferDeep",
+        "pollen": "pollen",
+        "snow": "snow"
+      },
+      "tags": [
+        "tree",
+        "conifer",
+        "timber",
+        "evergreen",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.cebai@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.cebai@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.cebai@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.cebai@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "shu.cebai@withered",
+      "state": "withered"
+    }
+  ]
+}

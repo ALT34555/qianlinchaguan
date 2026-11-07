@@ -1,0 +1,79 @@
+{
+  "plants": [
+    {
+      "id": "shu.ziduan",
+      "archetype": "broadleaf",
+      "climate": "cold",
+      "name": "紫椴",
+      "latin": "ziduan",
+      "seed": 108,
+      "tags": [
+        "tree",
+        "canopy",
+        "flowering",
+        "autumn_color",
+        "snow"
+      ],
+      "params": {
+        "height": 14.5,
+        "trunk": 5.6,
+        "trunkRadius": 0.54,
+        "limbCount": 3,
+        "canopy": 4.4,
+        "blobs": 9,
+        "branchAngle": 0.78,
+        "form": "round",
+        "leafShape": "broad",
+        "bloomCount": 8,
+        "flowerStyle": "cluster",
+        "petals": 5,
+        "twigs": 3,
+        "rootFlare": 0.3,
+        "barkRidges": 3,
+        "fruitCount": 3,
+        "fruitStyle": "round",
+        "snow": 0.24,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ]
+      },
+      "palette": {
+        "bark": "bark",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomWarm"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.ziduan@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.ziduan@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.ziduan@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.ziduan@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "shu.ziduan@withered",
+      "state": "withered"
+    }
+  ]
+}

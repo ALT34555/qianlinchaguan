@@ -1,0 +1,95 @@
+{
+  "plants": [
+    {
+      "id": "cao.luobuma",
+      "archetype": "grassClump",
+      "climate": "temperate",
+      "name": "罗布麻",
+      "latin": "Luobuma",
+      "seed": 41,
+      "params": {
+        "height": 0.92,
+        "blades": 9,
+        "spread": 0.44,
+        "bloomCount": 6,
+        "bloomRadius": 0.1,
+        "petals": 5,
+        "fruitCount": 4,
+        "snow": 0.1,
+        "snowOn": [
+          "ground"
+        ],
+        "form": "tall",
+        "flowerStyle": "cluster"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomPink",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "ground",
+        "arid",
+        "flowering",
+        "medicine",
+        "耐盐",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.luobuma@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.22,
+        "spread": 0.12,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.luobuma@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.51,
+        "spread": 0.24,
+        "snow": 0.05
+      }
+    },
+    {
+      "id": "cao.luobuma@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 8
+      }
+    },
+    {
+      "id": "cao.luobuma@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.luobuma@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.75,
+        "spread": 0.36,
+        "snow": 0
+      }
+    }
+  ]
+}

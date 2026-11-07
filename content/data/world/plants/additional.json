@@ -1,0 +1,4259 @@
+{
+  "plants": [
+    {
+      "id": "cao.bamao",
+      "archetype": "grassClump",
+      "climate": "tropical",
+      "name": "芭茅",
+      "latin": "Bamao",
+      "seed": 62,
+      "params": {
+        "height": 1.35,
+        "blades": 10,
+        "spread": 0.55,
+        "bloomCount": 5,
+        "bloomRadius": 0.14,
+        "petals": 2,
+        "fruitCount": 4,
+        "snow": 0,
+        "form": "tall",
+        "flowerStyle": "spike"
+      },
+      "palette": {
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "bloom": "grainPale",
+        "fruit": "grain"
+      },
+      "tags": [
+        "naire_1",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.bamao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.32,
+        "spread": 0.13,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.bamao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.74,
+        "spread": 0.3
+      }
+    },
+    {
+      "id": "cao.bamao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "cao.bamao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.bamao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.1,
+        "spread": 0.45,
+        "snow": 0
+      }
+    },
+    {
+      "id": "cao.gouyagen",
+      "archetype": "grassClump",
+      "climate": "tropical",
+      "name": "狗牙根",
+      "latin": "Gouyagen",
+      "seed": 61,
+      "params": {
+        "height": 0.45,
+        "blades": 12,
+        "spread": 0.48,
+        "bloomCount": 3,
+        "petals": 2,
+        "fruitCount": 3,
+        "snow": 0,
+        "form": "tuft"
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "bloom": "grainPale",
+        "fruit": "grain"
+      },
+      "tags": [
+        "naire_1",
+        "naigan_2",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.gouyagen@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.11,
+        "spread": 0.12,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.gouyagen@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.25,
+        "spread": 0.26
+      }
+    },
+    {
+      "id": "cao.gouyagen@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "cao.gouyagen@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 4,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.gouyagen@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.37,
+        "spread": 0.39,
+        "snow": 0
+      }
+    },
+    {
+      "id": "cao.huweilan",
+      "archetype": "succulent",
+      "climate": "tropical",
+      "name": "虎尾兰",
+      "latin": "Huweilan",
+      "seed": 60,
+      "params": {
+        "height": 0.85,
+        "spread": 0.42,
+        "layers": 4,
+        "blobs": 5,
+        "thorns": 0,
+        "bloomCount": 2,
+        "petals": 6,
+        "fruitless": true,
+        "snow": 0,
+        "form": "strap",
+        "flowerStyle": "raceme"
+      },
+      "palette": {
+        "foliage": "foliageDark",
+        "foliageDark": "jungleDeep",
+        "bloom": "bloomWhite"
+      },
+      "tags": [
+        "naire_1",
+        "naigan_1",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.huweilan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.2,
+        "spread": 0.1,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.huweilan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.47,
+        "spread": 0.23
+      }
+    },
+    {
+      "id": "cao.huweilan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 4
+      }
+    },
+    {
+      "id": "cao.huweilan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.7,
+        "spread": 0.34,
+        "snow": 0
+      }
+    },
+    {
+      "id": "cao.jianpeng",
+      "archetype": "succulent",
+      "climate": "temperate",
+      "name": "碱蓬",
+      "latin": "Jianpeng",
+      "seed": 39,
+      "params": {
+        "height": 0.52,
+        "spread": 0.44,
+        "layers": 4,
+        "blobs": 6,
+        "thorns": 0,
+        "bloomCount": 3,
+        "petals": 4,
+        "fruitCount": 3,
+        "snow": 0.1,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "mat"
+      },
+      "palette": {
+        "foliage": "halophyteRed",
+        "foliageDark": "halophyteDark",
+        "bloom": "bloomRed",
+        "fruit": "grain"
+      },
+      "tags": [
+        "naiyan_0",
+        "nailao_1",
+        "kaihua",
+        "guzhuo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.jianpeng@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.14,
+        "spread": 0.12,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.jianpeng@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.29,
+        "spread": 0.25,
+        "snow": 0.05
+      }
+    },
+    {
+      "id": "cao.jianpeng@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "cao.jianpeng@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 4,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.jianpeng@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.42,
+        "spread": 0.36,
+        "snow": 0
+      }
+    },
+    {
+      "id": "cao.jiji",
+      "archetype": "grassClump",
+      "climate": "temperate",
+      "name": "芨芨草",
+      "latin": "Jijicao",
+      "seed": 40,
+      "params": {
+        "height": 1.15,
+        "blades": 11,
+        "spread": 0.48,
+        "bloomCount": 4,
+        "petals": 2,
+        "fruitCount": 5,
+        "snow": 0.12,
+        "snowOn": [
+          "ground"
+        ],
+        "form": "tall",
+        "flowerStyle": "spike"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "grainPale",
+        "fruit": "grain"
+      },
+      "tags": [
+        "naihan_1",
+        "naiyan_2",
+        "naigan_1",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.jiji@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.28,
+        "spread": 0.14,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.jiji@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.63,
+        "spread": 0.26,
+        "snow": 0.06
+      }
+    },
+    {
+      "id": "cao.jiji@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "cao.jiji@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 6,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.jiji@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.94,
+        "spread": 0.39,
+        "snow": 0
+      }
+    },
+    {
+      "id": "cao.luhui",
+      "archetype": "succulent",
+      "climate": "tropical",
+      "name": "芦荟",
+      "latin": "Luhui",
+      "seed": 59,
+      "params": {
+        "height": 0.78,
+        "spread": 0.56,
+        "layers": 3,
+        "blobs": 6,
+        "thorns": 1,
+        "bloomCount": 4,
+        "petals": 4,
+        "fruitless": true,
+        "snow": 0,
+        "form": "rosette",
+        "flowerStyle": "raceme"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "thorn": "thorn",
+        "bloom": "bloomWarm"
+      },
+      "tags": [
+        "naire_1",
+        "naigan_1",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.luhui@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.19,
+        "spread": 0.13,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.luhui@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.43,
+        "spread": 0.31
+      }
+    },
+    {
+      "id": "cao.luhui@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "cao.luhui@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.64,
+        "spread": 0.46,
+        "snow": 0
+      }
+    },
+    {
+      "id": "cao.luobuma",
+      "archetype": "grassClump",
+      "climate": "temperate",
+      "name": "罗布麻",
+      "latin": "Luobuma",
+      "seed": 41,
+      "params": {
+        "height": 0.92,
+        "blades": 9,
+        "spread": 0.44,
+        "bloomCount": 6,
+        "bloomRadius": 0.1,
+        "petals": 5,
+        "fruitCount": 4,
+        "snow": 0.1,
+        "snowOn": [
+          "ground"
+        ],
+        "form": "tall",
+        "flowerStyle": "cluster"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomPink",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "naire_2",
+        "naiyan_1",
+        "naigan_1",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.luobuma@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.22,
+        "spread": 0.12,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.luobuma@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.51,
+        "spread": 0.24,
+        "snow": 0.05
+      }
+    },
+    {
+      "id": "cao.luobuma@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 8
+      }
+    },
+    {
+      "id": "cao.luobuma@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.luobuma@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.75,
+        "spread": 0.36,
+        "snow": 0
+      }
+    },
+    {
+      "id": "cao.yanjiao",
+      "archetype": "succulent",
+      "climate": "cold",
+      "name": "盐角草",
+      "latin": "Yanjiaocao",
+      "seed": 42,
+      "params": {
+        "height": 0.42,
+        "spread": 0.38,
+        "layers": 3,
+        "blobs": 6,
+        "thorns": 0,
+        "bloomCount": 3,
+        "petals": 3,
+        "fruitless": true,
+        "snow": 0.12,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ],
+        "form": "mat"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "halophyteRed",
+        "bloom": "bloomWarm"
+      },
+      "tags": [
+        "naihan_1",
+        "naiyan_0",
+        "nailao_1",
+        "kaihua",
+        "guzhuo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.yanjiao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.12,
+        "spread": 0.1,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.yanjiao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.24,
+        "spread": 0.21,
+        "snow": 0.06
+      }
+    },
+    {
+      "id": "cao.yanjiao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "cao.yanjiao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.34,
+        "spread": 0.31,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shui.biaocao",
+      "archetype": "waterweed",
+      "climate": "temperate",
+      "name": "海三棱藨草",
+      "latin": "Haisanlengbiaocao",
+      "seed": 45,
+      "params": {
+        "height": 0.92,
+        "blades": 8,
+        "spread": 0.38,
+        "bloomCount": 2,
+        "fruitCount": 2,
+        "snow": 0.08,
+        "snowOn": [
+          "ground"
+        ],
+        "form": "sword"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "foliageDeep": "waterweed",
+        "bloom": "spadix",
+        "fruit": "spadix"
+      },
+      "tags": [
+        "naiyan_1",
+        "nailao_1",
+        "kaihua",
+        "guzhuo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.biaocao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.22,
+        "spread": 0.11,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.biaocao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.51,
+        "spread": 0.21,
+        "blades": 6,
+        "snow": 0.04
+      }
+    },
+    {
+      "id": "shui.biaocao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 3
+      }
+    },
+    {
+      "id": "shui.biaocao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 3,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "shui.biaocao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.75,
+        "spread": 0.31,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shui.chuanman",
+      "archetype": "waterweed",
+      "climate": "cold",
+      "name": "川蔓藻",
+      "latin": "Chuanmanzao",
+      "seed": 46,
+      "params": {
+        "height": 0.78,
+        "culms": 5,
+        "layers": 5,
+        "spread": 0.36,
+        "flowerless": true,
+        "fruitless": true,
+        "snow": 0,
+        "form": "feather"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "waterweed",
+        "foliageDeep": "waterweedPale"
+      },
+      "tags": [
+        "naihan_1",
+        "naiyan_1",
+        "guzhuo",
+        "chenshui"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.chuanman@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.18,
+        "spread": 0.1,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.chuanman@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.43,
+        "spread": 0.2,
+        "culms": 3,
+        "layers": 4
+      }
+    },
+    {
+      "id": "shui.chuanman@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.64,
+        "spread": 0.3,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shui.dayezao",
+      "archetype": "waterweed",
+      "climate": "temperate",
+      "name": "大叶藻",
+      "latin": "Dayezao",
+      "seed": 44,
+      "params": {
+        "height": 0.95,
+        "blades": 14,
+        "spread": 0.45,
+        "flowerless": true,
+        "fruitless": true,
+        "snow": 0,
+        "form": "ribbon"
+      },
+      "palette": {
+        "foliage": "waterweed",
+        "foliageDark": "salineFoliageDark",
+        "foliageDeep": "waterweedPale"
+      },
+      "tags": [
+        "naihan_1",
+        "naiyan_0",
+        "guzhuo",
+        "chenshui"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.dayezao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.22,
+        "spread": 0.12,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.dayezao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.52,
+        "spread": 0.25,
+        "blades": 9
+      }
+    },
+    {
+      "id": "shui.dayezao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.78,
+        "spread": 0.37,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shui.fengyanlan",
+      "archetype": "floatingPad",
+      "climate": "tropical",
+      "name": "凤眼蓝",
+      "latin": "Fengyanlan",
+      "seed": 64,
+      "params": {
+        "height": 0.42,
+        "spread": 0.68,
+        "blobs": 8,
+        "bloomCount": 4,
+        "bloomRadius": 0.16,
+        "petals": 6,
+        "fruitless": true,
+        "snow": 0,
+        "form": "hyacinth"
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "jungleDark",
+        "foliageDeep": "jungleDeep",
+        "bloom": "bloom"
+      },
+      "tags": [
+        "naire_2",
+        "nailao_0",
+        "kaihua",
+        "fushui"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.fengyanlan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.1,
+        "spread": 0.16,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.fengyanlan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.23,
+        "spread": 0.37
+      }
+    },
+    {
+      "id": "shui.fengyanlan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shui.fengyanlan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.34,
+        "spread": 0.56,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shui.micao",
+      "archetype": "reed",
+      "climate": "subtropical",
+      "name": "盐沼米草",
+      "latin": "Yanzhaomicao",
+      "seed": 43,
+      "params": {
+        "height": 1.55,
+        "culms": 6,
+        "spread": 0.52,
+        "nodeStep": 0.42,
+        "blades": 6,
+        "bloomCount": 5,
+        "bloomRadius": 0.15,
+        "petals": 4,
+        "fruitCount": 4,
+        "snow": 0.1,
+        "snowOn": [
+          "ground"
+        ]
+      },
+      "palette": {
+        "reedCulm": "salineFoliage",
+        "reedPlume": "grainPale",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "foliageDeep": "salineFoliageDark",
+        "bloom": "grainPale",
+        "fruit": "grain"
+      },
+      "tags": [
+        "naihan_1",
+        "naiyan_1",
+        "nailao_1",
+        "kaihua",
+        "guzhuo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.micao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.36,
+        "spread": 0.14,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.micao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.85,
+        "spread": 0.29,
+        "nodeStep": 0.24,
+        "snow": 0.05
+      }
+    },
+    {
+      "id": "shui.micao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shui.micao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "shui.micao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.27,
+        "spread": 0.42,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shui.redaishuilian",
+      "archetype": "floatingPad",
+      "climate": "tropical",
+      "name": "热带睡莲",
+      "latin": "Redaishuilian",
+      "seed": 65,
+      "params": {
+        "height": 0.32,
+        "spread": 0.72,
+        "blobs": 7,
+        "bloomCount": 3,
+        "bloomRadius": 0.18,
+        "petals": 8,
+        "fruitless": true,
+        "snow": 0,
+        "form": "lily"
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "foliageDeep": "foliageDeep",
+        "bloom": "bloomPink"
+      },
+      "tags": [
+        "naire_2",
+        "nailao_0",
+        "kaihua",
+        "guzhuo",
+        "fushui"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.redaishuilian@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.08,
+        "spread": 0.17,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.redaishuilian@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.18,
+        "spread": 0.4
+      }
+    },
+    {
+      "id": "shui.redaishuilian@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "shui.redaishuilian@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.26,
+        "spread": 0.59,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shui.redaitun",
+      "archetype": "waterweed",
+      "climate": "tropical",
+      "name": "热带茨藻",
+      "latin": "Redaicizao",
+      "seed": 66,
+      "params": {
+        "height": 0.88,
+        "culms": 6,
+        "layers": 6,
+        "spread": 0.42,
+        "flowerless": true,
+        "fruitless": true,
+        "snow": 0,
+        "form": "feather"
+      },
+      "palette": {
+        "foliage": "waterweed",
+        "foliageDark": "jungleDark",
+        "foliageDeep": "waterweedPale"
+      },
+      "tags": [
+        "naire_2",
+        "chenshui"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.redaitun@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.21,
+        "spread": 0.1,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.redaitun@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.48,
+        "spread": 0.23,
+        "culms": 4,
+        "layers": 4
+      }
+    },
+    {
+      "id": "shui.redaitun@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.72,
+        "spread": 0.34,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shui.wanglian",
+      "archetype": "floatingPad",
+      "climate": "tropical",
+      "name": "王莲",
+      "latin": "Wanglian",
+      "seed": 63,
+      "params": {
+        "height": 0.38,
+        "spread": 1.1,
+        "blobs": 5,
+        "bloomCount": 2,
+        "bloomRadius": 0.22,
+        "petals": 8,
+        "fruitless": true,
+        "snow": 0,
+        "form": "wanglian"
+      },
+      "palette": {
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "foliageDeep": "jungleDeep",
+        "bloom": "bloomWhite"
+      },
+      "tags": [
+        "naire_2",
+        "nailao_0",
+        "kaihua",
+        "guzhuo",
+        "fushui"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.wanglian@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.1,
+        "spread": 0.26,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.wanglian@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.21,
+        "spread": 0.6
+      }
+    },
+    {
+      "id": "shui.wanglian@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 3
+      }
+    },
+    {
+      "id": "shui.wanglian@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.31,
+        "spread": 0.9,
+        "snow": 0
+      }
+    },
+    {
+      "id": "guan.baici",
+      "archetype": "bramble",
+      "climate": "temperate",
+      "name": "白刺",
+      "latin": "Baici",
+      "seed": 38,
+      "params": {
+        "height": 1.15,
+        "spread": 1.15,
+        "stems": 8,
+        "blobs": 5,
+        "thorns": 1,
+        "bloomCount": 5,
+        "petals": 5,
+        "fruitCount": 6,
+        "fruitRadius": 0.08,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "fruitStyle": "cluster",
+        "twigs": 2
+      },
+      "palette": {
+        "barkLight": "barkPale",
+        "thorn": "barkPale",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomWhite",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "naire_1",
+        "naiyan_1",
+        "naigan_1",
+        "kaihua",
+        "jieguo",
+        "chai"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.baici@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.28,
+        "spread": 0.28,
+        "trunkRadius": 0.05,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.baici@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.63,
+        "spread": 0.63,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "guan.baici@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "guan.baici@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "guan.baici@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.94,
+        "spread": 0.94,
+        "snow": 0
+      }
+    },
+    {
+      "id": "guan.chengliu",
+      "archetype": "shrub",
+      "climate": "temperate",
+      "name": "柽柳",
+      "latin": "Chengliu",
+      "seed": 35,
+      "params": {
+        "height": 2.1,
+        "canopy": 1.35,
+        "blobs": 6,
+        "stems": 5,
+        "spread": 0.7,
+        "aspect": 1.25,
+        "leafPetals": 10,
+        "bloomCount": 10,
+        "bloomRadius": 0.14,
+        "petals": 5,
+        "fruitless": true,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "upright",
+        "leafShape": "needle",
+        "flowerStyle": "spike",
+        "twigs": 1
+      },
+      "palette": {
+        "barkLight": "tamariskBark",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomPink"
+      },
+      "tags": [
+        "naire_1",
+        "naiyan_1",
+        "naigan_1",
+        "nailao_1",
+        "kaihua",
+        "chai",
+        "guzhuo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.chengliu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.5,
+        "canopy": 0.32,
+        "spread": 0.17,
+        "trunkRadius": 0.06,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.chengliu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 1.16,
+        "canopy": 0.74,
+        "spread": 0.38,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "guan.chengliu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 14
+      }
+    },
+    {
+      "id": "guan.chengliu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.72,
+        "canopy": 1.1,
+        "spread": 0.56,
+        "snow": 0
+      }
+    },
+    {
+      "id": "guan.guanggun",
+      "archetype": "shrub",
+      "climate": "tropical",
+      "name": "光棍树",
+      "latin": "Guanggunshu",
+      "seed": 55,
+      "params": {
+        "height": 1.9,
+        "canopy": 1.15,
+        "blobs": 5,
+        "stems": 8,
+        "spread": 0.65,
+        "aspect": 1.1,
+        "leafPetals": 4,
+        "bloomCount": 3,
+        "petals": 4,
+        "fruitless": true,
+        "snow": 0,
+        "form": "sparse",
+        "leafShape": "needle",
+        "twigs": 3
+      },
+      "palette": {
+        "barkLight": "bamboo",
+        "foliage": "bamboo",
+        "foliageDark": "foliageDeep",
+        "bloom": "bloomGold"
+      },
+      "tags": [
+        "naire_0",
+        "naigan_0",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.guanggun@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.45,
+        "canopy": 0.28,
+        "spread": 0.16,
+        "trunkRadius": 0.05,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.guanggun@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 1.05,
+        "canopy": 0.63,
+        "spread": 0.36
+      }
+    },
+    {
+      "id": "guan.guanggun@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "guan.guanggun@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.55,
+        "canopy": 0.94,
+        "spread": 0.53,
+        "snow": 0
+      }
+    },
+    {
+      "id": "guan.heiguo",
+      "archetype": "bramble",
+      "climate": "cold",
+      "name": "黑果枸杞",
+      "latin": "Heiguogouqi",
+      "seed": 37,
+      "params": {
+        "height": 1.25,
+        "spread": 1.05,
+        "stems": 7,
+        "blobs": 5,
+        "thorns": 1,
+        "bloomCount": 5,
+        "petals": 5,
+        "fruitCount": 7,
+        "fruitRadius": 0.08,
+        "snow": 0.16,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ],
+        "fruitStyle": "cluster",
+        "twigs": 2
+      },
+      "palette": {
+        "barkLight": "barkPale",
+        "thorn": "thorn",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloom",
+        "fruit": "berryDark"
+      },
+      "tags": [
+        "naihan_1",
+        "naiyan_1",
+        "naigan_1",
+        "kaihua",
+        "jieguo",
+        "chai"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.heiguo@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.3,
+        "spread": 0.25,
+        "trunkRadius": 0.05,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.heiguo@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.69,
+        "spread": 0.58,
+        "snow": 0.09
+      }
+    },
+    {
+      "id": "guan.heiguo@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "guan.heiguo@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 9,
+        "fruitScale": 1.22
+      }
+    },
+    {
+      "id": "guan.heiguo@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.02,
+        "spread": 0.86,
+        "snow": 0
+      }
+    },
+    {
+      "id": "guan.jianma",
+      "archetype": "succulent",
+      "climate": "tropical",
+      "name": "剑麻",
+      "latin": "Jianma",
+      "seed": 56,
+      "params": {
+        "height": 1.45,
+        "spread": 0.88,
+        "layers": 4,
+        "blobs": 7,
+        "thorns": 1,
+        "bloomCount": 4,
+        "petals": 5,
+        "fruitless": true,
+        "snow": 0,
+        "form": "rosette",
+        "flowerStyle": "spike"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "thorn": "barkDark",
+        "bloom": "bloomWhite"
+      },
+      "tags": [
+        "naire_1",
+        "naigan_1",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.jianma@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.35,
+        "spread": 0.21,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.jianma@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.8,
+        "spread": 0.48
+      }
+    },
+    {
+      "id": "guan.jianma@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "guan.jianma@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.18,
+        "spread": 0.72,
+        "snow": 0
+      }
+    },
+    {
+      "id": "guan.shamomeigui",
+      "archetype": "shrub",
+      "climate": "tropical",
+      "name": "沙漠玫瑰",
+      "latin": "Shamomeigui",
+      "seed": 57,
+      "params": {
+        "height": 1.35,
+        "canopy": 0.95,
+        "blobs": 4,
+        "stems": 4,
+        "spread": 0.52,
+        "aspect": 1.15,
+        "bloomCount": 8,
+        "bloomRadius": 0.18,
+        "petals": 5,
+        "fruitless": true,
+        "snow": 0,
+        "form": "sparse",
+        "leafShape": "oval",
+        "twigs": 2,
+        "rootFlare": 0.4
+      },
+      "palette": {
+        "barkLight": "barkPale",
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "bloom": "bloomRed"
+      },
+      "tags": [
+        "naire_1",
+        "naigan_1",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.shamomeigui@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.32,
+        "canopy": 0.23,
+        "spread": 0.13,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.shamomeigui@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.74,
+        "canopy": 0.52,
+        "spread": 0.29
+      }
+    },
+    {
+      "id": "guan.shamomeigui@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 11
+      }
+    },
+    {
+      "id": "guan.shamomeigui@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.1,
+        "canopy": 0.78,
+        "spread": 0.42,
+        "snow": 0
+      }
+    },
+    {
+      "id": "guan.suosuo",
+      "archetype": "shrub",
+      "climate": "temperate",
+      "name": "梭梭",
+      "latin": "Suosuo",
+      "seed": 36,
+      "params": {
+        "height": 2.2,
+        "canopy": 1.28,
+        "blobs": 5,
+        "stems": 6,
+        "spread": 0.65,
+        "aspect": 1.15,
+        "jitter": 0.26,
+        "bloomCount": 5,
+        "petals": 4,
+        "fruitCount": 4,
+        "snow": 0.15,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ],
+        "form": "sparse",
+        "leafShape": "needle",
+        "twigs": 3
+      },
+      "palette": {
+        "barkLight": "barkPale",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomGold",
+        "fruit": "grainPale"
+      },
+      "tags": [
+        "naihan_1",
+        "naire_1",
+        "naiyan_1",
+        "naigan_1",
+        "kaihua",
+        "chai"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.suosuo@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.52,
+        "canopy": 0.3,
+        "spread": 0.16,
+        "trunkRadius": 0.06,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.suosuo@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 1.2,
+        "canopy": 0.7,
+        "spread": 0.36,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "guan.suosuo@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "guan.suosuo@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "guan.suosuo@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.8,
+        "canopy": 1.05,
+        "spread": 0.53,
+        "snow": 0
+      }
+    },
+    {
+      "id": "guan.xianrenzhu",
+      "archetype": "succulent",
+      "climate": "tropical",
+      "name": "仙人柱",
+      "latin": "Xianrenzhu",
+      "seed": 58,
+      "params": {
+        "height": 2.1,
+        "spread": 0.58,
+        "layers": 5,
+        "blobs": 4,
+        "thorns": 1,
+        "bloomCount": 3,
+        "petals": 6,
+        "fruitCount": 3,
+        "snow": 0,
+        "form": "column"
+      },
+      "palette": {
+        "foliage": "foliageDark",
+        "foliageDark": "jungleDeep",
+        "thorn": "thorn",
+        "bloom": "bloomWhite",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "naire_0",
+        "naigan_0",
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.xianrenzhu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.5,
+        "spread": 0.14,
+        "trunkRadius": 0.05,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.xianrenzhu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 1.15,
+        "spread": 0.32
+      }
+    },
+    {
+      "id": "guan.xianrenzhu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "guan.xianrenzhu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 4,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "guan.xianrenzhu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.72,
+        "spread": 0.47,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.bailan",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "白兰",
+      "latin": "Bailan",
+      "seed": 73,
+      "scale": 0.75,
+      "params": {
+        "height": 9.8,
+        "trunk": 4.8,
+        "trunkRadius": 0.34,
+        "canopy": 3.4,
+        "canopyRatio": 0.5,
+        "blobs": 7,
+        "limbCount": 4,
+        "limbLength": 2.1,
+        "branchAngle": 0.82,
+        "bloomCount": 10,
+        "bloomRadius": 0.16,
+        "petals": 6,
+        "fruitless": true,
+        "snow": 0,
+        "form": "round",
+        "leafShape": "broad",
+        "flowerStyle": "single",
+        "twigs": 3,
+        "rootFlare": 0.25
+      },
+      "palette": {
+        "bark": "barkLight",
+        "barkLight": "barkPale",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomWhite"
+      },
+      "tags": [
+        "naihan_3",
+        "naire_2",
+        "kaihua",
+        "chai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.bailan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.9,
+        "trunk": 0.9,
+        "trunkRadius": 0.07,
+        "canopy": 0.7,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.bailan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5.3,
+        "trunk": 2.6,
+        "trunkRadius": 0.19,
+        "canopy": 1.9,
+        "limbLength": 1.1
+      }
+    },
+    {
+      "id": "shu.bailan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 14
+      }
+    },
+    {
+      "id": "shu.bailan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 7.8,
+        "trunk": 3.8,
+        "trunkRadius": 0.27,
+        "canopy": 2.7,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.bajiao",
+      "archetype": "palm",
+      "climate": "tropical",
+      "name": "芭蕉",
+      "latin": "Bajiao",
+      "seed": 54,
+      "scale": 0.72,
+      "params": {
+        "height": 6.8,
+        "trunk": 4.8,
+        "trunkRadius": 0.32,
+        "canopy": 3.6,
+        "fronds": 6,
+        "frondLength": 3.6,
+        "droop": 0.62,
+        "segments": 5,
+        "lean": 0.06,
+        "bloomCount": 4,
+        "fruitCount": 5,
+        "fruitRadius": 0.16,
+        "snow": 0,
+        "form": "paddle"
+      },
+      "palette": {
+        "bark": "bamboo",
+        "barkLight": "foliage",
+        "palmFrond": "jungle",
+        "foliageDark": "jungleDark",
+        "bloom": "bloomWarm",
+        "fruit": "fruitYellow"
+      },
+      "tags": [
+        "naire_1",
+        "kaihua",
+        "jieguo",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.bajiao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.5,
+        "trunk": 0.8,
+        "trunkRadius": 0.07,
+        "canopy": 0.7,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.bajiao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 3.7,
+        "trunk": 2.6,
+        "trunkRadius": 0.18,
+        "canopy": 2,
+        "frondLength": 2
+      }
+    },
+    {
+      "id": "shu.bajiao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shu.bajiao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 6,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.bajiao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 5.5,
+        "trunk": 3.9,
+        "trunkRadius": 0.26,
+        "canopy": 2.9,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.cebai",
+      "archetype": "conifer",
+      "climate": "temperate",
+      "name": "侧柏",
+      "latin": "Cebai",
+      "seed": 86,
+      "scale": 0.82,
+      "params": {
+        "height": 10.2,
+        "trunk": 2.2,
+        "trunkRadius": 0.44,
+        "canopy": 2.2,
+        "layers": 6,
+        "layerRadius": 2,
+        "layerStep": 0.76,
+        "sides": 6,
+        "jitter": 0.12,
+        "snow": 0.22,
+        "snowOn": [
+          "canopy",
+          "top"
+        ],
+        "crownStyle": "arborvitae"
+      },
+      "palette": {
+        "bark": "bark",
+        "barkWarm": "barkLight",
+        "foliage": "conifer",
+        "foliageDark": "coniferDeep",
+        "pollen": "pollen",
+        "snow": "snow"
+      },
+      "tags": [
+        "naihan_1",
+        "mucai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.cebai@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.cebai@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.cebai@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.cebai@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "shu.cebai@withered",
+      "state": "withered"
+    },
+    {
+      "id": "shu.chamu",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "檫木",
+      "latin": "Chamu",
+      "seed": 82,
+      "scale": 0.78,
+      "params": {
+        "height": 10.2,
+        "trunk": 4.6,
+        "trunkRadius": 0.38,
+        "canopy": 3.8,
+        "canopyRatio": 0.48,
+        "blobs": 7,
+        "limbCount": 4,
+        "limbLength": 2.4,
+        "branchAngle": 0.75,
+        "bloomCount": 8,
+        "bloomRadius": 0.14,
+        "petals": 5,
+        "fruitCount": 6,
+        "fruitRadius": 0.08,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "round",
+        "leafShape": "broad",
+        "flowerStyle": "umbel",
+        "twigs": 3
+      },
+      "palette": {
+        "bark": "bark",
+        "barkLight": "barkWarm",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomGold",
+        "fruit": "berryDark"
+      },
+      "tags": [
+        "kaihua",
+        "mucai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.chamu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2,
+        "trunk": 0.9,
+        "trunkRadius": 0.08,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.chamu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5.6,
+        "trunk": 2.5,
+        "trunkRadius": 0.21,
+        "canopy": 2.1,
+        "limbLength": 1.3,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.chamu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 11
+      }
+    },
+    {
+      "id": "shu.chamu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.chamu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 8.2,
+        "trunk": 3.7,
+        "trunkRadius": 0.31,
+        "canopy": 3,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.haizao",
+      "archetype": "palm",
+      "climate": "tropical",
+      "name": "海枣",
+      "latin": "Haizao",
+      "seed": 53,
+      "scale": 0.78,
+      "params": {
+        "height": 11.2,
+        "trunk": 9.2,
+        "trunkRadius": 0.34,
+        "canopy": 4.4,
+        "fronds": 10,
+        "frondLength": 4.4,
+        "droop": 0.45,
+        "segments": 7,
+        "lean": 0.12,
+        "bloomCount": 5,
+        "fruitCount": 5,
+        "fruitRadius": 0.14,
+        "snow": 0,
+        "form": "pinnate",
+        "fruitStyle": "hanging"
+      },
+      "palette": {
+        "bark": "barkLight",
+        "barkLight": "barkPale",
+        "palmFrond": "palmFrond",
+        "foliageDark": "foliageDark",
+        "bloom": "bloomGold",
+        "fruit": "fruitYellow"
+      },
+      "tags": [
+        "naire_1",
+        "naigan_1",
+        "kaihua",
+        "jieguo",
+        "chai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.haizao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.2,
+        "trunk": 1.2,
+        "trunkRadius": 0.08,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.haizao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 6.1,
+        "trunk": 5,
+        "trunkRadius": 0.19,
+        "canopy": 2.4,
+        "frondLength": 2.4
+      }
+    },
+    {
+      "id": "shu.haizao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shu.haizao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 6,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.haizao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 9.1,
+        "trunk": 7.5,
+        "trunkRadius": 0.28,
+        "canopy": 3.5,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.hongshu",
+      "archetype": "broadleaf",
+      "climate": "tropical",
+      "name": "红树",
+      "latin": "Hongshu",
+      "seed": 32,
+      "scale": 0.68,
+      "params": {
+        "height": 8.6,
+        "trunk": 3.8,
+        "trunkRadius": 0.36,
+        "canopy": 3.8,
+        "canopyRatio": 0.46,
+        "blobs": 8,
+        "limbCount": 5,
+        "limbLength": 2.2,
+        "branchAngle": 0.68,
+        "spread": 2.2,
+        "stems": 7,
+        "bloomCount": 6,
+        "petals": 4,
+        "fruitCount": 6,
+        "snow": 0
+      },
+      "palette": {
+        "bark": "tamariskBark",
+        "barkLight": "barkWarm",
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "canopy": "jungle",
+        "bloom": "bloomWhite",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "naihan_3",
+        "naire_1",
+        "naiyan_0",
+        "nailao_0",
+        "kaihua",
+        "guzhuo",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.hongshu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2,
+        "trunk": 0.9,
+        "trunkRadius": 0.09,
+        "canopy": 0.9,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.hongshu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.8,
+        "trunk": 2.1,
+        "trunkRadius": 0.2,
+        "canopy": 2.1,
+        "limbLength": 1.2,
+        "spread": 1.2,
+        "stems": 5
+      }
+    },
+    {
+      "id": "shu.hongshu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 8
+      }
+    },
+    {
+      "id": "shu.hongshu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 7,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.hongshu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 6.8,
+        "trunk": 3,
+        "trunkRadius": 0.3,
+        "canopy": 3,
+        "limbLength": 1.8,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.hongsong",
+      "archetype": "conifer",
+      "climate": "cold",
+      "name": "红松",
+      "latin": "hongsong",
+      "seed": 105,
+      "tags": [
+        "naihan_0",
+        "mucai",
+        "shuguan"
+      ],
+      "params": {
+        "height": 18,
+        "trunk": 7,
+        "trunkRadius": 0.65,
+        "canopy": 4.2,
+        "layers": 5,
+        "limbCount": 3,
+        "crownStyle": "pine",
+        "snow": 0.28,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ]
+      },
+      "palette": {
+        "bark": "barkWarm",
+        "barkLight": "barkLight",
+        "foliage": "coniferDark",
+        "foliageDark": "coniferDeep"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.hongsong@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.hongsong@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.hongsong@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.hongsong@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "shu.hongsong@withered",
+      "state": "withered"
+    },
+    {
+      "id": "shu.houmianbao",
+      "archetype": "baobab",
+      "climate": "tropical",
+      "name": "猴面包树",
+      "latin": "Houmianbaoshu",
+      "seed": 51,
+      "scale": 0.85,
+      "params": {
+        "height": 9.8,
+        "trunk": 5.4,
+        "trunkRadius": 1.25,
+        "canopy": 3.4,
+        "limbCount": 6,
+        "branchAngle": 0.85,
+        "bloomCount": 4,
+        "fruitCount": 4,
+        "snow": 0
+      },
+      "palette": {
+        "bark": "barkLight",
+        "barkLight": "barkPale",
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "bloom": "bloomWhite",
+        "fruit": "fruitPale"
+      },
+      "tags": [
+        "naire_0",
+        "naigan_0",
+        "kaihua",
+        "mucai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.houmianbao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.8,
+        "trunk": 0.9,
+        "trunkRadius": 0.22,
+        "canopy": 0.7,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.houmianbao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5.4,
+        "trunk": 2.9,
+        "trunkRadius": 0.68,
+        "canopy": 1.9,
+        "limbLength": 1.4
+      }
+    },
+    {
+      "id": "shu.houmianbao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shu.houmianbao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.houmianbao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 8,
+        "trunk": 4.4,
+        "trunkRadius": 1,
+        "canopy": 2.7,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.huai",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "name": "国槐",
+      "latin": "Huai",
+      "seed": 85,
+      "scale": 0.85,
+      "params": {
+        "height": 11.8,
+        "trunk": 4.6,
+        "trunkRadius": 0.5,
+        "canopy": 4.8,
+        "canopyRatio": 0.52,
+        "blobs": 9,
+        "limbCount": 5,
+        "limbLength": 2.8,
+        "branchAngle": 0.72,
+        "bloomCount": 10,
+        "bloomRadius": 0.16,
+        "petals": 5,
+        "fruitCount": 6,
+        "fruitRadius": 0.1,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "vase",
+        "leafShape": "oval",
+        "flowerStyle": "panicle",
+        "fruitStyle": "legume"
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "bark",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomWhite",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "kaihua",
+        "mucai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.huai@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.2,
+        "trunk": 1.1,
+        "trunkRadius": 0.09,
+        "canopy": 0.9,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.huai@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 6.2,
+        "trunk": 2.7,
+        "trunkRadius": 0.26,
+        "canopy": 2.5,
+        "limbLength": 1.5,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.huai@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 15
+      }
+    },
+    {
+      "id": "shu.huai@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.huai@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 9.2,
+        "trunk": 3.7,
+        "trunkRadius": 0.38,
+        "canopy": 3.6,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.huangbo",
+      "archetype": "broadleaf",
+      "climate": "cold",
+      "name": "黄檗",
+      "latin": "huangbo",
+      "seed": 107,
+      "tags": [
+        "naihan_1",
+        "chai",
+        "shuguan"
+      ],
+      "params": {
+        "height": 13.5,
+        "trunk": 5.4,
+        "trunkRadius": 0.58,
+        "limbCount": 4,
+        "canopy": 4.2,
+        "blobs": 7,
+        "branchAngle": 0.65,
+        "form": "umbrella",
+        "leafShape": "oval",
+        "twigs": 3,
+        "rootFlare": 0.4,
+        "barkRidges": 6,
+        "fruitStyle": "cluster",
+        "snow": 0.2,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ]
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "barkWarm",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "fruit": "berryDark"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.huangbo@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.huangbo@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.huangbo@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.huangbo@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 6
+      }
+    },
+    {
+      "id": "shu.huangbo@withered",
+      "state": "withered"
+    },
+    {
+      "id": "shu.huyang",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "name": "胡杨",
+      "latin": "Huyang",
+      "seed": 31,
+      "scale": 0.72,
+      "params": {
+        "height": 11.5,
+        "trunk": 4.8,
+        "trunkRadius": 0.56,
+        "canopy": 4.3,
+        "canopyRatio": 0.46,
+        "blobs": 7,
+        "limbCount": 5,
+        "limbLength": 2.7,
+        "branchAngle": 0.65,
+        "lean": 0.14,
+        "jitter": 0.24,
+        "bloomCount": 5,
+        "petals": 4,
+        "fruitCount": 4,
+        "snow": 0.18,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "irregular",
+        "leafShape": "lance",
+        "barkRidges": 3
+      },
+      "palette": {
+        "bark": "barkPale",
+        "barkLight": "barkWarm",
+        "foliage": "poplarGold",
+        "foliageDark": "foliageDark",
+        "canopy": "poplarGold",
+        "bloom": "bloomGold",
+        "fruit": "grain"
+      },
+      "tags": [
+        "naire_1",
+        "naiyan_1",
+        "naigan_1",
+        "nailao_1",
+        "kaihua",
+        "mucai",
+        "guzhuo",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.huyang@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.6,
+        "trunk": 1.15,
+        "trunkRadius": 0.13,
+        "canopy": 1,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.huyang@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 6.3,
+        "trunk": 2.6,
+        "trunkRadius": 0.31,
+        "canopy": 2.4,
+        "limbLength": 1.5,
+        "snow": 0.1
+      }
+    },
+    {
+      "id": "shu.huyang@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shu.huyang@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "shu.huyang@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 9.2,
+        "trunk": 3.9,
+        "trunkRadius": 0.48,
+        "canopy": 3.4,
+        "limbLength": 2.2,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.jinheguan",
+      "archetype": "acacia",
+      "climate": "tropical",
+      "name": "金合欢",
+      "latin": "Jinheguan",
+      "seed": 52,
+      "scale": 0.75,
+      "params": {
+        "height": 8.6,
+        "trunk": 4.3,
+        "trunkRadius": 0.38,
+        "canopy": 4.2,
+        "limbCount": 5,
+        "limbLength": 2.4,
+        "branchAngle": 0.62,
+        "bloomCount": 8,
+        "bloomRadius": 0.12,
+        "petals": 4,
+        "fruitCount": 4,
+        "snow": 0
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "bark",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "bloom": "bloomGold",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "naire_1",
+        "naigan_1",
+        "kaihua",
+        "chai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.jinheguan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.9,
+        "trunk": 0.9,
+        "trunkRadius": 0.09,
+        "canopy": 0.85,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.jinheguan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.7,
+        "trunk": 2.3,
+        "trunkRadius": 0.21,
+        "canopy": 2.3,
+        "limbLength": 1.3
+      }
+    },
+    {
+      "id": "shu.jinheguan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 11
+      }
+    },
+    {
+      "id": "shu.jinheguan@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 6,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "shu.jinheguan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 7,
+        "trunk": 3.5,
+        "trunkRadius": 0.31,
+        "canopy": 3.4,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.lizhi",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "荔枝",
+      "latin": "Lizhi",
+      "seed": 72,
+      "scale": 0.76,
+      "params": {
+        "height": 8.2,
+        "trunk": 3.6,
+        "trunkRadius": 0.38,
+        "canopy": 3.8,
+        "canopyRatio": 0.52,
+        "blobs": 8,
+        "limbCount": 4,
+        "limbLength": 2.2,
+        "branchAngle": 0.72,
+        "bloomCount": 6,
+        "bloomRadius": 0.1,
+        "petals": 4,
+        "fruitCount": 8,
+        "fruitRadius": 0.12,
+        "fruitScale": 1.25,
+        "snow": 0,
+        "form": "round",
+        "leafShape": "lance",
+        "fruitStyle": "cluster"
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "bark",
+        "foliage": "foliageDark",
+        "foliageDark": "foliageDeep",
+        "canopy": "foliageDark",
+        "bloom": "pollen",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "naihan_3",
+        "naire_2",
+        "kaihua",
+        "jieguo",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.lizhi@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.7,
+        "trunk": 0.8,
+        "trunkRadius": 0.08,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.lizhi@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.5,
+        "trunk": 2,
+        "trunkRadius": 0.21,
+        "canopy": 2.1,
+        "limbLength": 1.2
+      }
+    },
+    {
+      "id": "shu.lizhi@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 8
+      }
+    },
+    {
+      "id": "shu.lizhi@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 10,
+        "fruitScale": 1.25
+      }
+    },
+    {
+      "id": "shu.lizhi@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 6.6,
+        "trunk": 2.9,
+        "trunkRadius": 0.31,
+        "canopy": 3,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.mumahuang",
+      "archetype": "conifer",
+      "climate": "subtropical",
+      "name": "木麻黄",
+      "latin": "Mumahuang",
+      "seed": 34,
+      "scale": 0.68,
+      "params": {
+        "height": 13,
+        "trunk": 3.4,
+        "trunkRadius": 0.38,
+        "canopy": 2.9,
+        "layers": 6,
+        "layerStep": 0.84,
+        "spikeCount": 2,
+        "lean": 0.08,
+        "jitter": 0.18,
+        "fruitless": true,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy",
+          "top"
+        ],
+        "crownStyle": "feathery"
+      },
+      "palette": {
+        "bark": "bark",
+        "barkWarm": "barkLight",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark"
+      },
+      "tags": [
+        "naihan_2",
+        "naiyan_2",
+        "naigan_2",
+        "mucai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.mumahuang@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 3,
+        "trunk": 0.8,
+        "trunkRadius": 0.09,
+        "canopy": 0.7,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.mumahuang@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 7.2,
+        "trunk": 1.9,
+        "trunkRadius": 0.21,
+        "canopy": 1.6,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.mumahuang@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shu.mumahuang@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 10.6,
+        "trunk": 2.8,
+        "trunkRadius": 0.31,
+        "canopy": 2.4,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.qingtan",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "青檀",
+      "latin": "Qingtan",
+      "seed": 83,
+      "scale": 0.76,
+      "params": {
+        "height": 9,
+        "trunk": 3.8,
+        "trunkRadius": 0.42,
+        "canopy": 4,
+        "canopyRatio": 0.45,
+        "blobs": 7,
+        "limbCount": 5,
+        "limbLength": 2.5,
+        "branchAngle": 0.68,
+        "lean": 0.12,
+        "bloomCount": 5,
+        "petals": 4,
+        "fruitCount": 7,
+        "fruitRadius": 0.12,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "irregular",
+        "leafShape": "oval",
+        "rootFlare": 0.4
+      },
+      "palette": {
+        "bark": "barkPale",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "pollen",
+        "fruit": "grainPale"
+      },
+      "tags": [
+        "kaihua",
+        "mucai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.qingtan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.8,
+        "trunk": 0.8,
+        "trunkRadius": 0.09,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.qingtan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5,
+        "trunk": 2.1,
+        "trunkRadius": 0.23,
+        "canopy": 2.2,
+        "limbLength": 1.4,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.qingtan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shu.qingtan@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 9,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.qingtan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 7.2,
+        "trunk": 3,
+        "trunkRadius": 0.34,
+        "canopy": 3.2,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.qiu",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "name": "楸树",
+      "latin": "Qiushu",
+      "seed": 87,
+      "scale": 0.82,
+      "params": {
+        "height": 13,
+        "trunk": 5.8,
+        "trunkRadius": 0.46,
+        "canopy": 4,
+        "canopyRatio": 0.44,
+        "blobs": 7,
+        "limbCount": 4,
+        "limbLength": 2.3,
+        "branchAngle": 0.6,
+        "bloomCount": 15,
+        "bloomRadius": 0.22,
+        "petals": 5,
+        "fruitCount": 5,
+        "fruitRadius": 0.07,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "vase",
+        "leafShape": "broad",
+        "flowerStyle": "panicle"
+      },
+      "palette": {
+        "bark": "barkPale",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "plumBloom",
+        "fruit": "grainPale"
+      },
+      "tags": [
+        "kaihua",
+        "mucai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.qiu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.3,
+        "trunk": 1.2,
+        "trunkRadius": 0.08,
+        "canopy": 0.85,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.qiu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 6.8,
+        "trunk": 3.1,
+        "trunkRadius": 0.24,
+        "canopy": 2.2,
+        "limbLength": 1.3,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.qiu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 18
+      }
+    },
+    {
+      "id": "shu.qiu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.qiu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 10.2,
+        "trunk": 4.5,
+        "trunkRadius": 0.36,
+        "canopy": 3.2,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.rongshu",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "榕树",
+      "latin": "Rongshu",
+      "seed": 71,
+      "scale": 0.82,
+      "params": {
+        "height": 9.5,
+        "trunk": 3.8,
+        "trunkRadius": 0.62,
+        "canopy": 5.2,
+        "limbCount": 6,
+        "limbLength": 3.6,
+        "branchAngle": 0.42,
+        "blobs": 8,
+        "fruitCount": 8,
+        "fruitRadius": 0.08,
+        "snow": 0
+      },
+      "palette": {
+        "bark": "bark",
+        "barkLight": "barkLight",
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "canopy": "jungle",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "naihan_3",
+        "naire_2",
+        "nailao_2",
+        "chai",
+        "guzhuo",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.rongshu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.8,
+        "trunk": 0.8,
+        "trunkRadius": 0.12,
+        "canopy": 0.85,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.rongshu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5.2,
+        "trunk": 2.1,
+        "trunkRadius": 0.34,
+        "canopy": 2.8,
+        "limbLength": 2
+      }
+    },
+    {
+      "id": "shu.rongshu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shu.rongshu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 9,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.rongshu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 7.6,
+        "trunk": 3.1,
+        "trunkRadius": 0.5,
+        "canopy": 4.1,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.shazao",
+      "archetype": "acacia",
+      "climate": "temperate",
+      "name": "沙枣",
+      "latin": "Shazao",
+      "seed": 33,
+      "scale": 0.68,
+      "params": {
+        "height": 8.2,
+        "trunk": 3.9,
+        "trunkRadius": 0.36,
+        "canopy": 3.7,
+        "limbCount": 4,
+        "limbLength": 2.2,
+        "branchAngle": 0.62,
+        "lean": 0.12,
+        "bloomCount": 7,
+        "petals": 4,
+        "fruitCount": 6,
+        "fruitRadius": 0.11,
+        "snow": 0.16,
+        "snowOn": [
+          "canopy"
+        ]
+      },
+      "palette": {
+        "bark": "tamariskBark",
+        "barkLight": "barkWarm",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomGold",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "naire_1",
+        "naiyan_1",
+        "naigan_1",
+        "kaihua",
+        "jieguo",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.shazao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.9,
+        "trunk": 0.9,
+        "trunkRadius": 0.09,
+        "canopy": 0.85,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.shazao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.5,
+        "trunk": 2.1,
+        "trunkRadius": 0.2,
+        "canopy": 2,
+        "limbLength": 1.2,
+        "snow": 0.09
+      }
+    },
+    {
+      "id": "shu.shazao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 9
+      }
+    },
+    {
+      "id": "shu.shazao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.shazao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 6.7,
+        "trunk": 3.2,
+        "trunkRadius": 0.3,
+        "canopy": 3,
+        "limbLength": 1.8,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.shi",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "name": "柿树",
+      "latin": "Shishu",
+      "seed": 88,
+      "scale": 0.8,
+      "params": {
+        "height": 9.2,
+        "trunk": 3.4,
+        "trunkRadius": 0.44,
+        "canopy": 4.4,
+        "canopyRatio": 0.5,
+        "blobs": 8,
+        "limbCount": 5,
+        "limbLength": 2.7,
+        "branchAngle": 0.78,
+        "lean": 0.08,
+        "bloomCount": 6,
+        "bloomRadius": 0.14,
+        "petals": 4,
+        "fruitCount": 12,
+        "fruitRadius": 0.22,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "round",
+        "leafShape": "broad",
+        "fruitStyle": "hanging"
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "bark",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "pollen",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "kaihua",
+        "jieguo",
+        "chai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.shi@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.8,
+        "trunk": 0.8,
+        "trunkRadius": 0.09,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.shi@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.8,
+        "trunk": 2,
+        "trunkRadius": 0.24,
+        "canopy": 2.4,
+        "limbLength": 1.4,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.shi@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 10
+      }
+    },
+    {
+      "id": "shu.shi@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 16,
+        "fruitScale": 1.25
+      }
+    },
+    {
+      "id": "shu.shi@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 7.5,
+        "trunk": 2.8,
+        "trunkRadius": 0.35,
+        "canopy": 3.4,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.shuiqueliu",
+      "archetype": "broadleaf",
+      "climate": "cold",
+      "name": "水曲柳",
+      "latin": "shuiqueliu",
+      "seed": 106,
+      "tags": [
+        "naihan_1",
+        "mucai",
+        "shuguan"
+      ],
+      "params": {
+        "height": 16.5,
+        "trunk": 7.2,
+        "trunkRadius": 0.62,
+        "limbCount": 4,
+        "canopy": 4.5,
+        "blobs": 8,
+        "branchAngle": 0.88,
+        "form": "vase",
+        "leafShape": "lance",
+        "twigs": 4,
+        "rootFlare": 0.35,
+        "barkRidges": 4,
+        "fruitStyle": "hanging",
+        "fruitCount": 4,
+        "snow": 0.22,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ]
+      },
+      "palette": {
+        "bark": "bark",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "fruit": "grain"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.shuiqueliu@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.shuiqueliu@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.shuiqueliu@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.shuiqueliu@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "shu.shuiqueliu@withered",
+      "state": "withered"
+    },
+    {
+      "id": "shu.shuishan",
+      "archetype": "conifer",
+      "climate": "subtropical",
+      "name": "水杉",
+      "latin": "Shuishan",
+      "seed": 81,
+      "scale": 0.8,
+      "params": {
+        "height": 13.5,
+        "trunk": 3.4,
+        "trunkRadius": 0.52,
+        "canopy": 3.2,
+        "layers": 6,
+        "layerStep": 0.82,
+        "spikeCount": 1,
+        "lean": 0.04,
+        "bloomCount": 0,
+        "fruitless": true,
+        "snow": 0.16,
+        "snowOn": [
+          "canopy",
+          "top"
+        ],
+        "crownStyle": "metasequoia"
+      },
+      "palette": {
+        "bark": "barkWarm",
+        "barkWarm": "barkLight",
+        "foliage": "larch",
+        "foliageDark": "conifer"
+      },
+      "tags": [
+        "nailao_1",
+        "mucai",
+        "guzhuo",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.shuishan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.8,
+        "trunk": 0.8,
+        "trunkRadius": 0.11,
+        "canopy": 0.75,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.shuishan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 7.4,
+        "trunk": 1.9,
+        "trunkRadius": 0.28,
+        "canopy": 1.8,
+        "snow": 0.09
+      }
+    },
+    {
+      "id": "shu.shuishan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shu.shuishan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 11,
+        "trunk": 2.8,
+        "trunkRadius": 0.42,
+        "canopy": 2.6,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.yangzijing",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "洋紫荆",
+      "latin": "Yangzijing",
+      "seed": 74,
+      "scale": 0.72,
+      "params": {
+        "height": 8,
+        "trunk": 3.5,
+        "trunkRadius": 0.32,
+        "canopy": 4,
+        "canopyRatio": 0.46,
+        "blobs": 7,
+        "limbCount": 5,
+        "limbLength": 2.4,
+        "branchAngle": 0.65,
+        "bloomCount": 12,
+        "bloomRadius": 0.18,
+        "petals": 5,
+        "fruitCount": 5,
+        "fruitRadius": 0.08,
+        "snow": 0,
+        "form": "vase",
+        "leafShape": "broad",
+        "flowerStyle": "cluster"
+      },
+      "palette": {
+        "bark": "bark",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomPink",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "naihan_3",
+        "naire_2",
+        "kaihua",
+        "chai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.yangzijing@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.7,
+        "trunk": 0.8,
+        "trunkRadius": 0.07,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.yangzijing@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.4,
+        "trunk": 1.9,
+        "trunkRadius": 0.18,
+        "canopy": 2.2,
+        "limbLength": 1.3
+      }
+    },
+    {
+      "id": "shu.yangzijing@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 16
+      }
+    },
+    {
+      "id": "shu.yangzijing@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 7,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.yangzijing@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 6.4,
+        "trunk": 2.8,
+        "trunkRadius": 0.26,
+        "canopy": 3.2,
+        "snow": 0
+      }
+    },
+    {
+      "id": "shu.ziduan",
+      "archetype": "broadleaf",
+      "climate": "cold",
+      "name": "紫椴",
+      "latin": "ziduan",
+      "seed": 108,
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "mucai",
+        "shuguan"
+      ],
+      "params": {
+        "height": 14.5,
+        "trunk": 5.6,
+        "trunkRadius": 0.54,
+        "limbCount": 3,
+        "canopy": 4.4,
+        "blobs": 9,
+        "branchAngle": 0.78,
+        "form": "round",
+        "leafShape": "broad",
+        "bloomCount": 8,
+        "flowerStyle": "cluster",
+        "petals": 5,
+        "twigs": 3,
+        "rootFlare": 0.3,
+        "barkRidges": 3,
+        "fruitCount": 3,
+        "fruitStyle": "round",
+        "snow": 0.24,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ]
+      },
+      "palette": {
+        "bark": "bark",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomWarm"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.ziduan@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.ziduan@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.ziduan@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.ziduan@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "shu.ziduan@withered",
+      "state": "withered"
+    },
+    {
+      "id": "shu.zishu",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "梓树",
+      "latin": "Zishu",
+      "seed": 84,
+      "scale": 0.78,
+      "params": {
+        "height": 10.5,
+        "trunk": 4.8,
+        "trunkRadius": 0.4,
+        "canopy": 4.2,
+        "canopyRatio": 0.48,
+        "blobs": 8,
+        "limbCount": 5,
+        "limbLength": 2.6,
+        "branchAngle": 0.7,
+        "bloomCount": 10,
+        "bloomRadius": 0.18,
+        "petals": 5,
+        "fruitCount": 6,
+        "fruitRadius": 0.08,
+        "snow": 0.15,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "vase",
+        "leafShape": "oval",
+        "flowerStyle": "panicle",
+        "fruitStyle": "pod"
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "bark",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomWhite",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "kaihua",
+        "mucai",
+        "shuguan"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.zishu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.1,
+        "trunk": 1,
+        "trunkRadius": 0.08,
+        "canopy": 0.85,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.zishu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5.8,
+        "trunk": 2.6,
+        "trunkRadius": 0.22,
+        "canopy": 2.3,
+        "limbLength": 1.4,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.zishu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 14
+      }
+    },
+    {
+      "id": "shu.zishu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.zishu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 8.4,
+        "trunk": 3.8,
+        "trunkRadius": 0.32,
+        "canopy": 3.4,
+        "snow": 0
+      }
+    }
+  ]
+}

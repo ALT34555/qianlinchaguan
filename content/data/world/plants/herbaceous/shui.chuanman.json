@@ -1,0 +1,73 @@
+{
+  "plants": [
+    {
+      "id": "shui.chuanman",
+      "archetype": "waterweed",
+      "climate": "cold",
+      "name": "川蔓藻",
+      "latin": "Chuanmanzao",
+      "seed": 46,
+      "params": {
+        "height": 0.78,
+        "culms": 5,
+        "layers": 5,
+        "spread": 0.36,
+        "flowerless": true,
+        "fruitless": true,
+        "snow": 0,
+        "form": "feather"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "waterweed",
+        "foliageDeep": "waterweedPale"
+      },
+      "tags": [
+        "water",
+        "wet",
+        "submerged",
+        "feather",
+        "耐盐",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.chuanman@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.18,
+        "spread": 0.1,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.chuanman@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.43,
+        "spread": 0.2,
+        "culms": 3,
+        "layers": 4
+      }
+    },
+    {
+      "id": "shui.chuanman@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.64,
+        "spread": 0.3,
+        "snow": 0
+      }
+    }
+  ]
+}

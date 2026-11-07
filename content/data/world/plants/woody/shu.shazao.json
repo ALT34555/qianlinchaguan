@@ -1,0 +1,108 @@
+{
+  "plants": [
+    {
+      "id": "shu.shazao",
+      "archetype": "acacia",
+      "climate": "temperate",
+      "name": "沙枣",
+      "latin": "Shazao",
+      "seed": 33,
+      "scale": 0.68,
+      "params": {
+        "height": 8.2,
+        "trunk": 3.9,
+        "trunkRadius": 0.36,
+        "canopy": 3.7,
+        "limbCount": 4,
+        "limbLength": 2.2,
+        "branchAngle": 0.62,
+        "lean": 0.12,
+        "bloomCount": 7,
+        "petals": 4,
+        "fruitCount": 6,
+        "fruitRadius": 0.11,
+        "snow": 0.16,
+        "snowOn": [
+          "canopy"
+        ]
+      },
+      "palette": {
+        "bark": "tamariskBark",
+        "barkLight": "barkWarm",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomGold",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "tree",
+        "arid",
+        "fruit",
+        "flowering",
+        "耐盐",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.shazao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.9,
+        "trunk": 0.9,
+        "trunkRadius": 0.09,
+        "canopy": 0.85,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.shazao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.5,
+        "trunk": 2.1,
+        "trunkRadius": 0.2,
+        "canopy": 2,
+        "limbLength": 1.2,
+        "snow": 0.09
+      }
+    },
+    {
+      "id": "shu.shazao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 9
+      }
+    },
+    {
+      "id": "shu.shazao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.shazao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 6.7,
+        "trunk": 3.2,
+        "trunkRadius": 0.3,
+        "canopy": 3,
+        "limbLength": 1.8,
+        "snow": 0
+      }
+    }
+  ]
+}

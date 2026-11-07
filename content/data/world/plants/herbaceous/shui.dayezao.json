@@ -1,0 +1,73 @@
+{
+  "plants": [
+    {
+      "id": "shui.dayezao",
+      "archetype": "waterweed",
+      "climate": "temperate",
+      "name": "大叶藻",
+      "latin": "Dayezao",
+      "seed": 44,
+      "params": {
+        "height": 0.95,
+        "blades": 14,
+        "spread": 0.45,
+        "flowerless": true,
+        "fruitless": true,
+        "snow": 0,
+        "form": "ribbon"
+      },
+      "palette": {
+        "foliage": "waterweed",
+        "foliageDark": "salineFoliageDark",
+        "foliageDeep": "waterweedPale"
+      },
+      "tags": [
+        "water",
+        "wet",
+        "coast",
+        "submerged",
+        "riverbed",
+        "ribbon",
+        "耐盐",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.dayezao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.22,
+        "spread": 0.12,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.dayezao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.52,
+        "spread": 0.25,
+        "blades": 9
+      }
+    },
+    {
+      "id": "shui.dayezao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.78,
+        "spread": 0.37,
+        "snow": 0
+      }
+    }
+  ]
+}

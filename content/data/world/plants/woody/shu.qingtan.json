@@ -1,0 +1,110 @@
+{
+  "plants": [
+    {
+      "id": "shu.qingtan",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "青檀",
+      "latin": "Qingtan",
+      "seed": 83,
+      "scale": 0.76,
+      "params": {
+        "height": 9,
+        "trunk": 3.8,
+        "trunkRadius": 0.42,
+        "canopy": 4,
+        "canopyRatio": 0.45,
+        "blobs": 7,
+        "limbCount": 5,
+        "limbLength": 2.5,
+        "branchAngle": 0.68,
+        "lean": 0.12,
+        "bloomCount": 5,
+        "petals": 4,
+        "fruitCount": 7,
+        "fruitRadius": 0.12,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "irregular",
+        "leafShape": "oval",
+        "rootFlare": 0.4
+      },
+      "palette": {
+        "bark": "barkPale",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "pollen",
+        "fruit": "grainPale"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.qingtan@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.8,
+        "trunk": 0.8,
+        "trunkRadius": 0.09,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.qingtan@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5,
+        "trunk": 2.1,
+        "trunkRadius": 0.23,
+        "canopy": 2.2,
+        "limbLength": 1.4,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.qingtan@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shu.qingtan@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 9,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.qingtan@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 7.2,
+        "trunk": 3,
+        "trunkRadius": 0.34,
+        "canopy": 3.2,
+        "snow": 0
+      }
+    }
+  ]
+}

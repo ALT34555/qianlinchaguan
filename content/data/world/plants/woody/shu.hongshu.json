@@ -1,0 +1,111 @@
+{
+  "plants": [
+    {
+      "id": "shu.hongshu",
+      "archetype": "mangrove",
+      "climate": "tropical",
+      "name": "红树",
+      "latin": "Hongshu",
+      "seed": 32,
+      "scale": 0.68,
+      "params": {
+        "height": 8.6,
+        "trunk": 3.8,
+        "trunkRadius": 0.36,
+        "canopy": 3.8,
+        "canopyRatio": 0.46,
+        "blobs": 8,
+        "limbCount": 5,
+        "limbLength": 2.2,
+        "branchAngle": 0.68,
+        "spread": 2.2,
+        "stems": 7,
+        "bloomCount": 6,
+        "petals": 4,
+        "fruitCount": 6,
+        "snow": 0
+      },
+      "palette": {
+        "bark": "tamariskBark",
+        "barkLight": "barkWarm",
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "canopy": "jungle",
+        "bloom": "bloomWhite",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "coast",
+        "wet",
+        "water",
+        "riparian",
+        "耐盐",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.hongshu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2,
+        "trunk": 0.9,
+        "trunkRadius": 0.09,
+        "canopy": 0.9,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.hongshu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.8,
+        "trunk": 2.1,
+        "trunkRadius": 0.2,
+        "canopy": 2.1,
+        "limbLength": 1.2,
+        "spread": 1.2,
+        "stems": 5
+      }
+    },
+    {
+      "id": "shu.hongshu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 8
+      }
+    },
+    {
+      "id": "shu.hongshu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 7,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.hongshu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 6.8,
+        "trunk": 3,
+        "trunkRadius": 0.3,
+        "canopy": 3,
+        "limbLength": 1.8,
+        "snow": 0
+      }
+    }
+  ]
+}

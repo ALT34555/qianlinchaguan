@@ -1,25 +1,35 @@
-userdata\mods\fonts\NanoOldSongA-Regular.ttf - https://github.com/Hansha2011/NanoOldSong
-userdata\mods\fonts\ResourceHanRoundedCN-Medium.ttf - https://github.com/CyanoHao/Resource-Han-Rounded
-content\maps\earth\land.json (Natural Earth 1:110m land 海岸距离场) - https://github.com/nvkelso/natural-earth-vector
-node_modules\three - https://github.com/mrdoob/three.js
-node_modules\simplex-noise - https://github.com/jwagner/simplex-noise.js
-node_modules\vite - https://github.com/vitejs/vite
-node_modules\typescript - https://github.com/microsoft/TypeScript
-node_modules\@types\three - https://github.com/three-types/three-ts-types
-node_modules\electron - https://github.com/electron/electron
-node_modules\@electron\packager - https://github.com/electron/packager
-node_modules\@types\node - https://github.com/DefinitelyTyped/DefinitelyTyped
-src\core\math\Random.ts (mulberry32) - https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
-src\systems\calendar\ (astronomia 的 sun / moon / deltat 级数参考，MIT，用于校对系数) - https://github.com/commenthol/astronomia
-src\systems\calendar\ChineseCalendar.ts (置闰规则与"朔近午夜"特例参考其说明文档，未使用其代码与数据表) - https://github.com/ytliu0/ChineseCalendar
-src\systems\calendar\JulianDay.ts (ΔT 分段多项式，Espenak & Meeus / NASA 日食目录) - https://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html
-platforms\windows\launcher.mjs (Node.js 内置 http/fs/crypto，仅监听回环地址的本地存档服务) - https://github.com/nodejs/node
-platforms\windows\make-icon.py (Pillow 生成 qianlin.ico，仅生成图标时需要) - https://github.com/python-pillow/Pillow
+# 第三方资源与参考清单
 
-# ---- 程序化生成资源说明（纯代码与参数表生成，未引入外部模型与贴图）----
-content\assets\models\plants\ (低模植物): 49 物种全部几何由 src/systems/world/vegetation/ 程序化生成，
-  色板色值取自 content/data/world/plants/palettes.json，没有使用任何外部模型或贴图。
-content\assets\models\rocks\ (低模岩石): 9 个岩石单位的原型几何全部由 src/systems/world/rocks/ 程序化生成，
-  色板色值取自 content/data/world/rocks/palettes.json 与 blocks.json，没有使用任何外部模型或贴图。
-content\assets\models\flags\ (低模旗帜与旗杆): 7 种旗形、3 种杆型与 4 种挂载方式的几何
-  全部由 src/systems/world/flags/ 程序化生成，旗面波形与下垂为解析数学函数，没有使用任何外部模型或贴图。
+## 运行时依赖
+
+无第三方运行库。`qianlinchaguan.exe` 仅链接 Windows 自带组件：
+
+| 组件 | 用途 |
+| :--- | :--- |
+| `USER32` / `GDI32` / `IMM32` | 窗口、消息、文字烘焙与输入法 |
+| `OPENGL32` | OpenGL 3.3 Core 渲染 |
+| `ole32` + `windowscodecs` | COM 入口与 WIC 图片解码（PNG） |
+| `KERNEL32` / `ADVAPI32` | 文件、时钟与系统信息 |
+
+C 运行时静态链接（`/MT`），不需要 VC++ 运行库；不使用 .NET、Node.js、Electron 或 WebView。
+
+## 字体（可选外置 Mod，不随仓库分发）
+
+程序启动与设置页「重新扫描」时枚举 `userdata/mods/fonts/`，未放置字体时回退系统字体。
+
+- Resource Han Rounded（资源圆体）— SIL OFL 1.1 — <https://github.com/CyanoHao/Resource-Han-Rounded>
+- NanoOldSong（纳米老宋）— SIL OFL 1.1 — <https://github.com/Hansha2011/NanoOldSong>
+- LXGW WenKai（霞鹜文楷）— SIL OFL 1.1 — <https://github.com/lxgw/LxgwWenKai>
+
+## 语言包（可选外置 Mod）
+
+`userdata/mods/l10n/ja/` 为日语示例包，格式见该目录 `README.md`；词条由本项目自行翻译。内置中文与英文不依赖外置文件。
+
+## 算法与数据参考
+
+- 世界生成、湖岸与岛形、海岸模板、植物与岩石形态、冰与冻融模型：全部由本项目程序化生成；`content/` 下只有参数表，没有外部模型或贴图。
+- 历法：公历 / 农历 / 元历三历并轨，定朔与置闰规则按中国天文年历实现。
+- ΔT 分段多项式：Espenak & Meeus / NASA 日食目录 — <https://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html>
+- 天体位置与食相级数：参考 astronomia（MIT）的实现思路 — <https://github.com/commenthol/astronomia>
+- 界面配色：OKLab 空间色混合，语义对齐 CSS Color Module Level 4 的 `color-mix()`。
+- 世界规则与视觉标杆：同项目 Web/TypeScript 基准版（0.2.0 及更早版本存于本仓库 Git 历史）。

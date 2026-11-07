@@ -1,0 +1,3 @@
+/* 应用图标：茶杯 */
+#include "src/app/app_icon.h"
+IDI_APP_ICON ICON "content\\assets\\ui\\icons\\teacup.ico"

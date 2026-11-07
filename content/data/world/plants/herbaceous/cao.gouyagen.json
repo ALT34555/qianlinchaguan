@@ -1,0 +1,87 @@
+{
+  "plants": [
+    {
+      "id": "cao.gouyagen",
+      "archetype": "grassClump",
+      "climate": "tropical",
+      "name": "狗牙根",
+      "latin": "Gouyagen",
+      "seed": 61,
+      "params": {
+        "height": 0.45,
+        "blades": 12,
+        "spread": 0.48,
+        "bloomCount": 3,
+        "petals": 2,
+        "fruitCount": 3,
+        "snow": 0,
+        "form": "tuft"
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "bloom": "grainPale",
+        "fruit": "grain"
+      },
+      "tags": [
+        "ground",
+        "arid",
+        "tropical",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.gouyagen@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.11,
+        "spread": 0.12,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.gouyagen@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.25,
+        "spread": 0.26
+      }
+    },
+    {
+      "id": "cao.gouyagen@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "cao.gouyagen@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 4,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.gouyagen@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.37,
+        "spread": 0.39,
+        "snow": 0
+      }
+    }
+  ]
+}

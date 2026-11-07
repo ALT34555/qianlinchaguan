@@ -1,0 +1,10 @@
+{
+  "max_slope_degrees": 60,
+  "shrub_speed_factor": 0.65,
+  "fade_seconds": 1,
+  "pulse_seconds": 2.4,
+  "pulse_depth": 0.15,
+  "feedback_height": 0.2,
+  "feedback_opacity": 0.8,
+  "feedback_rgb": "f2f3f4"
+}

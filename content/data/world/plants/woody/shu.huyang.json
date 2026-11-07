@@ -1,0 +1,116 @@
+{
+  "plants": [
+    {
+      "id": "shu.huyang",
+      "archetype": "broadleaf",
+      "climate": "temperate",
+      "name": "胡杨",
+      "latin": "Huyang",
+      "seed": 31,
+      "scale": 0.72,
+      "params": {
+        "height": 11.5,
+        "trunk": 4.8,
+        "trunkRadius": 0.56,
+        "canopy": 4.3,
+        "canopyRatio": 0.46,
+        "blobs": 7,
+        "limbCount": 5,
+        "limbLength": 2.7,
+        "branchAngle": 0.65,
+        "lean": 0.14,
+        "jitter": 0.24,
+        "bloomCount": 5,
+        "petals": 4,
+        "fruitCount": 4,
+        "snow": 0.18,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "irregular",
+        "leafShape": "lance",
+        "barkRidges": 3
+      },
+      "palette": {
+        "bark": "barkPale",
+        "barkLight": "barkWarm",
+        "foliage": "poplarGold",
+        "foliageDark": "foliageDark",
+        "canopy": "poplarGold",
+        "bloom": "bloomGold",
+        "fruit": "grain"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "arid",
+        "riparian",
+        "autumn_color",
+        "timber",
+        "耐盐",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.huyang@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.6,
+        "trunk": 1.15,
+        "trunkRadius": 0.13,
+        "canopy": 1,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.huyang@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 6.3,
+        "trunk": 2.6,
+        "trunkRadius": 0.31,
+        "canopy": 2.4,
+        "limbLength": 1.5,
+        "snow": 0.1
+      }
+    },
+    {
+      "id": "shu.huyang@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shu.huyang@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "shu.huyang@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 9.2,
+        "trunk": 3.9,
+        "trunkRadius": 0.48,
+        "canopy": 3.4,
+        "limbLength": 2.2,
+        "snow": 0
+      }
+    }
+  ]
+}

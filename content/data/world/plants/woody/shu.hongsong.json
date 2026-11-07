@@ -1,0 +1,67 @@
+{
+  "plants": [
+    {
+      "id": "shu.hongsong",
+      "archetype": "conifer",
+      "climate": "cold",
+      "name": "红松",
+      "latin": "hongsong",
+      "seed": 105,
+      "tags": [
+        "tree",
+        "conifer",
+        "timber",
+        "snow",
+        "耐寒"
+      ],
+      "params": {
+        "height": 18,
+        "trunk": 7,
+        "trunkRadius": 0.65,
+        "canopy": 4.2,
+        "layers": 5,
+        "limbCount": 3,
+        "crownStyle": "pine",
+        "snow": 0.28,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ]
+      },
+      "palette": {
+        "bark": "barkWarm",
+        "barkLight": "barkLight",
+        "foliage": "coniferDark",
+        "foliageDark": "coniferDeep"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.hongsong@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.hongsong@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.hongsong@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.hongsong@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "shu.hongsong@withered",
+      "state": "withered"
+    }
+  ]
+}

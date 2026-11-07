@@ -1,0 +1,89 @@
+{
+  "plants": [
+    {
+      "id": "cao.bamao",
+      "archetype": "grassClump",
+      "climate": "tropical",
+      "name": "芭茅",
+      "latin": "Bamao",
+      "seed": 62,
+      "params": {
+        "height": 1.35,
+        "blades": 10,
+        "spread": 0.55,
+        "bloomCount": 5,
+        "bloomRadius": 0.14,
+        "petals": 2,
+        "fruitCount": 4,
+        "snow": 0,
+        "form": "tall",
+        "flowerStyle": "spike"
+      },
+      "palette": {
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "bloom": "grainPale",
+        "fruit": "grain"
+      },
+      "tags": [
+        "ground",
+        "tall",
+        "tropical",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.bamao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.32,
+        "spread": 0.13,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.bamao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.74,
+        "spread": 0.3
+      }
+    },
+    {
+      "id": "cao.bamao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "cao.bamao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.bamao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.1,
+        "spread": 0.45,
+        "snow": 0
+      }
+    }
+  ]
+}

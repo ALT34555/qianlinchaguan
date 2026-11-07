@@ -1,0 +1,76 @@
+{
+  "colors": {
+    "blue": {"body": "#586f77", "band": "#3d535d", "cap": "#81949a", "base": "#3e5057"},
+    "coolGray": {"body": "#81878d", "band": "#616971", "cap": "#a6adb3", "base": "#626970"},
+    "warmGray": {"body": "#8c8277", "band": "#6c6258", "cap": "#b0a495", "base": "#6f6458"},
+    "coolWhite": {"body": "#c1c8cd", "band": "#949fa8", "cap": "#e1e7eb", "base": "#9ba5ac"},
+    "warmWhite": {"body": "#c9bba1", "band": "#a4967f", "cap": "#e9ddc5", "base": "#a79980"},
+    "black": {"body": "#3a3c40", "band": "#24272b", "cap": "#555a60", "base": "#26282b"}
+  },
+  "cliffs": [
+    {
+      "id": "rock.mega.basalt-organ", "name": "管风琴壁",
+      "seed": 9109, "heightMeters": 48,
+      "params": {
+        "widthRatio": 1.16, "depthRatio": 0.49, "taper": 0.2, "shoulder": 0.01, "crown": 0.2, "sink": 0.51,
+        "lean": 0.04, "twist": 0.07, "fracture": 0.17, "bedding": 0.027, "sides": 12, "tiers": 22, "beds": 7, "ribs": 4, "relief": 0.96
+      }
+    },
+    {
+      "id": "rock.mega.red-scarp", "name": "层叠长崖",
+      "seed": 9240, "heightMeters": 42,
+      "params": {
+        "widthRatio": 1.86, "depthRatio": 0.58, "taper": 0.31, "shoulder": 0.2, "crown": 0.29, "sink": 0.52,
+        "lean": 0.12, "twist": -0.13, "fracture": 0.21, "bedding": 0.035, "sides": 14, "tiers": 24, "beds": 9, "ribs": 3, "relief": 0.59
+      }
+    },
+    {
+      "id": "rock.mega.limestone-buttress", "name": "飞扶壁",
+      "seed": 9371, "heightMeters": 54,
+      "params": {
+        "widthRatio": 1.15, "depthRatio": 0.66, "taper": 0.54, "shoulder": 0.05, "crown": 0.29, "sink": 0.59,
+        "lean": -0.23, "twist": 0.14, "fracture": 0.34, "bedding": 0.1, "sides": 13, "tiers": 23, "beds": 6, "ribs": 3, "relief": 0.77
+      }
+    },
+    {
+      "id": "rock.mega.slate-fault", "name": "斜裂断崖",
+      "seed": 9502, "heightMeters": 46,
+      "params": {
+        "widthRatio": 1.28, "depthRatio": 0.43, "taper": 0.39, "shoulder": -0.13, "crown": 0.46, "sink": 0.48,
+        "lean": 0.53, "twist": 0.16, "fracture": 0.37, "bedding": 0.14, "sides": 11, "tiers": 21, "beds": 8, "ribs": 2, "relief": 0.83
+      }
+    },
+    {
+      "id": "rock.mega.granite-fort", "name": "岩堡壁",
+      "seed": 9633, "heightMeters": 58,
+      "params": {
+        "widthRatio": 1.43, "depthRatio": 0.62, "taper": 0.15, "shoulder": 0.16, "crown": 0.24, "sink": 0.53,
+        "lean": -0.08, "twist": 0.07, "fracture": 0.27, "bedding": 0.05, "sides": 14, "tiers": 24, "beds": 5, "ribs": 4, "relief": 0.72
+      }
+    },
+    {
+      "id": "rock.mega.chalk-bay", "name": "弧形崖壁",
+      "seed": 9764, "heightMeters": 34,
+      "params": {
+        "widthRatio": 1.74, "depthRatio": 0.74, "taper": 0.35, "shoulder": 0.32, "crown": 0.48, "sink": 0.45,
+        "lean": 0.1, "twist": -0.1, "fracture": 0.18, "bedding": 0.035, "sides": 16, "tiers": 20, "beds": 5, "ribs": 2, "relief": 0.52
+      }
+    },
+    {
+      "id": "rock.mega.quartz-fins", "name": "双翼壁",
+      "seed": 9895, "heightMeters": 52,
+      "params": {
+        "widthRatio": 0.99, "depthRatio": 0.45, "taper": 0.61, "shoulder": 0.02, "crown": 0.57, "sink": 0.55,
+        "lean": -0.33, "twist": 0.44, "fracture": 0.32, "bedding": 0.12, "sides": 11, "tiers": 22, "beds": 7, "ribs": 2, "relief": 0.95
+      }
+    },
+    {
+      "id": "rock.mega.travertine-steps", "name": "阶瀑壁",
+      "seed": 10026, "heightMeters": 32,
+      "params": {
+        "widthRatio": 1.89, "depthRatio": 0.76, "taper": 0.42, "shoulder": 0.21, "crown": 0.12, "sink": 0.44,
+        "lean": 0.18, "twist": 0.23, "fracture": 0.24, "bedding": 0.064, "sides": 13, "tiers": 23, "beds": 8, "ribs": 4, "relief": 0.47
+      }
+    }
+  ]
+}

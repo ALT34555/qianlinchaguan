@@ -1,0 +1,92 @@
+{
+  "plants": [
+    {
+      "id": "cao.jiji",
+      "archetype": "grassClump",
+      "climate": "temperate",
+      "name": "芨芨草",
+      "latin": "Jijicao",
+      "seed": 40,
+      "params": {
+        "height": 1.15,
+        "blades": 11,
+        "spread": 0.48,
+        "bloomCount": 4,
+        "petals": 2,
+        "fruitCount": 5,
+        "snow": 0.12,
+        "snowOn": [
+          "ground"
+        ],
+        "form": "tall",
+        "flowerStyle": "spike"
+      },
+      "palette": {
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "grainPale",
+        "fruit": "grain"
+      },
+      "tags": [
+        "ground",
+        "arid",
+        "耐盐",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "cao.jiji@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.28,
+        "spread": 0.14,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "cao.jiji@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.63,
+        "spread": 0.26,
+        "snow": 0.06
+      }
+    },
+    {
+      "id": "cao.jiji@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "cao.jiji@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 6,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "cao.jiji@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.94,
+        "spread": 0.39,
+        "snow": 0
+      }
+    }
+  ]
+}

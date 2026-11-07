@@ -1,0 +1,110 @@
+{
+  "plants": [
+    {
+      "id": "shu.lizhi",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "荔枝",
+      "latin": "Lizhi",
+      "seed": 72,
+      "scale": 0.76,
+      "params": {
+        "height": 8.2,
+        "trunk": 3.6,
+        "trunkRadius": 0.38,
+        "canopy": 3.8,
+        "canopyRatio": 0.52,
+        "blobs": 8,
+        "limbCount": 4,
+        "limbLength": 2.2,
+        "branchAngle": 0.72,
+        "bloomCount": 6,
+        "bloomRadius": 0.1,
+        "petals": 4,
+        "fruitCount": 8,
+        "fruitRadius": 0.12,
+        "fruitScale": 1.25,
+        "snow": 0,
+        "form": "round",
+        "leafShape": "lance",
+        "fruitStyle": "cluster"
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "bark",
+        "foliage": "foliageDark",
+        "foliageDark": "foliageDeep",
+        "canopy": "foliageDark",
+        "bloom": "pollen",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "fruit",
+        "evergreen",
+        "耐热",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.lizhi@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.7,
+        "trunk": 0.8,
+        "trunkRadius": 0.08,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.lizhi@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 4.5,
+        "trunk": 2,
+        "trunkRadius": 0.21,
+        "canopy": 2.1,
+        "limbLength": 1.2
+      }
+    },
+    {
+      "id": "shu.lizhi@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 8
+      }
+    },
+    {
+      "id": "shu.lizhi@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 10,
+        "fruitScale": 1.25
+      }
+    },
+    {
+      "id": "shu.lizhi@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 6.6,
+        "trunk": 2.9,
+        "trunkRadius": 0.31,
+        "canopy": 3,
+        "snow": 0
+      }
+    }
+  ]
+}

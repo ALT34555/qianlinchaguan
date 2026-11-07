@@ -1,0 +1,103 @@
+{
+  "plants": [
+    {
+      "id": "shu.bajiao",
+      "archetype": "palm",
+      "climate": "tropical",
+      "name": "芭蕉",
+      "latin": "Bajiao",
+      "seed": 54,
+      "scale": 0.72,
+      "params": {
+        "height": 6.8,
+        "trunk": 4.8,
+        "trunkRadius": 0.32,
+        "canopy": 3.6,
+        "fronds": 6,
+        "frondLength": 3.6,
+        "droop": 0.62,
+        "segments": 5,
+        "lean": 0.06,
+        "bloomCount": 4,
+        "fruitCount": 5,
+        "fruitRadius": 0.16,
+        "snow": 0,
+        "form": "paddle"
+      },
+      "palette": {
+        "bark": "bamboo",
+        "barkLight": "foliage",
+        "palmFrond": "jungle",
+        "foliageDark": "jungleDark",
+        "bloom": "bloomWarm",
+        "fruit": "fruitYellow"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "fruit",
+        "tropical",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.bajiao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.5,
+        "trunk": 0.8,
+        "trunkRadius": 0.07,
+        "canopy": 0.7,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.bajiao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 3.7,
+        "trunk": 2.6,
+        "trunkRadius": 0.18,
+        "canopy": 2,
+        "frondLength": 2
+      }
+    },
+    {
+      "id": "shu.bajiao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shu.bajiao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 6,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.bajiao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 5.5,
+        "trunk": 3.9,
+        "trunkRadius": 0.26,
+        "canopy": 2.9,
+        "snow": 0
+      }
+    }
+  ]
+}

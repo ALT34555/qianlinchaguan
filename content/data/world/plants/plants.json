@@ -64,10 +64,9 @@
       "climate": "cold",
       "archetype": "conifer",
       "tags": [
-        "tree",
-        "conifer",
-        "timber",
-        "snow"
+        "naihan_0",
+        "mucai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -86,10 +85,9 @@
       "climate": "cold",
       "archetype": "conifer",
       "tags": [
-        "tree",
-        "conifer",
-        "timber",
-        "snow"
+        "naihan_0",
+        "mucai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -108,10 +106,9 @@
       "climate": "cold",
       "archetype": "conifer",
       "tags": [
-        "tree",
-        "conifer",
-        "autumn_color",
-        "snow"
+        "naihan_0",
+        "mucai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -130,9 +127,9 @@
       "climate": "cold",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "pioneer",
-        "snow"
+        "naihan_0",
+        "chai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -151,10 +148,10 @@
       "climate": "temperate",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "canopy",
-        "fruit",
-        "timber"
+        "kaihua",
+        "jieguo",
+        "mucai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -173,9 +170,8 @@
       "climate": "temperate",
       "archetype": "conifer",
       "tags": [
-        "tree",
-        "conifer",
-        "timber"
+        "mucai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -194,9 +190,8 @@
       "climate": "temperate",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "ornamental",
-        "autumn_color"
+        "chai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -215,10 +210,10 @@
       "climate": "temperate",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "ornamental",
-        "autumn_color",
-        "fruit"
+        "kaihua",
+        "jieguo",
+        "chai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -231,14 +226,16 @@
       "file": "woody/shu.yinxing.json"
     },
     {
-      "id": "shu.chuilui",
+      "id": "shu.chuiliu",
       "name": "垂柳",
       "latin": "chuiliu",
       "climate": "temperate",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "riparian"
+        "nailao_2",
+        "chai",
+        "guzhuo",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -248,7 +245,7 @@
         "fruiting",
         "withered"
       ],
-      "file": "woody/shu.chuilui.json"
+      "file": "woody/shu.chuiliu.json"
     },
     {
       "id": "shu.baigan",
@@ -257,8 +254,8 @@
       "climate": "temperate",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "pioneer"
+        "chai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -277,9 +274,8 @@
       "climate": "subtropical",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "canopy",
-        "timber"
+        "mucai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -298,11 +294,8 @@
       "climate": "subtropical",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "crop",
-        "cash_crop",
-        "flowering",
-        "fruit"
+        "kaihua",
+        "chai"
       ],
       "states": [
         "normal",
@@ -321,9 +314,8 @@
       "climate": "subtropical",
       "archetype": "conifer",
       "tags": [
-        "tree",
-        "conifer",
-        "timber"
+        "mucai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -342,9 +334,9 @@
       "climate": "subtropical",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "orchard",
-        "fruit"
+        "kaihua",
+        "jieguo",
+        "chai"
       ],
       "states": [
         "normal",
@@ -363,9 +355,9 @@
       "climate": "subtropical",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "flowering",
-        "timber"
+        "kaihua",
+        "mucai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -378,15 +370,13 @@
       "file": "woody/shu.paotong.json"
     },
     {
-      "id": "shu.maozhu",
+      "id": "cao.maozhu",
       "name": "毛竹",
       "latin": "maozhu",
       "climate": "subtropical",
       "archetype": "bamboo",
       "tags": [
-        "bamboo",
-        "grove",
-        "timber"
+        "mucai"
       ],
       "states": [
         "normal",
@@ -396,7 +386,7 @@
         "fruiting",
         "withered"
       ],
-      "file": "woody/shu.maozhu.json"
+      "file": "herbaceous/cao.maozhu.json"
     },
     {
       "id": "shu.longnao",
@@ -405,10 +395,9 @@
       "climate": "tropical",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "canopy",
-        "jungle",
-        "timber"
+        "naire_1",
+        "mucai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -427,10 +416,10 @@
       "climate": "tropical",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "canopy",
-        "jungle",
-        "flowering"
+        "naire_1",
+        "kaihua",
+        "chai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -449,10 +438,11 @@
       "climate": "tropical",
       "archetype": "palm",
       "tags": [
-        "tree",
-        "palm",
-        "coast",
-        "fruit"
+        "naire_1",
+        "naiyan_2",
+        "kaihua",
+        "jieguo",
+        "chai"
       ],
       "states": [
         "normal",
@@ -471,10 +461,10 @@
       "climate": "tropical",
       "archetype": "palm",
       "tags": [
-        "tree",
-        "palm",
-        "fruit",
-        "cash_crop"
+        "naire_1",
+        "kaihua",
+        "jieguo",
+        "chai"
       ],
       "states": [
         "normal",
@@ -493,9 +483,11 @@
       "climate": "tropical",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "fruit",
-        "orchard"
+        "naire_1",
+        "kaihua",
+        "jieguo",
+        "chai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -514,9 +506,10 @@
       "climate": "tropical",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "flowering",
-        "ornamental"
+        "naire_1",
+        "kaihua",
+        "chai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -535,9 +528,9 @@
       "climate": "temperate",
       "archetype": "shrub",
       "tags": [
-        "shrub",
-        "understory",
-        "fruit"
+        "kaihua",
+        "jieguo",
+        "chai"
       ],
       "states": [
         "normal",
@@ -556,10 +549,8 @@
       "climate": "temperate",
       "archetype": "shrub",
       "tags": [
-        "shrub",
-        "flowering",
-        "ornamental",
-        "medicine"
+        "kaihua",
+        "chai"
       ],
       "states": [
         "normal",
@@ -578,9 +569,7 @@
       "climate": "temperate",
       "archetype": "shrub",
       "tags": [
-        "shrub",
-        "ornamental",
-        "autumn_color"
+        "chai"
       ],
       "states": [
         "normal",
@@ -599,10 +588,8 @@
       "climate": "subtropical",
       "archetype": "shrub",
       "tags": [
-        "shrub",
-        "flowering",
-        "ornamental",
-        "fragrant"
+        "kaihua",
+        "chai"
       ],
       "states": [
         "normal",
@@ -621,10 +608,8 @@
       "climate": "subtropical",
       "archetype": "shrub",
       "tags": [
-        "shrub",
-        "flowering",
-        "ornamental",
-        "fragrant"
+        "kaihua",
+        "chai"
       ],
       "states": [
         "normal",
@@ -643,9 +628,8 @@
       "climate": "subtropical",
       "archetype": "shrub",
       "tags": [
-        "shrub",
-        "flowering",
-        "ornamental"
+        "kaihua",
+        "chai"
       ],
       "states": [
         "normal",
@@ -664,9 +648,9 @@
       "climate": "tropical",
       "archetype": "shrub",
       "tags": [
-        "shrub",
-        "flowering",
-        "ornamental"
+        "naire_2",
+        "kaihua",
+        "chai"
       ],
       "states": [
         "normal",
@@ -685,10 +669,9 @@
       "climate": "temperate",
       "archetype": "bramble",
       "tags": [
-        "shrub",
-        "berry",
-        "thorny",
-        "fruit"
+        "kaihua",
+        "jieguo",
+        "chai"
       ],
       "states": [
         "normal",
@@ -707,11 +690,10 @@
       "climate": "cold",
       "archetype": "shrub",
       "tags": [
-        "shrub",
-        "berry",
-        "understory",
-        "fruit",
-        "snow"
+        "naihan_1",
+        "kaihua",
+        "jieguo",
+        "chai"
       ],
       "states": [
         "normal",
@@ -730,9 +712,8 @@
       "climate": "cold",
       "archetype": "shrub",
       "tags": [
-        "shrub",
-        "tundra",
-        "snow"
+        "naihan_0",
+        "chai"
       ],
       "states": [
         "normal",
@@ -750,9 +731,7 @@
       "latin": "yangmaocao",
       "climate": "temperate",
       "archetype": "grassClump",
-      "tags": [
-        "ground"
-      ],
+      "tags": [],
       "states": [
         "normal",
         "seedling",
@@ -769,10 +748,7 @@
       "latin": "jue",
       "climate": "temperate",
       "archetype": "grassClump",
-      "tags": [
-        "ground",
-        "understory"
-      ],
+      "tags": [],
       "states": [
         "normal",
         "seedling",
@@ -790,9 +766,7 @@
       "climate": "cold",
       "archetype": "succulent",
       "tags": [
-        "ground",
-        "tundra",
-        "snow"
+        "naihan_0"
       ],
       "states": [
         "normal",
@@ -811,9 +785,8 @@
       "climate": "tropical",
       "archetype": "succulent",
       "tags": [
-        "shrub",
-        "arid",
-        "succulent"
+        "naire_0",
+        "naigan_0"
       ],
       "states": [
         "normal",
@@ -832,9 +805,7 @@
       "climate": "subtropical",
       "archetype": "bramble",
       "tags": [
-        "shrub",
-        "arid",
-        "thorny"
+        "naigan_2"
       ],
       "states": [
         "normal",
@@ -853,9 +824,8 @@
       "climate": "subtropical",
       "archetype": "grassClump",
       "tags": [
-        "water",
-        "wet",
-        "ground"
+        "nailao_1",
+        "guzhuo"
       ],
       "states": [
         "normal",
@@ -874,9 +844,11 @@
       "climate": "subtropical",
       "archetype": "succulent",
       "tags": [
-        "water",
-        "wet",
-        "flowering"
+        "nailao_0",
+        "kaihua",
+        "jieguo",
+        "guzhuo",
+        "fushui"
       ],
       "states": [
         "normal",
@@ -895,10 +867,8 @@
       "climate": "subtropical",
       "archetype": "reed",
       "tags": [
-        "water",
-        "wet",
-        "riparian",
-        "ground"
+        "nailao_1",
+        "guzhuo"
       ],
       "states": [
         "normal",
@@ -917,10 +887,8 @@
       "climate": "subtropical",
       "archetype": "reed",
       "tags": [
-        "water",
-        "wet",
-        "riparian",
-        "ground"
+        "nailao_1",
+        "guzhuo"
       ],
       "states": [
         "normal",
@@ -939,11 +907,8 @@
       "climate": "subtropical",
       "archetype": "reed",
       "tags": [
-        "water",
-        "wet",
-        "riparian",
-        "ground",
-        "grove"
+        "nailao_1",
+        "guzhuo"
       ],
       "states": [
         "normal",
@@ -962,11 +927,8 @@
       "climate": "subtropical",
       "archetype": "waterweed",
       "tags": [
-        "water",
-        "wet",
-        "submerged",
-        "riverbed",
-        "ribbon"
+        "guzhuo",
+        "chenshui"
       ],
       "states": [
         "normal",
@@ -985,11 +947,8 @@
       "climate": "temperate",
       "archetype": "waterweed",
       "tags": [
-        "water",
-        "wet",
-        "riparian",
-        "ground",
-        "sword"
+        "nailao_1",
+        "guzhuo"
       ],
       "states": [
         "normal",
@@ -1008,11 +967,9 @@
       "climate": "temperate",
       "archetype": "floatingPad",
       "tags": [
-        "water",
-        "wet",
-        "riparian",
-        "flowering",
-        "floating"
+        "nailao_0",
+        "kaihua",
+        "fushui"
       ],
       "states": [
         "normal",
@@ -1031,11 +988,10 @@
       "climate": "subtropical",
       "archetype": "grassClump",
       "tags": [
-        "crop",
-        "staple",
-        "ground",
-        "farm",
-        "wet"
+        "naire_2",
+        "nailao_1",
+        "kaihua",
+        "jieguo"
       ],
       "states": [
         "normal",
@@ -1054,10 +1010,10 @@
       "climate": "temperate",
       "archetype": "grassClump",
       "tags": [
-        "crop",
-        "staple",
-        "ground",
-        "farm"
+        "naihan_1",
+        "naigan_2",
+        "kaihua",
+        "jieguo"
       ],
       "states": [
         "normal",
@@ -1076,11 +1032,10 @@
       "climate": "temperate",
       "archetype": "grassClump",
       "tags": [
-        "crop",
-        "staple",
-        "ground",
-        "farm",
-        "arid"
+        "naire_2",
+        "naigan_2",
+        "kaihua",
+        "jieguo"
       ],
       "states": [
         "normal",
@@ -1099,10 +1054,8 @@
       "climate": "temperate",
       "archetype": "shrub",
       "tags": [
-        "crop",
-        "oil_crop",
-        "farm",
-        "fruit"
+        "kaihua",
+        "jieguo"
       ],
       "states": [
         "normal",
@@ -1121,11 +1074,13 @@
       "climate": "temperate",
       "archetype": "broadleaf",
       "tags": [
-        "tree",
-        "crop",
-        "cash_crop",
-        "fruit",
-        "orchard"
+        "naihan_2",
+        "naire_2",
+        "naigan_2",
+        "kaihua",
+        "jieguo",
+        "chai",
+        "shuguan"
       ],
       "states": [
         "normal",
@@ -1144,10 +1099,7 @@
       "climate": "temperate",
       "archetype": "blossomTree",
       "tags": [
-        "ornamental",
-        "flowering",
-        "shrub",
-        "zhongguo_sijunzi"
+        "kaihua"
       ],
       "states": [
         "normal",
@@ -1166,10 +1118,7 @@
       "climate": "subtropical",
       "archetype": "orchid",
       "tags": [
-        "ornamental",
-        "flowering",
-        "ground",
-        "zhongguo_sijunzi"
+        "kaihua"
       ],
       "states": [
         "normal",
@@ -1187,11 +1136,7 @@
       "latin": "tingzhu",
       "climate": "subtropical",
       "archetype": "bamboo",
-      "tags": [
-        "ornamental",
-        "bamboo",
-        "zhongguo_sijunzi"
-      ],
+      "tags": [],
       "states": [
         "normal",
         "seedling",
@@ -1209,10 +1154,7 @@
       "climate": "temperate",
       "archetype": "shrub",
       "tags": [
-        "ornamental",
-        "flowering",
-        "ground",
-        "zhongguo_sijunzi"
+        "kaihua"
       ],
       "states": [
         "normal",

@@ -1,0 +1,99 @@
+{
+  "plants": [
+    {
+      "id": "shu.houmianbao",
+      "archetype": "baobab",
+      "climate": "tropical",
+      "name": "猴面包树",
+      "latin": "Houmianbaoshu",
+      "seed": 51,
+      "scale": 0.85,
+      "params": {
+        "height": 9.8,
+        "trunk": 5.4,
+        "trunkRadius": 1.25,
+        "canopy": 3.4,
+        "limbCount": 6,
+        "branchAngle": 0.85,
+        "bloomCount": 4,
+        "fruitCount": 4,
+        "snow": 0
+      },
+      "palette": {
+        "bark": "barkLight",
+        "barkLight": "barkPale",
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "bloom": "bloomWhite",
+        "fruit": "fruitPale"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "arid",
+        "tropical",
+        "timber",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.houmianbao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.8,
+        "trunk": 0.9,
+        "trunkRadius": 0.22,
+        "canopy": 0.7,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.houmianbao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5.4,
+        "trunk": 2.9,
+        "trunkRadius": 0.68,
+        "canopy": 1.9,
+        "limbLength": 1.4
+      }
+    },
+    {
+      "id": "shu.houmianbao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shu.houmianbao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.houmianbao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 8,
+        "trunk": 4.4,
+        "trunkRadius": 1,
+        "canopy": 2.7,
+        "snow": 0
+      }
+    }
+  ]
+}

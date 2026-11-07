@@ -1,0 +1,112 @@
+{
+  "plants": [
+    {
+      "id": "shu.zishu",
+      "archetype": "broadleaf",
+      "climate": "subtropical",
+      "name": "梓树",
+      "latin": "Zishu",
+      "seed": 84,
+      "scale": 0.78,
+      "params": {
+        "height": 10.5,
+        "trunk": 4.8,
+        "trunkRadius": 0.4,
+        "canopy": 4.2,
+        "canopyRatio": 0.48,
+        "blobs": 8,
+        "limbCount": 5,
+        "limbLength": 2.6,
+        "branchAngle": 0.7,
+        "bloomCount": 10,
+        "bloomRadius": 0.18,
+        "petals": 5,
+        "fruitCount": 6,
+        "fruitRadius": 0.08,
+        "snow": 0.15,
+        "snowOn": [
+          "canopy"
+        ],
+        "form": "vase",
+        "leafShape": "oval",
+        "flowerStyle": "panicle",
+        "fruitStyle": "pod"
+      },
+      "palette": {
+        "bark": "barkDark",
+        "barkLight": "bark",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "bloom": "bloomWhite",
+        "fruit": "beanPod"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "flowering",
+        "timber"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.zishu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.1,
+        "trunk": 1,
+        "trunkRadius": 0.08,
+        "canopy": 0.85,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.zishu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5.8,
+        "trunk": 2.6,
+        "trunkRadius": 0.22,
+        "canopy": 2.3,
+        "limbLength": 1.4,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.zishu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 14
+      }
+    },
+    {
+      "id": "shu.zishu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 8,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.zishu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 8.4,
+        "trunk": 3.8,
+        "trunkRadius": 0.32,
+        "canopy": 3.4,
+        "snow": 0
+      }
+    }
+  ]
+}

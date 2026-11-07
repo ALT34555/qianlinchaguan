@@ -1,6 +1,6 @@
 {
   "plants": [
-    {"id":"shu.ganju","archetype":"broadleaf","climate":"subtropical","name":"柑橘","latin":"ganju","seed":304,"tags":["tree","orchard","fruit"],"params":{"height":5.5,"trunk":2.1,"trunkRadius":0.3,"limbCount":3,"canopy":2.5,"blobs":6,"fruitCount":6},"palette":{"foliage":"canopy","foliageDark":"foliageDark","fruit":"fruitYellow"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"shu.ganju","archetype":"broadleaf","climate":"subtropical","name":"柑橘","latin":"ganju","seed":304,"tags":["kaihua","jieguo","chai"],"params":{"height":5.5,"trunk":2.1,"trunkRadius":0.3,"limbCount":3,"canopy":2.5,"blobs":6,"fruitCount":6},"palette":{"foliage":"canopy","foliageDark":"foliageDark","fruit":"fruitYellow"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
     {"id":"shu.ganju@seedling","state":"seedling"},
     {"id":"shu.ganju@subadult","state":"subadult"},
     {"id":"shu.ganju@flowering","state":"flowering"},

@@ -1,0 +1,92 @@
+{
+  "plants": [
+    {
+      "id": "guan.xianrenzhu",
+      "archetype": "succulent",
+      "climate": "tropical",
+      "name": "仙人柱",
+      "latin": "Xianrenzhu",
+      "seed": 58,
+      "params": {
+        "height": 2.1,
+        "spread": 0.58,
+        "layers": 5,
+        "blobs": 4,
+        "thorns": 1,
+        "bloomCount": 3,
+        "petals": 6,
+        "fruitCount": 3,
+        "snow": 0,
+        "form": "column"
+      },
+      "palette": {
+        "foliage": "foliageDark",
+        "foliageDark": "jungleDeep",
+        "thorn": "thorn",
+        "bloom": "bloomWhite",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "shrub",
+        "arid",
+        "succulent",
+        "tropical",
+        "thorny",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.xianrenzhu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.5,
+        "spread": 0.14,
+        "trunkRadius": 0.05,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.xianrenzhu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 1.15,
+        "spread": 0.32
+      }
+    },
+    {
+      "id": "guan.xianrenzhu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 5
+      }
+    },
+    {
+      "id": "guan.xianrenzhu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 4,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "guan.xianrenzhu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.72,
+        "spread": 0.47,
+        "snow": 0
+      }
+    }
+  ]
+}

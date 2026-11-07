@@ -1,0 +1,104 @@
+{
+  "plants": [
+    {
+      "id": "shu.haizao",
+      "archetype": "palm",
+      "climate": "tropical",
+      "name": "海枣",
+      "latin": "Haizao",
+      "seed": 53,
+      "scale": 0.78,
+      "params": {
+        "height": 11.2,
+        "trunk": 9.2,
+        "trunkRadius": 0.34,
+        "canopy": 4.4,
+        "fronds": 10,
+        "frondLength": 4.4,
+        "droop": 0.45,
+        "segments": 7,
+        "lean": 0.12,
+        "bloomCount": 5,
+        "fruitCount": 5,
+        "fruitRadius": 0.14,
+        "snow": 0,
+        "form": "pinnate",
+        "fruitStyle": "hanging"
+      },
+      "palette": {
+        "bark": "barkLight",
+        "barkLight": "barkPale",
+        "palmFrond": "palmFrond",
+        "foliageDark": "foliageDark",
+        "bloom": "bloomGold",
+        "fruit": "fruitYellow"
+      },
+      "tags": [
+        "tree",
+        "fruit",
+        "arid",
+        "tropical",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.haizao@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 2.2,
+        "trunk": 1.2,
+        "trunkRadius": 0.08,
+        "canopy": 0.8,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.haizao@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 6.1,
+        "trunk": 5,
+        "trunkRadius": 0.19,
+        "canopy": 2.4,
+        "frondLength": 2.4
+      }
+    },
+    {
+      "id": "shu.haizao@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shu.haizao@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 6,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.haizao@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 9.1,
+        "trunk": 7.5,
+        "trunkRadius": 0.28,
+        "canopy": 3.5,
+        "snow": 0
+      }
+    }
+  ]
+}

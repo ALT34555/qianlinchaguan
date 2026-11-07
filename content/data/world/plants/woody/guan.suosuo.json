@@ -1,0 +1,104 @@
+{
+  "plants": [
+    {
+      "id": "guan.suosuo",
+      "archetype": "shrub",
+      "climate": "temperate",
+      "name": "梭梭",
+      "latin": "Suosuo",
+      "seed": 36,
+      "params": {
+        "height": 2.2,
+        "canopy": 1.28,
+        "blobs": 5,
+        "stems": 6,
+        "spread": 0.65,
+        "aspect": 1.15,
+        "jitter": 0.26,
+        "bloomCount": 5,
+        "petals": 4,
+        "fruitCount": 4,
+        "snow": 0.15,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ],
+        "form": "sparse",
+        "leafShape": "needle",
+        "twigs": 3
+      },
+      "palette": {
+        "barkLight": "barkPale",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark",
+        "bloom": "bloomGold",
+        "fruit": "grainPale"
+      },
+      "tags": [
+        "shrub",
+        "arid",
+        "pioneer",
+        "耐盐",
+        "耐寒",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.suosuo@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.52,
+        "canopy": 0.3,
+        "spread": 0.16,
+        "trunkRadius": 0.06,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.suosuo@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 1.2,
+        "canopy": 0.7,
+        "spread": 0.36,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "guan.suosuo@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "guan.suosuo@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 5,
+        "fruitScale": 1.18
+      }
+    },
+    {
+      "id": "guan.suosuo@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.8,
+        "canopy": 1.05,
+        "spread": 0.53,
+        "snow": 0
+      }
+    }
+  ]
+}

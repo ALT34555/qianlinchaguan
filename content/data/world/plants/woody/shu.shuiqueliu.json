@@ -1,0 +1,76 @@
+{
+  "plants": [
+    {
+      "id": "shu.shuiqueliu",
+      "archetype": "broadleaf",
+      "climate": "cold",
+      "name": "水曲柳",
+      "latin": "shuiqueliu",
+      "seed": 106,
+      "tags": [
+        "tree",
+        "canopy",
+        "timber",
+        "autumn_color",
+        "snow"
+      ],
+      "params": {
+        "height": 16.5,
+        "trunk": 7.2,
+        "trunkRadius": 0.62,
+        "limbCount": 4,
+        "canopy": 4.5,
+        "blobs": 8,
+        "branchAngle": 0.88,
+        "form": "vase",
+        "leafShape": "lance",
+        "twigs": 4,
+        "rootFlare": 0.35,
+        "barkRidges": 4,
+        "fruitStyle": "hanging",
+        "fruitCount": 4,
+        "snow": 0.22,
+        "snowOn": [
+          "canopy",
+          "ground"
+        ]
+      },
+      "palette": {
+        "bark": "bark",
+        "barkLight": "barkLight",
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "canopy": "canopy",
+        "fruit": "grain"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.shuiqueliu@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "shu.shuiqueliu@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "shu.shuiqueliu@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "shu.shuiqueliu@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "shu.shuiqueliu@withered",
+      "state": "withered"
+    }
+  ]
+}

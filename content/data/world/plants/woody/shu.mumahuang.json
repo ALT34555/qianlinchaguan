@@ -1,0 +1,96 @@
+{
+  "plants": [
+    {
+      "id": "shu.mumahuang",
+      "archetype": "conifer",
+      "climate": "subtropical",
+      "name": "木麻黄",
+      "latin": "Mumahuang",
+      "seed": 34,
+      "scale": 0.68,
+      "params": {
+        "height": 13,
+        "trunk": 3.4,
+        "trunkRadius": 0.38,
+        "canopy": 2.9,
+        "layers": 6,
+        "layerStep": 0.84,
+        "spikeCount": 2,
+        "lean": 0.08,
+        "jitter": 0.18,
+        "fruitless": true,
+        "snow": 0.14,
+        "snowOn": [
+          "canopy",
+          "top"
+        ],
+        "crownStyle": "feathery"
+      },
+      "palette": {
+        "bark": "bark",
+        "barkWarm": "barkLight",
+        "foliage": "salineFoliage",
+        "foliageDark": "salineFoliageDark"
+      },
+      "tags": [
+        "tree",
+        "conifer",
+        "coast",
+        "pioneer",
+        "timber",
+        "耐盐",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.mumahuang@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 3,
+        "trunk": 0.8,
+        "trunkRadius": 0.09,
+        "canopy": 0.7,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.mumahuang@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 7.2,
+        "trunk": 1.9,
+        "trunkRadius": 0.21,
+        "canopy": 1.6,
+        "snow": 0.08
+      }
+    },
+    {
+      "id": "shu.mumahuang@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 7
+      }
+    },
+    {
+      "id": "shu.mumahuang@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 10.6,
+        "trunk": 2.8,
+        "trunkRadius": 0.31,
+        "canopy": 2.4,
+        "snow": 0
+      }
+    }
+  ]
+}

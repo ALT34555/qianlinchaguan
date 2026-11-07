@@ -50,6 +50,13 @@
     },
     "witheredStem": {
       "default": "#a08e6a"
+    },
+    "tamariskBark": {
+      "default": "#7a4b44",
+      "spring": "#825049",
+      "summer": "#7a4b44",
+      "autumn": "#72443e",
+      "winter": "#663d38"
     }
   },
   "greenery": {
@@ -320,6 +327,47 @@
       "default": "#8a7f52",
       "autumn": "#8f7f4c",
       "winter": "#7a714b"
+    },
+    "salineFoliage": {
+      "default": "#5e8878",
+      "spring": "#6fa08d",
+      "summer": "#5e8878",
+      "autumn": "#8fa068",
+      "winter": "#4f7366"
+    },
+    "salineFoliageDark": {
+      "default": "#43695b",
+      "spring": "#527d6d",
+      "summer": "#43695b",
+      "autumn": "#6c7c4e",
+      "winter": "#39574c"
+    },
+    "halophyteRed": {
+      "default": "#9e4338",
+      "spring": "#5c945c",
+      "summer": "#8c4b3e",
+      "autumn": "#c4302b",
+      "winter": "#7d3b33"
+    },
+    "halophyteDark": {
+      "default": "#752d26",
+      "spring": "#437345",
+      "summer": "#69362c",
+      "autumn": "#96201d",
+      "winter": "#5c2924"
+    },
+    "poplarGold": {
+      "default": "#6b963e",
+      "spring": "#82b54c",
+      "summer": "#638f3a",
+      "autumn": "#e6a825",
+      "winter": "#7a6838"
+    },
+    "berryDark": {
+      "default": "#2d233b",
+      "summer": "#423157",
+      "autumn": "#241b30",
+      "winter": "#241b30"
     }
   }
 }

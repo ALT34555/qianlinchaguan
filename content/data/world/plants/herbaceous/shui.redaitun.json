@@ -1,0 +1,72 @@
+{
+  "plants": [
+    {
+      "id": "shui.redaitun",
+      "archetype": "waterweed",
+      "climate": "tropical",
+      "name": "热带茨藻",
+      "latin": "Redaicizao",
+      "seed": 66,
+      "params": {
+        "height": 0.88,
+        "culms": 6,
+        "layers": 6,
+        "spread": 0.42,
+        "flowerless": true,
+        "fruitless": true,
+        "snow": 0,
+        "form": "feather"
+      },
+      "palette": {
+        "foliage": "waterweed",
+        "foliageDark": "jungleDark",
+        "foliageDeep": "waterweedPale"
+      },
+      "tags": [
+        "water",
+        "wet",
+        "submerged",
+        "tropical",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered"
+      ]
+    },
+    {
+      "id": "shui.redaitun@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.21,
+        "spread": 0.1,
+        "trunkRadius": 0.03,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "shui.redaitun@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.48,
+        "spread": 0.23,
+        "culms": 4,
+        "layers": 4
+      }
+    },
+    {
+      "id": "shui.redaitun@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 0.72,
+        "spread": 0.34,
+        "snow": 0
+      }
+    }
+  ]
+}

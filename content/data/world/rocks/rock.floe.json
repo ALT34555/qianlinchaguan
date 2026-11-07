@@ -10,7 +10,7 @@
       "palette": {
         "body": "ice",
         "band": "iceDark",
-        "cap": "snow",
+        "cap": "ice",
         "base": "iceDark",
         "crust": "snowCap"
       },

@@ -1,0 +1,90 @@
+{
+  "plants": [
+    {
+      "id": "guan.shamomeigui",
+      "archetype": "shrub",
+      "climate": "tropical",
+      "name": "沙漠玫瑰",
+      "latin": "Shamomeigui",
+      "seed": 57,
+      "params": {
+        "height": 1.35,
+        "canopy": 0.95,
+        "blobs": 4,
+        "stems": 4,
+        "spread": 0.52,
+        "aspect": 1.15,
+        "bloomCount": 8,
+        "bloomRadius": 0.18,
+        "petals": 5,
+        "fruitless": true,
+        "snow": 0,
+        "form": "sparse",
+        "leafShape": "oval",
+        "twigs": 2,
+        "rootFlare": 0.4
+      },
+      "palette": {
+        "barkLight": "barkPale",
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "bloom": "bloomRed"
+      },
+      "tags": [
+        "shrub",
+        "arid",
+        "flowering",
+        "tropical",
+        "ornamental",
+        "耐热"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "withered"
+      ]
+    },
+    {
+      "id": "guan.shamomeigui@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 0.32,
+        "canopy": 0.23,
+        "spread": 0.13,
+        "trunkRadius": 0.04,
+        "blobs": 2,
+        "canopyRatio": 0.55
+      }
+    },
+    {
+      "id": "guan.shamomeigui@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 0.74,
+        "canopy": 0.52,
+        "spread": 0.29
+      }
+    },
+    {
+      "id": "guan.shamomeigui@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 11
+      }
+    },
+    {
+      "id": "guan.shamomeigui@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 1.1,
+        "canopy": 0.78,
+        "spread": 0.42,
+        "snow": 0
+      }
+    }
+  ]
+}

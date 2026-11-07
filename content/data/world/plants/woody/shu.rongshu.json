@@ -1,0 +1,103 @@
+{
+  "plants": [
+    {
+      "id": "shu.rongshu",
+      "archetype": "banyan",
+      "climate": "subtropical",
+      "name": "榕树",
+      "latin": "Rongshu",
+      "seed": 71,
+      "scale": 0.82,
+      "params": {
+        "height": 9.5,
+        "trunk": 3.8,
+        "trunkRadius": 0.62,
+        "canopy": 5.2,
+        "limbCount": 6,
+        "limbLength": 3.6,
+        "branchAngle": 0.42,
+        "blobs": 8,
+        "fruitCount": 8,
+        "fruitRadius": 0.08,
+        "snow": 0
+      },
+      "palette": {
+        "bark": "bark",
+        "barkLight": "barkLight",
+        "foliage": "jungle",
+        "foliageDark": "jungleDark",
+        "canopy": "jungle",
+        "fruit": "fruit"
+      },
+      "tags": [
+        "tree",
+        "canopy",
+        "shade",
+        "evergreen",
+        "coast",
+        "wet",
+        "耐热",
+        "耐寒"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "shu.rongshu@seedling",
+      "state": "seedling",
+      "archetype": "sprout",
+      "params": {
+        "height": 1.8,
+        "trunk": 0.8,
+        "trunkRadius": 0.12,
+        "canopy": 0.85,
+        "canopyRatio": 0.55,
+        "blobs": 2
+      }
+    },
+    {
+      "id": "shu.rongshu@subadult",
+      "state": "subadult",
+      "params": {
+        "height": 5.2,
+        "trunk": 2.1,
+        "trunkRadius": 0.34,
+        "canopy": 2.8,
+        "limbLength": 2
+      }
+    },
+    {
+      "id": "shu.rongshu@flowering",
+      "state": "flowering",
+      "params": {
+        "bloomCount": 6
+      }
+    },
+    {
+      "id": "shu.rongshu@fruiting",
+      "state": "fruiting",
+      "params": {
+        "fruitCount": 9,
+        "fruitScale": 1.2
+      }
+    },
+    {
+      "id": "shu.rongshu@withered",
+      "state": "withered",
+      "archetype": "withered",
+      "params": {
+        "height": 7.6,
+        "trunk": 3.1,
+        "trunkRadius": 0.5,
+        "canopy": 4.1,
+        "snow": 0
+      }
+    }
+  ]
+}
