@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"nong.ganzhe","archetype":"grassClump","climate":"subtropical","name":"甘蔗","latin":"ganzhe","seed":710,"tags":["naire_1","naigan_2","nailao_2","kaihua","jieguo","chai"],"params":{"height":2.8,"spread":0.7,"stems":4,"leaf_len":0.95,"leaf_w":0.05,"bloom_season":2},"palette":{"foliage":"cropGreen","foliageDark":"foliageDeep","barkLight":"sorghum","bloom":"reedPlume","fruit":"sorghum"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"nong.ganzhe@seedling","state":"seedling"},
+    {"id":"nong.ganzhe@subadult","state":"subadult"},
+    {"id":"nong.ganzhe@flowering","state":"flowering"},
+    {"id":"nong.ganzhe@fruiting","state":"fruiting"},
+    {"id":"nong.ganzhe@withered","state":"withered"}
+  ]
+}

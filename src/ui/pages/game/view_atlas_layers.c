@@ -10,7 +10,7 @@ static UiRect panel_rect(UiContext *ui) {
     float det = game_atlas_detail_height(ui);
     /* base：宽 min(260z,42vw)，贴右上 0 */
     float w = qlcg_minf(260.0f * z, (float)ui->win_w * 0.42f);
-    float h = (float)ui->win_h - top - ui->safe_y_px - det;
+    float h = (float)ui->win_h - top - ui->safe_edges[3] - det;
     if (h < 80.0f * z) h = 80.0f * z;
     UiRect r = { (float)ui->win_w - sx - w, top, w, h };
     return r;
@@ -119,7 +119,7 @@ void atlas_layer_panel(UiContext *ui, AtlasRenderer *ar, UiRect r) {
             if (handle && ui->mouse_clicked && ui->mouse_down) {
                 ar->layer_dragging = true;
                 ar->layer_drag_from = ar->layer_drag_to = i;
-                SetCapture(g_app.hwnd);
+                qlcg_platform_capture();
                 ar->dragging = false;
                 ui->mouse_clicked = ui->mouse_down = false;
             }

@@ -1,15 +1,15 @@
 {
   "counts": {
-    "files": 54,
-    "species": 54,
-    "entries": 324,
+    "files": 78,
+    "species": 78,
+    "entries": 467,
     "byState": {
-      "normal": 54,
-      "seedling": 54,
-      "subadult": 54,
-      "flowering": 54,
-      "fruiting": 54,
-      "withered": 54
+      "normal": 78,
+      "seedling": 78,
+      "subadult": 78,
+      "flowering": 77,
+      "fruiting": 78,
+      "withered": 78
     }
   },
   "states": [
@@ -1093,6 +1093,357 @@
       "file": "herbaceous/nong.sang.json"
     },
     {
+      "id": "nong.ganzhe",
+      "name": "甘蔗",
+      "latin": "ganzhe",
+      "climate": "subtropical",
+      "archetype": "grassClump",
+      "tags": [
+        "naire_1",
+        "naigan_2",
+        "nailao_2",
+        "kaihua",
+        "jieguo",
+        "chai"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.ganzhe.json"
+    },
+    {
+      "id": "nong.youcai",
+      "name": "油菜",
+      "latin": "youcai",
+      "climate": "subtropical",
+      "archetype": "grassClump",
+      "tags": [
+        "naihan_2",
+        "nailao_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.youcai.json"
+    },
+    {
+      "id": "nong.zhuma",
+      "name": "苎麻",
+      "latin": "zhuma",
+      "climate": "subtropical",
+      "archetype": "grassClump",
+      "tags": [
+        "naire_2",
+        "nailao_2",
+        "kaihua",
+        "jieguo",
+        "chai"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.zhuma.json"
+    },
+    {
+      "id": "nong.mianhua",
+      "name": "棉花",
+      "latin": "mianhua",
+      "climate": "subtropical",
+      "archetype": "shrub",
+      "tags": [
+        "naire_2",
+        "naigan_2",
+        "kaihua",
+        "jieguo",
+        "chai"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.mianhua.json"
+    },
+    {
+      "id": "nong.ma",
+      "name": "麻",
+      "latin": "Cannabis sativa",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "tags": [
+        "naire_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.ma.json"
+    },
+    {
+      "id": "nong.chu",
+      "name": "楮",
+      "latin": "Broussonetia papyrifera",
+      "climate": "subtropical",
+      "archetype": "broadleaf",
+      "tags": [
+        "naihan_2",
+        "naire_2",
+        "chai",
+        "shuguan",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.chu.json"
+    },
+    {
+      "id": "nong.huma",
+      "name": "胡麻",
+      "latin": "Sesamum indicum",
+      "climate": "subtropical",
+      "archetype": "grassClump",
+      "tags": [
+        "naire_1",
+        "naigan_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.huma.json"
+    },
+    {
+      "id": "nong.cha",
+      "name": "茶",
+      "latin": "Camellia sinensis",
+      "climate": "subtropical",
+      "archetype": "shrub",
+      "tags": [
+        "naihan_2",
+        "naire_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.cha.json"
+    },
+    {
+      "id": "nong.jiu",
+      "name": "韭",
+      "latin": "Allium tuberosum",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.jiu.json"
+    },
+    {
+      "id": "nong.cong",
+      "name": "葱",
+      "latin": "Allium fistulosum",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.cong.json"
+    },
+    {
+      "id": "nong.xie",
+      "name": "薤",
+      "latin": "Allium chinense",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "tags": [
+        "naihan_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.xie.json"
+    },
+    {
+      "id": "nong.song",
+      "name": "菘",
+      "latin": "Brassica rapa",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.song.json"
+    },
+    {
+      "id": "nong.chun",
+      "name": "莼",
+      "latin": "Brasenia schreberi",
+      "climate": "temperate",
+      "archetype": "floatingPad",
+      "tags": [
+        "nailao_0",
+        "guzhuo",
+        "fushui",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.chun.json"
+    },
+    {
+      "id": "nong.zisu",
+      "name": "紫苏",
+      "latin": "Perilla frutescens",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "tags": [
+        "naire_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.zisu.json"
+    },
+    {
+      "id": "nong.huluobo",
+      "name": "胡萝卜",
+      "latin": "Daucus carota subsp. sativus",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.huluobo.json"
+    },
+    {
+      "id": "nong.bailuobo",
+      "name": "白萝卜",
+      "latin": "Raphanus sativus",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/nong.bailuobo.json"
+    },
+    {
       "id": "hua.mei",
       "name": "梅",
       "latin": "mei",
@@ -1165,6 +1516,157 @@
         "withered"
       ],
       "file": "herbaceous/hua.ju.json"
+    },
+    {
+      "id": "hua.mudan",
+      "name": "牡丹",
+      "latin": "Paeonia × suffruticosa",
+      "climate": "temperate",
+      "archetype": "shrub",
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.mudan.json"
+    },
+    {
+      "id": "hua.yueji",
+      "name": "月季",
+      "latin": "Rosa chinensis",
+      "climate": "temperate",
+      "archetype": "bramble",
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.yueji.json"
+    },
+    {
+      "id": "hua.shancha",
+      "name": "山茶",
+      "latin": "Camellia japonica",
+      "climate": "subtropical",
+      "archetype": "shrub",
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.shancha.json"
+    },
+    {
+      "id": "hua.mujin",
+      "name": "木槿",
+      "latin": "Hibiscus syriacus",
+      "climate": "temperate",
+      "archetype": "shrub",
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.mujin.json"
+    },
+    {
+      "id": "hua.tao",
+      "name": "桃",
+      "latin": "Prunus persica",
+      "climate": "temperate",
+      "archetype": "blossomTree",
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.tao.json"
+    },
+    {
+      "id": "hua.guanshangsong",
+      "name": "观赏松",
+      "latin": "Pinus thunbergii",
+      "climate": "temperate",
+      "archetype": "conifer",
+      "tags": [],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.guanshangsong.json"
+    },
+    {
+      "id": "hua.shaoyao",
+      "name": "芍药",
+      "latin": "Paeonia lactiflora",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.shaoyao.json"
+    },
+    {
+      "id": "hua.guanshanghe",
+      "name": "观赏荷",
+      "latin": "Nelumbo nucifera",
+      "climate": "subtropical",
+      "archetype": "floatingPad",
+      "tags": [
+        "kaihua",
+        "guzhuo",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ],
+      "file": "herbaceous/hua.guanshanghe.json"
     }
   ]
 }

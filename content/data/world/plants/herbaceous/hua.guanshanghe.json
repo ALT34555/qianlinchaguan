@@ -1,0 +1,36 @@
+{
+  "plants": [
+    {
+      "id": "hua.guanshanghe",
+      "name": "观赏荷",
+      "latin": "Nelumbo nucifera",
+      "climate": "subtropical",
+      "archetype": "floatingPad",
+      "params": {
+        "height": 1.32,
+        "spread": 0.87,
+        "bloomCount": 6,
+        "seedCount": 2
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "barkLight": "barkLight",
+        "bloom": "#EE93B0"
+      },
+      "tags": [
+        "kaihua",
+        "guzhuo",
+        "jieguo"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

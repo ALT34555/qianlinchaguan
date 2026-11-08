@@ -1,3 +1,4 @@
+#include "core/binary.h"
 /* 定稿河线与运行缓存解耦 */
 #include "river_archive.h"
 #include <stdlib.h>
@@ -103,16 +104,24 @@ void qlcg_river_archive_free(MacroWorld *w) {
     }
     free(w->river_archive); w->river_archive=NULL;
 }
+static bool archive_words(FILE *file, uint32_t *values, int count, bool reading) {
+    QlCodec io=qlcg_codec(file,reading,(uint64_t)count*4);
+    for(int i=0;i<count;i++) values[i]=(uint32_t)qlcg_io_uint(&io,values[i],4);
+    return io.ok;
+}
+static bool archive_sequence(FILE *file, uint64_t *value, bool reading) {
+    QlCodec io=qlcg_codec(file,reading,8); *value=qlcg_io_uint(&io,*value,8); return io.ok;
+}
 bool qlcg_river_archive_write(FILE *file,const MacroWorld *w) {
     const struct RiverArchive *a=w->river_archive;
     uint32_t head[6]={0x31564952u,3,w->opt.seed,(uint32_t)w->columns,(uint32_t)w->opt.chunks_per_cell,a?a->count:0};
     uint64_t sequence=a?a->craft_sequence:0;
     uint32_t terrain=qlcg_river_archive_terrain(w);
-    if(fwrite(head,sizeof(head),1,file)!=1) return false;
-    if(fwrite(&sequence,sizeof(sequence),1,file)!=1||fwrite(&terrain,sizeof(terrain),1,file)!=1) return false;
+    if(!archive_words(file,head,6,false)) return false;
+    if(!archive_sequence(file,&sequence,false)||!archive_words(file,&terrain,1,false)) return false;
     if(a) for(int i=0;i<4096;i++) for(const RiverRecord *r=a->buckets[i];r;r=r->next) {
         uint32_t h[4]={r->kind,r->cell,r->size,r->checksum};
-        if(fwrite(h,sizeof(h),1,file)!=1||fwrite(r->data,1,r->size,file)!=r->size) return false;
+        if(!archive_words(file,h,4,false)||fwrite(r->data,1,r->size,file)!=r->size) return false;
     }
     return true;
 }
@@ -122,22 +131,22 @@ bool qlcg_river_archive_read(FILE *file,MacroWorld *w,long limit) {
     if(start<0||end<start||fseek(file,start,SEEK_SET)) return false;
     if(start==end) return legacy_archive(w);
     uint32_t h[6]={0};
-    if(end-start<4||fread(h,4,1,file)!=1) return false;
+    if(end-start<4||!archive_words(file,h,1,true)) return false;
     if(h[0]!=0x31564952u) return fseek(file,start,SEEK_SET)==0&&legacy_archive(w);
-    if(end-start<(long)sizeof(h)||fread(h+1,sizeof(h)-4,1,file)!=1||h[1]<1||h[1]>3||
+    if(end-start<(long)sizeof(h)||!archive_words(file,h+1,5,true)||h[1]<1||h[1]>3||
        h[3]<64||h[3]>1024||h[3]%4) return false;
     uint32_t cells=h[3]*h[3]/(w&&!qlcg_world_flat(w)?2:1);
     if(h[5]>cells*3) return false;
     if(w&&(h[2]!=w->opt.seed||h[3]!=(uint32_t)w->columns||h[4]!=(uint32_t)w->opt.chunks_per_cell)) return false;
     MacroWorld staging={0};
     uint64_t sequence=0;uint32_t terrain=0;
-    if(h[1]>=2&&(end-ftell(file)<(long)sizeof(sequence)||fread(&sequence,sizeof(sequence),1,file)!=1)) return false;
-    if(h[1]>=3&&(end-ftell(file)<(long)sizeof(terrain)||fread(&terrain,sizeof(terrain),1,file)!=1||terrain>QLCG_TERRAIN_VERSION)) return false;
+    if(h[1]>=2&&(end-ftell(file)<(long)sizeof(sequence)||!archive_sequence(file,&sequence,true))) return false;
+    if(h[1]>=3&&(end-ftell(file)<(long)sizeof(terrain)||!archive_words(file,&terrain,1,true)||terrain>QLCG_TERRAIN_VERSION)) return false;
     bool ok=true;
     for(uint32_t i=0;ok&&i<h[5];i++) {
-        uint32_t r[4];
+        uint32_t r[4]={0};
         long at=ftell(file);
-        if(at<0||end-at<(long)sizeof(r)||fread(r,sizeof(r),1,file)!=1||
+        if(at<0||end-at<(long)sizeof(r)||!archive_words(file,r,4,true)||
            r[0]<1||r[0]>3||r[1]>=cells||r[2]>RIVER_RECORD_MAX||r[2]<4||end-ftell(file)<(long)r[2]) { ok=false; break; }
         RiverBuffer b={0},existing={0}; b.size=r[2]; b.data=malloc(b.size);
         if(!b.data) { ok=false; break; }

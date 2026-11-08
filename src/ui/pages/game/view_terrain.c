@@ -2,10 +2,6 @@
 #include "app/app_state.h"
 
 void game_view_terrain(UiContext *ui) {
-    float ui_z  = g_app.ui.met.size;
-    /* HUD 改为浮层，场景自顶向下铺满 */
-    float top_h = 0.0f;
-
     /* 3D 山川场景渲染与交互 */
     ui_flush(ui);
     /* 场景抗锯齿与分辨率缩放 */
@@ -23,9 +19,7 @@ void game_view_terrain(UiContext *ui) {
     ui_backdrop_capture(ui);
 
     /* 处理 3D 山川内自然工程点击改造 */
-    bool over_dock = ui_hit(ui, ((float)ui->win_w - 920.0f) * 0.5f, (float)ui->win_h - 80.0f, 920.0f, 80.0f) ||
-                     ui_hit(ui, 0, 0, (float)ui->win_w, top_h);
-    if (!over_dock && !game_scene_over_ui(ui) && ui->mouse_clicked &&
+    if (!game_scene_over_ui(ui) && ui->mouse_clicked &&
         g_app.terrain.eng_tool != ENG_TOOL_NONE && g_app.terrain.has_hover) {
         int season = g_app.region->climate_season;
         if (g_app.terrain.eng_tool == ENG_TOOL_RIVER_DIVERT) {

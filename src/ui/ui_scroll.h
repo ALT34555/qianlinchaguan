@@ -3,7 +3,7 @@
 
 #include "ui_core.h"
 
-#define UI_SCROLL_SLOTS 8
+#define UI_SCROLL_SLOTS 16
 
 /* 一个滚动区：按 id 区分，可同时存在多处 */
 typedef struct {

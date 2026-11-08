@@ -273,7 +273,7 @@ static void draw_tea_rail(UiContext *ui) {
         }
     }
 
-    float theme_y = (float)ui->win_h - ui->safe_y_px - 27.0f * z;
+    float theme_y = (float)ui->win_h - ui->safe_edges[3] - 27.0f * z;
     draw_language_switch(ui, cx, theme_y - 32.0f * z);
     draw_theme_switch(ui, cx, theme_y);
 }
@@ -378,8 +378,8 @@ UiRect draw_page_shell(UiContext *ui) {
         float ratio = 1.0f - 2.0f * ui->safe_x_pct * 0.01f;
         if (ratio < 0.2f) ratio = 0.2f;
         float w = qlcg_minf(880.0f * z, (float)ui->win_w) * ratio;
-        float h = (float)ui->win_h - ui->safe_y_px * 2.0f;
-        float x = (float)ui->win_w - ui->safe_x_px - w;
+        float h = (float)ui->win_h - (ui->safe_edges[1]+ui->safe_edges[3]);
+        float x = (float)ui->win_w - ui->safe_edges[2] - w;
         float y = ui->safe_y_px;
         /* 玻璃底+1px边，简化时半透明 */
         ui_draw_rect_glass(ui, x, y, w, h, tk_of(ui, QL_SURFACE_GLASS));
@@ -402,14 +402,14 @@ UiRect draw_page_shell(UiContext *ui) {
         sheet_x = pad_x;
         sheet_w = (float)ui->win_w - pad_x * 2.0f;
         sheet_y = draw_tea_rail_top(ui) + 8.0f * z;
-        sheet_h = (float)ui->win_h - sheet_y - ui->safe_y_px;
+        sheet_h = (float)ui->win_h - sheet_y - ui->safe_edges[3];
     } else {
         float rail_w = calc_rail_w(ui);
         float gap    = 14.0f * z;
         sheet_x = pad_x + rail_w + gap;
         sheet_w = (float)ui->win_w - sheet_x - pad_x;
         sheet_y = ui->safe_y_px;
-        sheet_h = (float)ui->win_h - ui->safe_y_px * 2.0f;
+        sheet_h = (float)ui->win_h - (ui->safe_edges[1]+ui->safe_edges[3]);
         draw_tea_rail(ui);
     }
 

@@ -1,4 +1,5 @@
 #include "guan_model.h"
+#include <math.h>
 
 static void build_fruit(LpBuilder *b, const PdDef *def, const double point[3],
                         double spread, LpRng *rng) {

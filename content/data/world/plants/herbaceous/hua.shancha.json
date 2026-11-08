@@ -1,0 +1,34 @@
+{
+  "plants": [
+    {
+      "id": "hua.shancha",
+      "name": "山茶",
+      "latin": "Camellia japonica",
+      "climate": "subtropical",
+      "archetype": "shrub",
+      "params": {
+        "seedCount": 4,
+        "height": 1.52,
+        "spread": 0.82,
+        "bloomCount": 6
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "barkLight": "barkLight",
+        "bloom": "#C93E4D"
+      },
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

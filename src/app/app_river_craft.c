@@ -4,6 +4,7 @@
 #include "atlas/atlas_tiles.h"
 #include "ui/pages/game/hud_layout.h"
 #include "ui/pages/game/view_atlas_layers.h"
+#include "ui/ui_scroll.h"
 
 static bool craft_allowed(void) {
     return g_app.world&&(g_app.world->opt.play_mode==PLAY_MODE_LEISURE||g_app.cheats_unlocked);
@@ -129,10 +130,16 @@ void app_river_craft_click(double wx,double wz,double radius) {
         e->nodes[at]=point; e->count++; c->dirty=true;
     }
 }
+static float craft_button_height(UiContext *ui) {
+    return ui->pointer_touch?fmaxf(28*ui->met.size,48*ui->device_density):28*ui->met.size;
+}
 static UiRect craft_rect(UiContext *ui) {
     float z=ui->met.size;
-    return (UiRect){ui->safe_x_px+12*z,ui->safe_y_px+game_top_bar_height(ui)+game_atlas_tools_height(ui)+12*z,
-        fminf(400*z,ui->win_w-ui->safe_x_px*2-24*z),192*z};
+    float top=ui->safe_y_px+game_top_bar_height(ui)+game_atlas_tools_height(ui)+12*z;
+    float content=32*z+3*(craft_button_height(ui)+5*z)+2*(12*ui->met.scale*1.6f+5*z)+12*z;
+    float available=fmaxf(1,ui->win_h-ui->safe_edges[3]-game_atlas_detail_height(ui)-12*z-top);
+    return (UiRect){ui->safe_x_px+12*z,top,
+        fminf(400*z,ui->win_w-(ui->safe_edges[0]+ui->safe_edges[2])-24*z),fminf(content,available)};
 }
 bool app_river_craft_over_ui(UiContext *ui) {
     if(!g_app.river_craft.active) return false;
@@ -169,12 +176,14 @@ void app_river_craft_draw(UiContext *ui,float x,float y,float width,float height
     ui_clip_pop(ui);
     UiRect r=craft_rect(ui); ui_draw_rect(ui,r.x,r.y,r.w,r.h,tk_of(ui,QL_SURFACE_HI));
     ui_draw_border(ui,r.x,r.y,r.w,r.h,z,tk_of(ui,QL_LINE));
+    float scroll=ui_scroll_begin(ui,0xC4AF7u,r.x,r.y,r.w,r.h);
+    float origin=r.y-scroll;
     char line[160]; snprintf(line,sizeof(line),tr(c->dirty?"river.titleDirty":"river.title"),e->count);
-    ui_draw_text_px(ui,UI_FACE_BODY,font,false,r.x+10*z,r.y+8*z,line,tk_of(ui,QL_INK));
+    ui_draw_text_px(ui,UI_FACE_BODY,font,false,r.x+10*z,origin+8*z,line,tk_of(ui,QL_INK));
     static const char *keys[]={"river.pan","river.main","river.source","river.new","river.addNode","river.moveNode","river.dropNode","river.apply","river.delete","river.cancel","river.exit","river.stroke"};
-    float gap=5*z,bw=(r.w-25*z)/4,bh=28*z;
+    float gap=5*z,bw=(r.w-25*z)/4,bh=craft_button_height(ui);
     for(int i=0;i<12;i++) {
-        float bx=r.x+5*z+(i%4)*(bw+gap),by=r.y+32*z+(i/4)*(bh+gap);
+        float bx=r.x+5*z+(i%4)*(bw+gap),by=origin+32*z+(i/4)*(bh+gap);
         if(ui_btn(ui,bx,by,bw,bh,tr(keys[i]),i==c->tool?BTN_PRIMARY:BTN_GHOST,false,font,false)) {
             if(i<=6||i==11) {
                 if((i==3||i==11)&&c->dirty) app_push_toast(tr("river.pending"));
@@ -185,7 +194,9 @@ void app_river_craft_draw(UiContext *ui,float x,float y,float width,float height
             else app_river_craft_command("");
         }
     }
-    ui_draw_text_ellipsis(ui,UI_FACE_BODY,font,false,r.x+10*z,r.y+138*z,r.w-20*z,0,
+    float hint=32*z+3*(bh+gap),line_h=font*1.6f+gap;
+    ui_draw_text_ellipsis(ui,UI_FACE_BODY,font,false,r.x+10*z,origin+hint,r.w-20*z,0,
         tr(c->tool==11?"river.strokeHint":c->tool==5?(c->selected<0?"river.movePick":"river.movePlace"):c->tool==4?"river.addHint":"river.hint"),tk_of(ui,QL_INK_2));
-    ui_draw_text_ellipsis(ui,UI_FACE_BODY,font,false,r.x+10*z,r.y+163*z,r.w-20*z,0,tr("river.saveHint"),tk_of(ui,QL_INK_2));
+    ui_draw_text_ellipsis(ui,UI_FACE_BODY,font,false,r.x+10*z,origin+hint+line_h,r.w-20*z,0,tr("river.saveHint"),tk_of(ui,QL_INK_2));
+    ui_scroll_end(ui,0xC4AF7u,hint+2*line_h+12*z);
 }

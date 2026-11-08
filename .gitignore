@@ -18,3 +18,9 @@ userdata/mods/fonts/
 *.bmp
 sources.rsp
 release/
+
+.gradle/
+.cxx/
+local.properties
+*.jks
+*.keystore

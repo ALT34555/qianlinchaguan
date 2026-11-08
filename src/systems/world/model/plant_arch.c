@@ -34,15 +34,39 @@ void qlcg_plant_guan_xuangouzi(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_guan_yueju(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_guan_zhen(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_guan_zhizi(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_hua_guanshanghe(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_hua_guanshangsong(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_hua_ju(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_hua_lan(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_hua_mei(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_hua_mudan(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_hua_mujin(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_hua_shancha(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_hua_shaoyao(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_hua_tao(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_hua_yueji(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_hua_zhu(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_bailuobo(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_cha(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_chu(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_chun(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_cong(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_nong_da(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_nong_dao(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_ganzhe(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_huluobo(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_huma(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_jiu(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_ma(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_nong_mai(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_mianhua(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_nong_sang(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_song(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_nong_su(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_xie(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_youcai(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_zhuma(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_nong_zisu(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_shu_baigan(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_shu_bailan(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_shu_bajiao(LpBuilder *, const PdDef *, int, int);
@@ -141,15 +165,39 @@ static const struct {
     { "guan.yueju", qlcg_plant_guan_yueju },
     { "guan.zhen", qlcg_plant_guan_zhen },
     { "guan.zhizi", qlcg_plant_guan_zhizi },
+    { "hua.guanshanghe", qlcg_plant_hua_guanshanghe },
+    { "hua.guanshangsong", qlcg_plant_hua_guanshangsong },
     { "hua.ju", qlcg_plant_hua_ju },
     { "hua.lan", qlcg_plant_hua_lan },
     { "hua.mei", qlcg_plant_hua_mei },
+    { "hua.mudan", qlcg_plant_hua_mudan },
+    { "hua.mujin", qlcg_plant_hua_mujin },
+    { "hua.shancha", qlcg_plant_hua_shancha },
+    { "hua.shaoyao", qlcg_plant_hua_shaoyao },
+    { "hua.tao", qlcg_plant_hua_tao },
+    { "hua.yueji", qlcg_plant_hua_yueji },
     { "hua.zhu", qlcg_plant_hua_zhu },
+    { "nong.bailuobo", qlcg_plant_nong_bailuobo },
+    { "nong.cha", qlcg_plant_nong_cha },
+    { "nong.chu", qlcg_plant_nong_chu },
+    { "nong.chun", qlcg_plant_nong_chun },
+    { "nong.cong", qlcg_plant_nong_cong },
     { "nong.da", qlcg_plant_nong_da },
     { "nong.dao", qlcg_plant_nong_dao },
+    { "nong.ganzhe", qlcg_plant_nong_ganzhe },
+    { "nong.huluobo", qlcg_plant_nong_huluobo },
+    { "nong.huma", qlcg_plant_nong_huma },
+    { "nong.jiu", qlcg_plant_nong_jiu },
+    { "nong.ma", qlcg_plant_nong_ma },
     { "nong.mai", qlcg_plant_nong_mai },
+    { "nong.mianhua", qlcg_plant_nong_mianhua },
     { "nong.sang", qlcg_plant_nong_sang },
+    { "nong.song", qlcg_plant_nong_song },
     { "nong.su", qlcg_plant_nong_su },
+    { "nong.xie", qlcg_plant_nong_xie },
+    { "nong.youcai", qlcg_plant_nong_youcai },
+    { "nong.zhuma", qlcg_plant_nong_zhuma },
+    { "nong.zisu", qlcg_plant_nong_zisu },
     { "shu.baigan", qlcg_plant_shu_baigan },
     { "shu.bailan", qlcg_plant_shu_bailan },
     { "shu.bajiao", qlcg_plant_shu_bajiao },

@@ -1,0 +1,35 @@
+{
+  "plants": [
+    {
+      "id": "nong.jiu",
+      "name": "韭",
+      "latin": "Allium tuberosum",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "seed": 724,
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.41,
+        "spread": 0.24
+      },
+      "palette": {
+        "foliage": "cropAllium",
+        "foliageDark": "cropTeaShade",
+        "bloom": "bloomWhite",
+        "fruit": "cropAlliumSeed"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

@@ -77,8 +77,10 @@ typedef struct {
     double             last_render_ms;
     size_t             synced_plane_count;
     float              flat_rect[4];
+    const MacroWorld   *detail_world;
 } AtlasRenderer;
 
+bool qlcg_atlas_gpu_restore(AtlasRenderer *ar);
 bool        qlcg_atlas_init(AtlasRenderer *ar);
 void        qlcg_atlas_shutdown(AtlasRenderer *ar);
 void        qlcg_atlas_release_world(AtlasRenderer *ar);

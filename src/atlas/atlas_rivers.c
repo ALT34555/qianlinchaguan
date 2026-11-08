@@ -5,6 +5,7 @@
 #include "../systems/world/surface_rivers.h"
 #include "../systems/world/source_rivers.h"
 #include "../systems/world/surface_macro.h"
+#include "../systems/world/world_infinite.h"
 #include "../core/math_util.h"
 #include <math.h>
 
@@ -77,12 +78,13 @@ static void draw_span(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
     }
 }
 
-void qlcg_atlas_draw_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
+static void draw_world_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
                             float x,float y,float width,float height) {
     int level=qlcg_atlas_river_level(ar,w,width,height),band=qlcg_clampi(level+3,4,8);
     float minimum=level>=12?5:3;
     AtlasTileView tiles;
     qlcg_atlas_tiles_view(ar->tiles,&tiles);
+    if(tiles.river_mix>=1)return;
     uint32_t color=ui_rgba(51,113,139,(uint8_t)(255*(1-tiles.river_mix)));
     float scale=calc_zoom_scale(ar,w,width),span=w->circumference/w->columns;
     int any=0;
@@ -121,6 +123,22 @@ void qlcg_atlas_draw_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiContex
         for(int k=1;k<count;k++) draw_span(ar,w,ui,points[k-1],points[k],minimum,color,x,y,width,height);
     }
     ui_clip_pop(ui);
+}
+
+void qlcg_atlas_draw_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
+                            float x,float y,float width,float height) {
+    draw_world_rivers(ar,w,ui,x,y,width,height);
+    if(!qlcg_world_flat(w) || !w->planes)return;
+    double scale=calc_zoom_scale(ar,w,width),half=w->circumference*.5;
+    double period=w->circumference+(double)w->circumference/w->columns;
+    for(size_t i=0;i<w->planes->count;i++) {
+        const MacroWorld *v=w->planes->items[i];if(v==w || !v->river_count)continue;
+        double cx=ar->cam_wx-((double)v->opt.plane_x-w->opt.plane_x)*period;
+        double cz=ar->cam_wz-((double)v->opt.plane_z-w->opt.plane_z)*period;
+        if(fabs(cx)>half+width/(2*scale) || fabs(cz)>half+height/(2*scale))continue;
+        AtlasRenderer view=*ar;view.cam_wx=cx;view.cam_wz=cz;view.tiles=NULL;
+        draw_world_rivers(&view,v,ui,x,y,width,height);
+    }
 }
 
 static uint32_t source_color(const MacroWorld *w,double wx,double wz,double level,double depth,

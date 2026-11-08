@@ -350,7 +350,7 @@ static void source_plan(const MacroWorld *w,int cell,MacroCellPlan *p) {
     SourcePlan *s=&p->source;
     s->frame=qlcg_surface_frame(w,cell);
     double edge_lat=fmin(PI/2,fabs(s->frame.lat)+span/(2*s->frame.radius));
-    double east=span*fmax(.001,cos(edge_lat)),usable=fmin(span,east);
+    double east=s->frame.flat?span:span*fmax(.001,cos(edge_lat)),usable=fmin(span,east);
     if (usable<96) return;
     s->seed=w->opt.seed^((uint32_t)(cell+1)*0x706c616eu);
     uint32_t rng=s->seed;
@@ -358,7 +358,7 @@ static void source_plan(const MacroWorld *w,int cell,MacroCellPlan *p) {
     SurfacePoint target={1,0};
     if (r>=0) {
         SurfaceFrame f=qlcg_surface_frame(w,r);
-        target=qlcg_frame_local(&s->frame,f.lon*f.radius,-f.lat*f.radius);
+        target=qlcg_frame_local(&s->frame,f.flat?f.anchor[0]:f.lon*f.radius,f.flat?f.anchor[2]:-f.lat*f.radius);
     }
     double length=fmax(1,hypot(target.x,target.z));
     s->dx=target.x/length; s->dz=target.z/length;

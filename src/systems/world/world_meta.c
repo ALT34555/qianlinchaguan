@@ -3,7 +3,7 @@
 #include "../../core/i18n.h"
 #include "world_internal.h"
 #include "../../core/math_util.h"
-#include <windows.h>
+#include "platform/platform.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -110,10 +110,10 @@ void qlcg_apply_world_preset(WorldCreatorOptions *opt, WorldPresetId preset) {
 }
 
 static void default_world_name(char *buf, size_t cap) {
-    SYSTEMTIME st;
-    GetLocalTime(&st);
+    QlLocalTime st;
+    qlcg_platform_local_time(&st);
     snprintf(buf, cap, "%s%02d%02d", tr("creator.defaultWorldName.prefix"),
-             st.wMonth, st.wDay);
+             st.month, st.day);
 }
 
 /* 默认世界创建器参数（对齐 WorldCr */

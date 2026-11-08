@@ -54,6 +54,18 @@ static const char *ATLAS_FS_SRC =
     "uniform int uLayerId;\n"
     "uniform float uLayerOpacity;\n"
     "out vec4 FragColor;\n"
+    "ivec2 float_coord(ivec2 p,ivec2 sz,bool wrapX) {\n"
+    " p.x=wrapX?((p.x%sz.x)+sz.x)%sz.x:clamp(p.x,0,sz.x-1); p.y=clamp(p.y,0,sz.y-1); return p; }\n"
+    "vec4 float_sample(sampler2D tex,vec2 uv,bool wrapX) {\n"
+    "#if QLCG_FLOAT_LINEAR\n"
+    " return texture(tex,uv);\n"
+    "#else\n"
+    " ivec2 sz=textureSize(tex,0); vec2 p=uv*vec2(sz)-0.5; ivec2 b=ivec2(floor(p)); vec2 f=fract(p);\n"
+    " vec4 a=texelFetch(tex,float_coord(b,sz,wrapX),0),c=texelFetch(tex,float_coord(b+ivec2(1,0),sz,wrapX),0);\n"
+    " vec4 d=texelFetch(tex,float_coord(b+ivec2(0,1),sz,wrapX),0),e=texelFetch(tex,float_coord(b+ivec2(1,1),sz,wrapX),0);\n"
+    " return mix(mix(a,c,f.x),mix(d,e,f.x),f.y);\n"
+    "#endif\n"
+    "}\n"
     "\n"
     "vec3 hsv_heat(float t) {\n"
     "    t = clamp(t, 0.0, 1.0);\n"
@@ -197,7 +209,7 @@ static const char *ATLAS_FS_SRC =
     "            if(uLayerId!=-1)discard;FragColor=vec4(.11,.13,.12,1);return;\n"
     "        }\n"
     "    }\n"
-    "    vec4 t0 = texture(uTex0, macroUV);\n"
+    "    vec4 t0 = float_sample(uTex0, macroUV,uFlat==0);\n"
     "    vec4 t1 = texture(uTex1, macroUV);\n"
     "    vec4 ts = texture(uSatTex, macroUV);\n"
     "\n"
@@ -277,7 +289,7 @@ static const char *ATLAS_FS_SRC =
     "            vec2 f = tileFraction * uTileSamples + 1.0;\n"
     "            vec2 tuv = (vec2(float(sx), float(sy)) * pitch + f) / (pitch * 16.0);\n"
     "            vec4 dt = texture(uTileTex, tuv);\n"
-    "            vec4 waterInfo = texture(uTileWater, tuv);\n"
+    "            vec4 waterInfo = float_sample(uTileWater,tuv,false);\n"
     "            float coverage = smoothstep(0.02, 0.02+max(fwidth(waterInfo.r),0.0001), waterInfo.r);\n"
     "            sourceCoverage = smoothstep(0.02,0.02+max(fwidth(waterInfo.a),0.0001),waterInfo.a) * uRiverMix;\n"
     "            iceWet = mix(iceWet, coverage, m1.y);\n"
@@ -357,41 +369,5 @@ static const char *ATLAS_FS_SRC =
     "    if (alpha <= 0.0) discard;\n"
     "    FragColor = vec4(layerColor * globeShade, alpha);\n"
     "}\n";
-
-/* 图层中文名称（严格对齐 AtlasLay */
-const char *qlcg_atlas_layer_name(AtlasLayerId id) {
-    switch (id) {
-        case LAYER_TERRITORIES: return tr("layer.civilization");
-        case LAYER_CHUNKS:      return tr("layer.chunks");
-        case LAYER_MERIDIAN:    return tr("layer.baseline");
-        case LAYER_DAYLIGHT:    return tr("layer.daylight");
-        case LAYER_CLOUDS:      return tr("layer.rain");
-        case LAYER_CONTOURS:    return tr("layer.contour");
-        case LAYER_CLIMATE:     return tr("layer.climate");
-        case LAYER_TEMPERATURE: return tr("layer.temperature");
-        case LAYER_ELEVATION:   return tr("layer.height");
-        case LAYER_ICE:         return tr("layer.ice");
-        case LAYER_DEPTH:       return tr("layer.depth");
-        case LAYER_SOURCE_RIVERS: return tr("layer.sourceRivers");
-        default:                return tr("layer.unknown");
-    }
-}
-
-/* 快速筛查名称 */
-const char *qlcg_atlas_filter_name(AtlasQuickFilter f) {
-    switch ((int)f) {
-        case 0:  return tr("atlas.filter.none");
-        case 1:  return tr("atlas.filter.flag");
-        case 2:  return tr("atlas.filter.owned");
-        case 3:  return tr("atlas.filter.water");
-        case 4:  return tr("atlas.filter.frozen");
-        case 5:  return tr("atlas.filter.cold");
-        case 6:  return tr("atlas.filter.temperate");
-        case 7:  return tr("atlas.filter.warm");
-        default: return tr("atlas.filter.unknown");
-    }
-}
-
-/* 初始化舆图渲染器 */
 
 #endif

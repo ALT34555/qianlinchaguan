@@ -2,11 +2,8 @@
 #ifndef QLCG_APP_STATE_H
 #define QLCG_APP_STATE_H
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#include <windowsx.h>
+#include "platform/platform.h"
+#include "platform/keys.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,9 +50,9 @@ typedef enum {
 typedef struct { float x, y, w, h; } UiRect;
 
 typedef struct {
-    HWND               hwnd;
-    HDC                hdc;
-    HGLRC              hglrc;
+    void              *hwnd;
+    void              *hdc;
+    void              *hglrc;
     int                win_w, win_h;
     bool               running;
 
@@ -211,11 +208,18 @@ bool game_scene_over_ui(UiContext *ui);
 void game_esc_menu(UiContext *ui);
 
 /* 应用骨架 */
-bool init_win32_gl(HINSTANCE hinst, int w, int h);
+void app_graphics_release(bool context_lost);
+bool app_graphics_restore(void);
+bool app_initialize(void);
+void app_update(float dt);
+void app_shutdown(void);
 void app_toggle_world_view(void);
 void app_apply_font(void);
 /* 文本输入通路：追加一个 UTF-16 码元到当前聚焦框 */
 void app_input_push_utf16(UiContext *ui, uint32_t unit);
+UiEditField *app_text_target(void);
+void app_input_key_down(unsigned key, bool repeat);
+void app_input_character(uint32_t unit);
 
 /* 设置页上下文：三套界面差异，对齐 base */
 bool     app_world_active(void);      /* 从游戏抽屉进入设置 */

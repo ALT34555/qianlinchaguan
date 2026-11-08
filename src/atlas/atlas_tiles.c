@@ -148,8 +148,8 @@ static struct AtlasTileCache *tiles_create(void) {
 
     glGenTextures(1,&tc->water);
     glBindTexture(GL_TEXTURE_2D,tc->water);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,qlcg_gl_caps.float_linear?GL_LINEAR:GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,qlcg_gl_caps.float_linear?GL_LINEAR:GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F,ATLAS_TILE_ATLAS_PX,ATLAS_TILE_ATLAS_PX,0,GL_RGBA,GL_FLOAT,NULL);
@@ -168,9 +168,9 @@ static struct AtlasTileCache *tiles_create(void) {
 
 void qlcg_atlas_tiles_destroy(struct AtlasTileCache *tc) {
     if (!tc) return;
-    if (tc->tex)  glDeleteTextures(1, &tc->tex);
-    if (tc->meta) glDeleteTextures(1, &tc->meta);
-    if (tc->water) glDeleteTextures(1,&tc->water);
+    if (tc->tex)  qlcg_gl_delete_textures(1, &tc->tex);
+    if (tc->meta) qlcg_gl_delete_textures(1, &tc->meta);
+    if (tc->water) qlcg_gl_delete_textures(1,&tc->water);
     free(tc);
 }
 

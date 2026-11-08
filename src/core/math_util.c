@@ -1,5 +1,5 @@
 #include "math_util.h"
-#include <windows.h>
+#include "platform/platform.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -89,13 +89,7 @@ float qlcg_fbm3(float x, float y, float z, uint32_t seed, int octaves) {
 }
 
 /* 高精度毫秒计时器 */
-double qlcg_now_ms(void) {
-    static LARGE_INTEGER freq = {0};
-    if (freq.QuadPart == 0) QueryPerformanceFrequency(&freq);
-    LARGE_INTEGER now;
-    QueryPerformanceCounter(&now);
-    return (double)now.QuadPart * 1000.0 / (double)freq.QuadPart;
-}
+double qlcg_now_ms(void) { return qlcg_platform_now_ms(); }
 
 void qlcg_mat4_identity(float m[16]) {
     memset(m, 0, 16 * sizeof(float));

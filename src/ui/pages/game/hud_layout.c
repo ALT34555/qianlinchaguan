@@ -18,7 +18,7 @@ void hud_reset(UiContext *ui) {
     (void)pad_x;
     for (int i = 0; i < HUD_SLOT_COUNT; i++) {
         g_cursor[i] = (i == HUD_BOTTOM_LEFT || i == HUD_BOTTOM_RIGHT || i == HUD_BOTTOM_CENTER)
-                    ? ((float)ui->win_h - pad_y)   /* 底部槽从下往上 */
+                    ? ((float)ui->win_h - (18*ui->met.size+ui->safe_edges[3]))   /* 底部槽从下往上 */
                     : pad_y;                       /* 顶部槽从上往下 */
     }
     g_ready = true;
@@ -48,7 +48,7 @@ UiRect hud_take(UiContext *ui, int slot, float w, float h) {
             g_cursor[slot] += h + gap;
             break;
         case HUD_TOP_RIGHT:
-            r.x = (float)ui->win_w - pad_x - w;
+            r.x = (float)ui->win_w - (20*z+ui->safe_edges[2]) - w;
             r.y = g_cursor[slot];
             g_cursor[slot] += h + gap;
             break;
@@ -58,7 +58,7 @@ UiRect hud_take(UiContext *ui, int slot, float w, float h) {
             g_cursor[slot] -= h + gap;
             break;
         case HUD_BOTTOM_RIGHT:
-            r.x = (float)ui->win_w - pad_x - w;
+            r.x = (float)ui->win_w - (20*z+ui->safe_edges[2]) - w;
             r.y = g_cursor[slot] - h;
             g_cursor[slot] -= h + gap;
             break;

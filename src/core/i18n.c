@@ -1,8 +1,5 @@
 /* 多语言核心：内置中/英+外置 mod 语言包 */
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
+#include "platform/platform.h"
 #include "i18n.h"
 #include "math_util.h"
 #include "locale_pack.h"
@@ -166,6 +163,8 @@ static const BuiltinPair k_builtin[] = {
     { "game.pause.slotName",            "子存档名称（可选）",             "Slot name (optional)" },
     { "game.pause.store",               "存入",                         "Save here" },
     { "game.pause.quickHint",           "快速存档：%s",                 "Quick save: %s" },
+    { "document.openFailed",            "无法打开系统文件选择器",       "Could not open the file picker" },
+    { "document.exportFailed",          "文件导出失败，请检查保存位置", "Could not export the file. Check the destination." },
 
     /* 世界创建器 */
     { "creator.back",                   "← 返回创建选项",               "← Back to options" },
@@ -288,7 +287,7 @@ static const BuiltinPair k_builtin[] = {
     { "settings.hidpi.v2",            "2x",                       "2x" },
     { "settings.hidpi.v3",            "3x",                       "3x" },
     { "settings.hidpi.v4",            "4x",                       "4x" },
-    { "settings.hidpi.hint",          "放大窗口以适配高分辨率屏幕，不影响界面布局比例。",
+    { "settings.hidpi.hint",          "按显示设备调整界面倍率。",
                                                    "Enlarges the window for high-DPI screens; layout proportions are unchanged." },
     { "settings.crosshair",             "准星样式",                     "Crosshair" },
     { "settings.invertLookX",           "反转水平视角（X 轴）",         "Invert horizontal look (X axis)" },
@@ -1201,7 +1200,7 @@ static QlLocalePack g_mod_packs[QLCG_MAX_LOCALES - 2];
 static int g_mod_count;
 
 static int pack_compare(const void *a, const void *b) {
-    return _stricmp(((const QlLocalePack *)a)->meta.code, ((const QlLocalePack *)b)->meta.code);
+    return qlcg_stricmp(((const QlLocalePack *)a)->meta.code, ((const QlLocalePack *)b)->meta.code);
 }
 
 int qlcg_i18n_rescan(const wchar_t *mod_dir) {
@@ -1216,37 +1215,31 @@ int qlcg_i18n_rescan(const wchar_t *mod_dir) {
     snprintf(g_locales[0].label, sizeof(g_locales[0].label), "简体中文");
     snprintf(g_locales[1].code, sizeof(g_locales[1].code), "en");
     snprintf(g_locales[1].label, sizeof(g_locales[1].label), "English");
-    if (mod_dir && *mod_dir) {
-        wchar_t pattern[1024];
-        if (swprintf_s(pattern, 1024, L"%ls\\*", mod_dir) >= 0) {
-            WIN32_FIND_DATAW fd;
-            HANDLE find = FindFirstFileW(pattern, &fd);
-            if (find != INVALID_HANDLE_VALUE) {
-                do {
-                    if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || fd.cFileName[0] == L'.') continue;
-                    if (g_mod_count >= QLCG_MAX_LOCALES - 2) break;
-                    QlLocalePack *pack = &g_mod_packs[g_mod_count];
-                    if (!qlcg_locale_pack_load(mod_dir, fd.cFileName, pack)) continue;
-                    bool duplicate = _stricmp(pack->meta.code, "zh-CN") == 0 ||
-                                     _stricmp(pack->meta.code, "en") == 0;
-                    for (int i = 0; i < g_mod_count; ++i)
-                        if (_stricmp(g_mod_packs[i].meta.code, pack->meta.code) == 0) duplicate = true;
-                    if (duplicate) {
-                        qlcg_locale_pack_free(pack);
-                        continue;
-                    }
-                    SYSTEMTIME utc, local;
-                    if (FileTimeToSystemTime(&fd.ftLastWriteTime, &utc) &&
-                        SystemTimeToTzSpecificLocalTime(NULL, &utc, &local)) {
-                        snprintf(pack->meta.modified_date, sizeof(pack->meta.modified_date),
-                                 "%04u-%02u-%02u", (unsigned)local.wYear,
-                                 (unsigned)local.wMonth, (unsigned)local.wDay);
-                    }
-                    ++g_mod_count;
-                } while (FindNextFileW(find, &fd));
-                FindClose(find);
-            }
+    const wchar_t *roots[]={mod_dir,L"content/locales"};
+    for(int root_index=0;root_index<2;root_index++) {
+        const wchar_t *pack_dir=roots[root_index];
+        if(!pack_dir || !*pack_dir) continue;
+        char root[2048];
+        QlDirectory *dir = qlcg_wide_to_utf8(pack_dir, root, sizeof(root)) ? qlcg_platform_dir_open(root) : NULL;
+        QlDirectoryEntry e;
+        while (qlcg_platform_dir_next(dir, &e)) {
+            if (!e.directory || e.name[0] == '.') continue;
+            if (g_mod_count >= QLCG_MAX_LOCALES - 2) break;
+            wchar_t folder[1024];
+            if (!qlcg_utf8_to_wide(e.name, folder, 1024)) continue;
+            QlLocalePack *pack = &g_mod_packs[g_mod_count];
+            if (!qlcg_locale_pack_load(pack_dir, folder, pack)) continue;
+            bool duplicate = qlcg_stricmp(pack->meta.code, "zh-CN") == 0 || qlcg_stricmp(pack->meta.code, "en") == 0;
+            for (int i = 0; i < g_mod_count; ++i)
+                if (!qlcg_stricmp(g_mod_packs[i].meta.code, pack->meta.code)) duplicate = true;
+            if (duplicate) { qlcg_locale_pack_free(pack); continue; }
+            QlLocalTime local;
+            if (qlcg_platform_date(e.modified, &local))
+                snprintf(pack->meta.modified_date, sizeof(pack->meta.modified_date), "%04u-%02u-%02u",
+                    (unsigned)local.year, (unsigned)local.month, (unsigned)local.day);
+            ++g_mod_count;
         }
+        qlcg_platform_dir_close(dir);
     }
     qsort(g_mod_packs, (size_t)g_mod_count, sizeof(g_mod_packs[0]), pack_compare);
     for (int i = 0; i < g_mod_count; ++i) g_locales[g_locale_count++] = g_mod_packs[i].meta;
@@ -1271,7 +1264,7 @@ void qlcg_i18n_set_locale(const char *code) {
     if (g_locale_count <= 0) qlcg_i18n_rescan(QLCG_L10N_DIR);
     if (!code || !code[0]) { g_cur_idx = 0; return; }
     for (int i = 0; i < g_locale_count; i++) {
-        if (_stricmp(g_locales[i].code, code) == 0) {
+        if (qlcg_stricmp(g_locales[i].code, code) == 0) {
             g_cur_idx = i;
             return;
         }
@@ -1279,7 +1272,7 @@ void qlcg_i18n_set_locale(const char *code) {
     /* 前缀匹配：en-US 回退到 en */
     for (int i = 0; i < g_locale_count; i++) {
         size_t len = strlen(g_locales[i].code);
-        if (_strnicmp(g_locales[i].code, code, len) == 0 &&
+        if (qlcg_strnicmp(g_locales[i].code, code, len) == 0 &&
             (code[len] == '-' || code[len] == '_' || code[len] == '\0')) {
             g_cur_idx = i;
             return;
@@ -1320,13 +1313,13 @@ const char *qlcg_i18n_name_text(const char *culture, const char *domain, const c
     if (!culture || !*culture) culture = qlcg_i18n_get_locale();
     for (int i = 0; i < g_mod_count; ++i) {
         const QlLocalePack *pack = &g_mod_packs[i];
-        if (_stricmp(pack->meta.code, culture) != 0) continue;
+        if (qlcg_stricmp(pack->meta.code, culture) != 0) continue;
         const char *value = qlcg_locale_pack_text(pack, domain, key);
         if (value) return value;
         fallback = pack->name_fallback;
         break;
     }
-    if (_stricmp(culture, "zh-CN") == 0) fallback = "zh-CN";
+    if (qlcg_stricmp(culture, "zh-CN") == 0) fallback = "zh-CN";
     if (strcmp(domain, "flags") == 0) return qlcg_builtin_flag_text(fallback, key);
     return NULL;
 }

@@ -13,6 +13,7 @@ bool qlcg_precip_write(FILE *file, const MacroWorld *world);
 /* limit<=0 表示以文件尾为界 */
 bool qlcg_precip_read_optional_lim(FILE *file, MacroWorld *world, long limit);
 bool qlcg_precip_tail_valid_lim(FILE *file, long limit);
+bool qlcg_precip_read_strict(FILE *file, MacroWorld *world, const WorldCreatorOptions *opt, long limit);
 
 static inline bool qlcg_precip_read_optional(FILE *file, MacroWorld *world) {
     return qlcg_precip_read_optional_lim(file, world, 0);

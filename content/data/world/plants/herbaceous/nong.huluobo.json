@@ -1,0 +1,35 @@
+{
+  "plants": [
+    {
+      "id": "nong.huluobo",
+      "name": "胡萝卜",
+      "latin": "Daucus carota subsp. sativus",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "seed": 730,
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.49,
+        "spread": 0.33
+      },
+      "palette": {
+        "foliage": "cropCarrotLeaf",
+        "foliageDark": "cropTeaShade",
+        "bloom": "bloomWhite",
+        "fruit": "cropCarrotRoot"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

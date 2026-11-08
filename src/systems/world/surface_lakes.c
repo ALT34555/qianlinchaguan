@@ -5,6 +5,7 @@
 #include "gen/gen_noise.h"
 #include "gen/gen_height.h"
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <stdio.h>
 #include <limits.h>

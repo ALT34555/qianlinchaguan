@@ -1,0 +1,34 @@
+{
+  "plants": [
+    {
+      "id": "hua.shaoyao",
+      "name": "芍药",
+      "latin": "Paeonia lactiflora",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "params": {
+        "seedCount": 3,
+        "height": 0.86,
+        "spread": 0.52,
+        "bloomCount": 6
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "barkLight": "barkLight",
+        "bloom": "#E88AAA"
+      },
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

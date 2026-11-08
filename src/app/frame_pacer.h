@@ -1,10 +1,10 @@
 #ifndef QLCG_FRAME_PACER_H
 #define QLCG_FRAME_PACER_H
 
-#include <windows.h>
+#include <stddef.h>
 
 typedef struct {
-    HANDLE timer;
+    void *timer;
 } FramePacer;
 
 void qlcg_frame_pacer_init(FramePacer *pacer);

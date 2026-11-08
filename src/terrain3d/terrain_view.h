@@ -81,6 +81,7 @@ typedef struct {
 bool qlcg_plant_batch_setup(PlantBatch *b, int species, int form, int season);
 #define QLCG_MAX_ROCK_BATCH ROCK_CATALOG_CAPACITY
 bool qlcg_rock_batch_setup(PlantBatch *b, int index, int form, int season, int chunk);
+struct TerrainRenderer;
 void qlcg_rock_batches_clear(struct TerrainRenderer *tr);
 void qlcg_plant_batch_instances(PlantBatch *b, const PlantInstGPU *inst, int count);
 typedef struct TerrainRenderer TerrainRenderer;
@@ -287,6 +288,8 @@ struct TerrainRenderer {
     int                   props_form;
 };
 
+void qlcg_terrain_gpu_release(TerrainRenderer *tr);
+bool qlcg_terrain_gpu_restore(TerrainRenderer *tr);
 bool qlcg_terrain_init(TerrainRenderer *tr);
 void qlcg_terrain_release_scene(TerrainRenderer *tr);
 void qlcg_terrain_shutdown(TerrainRenderer *tr);

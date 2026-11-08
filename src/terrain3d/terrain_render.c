@@ -217,11 +217,22 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
         }
     }
     glUniform1i(qlcg_gl_uniform(tr->terrain_prog,"uCliffMaterial"),0);
-    if (md_n > 0 && glMultiDrawElementsBaseVertex && !qlcg_dev_skip_draw(QLCG_DEV_SKIP_TERRAIN)) {
+    if (md_n > 0 && !qlcg_dev_skip_draw(QLCG_DEV_SKIP_TERRAIN)) {
         glBindVertexArray(tr->terrain_vao);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tr->terrain_ebo);
-        glMultiDrawElementsBaseVertex(GL_TRIANGLES, tr->md_count, GL_UNSIGNED_INT,
-                                      tr->md_index, md_n, tr->md_base);
+        if (glMultiDrawElementsBaseVertex) {
+            glMultiDrawElementsBaseVertex(GL_TRIANGLES,tr->md_count,GL_UNSIGNED_INT,(const void *const *)tr->md_index,md_n,tr->md_base);
+        } else {
+            glBindBuffer(GL_ARRAY_BUFFER,tr->terrain_vbo);
+            for(int draw=0;draw<md_n;draw++) {
+                size_t base=(size_t)tr->md_base[draw]*sizeof(TerrainVert);
+                for(int attr=0;attr<3;attr++)
+                    glVertexAttribPointer(attr,3,GL_FLOAT,GL_FALSE,sizeof(TerrainVert),(void *)(base+attr*3*sizeof(float)));
+                glDrawElements(GL_TRIANGLES,tr->md_count[draw],GL_UNSIGNED_INT,tr->md_index[draw]);
+            }
+            for(int attr=0;attr<3;attr++)
+                glVertexAttribPointer(attr,3,GL_FLOAT,GL_FALSE,sizeof(TerrainVert),(void *)(size_t)(attr*3*sizeof(float)));
+        }
     }
 
     /* 3. 绘制硬件实例化植被、岩石与领地旗帜 */
@@ -454,7 +465,7 @@ skip_props:
     glDisable(GL_POLYGON_OFFSET_FILL);
     if(s->particles && !underwater && tr->spring_prog) {
         GLuint program=tr->spring_prog;
-        glEnable(GL_PROGRAM_POINT_SIZE);glDepthMask(GL_FALSE);glUseProgram(program);
+        qlcg_gl_program_point_size(true);glDepthMask(GL_FALSE);glUseProgram(program);
         glUniformMatrix4fv(qlcg_gl_uniform(program,"uMVP"),1,GL_FALSE,mvp);
         glUniform1f(qlcg_gl_uniform(program,"uTime"),w->sim_time);
         glUniform1f(qlcg_gl_uniform(program,"uLight"),sky.light_scale);
@@ -469,11 +480,11 @@ skip_props:
             glDrawArrays(GL_POINTS,0,96);
         }
         glUniform1f(qlcg_gl_uniform(program,"uFallSpray"),0);
-        glDepthMask(GL_TRUE);glDisable(GL_PROGRAM_POINT_SIZE);
+        glDepthMask(GL_TRUE);qlcg_gl_program_point_size(false);
     }
     if(spring_count&&tr->spring_prog) {
         GLuint program=tr->spring_prog;
-        glEnable(GL_PROGRAM_POINT_SIZE);
+        qlcg_gl_program_point_size(true);
         glDepthMask(GL_FALSE);
         glUseProgram(program);
         glUniformMatrix4fv(qlcg_gl_uniform(program,"uMVP"),1,GL_FALSE,mvp);
@@ -488,7 +499,7 @@ skip_props:
             glDrawArrays(GL_POINTS,0,24);
         }
         glDepthMask(GL_TRUE);
-        glDisable(GL_PROGRAM_POINT_SIZE);
+        qlcg_gl_program_point_size(false);
     }
 
     /* 4b. 浮冰、破冰碎片与裂纹 */
@@ -515,7 +526,7 @@ skip_props:
         static const float HAIL_COL[3] = { 1.00f, 1.00f, 1.00f };
         static const float DUST_COL[3] = { 0.75f, 0.76f, 0.70f };
         static const float SAND_COL[3] = { 0.80f, 0.69f, 0.48f };
-        glEnable(GL_PROGRAM_POINT_SIZE);
+        qlcg_gl_program_point_size(true);
         glUseProgram(tr->weather_prog);
         glUniformMatrix4fv(qlcg_gl_uniform(tr->weather_prog, "uMVP"), 1, GL_FALSE, mvp);
         glUniform3f(qlcg_gl_uniform(tr->weather_prog, "uCamPos"), cam_pos[0], cam_pos[1], cam_pos[2]);

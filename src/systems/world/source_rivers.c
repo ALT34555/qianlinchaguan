@@ -1,3 +1,4 @@
+#include "river_fields.h"
 /* 源流、泉眼与湿点的惰性目录 */
 #include "source_rivers.h"
 #include "surface_internal.h"
@@ -67,7 +68,7 @@ void qlcg_source_rivers_free(MacroWorld *w) {
 }
 static int network_record(SourceRiverNetwork *n,RiverBuffer *b) {
     int32_t counts[2]={n->source_count,n->edge_count};
-    qlcg_river_io(b,counts,sizeof(counts));
+    qlcg_river_values(b,counts,(sizeof(counts))/4,4);
     if(b->failed||counts[0]<0||counts[0]>4096||counts[1]<0||counts[1]>counts[0]) return 0;
     n->source_count=counts[0]; n->edge_count=counts[1];
     if(b->reading) {
@@ -75,7 +76,7 @@ static int network_record(SourceRiverNetwork *n,RiverBuffer *b) {
         n->edges=calloc((size_t)fmax(SOURCE_RIVER_LIMIT,counts[1]+1),sizeof(*n->edges));
         if(!n->sources||!n->edges) { n->edge_count=0; return 0; }
     }
-    qlcg_river_io(b,n->sources,(size_t)n->source_count*sizeof(*n->sources));
+    for(int k=0;k<n->source_count;k++) qlcg_river_RiverSource(b,&n->sources[k]);
     for(int k=0;k<n->source_count;k++) {
         const RiverSource *s=n->sources+k;
         if(!isfinite(s->x)||!isfinite(s->z)||!isfinite(s->level)||!isfinite(s->half_width)||s->half_width<0||s->half_width>16) return 0;
@@ -83,17 +84,17 @@ static int network_record(SourceRiverNetwork *n,RiverBuffer *b) {
     for(int k=0;k<n->edge_count;k++) {
         SourceRiverEdge *e=n->edges+k;
         int32_t m[4]={e->count,e->source,e->target,e->target_kind};
-        qlcg_river_io(b,m,sizeof(m));
+        qlcg_river_values(b,m,(sizeof(m))/4,4);
         if(b->failed||m[0]<2||m[0]>SOURCE_POINT_LIMIT||m[1]<0||m[1]>=n->source_count||m[3]<0||m[3]>SOURCE_TARGET_CONTINUATION) return 0;
         e->count=m[0]; e->source=m[1]; e->target=m[2]; e->target_kind=m[3];
-        qlcg_river_io(b,&e->profile.influence,sizeof(double));
-        qlcg_river_io(b,&e->join,sizeof(e->join));
-        qlcg_river_io(b,&e->join_x,sizeof(double)); qlcg_river_io(b,&e->join_z,sizeof(double));
+        qlcg_river_values(b,&e->profile.influence,(sizeof(double))/8,8);
+        qlcg_river_RiverJunction(b,&e->join);
+        qlcg_river_values(b,&e->join_x,(sizeof(double))/8,8); qlcg_river_values(b,&e->join_z,(sizeof(double))/8,8);
         if(b->reading) { e->points=calloc(e->count,sizeof(*e->points)); if(!e->points) return 0; }
         for(int j=0;j<e->count;j++) {
             RiverVectorPoint *p=e->points+j;
             double v[8]={p->x,p->z,p->arc,p->width,p->level,p->depth,p->fall,p->slope};
-            qlcg_river_io(b,v,sizeof(v));
+            qlcg_river_values(b,v,(sizeof(v))/8,8);
             if(b->reading) {
                 for(int d=0;d<8;d++) if(!isfinite(v[d])) return 0;
                 if(v[2]<0||v[3]<=0||v[3]>16||v[5]<0||v[5]>2.5||v[6]<0||v[6]>16||
@@ -110,15 +111,15 @@ static int network_record(SourceRiverNetwork *n,RiverBuffer *b) {
     }
     int crafted=0; for(int k=0;k<n->edge_count;k++) if(n->edges[k].craft_id) crafted=1;
     if((!b->reading&&crafted)||(b->reading&&b->at<b->size)) {
-        uint32_t tag=0x31454352; qlcg_river_io(b,&tag,sizeof(tag)); if(tag!=0x31454352) return 0;
+        uint32_t tag=0x31454352; qlcg_river_values(b,&tag,(sizeof(tag))/4,4); if(tag!=0x31454352) return 0;
         for(int k=0;k<n->edge_count;k++) {
             SourceRiverEdge *e=n->edges+k;
-            qlcg_river_io(b,&e->craft_id,sizeof(e->craft_id));
-            qlcg_river_io(b,&e->craft_owner,sizeof(int)); qlcg_river_io(b,&e->craft_order,sizeof(int));
-            qlcg_river_io(b,&e->craft_count,sizeof(int));
+            qlcg_river_values(b,&e->craft_id,(sizeof(e->craft_id))/8,8);
+            qlcg_river_values(b,&e->craft_owner,(sizeof(int))/4,4); qlcg_river_values(b,&e->craft_order,(sizeof(int))/4,4);
+            qlcg_river_values(b,&e->craft_count,(sizeof(int))/4,4);
             if(b->failed||e->craft_count<0||e->craft_count>SOURCE_POINT_LIMIT*2||e->craft_order<0) return 0;
             if(b->reading&&e->craft_count) { e->craft_cells=malloc((size_t)e->craft_count*sizeof(int)); if(!e->craft_cells) return 0; }
-            if(e->craft_count) qlcg_river_io(b,e->craft_cells,(size_t)e->craft_count*sizeof(int));
+            if(e->craft_count) qlcg_river_values(b,e->craft_cells,((size_t)e->craft_count*sizeof(int))/4,4);
         }
     }
     return !b->failed;

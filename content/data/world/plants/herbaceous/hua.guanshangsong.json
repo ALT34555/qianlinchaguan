@@ -1,0 +1,34 @@
+{
+  "plants": [
+    {
+      "id": "hua.guanshangsong",
+      "name": "观赏松",
+      "latin": "Pinus thunbergii",
+      "climate": "temperate",
+      "archetype": "conifer",
+      "params": {
+        "seedCount": 3,
+        "height": 2.25,
+        "spread": 1.32,
+        "flowerless": true,
+        "fruitless": true,
+        "snowOn": [
+          "canopy"
+        ]
+      },
+      "palette": {
+        "foliage": "conifer",
+        "foliageDark": "coniferDark",
+        "barkLight": "barkLight"
+      },
+      "tags": [],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

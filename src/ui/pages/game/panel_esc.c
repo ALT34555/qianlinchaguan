@@ -79,7 +79,7 @@ void game_esc_menu(UiContext *ui) {
 
     /* 无全屏遮罩：抽屉自带玻璃底，画面保持可见 */
     float dw = game_esc_drawer_width(ui);
-    float dh = (float)ui->win_h - sy * 2.0f;
+    float dh = (float)ui->win_h - (ui->safe_edges[1]+ui->safe_edges[3]);
     float dy = sy;
 
     /* 滑入：对齐 base 0.28s ease-out */
@@ -159,7 +159,7 @@ void game_esc_menu(UiContext *ui) {
     y += 10.0f * sc * 1.6f + 10.0f * z;
 
     if (ui_btn(ui, ix, y, iw, btn_h, tr("game.pause.export"), BTN_GHOST, false, btn_px, false)) {
-        if (save_and_export()) app_push_toast_k(UI_TOAST_SUCCESS, NULL, tr("saves.exportDone"));
+        save_and_export();
     }
     y += btn_h + gap;
 

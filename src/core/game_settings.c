@@ -1,3 +1,5 @@
+#include "systems/world/save_fields.h"
+#include "platform/platform.h"
 #include "game_settings.h"
 #include "settings_legacy_v4.h"
 #include "math_util.h"
@@ -68,6 +70,11 @@ GameSettings qlcg_default_settings(void) {
     s.status_feedback     = true;
 
     s.view_mode           = VIEW_MODE_2D;
+#ifdef __ANDROID__
+    s.touch_controls=true;s.frame_rate=30;s.render_distance=4;s.vegetation_distance=0;
+    s.antialias=false;s.dense_vegetation=0;s.vegetation_form=VEG_FORM_SIMPLE;
+    s.water_reflections=false;
+#endif
     return s;
 }
 
@@ -166,7 +173,7 @@ static void settings_migrate_v4(GameSettings *dst, size_t n) {
 
 void qlcg_load_settings_disk(GameSettings *s) {
     if (!s) return;
-    FILE *fp = fopen("userdata/settings.bin", "rb");
+    FILE *fp = qlcg_platform_fopen("userdata/settings.bin", "rb");
     if (!fp) return;
     /* 以传入值为底：旧文件读不满时，末尾新增字段保留默认 */
     GameSettings tmp = *s;
@@ -176,14 +183,26 @@ void qlcg_load_settings_disk(GameSettings *s) {
         fclose(fp);
         return;
     }
-    size_t n = fread(s_settings_raw, 1, sizeof(s_settings_raw), fp);
-    fclose(fp);
-    if (memcmp(magic, QLCG_SETTINGS_MAGIC_V4, sizeof(magic)) == 0) {
-        settings_migrate_v4(&tmp, n);
-    } else if (memcmp(magic, QLCG_SETTINGS_MAGIC, sizeof(magic)) == 0) {
-        if (n > 0) memcpy(&tmp, s_settings_raw, n);
+    bool old_scale=memcmp(magic,QLCG_SETTINGS_MAGIC,8)!=0;
+    if (!memcmp(magic,QLCG_SETTINGS_MAGIC,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V6,8)) {
+        long end,size=qlcg_file_size(fp);
+        bool ok=size>8 && size<65536 && qlcg_section_open(fp,"SETT",size,&end) && end==size;
+        QlCodec io=qlcg_codec(fp,true,65536);
+        if(ok) qlcg_fields_settings(&io,&tmp);
+        ok=ok && io.ok && ftell(fp)==size; fclose(fp);
+        if(!ok) return;
     } else {
-        return;   /* magic 不符则弃读，回退默认值 */
+#ifdef _WIN32
+        size_t n=fread(s_settings_raw,1,sizeof(s_settings_raw),fp); fclose(fp);
+        if(!memcmp(magic,QLCG_SETTINGS_MAGIC_V4,8)) settings_migrate_v4(&tmp,n);
+        else if(!memcmp(magic,QLCG_SETTINGS_MAGIC_V5,8)) { if(n) memcpy(&tmp,s_settings_raw,n); }
+        else return;
+        tmp.profile.name[sizeof(tmp.profile.name)-1]=0; tmp.ren_ming[sizeof(tmp.ren_ming)-1]=0;
+        tmp.font_id[sizeof(tmp.font_id)-1]=0; tmp.locale[sizeof(tmp.locale)-1]=0;
+        tmp.resolution[sizeof(tmp.resolution)-1]=0;
+#else
+        fclose(fp); return;
+#endif
     }
 
     tmp.fov = qlcg_clampi(tmp.fov, 30, 120);
@@ -194,7 +213,8 @@ void qlcg_load_settings_disk(GameSettings *s) {
     tmp.safe_y = qlcg_clampf(tmp.safe_y, 0.0f, 35.0f);
     tmp.text_scale  = qlcg_clampf(tmp.text_scale,  0.6f, 4.0f);
     tmp.ui_scale    = qlcg_clampf(tmp.ui_scale,    0.25f, 4.0f);
-    tmp.hidpi_scale = qlcg_clampf(tmp.hidpi_scale, 1.0f, 4.0f);
+    if(old_scale) tmp.hidpi_scale*=0.5f;
+    tmp.hidpi_scale = qlcg_clampf(tmp.hidpi_scale, 0.5f, 4.0f);
     tmp.touch_opacity = qlcg_clampf(tmp.touch_opacity, 0.1f, 1.0f);
     for (int i = 0; i < 4; i++) {
         for (int k = 0; k < 3; k++) {
@@ -240,12 +260,49 @@ void qlcg_load_settings_disk(GameSettings *s) {
     *s = tmp;
 }
 
+static bool read_portable_settings(const char *path) {
+    FILE *fp=qlcg_platform_fopen(path,"rb"); if(!fp) return false;
+    char magic[8]; long end,size=qlcg_file_size(fp);
+    bool ok=size>8 && size<65536 && fread(magic,1,8,fp)==8 && !memcmp(magic,QLCG_SETTINGS_MAGIC,8) &&
+        qlcg_section_open(fp,"SETT",size,&end) && end==size;
+    GameSettings tmp={0}; QlCodec io=qlcg_codec(fp,true,65536);
+    if(ok) qlcg_fields_settings(&io,&tmp);
+    ok=ok && io.ok && ftell(fp)==size; fclose(fp); return ok;
+}
+bool qlcg_settings_write(const char *path, const GameSettings *s) {
+    if(!path || !s) return false;
+    char temporary[1024];
+    int n=snprintf(temporary,sizeof(temporary),"%s.new",path);
+    if(n<0 || n>=(int)sizeof(temporary)) return false;
+    FILE *fp=qlcg_platform_fopen(temporary,"w+b"); if(!fp) return false;
+    bool ok=fwrite(QLCG_SETTINGS_MAGIC,1,8,fp)==8;
+    long start=qlcg_section_begin(fp,"SETT");
+    GameSettings tmp=*s; QlCodec io=qlcg_codec(fp,false,65536);
+    qlcg_fields_settings(&io,&tmp);
+    ok=ok && start==8 && io.ok && qlcg_section_finish(fp,start) && qlcg_platform_sync(fp);
+    if(fclose(fp)) ok=false;
+    if(ok) ok=read_portable_settings(temporary);
+    if(ok && qlcg_platform_exists(path)) {
+        char magic[8]={0}; fp=qlcg_platform_fopen(path,"rb");
+        if(!fp || fread(magic,1,8,fp)!=8) ok=false;
+        if(fp) fclose(fp);
+        if(ok && (!memcmp(magic,QLCG_SETTINGS_MAGIC_V4,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V5,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V6,8))) {
+            bool copied=false; char backup[1024];
+            for(int i=0;i<100 && !copied;i++) {
+                n=snprintf(backup,sizeof(backup),"%s.legacy-%d",path,i);
+                if(n<0 || n>=(int)sizeof(backup)) break;
+                if(!qlcg_platform_exists(backup)) { copied=qlcg_platform_copy(path,backup); break; }
+            }
+            ok=copied;
+        }
+    }
+    if(ok) ok=qlcg_platform_replace(temporary,path)==0;
+    if(!ok) qlcg_platform_remove(temporary);
+    return ok;
+}
 void qlcg_save_settings_disk(const GameSettings *s) {
-    FILE *fp = fopen("userdata/settings.bin", "wb");
-    if (!fp) return;
-    fwrite(QLCG_SETTINGS_MAGIC, 1, 8, fp);
-    fwrite(s, sizeof(GameSettings), 1, fp);
-    fclose(fp);
+    qlcg_platform_mkdir("userdata");
+    qlcg_settings_write("userdata/settings.bin",s);
 }
 
 const char *qlcg_graphics_preset_name(GraphicsPreset p) {

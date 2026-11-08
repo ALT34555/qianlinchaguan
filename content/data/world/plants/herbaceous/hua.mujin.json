@@ -1,0 +1,34 @@
+{
+  "plants": [
+    {
+      "id": "hua.mujin",
+      "name": "木槿",
+      "latin": "Hibiscus syriacus",
+      "climate": "temperate",
+      "archetype": "shrub",
+      "params": {
+        "seedCount": 4,
+        "height": 1.78,
+        "spread": 0.68,
+        "bloomCount": 6
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "barkLight": "barkLight",
+        "bloom": "#B68DCA"
+      },
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

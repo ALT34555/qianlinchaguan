@@ -27,7 +27,7 @@ static const char *const k_res_ids[7] = {
 };
 
 /* 高分辨率显示设备档位，顺序对应下拉项 */
-static const float k_hidpi_vals[5] = { 1.0f, 1.5f, 2.0f, 3.0f, 4.0f };
+static const float k_hidpi_vals[7] = { 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f };
 
 static const GraphicsPreset k_preset_vals[6] = {
     PRESET_EXTREME, PRESET_HIGH, PRESET_BALANCED,
@@ -389,7 +389,10 @@ void render_screen_settings(UiContext *ui) {
     tab_w = qlcg_minf(tab_w, page.w * 0.28f);
     float tab_h = ui_ctl_height(40.0f * z, tab_px);
     float tx = page.x;
-    float ty = page.y + head_h + 10.0f * z;
+    float cy = page.y + head_h + 10.0f * z;
+    float ch = qlcg_maxf(60.0f, page.y + page.h - cy - foot_h);
+    float tab_scroll = ui_scroll_begin(ui, 0x5E771Fu, tx, cy, tab_w + 4.0f * z, ch);
+    float ty = cy - tab_scroll;
     for (int i = 0; i < tab_count; i++) {
         bool act = ((int)g_app.set_tab == i);
         bool hov = ui_hit(ui, tx, ty, tab_w, tab_h);
@@ -413,12 +416,11 @@ void render_screen_settings(UiContext *ui) {
         }
         ty += tab_h + 6.0f * z;
     }
+    ui_scroll_end(ui, 0x5E771Fu, (float)tab_count * (tab_h + 6.0f * z) - 6.0f * z);
 
     /* 右侧内容面板 */
     float cx = page.x + tab_w + 16.0f * z;
     float cw = qlcg_maxf(60.0f, page.x + page.w - cx);
-    float cy = page.y + head_h + 10.0f * z;
-    float ch = qlcg_maxf(60.0f, page.y + page.h - cy - foot_h);
     ui_panel(ui, cx, cy, cw, ch, 6.0f, tk_of(ui, QL_SURFACE), tk_of(ui, QL_LINE_SOFT), tk_of(ui, QL_SHADOW_SM));
 
     float ix = cx + 20.0f * z;
@@ -576,8 +578,7 @@ void render_screen_settings(UiContext *ui) {
                 names[0] = tr("settings.font.system");
                 if (strcmp(s->font_id, "system") == 0) cur = 0;
                 for (int i = 0; i < g_app.mod_fonts.count && i < 12; i++) {
-                    WideCharToMultiByte(CP_UTF8, 0, g_app.mod_fonts.items[i].label, -1,
-                                        tmp[i], sizeof(tmp[i]), NULL, NULL);
+                    qlcg_wide_to_utf8(g_app.mod_fonts.items[i].label, tmp[i], sizeof(tmp[i]));
                     names[nf] = tmp[i];
                     if (strcmp(s->font_id, g_app.mod_fonts.items[i].id) == 0) cur = nf;
                     nf++;
@@ -661,19 +662,15 @@ void render_screen_settings(UiContext *ui) {
             }
             /* 高分辨率显示设备：base 没有，放在画面页首行 */
             {
-                const char *hidpi_names[5] = {
-                    tr("settings.hidpi.v1"),  tr("settings.hidpi.v15"),
-                    tr("settings.hidpi.v2"),  tr("settings.hidpi.v3"),
-                    tr("settings.hidpi.v4")
-                };
+                const char *hidpi_names[7]={"0.5x","0.75x","1x","1.5x","2x","3x","4x"};
                 int hidpi_cur = 0;
                 float best = 1e9f;
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < 7; i++) {
                     float d = fabsf(s->hidpi_scale - k_hidpi_vals[i]);
                     if (d < best) { best = d; hidpi_cur = i; }
                 }
                 ui_layout_select(&L, SEL_ID_HIDPI, tr("settings.hidpi"),
-                                 hidpi_names, 5, hidpi_cur);
+                                 hidpi_names, 7, hidpi_cur);
                 ui_layout_note(&L, tr("settings.hidpi.hint"), true);
             }
 
@@ -1112,7 +1109,7 @@ void render_screen_settings(UiContext *ui) {
                     changed = true;
                 }
             } else if (ui->select_result_id == SEL_ID_HIDPI) {
-                if (picked < 3) {
+                if (picked < 7) {
                     s->hidpi_scale = k_hidpi_vals[picked];
                     app_apply_hidpi_scale();
                     changed = true;

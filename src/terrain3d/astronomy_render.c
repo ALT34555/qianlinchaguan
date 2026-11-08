@@ -46,10 +46,10 @@ static void buffer(GLuint *vao,GLuint *vbo,size_t bytes,const void *data,GLenum 
     glEnableVertexAttribArray(2); glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE,sizeof(AstraVertex),(void *)offsetof(AstraVertex,size));
 }
 void qlcg_astra_release(AstraRenderer *r) {
-    free(r->event_vertices);glDeleteVertexArrays(1,&r->event_vao);glDeleteBuffers(1,&r->event_vbo);
-    free(r->catalog); glDeleteTextures(1,&r->texture); glDeleteVertexArrays(1,&r->vao);
-    glDeleteVertexArrays(1,&r->moving_vao); glDeleteBuffers(1,&r->vbo); glDeleteBuffers(1,&r->moving_vbo);
-    if(r->program) glDeleteProgram(r->program); memset(r,0,sizeof(*r));
+    free(r->event_vertices);qlcg_gl_delete_vertex_arrays(1,&r->event_vao);qlcg_gl_delete_buffers(1,&r->event_vbo);
+    free(r->catalog); qlcg_gl_delete_textures(1,&r->texture); qlcg_gl_delete_vertex_arrays(1,&r->vao);
+    qlcg_gl_delete_vertex_arrays(1,&r->moving_vao); qlcg_gl_delete_buffers(1,&r->vbo); qlcg_gl_delete_buffers(1,&r->moving_vbo);
+    if(r->program) qlcg_gl_delete_program(r->program); memset(r,0,sizeof(*r));
 }
 bool qlcg_astra_upload(AstraRenderer *r,const WorldCreatorOptions *opt) {
     if(!opt->astronomy_enabled) return false;
@@ -89,13 +89,13 @@ void qlcg_astra_draw(AstraRenderer *r,const AstraFrame *f,const SkyClimate *sky,
     glUniform1f(qlcg_gl_uniform(p,"uAspect"),aspect); glUniform1f(qlcg_gl_uniform(p,"uTanHalfFov"),tan_fov);
     glUniform1f(qlcg_gl_uniform(p,"uStar"),sky->star); glUniform1f(qlcg_gl_uniform(p,"uCloudCov"),cloud_cov);
     glUniform1f(qlcg_gl_uniform(p,"uRainAlpha"),rain_alpha); glUniform1f(qlcg_gl_uniform(p,"uSimTime"),time);
-    glEnable(GL_BLEND); glBlendFunc(GL_ONE,GL_ONE); glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_BLEND); glBlendFunc(GL_ONE,GL_ONE); qlcg_gl_program_point_size(true);
     glBindVertexArray(r->vao); glUniform1i(qlcg_gl_uniform(p,"points"),1);
     glDrawArrays(GL_POINTS,0,r->catalog->star_count);
     if(r->observing) { glUniform1i(qlcg_gl_uniform(p,"points"),0); glDrawArrays(GL_LINES,ASTRA_STARS,r->catalog->line_count); }
     glBindVertexArray(r->moving_vao); glBindBuffer(GL_ARRAY_BUFFER,r->moving_vbo);
     glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(f->bodies),f->bodies); glUniform1i(qlcg_gl_uniform(p,"points"),1);
-    glDrawArrays(GL_POINTS,0,ASTRA_BODIES); glDisable(GL_PROGRAM_POINT_SIZE); glDisable(GL_BLEND);
+    glDrawArrays(GL_POINTS,0,ASTRA_BODIES); qlcg_gl_program_point_size(false); glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 }
 

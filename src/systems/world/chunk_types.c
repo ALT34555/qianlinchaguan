@@ -499,7 +499,7 @@ bool qlcg_weather_command(WeatherSystem *ws, const char *cmd, char *reply, size_
     while (*arg == ' ') arg++;
     if (!*arg || strcmp(arg, "reset") == 0 || strcmp(arg, "clear") == 0) {
         ws->forced_id = -1;
-        snprintf(reply, cap, tr("weather.reset"));
+        snprintf(reply, cap, "%s", tr("weather.reset"));
         return true;
     }
     int id = atoi(arg);
@@ -511,6 +511,6 @@ bool qlcg_weather_command(WeatherSystem *ws, const char *cmd, char *reply, size_
             return true;
         }
     }
-    snprintf(reply, cap, tr("weather.usage"));
+    snprintf(reply, cap, "%s", tr("weather.usage"));
     return true;
 }

@@ -83,7 +83,7 @@ static void menu_btn_rect(UiContext *ui, float *bx, float *by, float *bs) {
     float s     = 40.0f * z;
     bool  atlas = g_app.view_mode == VIEW_MODE_ATLAS;
     float right = (atlas ? 20.0f : 12.0f) * z;   /* base 顶栏右内边距 20 / 悬浮距右 12 */
-    *bx = (float)ui->win_w - ui->safe_x_px - right - s;
+    *bx = (float)ui->win_w - ui->safe_edges[2] - right - s;
     *bs = s;
     /* 舆图居中，山川距上 10 */
     *by = atlas ? ui->safe_y_px + (game_top_bar_height(ui) - s) * 0.5f
@@ -101,7 +101,7 @@ void game_top_bar(UiContext *ui) {
     float bar_h = game_top_bar_height(ui);
     float bar_x = sx;
     float bar_y = sy;
-    float bar_w = (float)ui->win_w - sx * 2.0f;
+    float bar_w = (float)ui->win_w - (ui->safe_edges[0]+ui->safe_edges[2]);
 
     /* 玻璃：与 ESC 抽屉同料，日夜随令牌 */
     hud_glass_strip(ui, bar_x, bar_y, bar_w, bar_h);
@@ -205,12 +205,14 @@ static float menu_btn_alpha(UiContext *ui, bool hov) {
 
 /* 常驻最上层，点它开关菜单 */
 void game_menu_button(UiContext *ui) {
-    if (!g_app.world) return;
+    static bool first_click;
+    if (!g_app.world) { first_click = false; return; }
 
     float z  = ui->met.size;
     float bx, by, bs;
     menu_btn_rect(ui, &bx, &by, &bs);
     bool hov   = ui_hit(ui, bx, by, bs, bs);
+    if (!hov) first_click = false;
     bool open  = g_app.esc_paused;
     bool atlas = g_app.view_mode == VIEW_MODE_ATLAS;
 
@@ -244,7 +246,10 @@ void game_menu_button(UiContext *ui) {
     ui->global_alpha = save_a;
 
     if (hov && ui->mouse_clicked) {
+        bool quick_save = first_click && ui->mouse_dblclicked;
+        first_click = !ui->mouse_dblclicked;
         g_app.esc_paused = !g_app.esc_paused;
         if (!g_app.esc_paused) g_app.settings_in_drawer = false;
+        if (quick_save) app_quick_save();
     }
 }

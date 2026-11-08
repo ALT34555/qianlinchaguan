@@ -432,8 +432,8 @@ bool ui_slider_at_ex(UiContext *ui, float x, float ty, float w, float *val,
 
     bool hov = ui_hit(ui, hx - 4.0f, hy - hit_h * 0.5f, hw + 8.0f, hit_h);
     bool changed = false;
-    if (ui->mouse_down && !ui_pointer_blocked(ui) &&
-        (dragging || (hov && ui->mouse_clicked))) {
+    if ((ui->mouse_down || (ui->pointer_touch && ui->mouse_clicked)) && !ui_pointer_blocked(ui) &&
+        (dragging || (hov && (ui->mouse_clicked || ui->touch_drag_horizontal)))) {
         if (ui->drag_slider_id < 0) {
             ui->drag_slider_id = my;
             ui->drag_sx = x;
@@ -893,6 +893,7 @@ bool ui_number_input(UiContext *ui, uint32_t id, float x, float y, float w, floa
     if (focused) {
         ui->input_seen_frame = ui->frame_idx;
         if (hov_field && ui->mouse_clicked) {
+            ui->ime_request_frame = ui->frame_idx;
             ui->edit_field.caret = ui_edit_hit_line(ui, &ef, ftw, UI_FACE_MONO, px, false,
                                                     (float)ui->mouse_x - ftx);
             ui->edit_field.anchor = ui->edit_field.caret;
@@ -1008,6 +1009,7 @@ bool ui_text_input(UiContext *ui, uint32_t id, float x, float y, float w, float 
         ui->input_seen_frame = ui->frame_idx;
         /* 鼠标：点选定位光标、拖动扩选、双击全选 */
         if (hov && (ui->mouse_dblclicked || ui->mouse_clicked)) {
+            ui->ime_request_frame = ui->frame_idx;
             if (ui->mouse_dblclicked) {
                 ui_edit_select_all(&f);
             } else {

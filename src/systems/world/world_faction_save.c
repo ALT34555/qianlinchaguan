@@ -57,16 +57,6 @@ long qlcg_factions_tail_end_lim(FILE *file, long limit) {
     return start + (long)len;
 }
 
-bool qlcg_factions_write(FILE *file, const MacroWorld *world) {
-    FactionSaveHeader header = {0x46414354u, 1u, (uint32_t)world->cell_count,
-        (uint32_t)world->faction_count, sizeof(TerritoryFaction), world->last_civ_day};
-    size_t cells = header.cell_count, factions = header.faction_count;
-    return fwrite(&header, sizeof(header), 1, file) == 1 &&
-        fwrite(world->factions, sizeof(TerritoryFaction), factions, file) == factions &&
-        fwrite(world->claim_faction, sizeof(int16_t), cells, file) == cells &&
-        fwrite(world->claim_type, sizeof(uint8_t), cells, file) == cells;
-}
-
 bool qlcg_factions_read_lim(FILE *file, MacroWorld *world, long limit) {
     long start = ftell(file);
     if (start < 0) return false;

@@ -1,5 +1,5 @@
 /* 按语言目录装载独立内容域 */
-#include <windows.h>
+#include "platform/platform.h"
 #include "locale_pack.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +7,10 @@
 
 static JsVal *load_domain(const wchar_t *directory, const wchar_t *file) {
     wchar_t path[1024];
-    if (swprintf_s(path, 1024, L"%ls\\%ls", directory, file) < 0) return NULL;
-    FILE *fp = _wfopen(path, L"rb");
+    if (swprintf(path, 1024, L"%ls/%ls", directory, file) < 0) return NULL;
+    char utf8[4096];
+    if (!qlcg_wide_to_utf8(path, utf8, sizeof(utf8))) return NULL;
+    FILE *fp = qlcg_platform_fopen(utf8, "rb");
     if (!fp) return NULL;
     if (fseek(fp, 0, SEEK_END) != 0) { fclose(fp); return NULL; }
     long length = ftell(fp);
@@ -40,7 +42,7 @@ void qlcg_locale_pack_free(QlLocalePack *pack) {
 bool qlcg_locale_pack_load(const wchar_t *root, const wchar_t *folder, QlLocalePack *pack) {
     wchar_t directory[1024];
     memset(pack, 0, sizeof(*pack));
-    if (swprintf_s(directory, 1024, L"%ls\\%ls", root, folder) < 0) return false;
+    if (swprintf(directory, 1024, L"%ls/%ls", root, folder) < 0) return false;
     JsVal *manifest = load_domain(directory, L"manifest.json");
     if (!manifest) return false;
     const char *code = qlcg_js_str(qlcg_js_get(manifest, "code"), "");

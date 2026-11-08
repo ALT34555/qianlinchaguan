@@ -585,8 +585,17 @@ typedef struct {
     SaveSlotMeta slots[QLCG_SAVE_SLOT_COUNT];
 } SaveFileInfo;
 
-#define QLCG_SAVE_VERSION 12u
-static inline bool qlcg_save_version_supported(uint32_t v) { return v==11u || v==QLCG_SAVE_VERSION; }
+#define QLCG_SAVE_VERSION 13u
+static inline bool qlcg_save_version_supported(uint32_t v) {
+#ifdef _WIN32
+    if(v==11u || v==12u) return true;
+#endif
+    return v==QLCG_SAVE_VERSION;
+}
+
+bool qlcg_saves_migrate_file(const char *path);
+bool qlcg_saves_verify_file(const char *path);
+bool qlcg_saves_import_file(const char *source, char *out_path, size_t capacity);
 
 /* 宏观世界与山川区域接口 */
 WorldCreatorOptions qlcg_default_creator_options(PlayMode mode, const GameSettings *settings);

@@ -1,0 +1,35 @@
+{
+  "plants": [
+    {
+      "id": "nong.song",
+      "name": "菘",
+      "latin": "Brassica rapa",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "seed": 727,
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.46,
+        "spread": 0.38
+      },
+      "palette": {
+        "foliage": "cropCabbage",
+        "foliageDark": "cropAllium",
+        "bloom": "bloomGold",
+        "fruit": "grainPale"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

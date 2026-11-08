@@ -1,8 +1,6 @@
+#include "platform/keys.h"
 /* 输入绑定：动作表、默认键位、键名标签 */
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
+
 #include "input_bind.h"
 #include <stdio.h>
 #include <string.h>
@@ -37,11 +35,11 @@ void qlcg_binds_default(QlBind *b) {
     b[ACT_BACK].key        = 'S';
     b[ACT_LEFT].key        = 'A';
     b[ACT_RIGHT].key       = 'D';
-    b[ACT_JUMP].key        = VK_SPACE;
-    b[ACT_SPRINT].key      = VK_SHIFT;
-    b[ACT_CROUCH].key      = VK_CONTROL;
+    b[ACT_JUMP].key        = QL_KEY_SPACE;
+    b[ACT_SPRINT].key      = QL_KEY_SHIFT;
+    b[ACT_CROUCH].key      = QL_KEY_CONTROL;
     b[ACT_VIEW_TOGGLE].key = 'M';
-    b[ACT_DEBUG].key       = VK_F12;
+    b[ACT_DEBUG].key       = QL_KEY_F12;
     b[ACT_UNDO].key        = 'Z';
     b[ACT_UNDO].mods       = QL_MOD_CTRL;
     b[ACT_QUICKSAVE].key   = 'P';
@@ -63,21 +61,21 @@ const char *qlcg_bind_key_label(uint16_t vk, uint8_t mods, char *buf, int cap) {
     char key[32];
     if (vk >= 'A' && vk <= 'Z')            snprintf(key, sizeof(key), "%c", (char)vk);
     else if (vk >= '0' && vk <= '9')       snprintf(key, sizeof(key), "%c", (char)vk);
-    else if (vk >= VK_F1 && vk <= VK_F12)  snprintf(key, sizeof(key), "F%d", (int)(vk - VK_F1) + 1);
-    else if (vk == VK_SPACE)               snprintf(key, sizeof(key), "%s", tr("key.space"));
-    else if (vk == VK_SHIFT || vk == VK_LSHIFT || vk == VK_RSHIFT) snprintf(key, sizeof(key), "Shift");
-    else if (vk == VK_CONTROL || vk == VK_LCONTROL || vk == VK_RCONTROL) snprintf(key, sizeof(key), "Ctrl");
-    else if (vk == VK_MENU || vk == VK_LMENU || vk == VK_RMENU) snprintf(key, sizeof(key), "Alt");
-    else if (vk == VK_RETURN)              snprintf(key, sizeof(key), "%s", tr("key.enter"));
-    else if (vk == VK_ESCAPE)              snprintf(key, sizeof(key), "Esc");
-    else if (vk == VK_TAB)                 snprintf(key, sizeof(key), "Tab");
-    else if (vk == VK_BACK)                snprintf(key, sizeof(key), "%s", tr("key.backspace"));
-    else if (vk == VK_UP)                  snprintf(key, sizeof(key), "↑");
-    else if (vk == VK_DOWN)                snprintf(key, sizeof(key), "↓");
-    else if (vk == VK_LEFT)                snprintf(key, sizeof(key), "←");
-    else if (vk == VK_RIGHT)               snprintf(key, sizeof(key), "→");
-    else if (vk == VK_OEM_2)               snprintf(key, sizeof(key), "/");
-    else if (vk == VK_OEM_3)               snprintf(key, sizeof(key), "`");
+    else if (vk >= QL_KEY_F1 && vk <= QL_KEY_F12)  snprintf(key, sizeof(key), "F%d", (int)(vk - QL_KEY_F1) + 1);
+    else if (vk == QL_KEY_SPACE)               snprintf(key, sizeof(key), "%s", tr("key.space"));
+    else if (vk == QL_KEY_SHIFT || vk == QL_KEY_LSHIFT || vk == QL_KEY_RSHIFT) snprintf(key, sizeof(key), "Shift");
+    else if (vk == QL_KEY_CONTROL || vk == QL_KEY_LCONTROL || vk == QL_KEY_RCONTROL) snprintf(key, sizeof(key), "Ctrl");
+    else if (vk == QL_KEY_MENU || vk == QL_KEY_LMENU || vk == QL_KEY_RMENU) snprintf(key, sizeof(key), "Alt");
+    else if (vk == QL_KEY_RETURN)              snprintf(key, sizeof(key), "%s", tr("key.enter"));
+    else if (vk == QL_KEY_ESCAPE)              snprintf(key, sizeof(key), "Esc");
+    else if (vk == QL_KEY_TAB)                 snprintf(key, sizeof(key), "Tab");
+    else if (vk == QL_KEY_BACK)                snprintf(key, sizeof(key), "%s", tr("key.backspace"));
+    else if (vk == QL_KEY_UP)                  snprintf(key, sizeof(key), "↑");
+    else if (vk == QL_KEY_DOWN)                snprintf(key, sizeof(key), "↓");
+    else if (vk == QL_KEY_LEFT)                snprintf(key, sizeof(key), "←");
+    else if (vk == QL_KEY_RIGHT)               snprintf(key, sizeof(key), "→");
+    else if (vk == QL_KEY_OEM_2)               snprintf(key, sizeof(key), "/");
+    else if (vk == QL_KEY_OEM_3)               snprintf(key, sizeof(key), "`");
     else                                   snprintf(key, sizeof(key), "VK%02X", vk);
 
     snprintf(buf, cap, "%s%s", pre, key);
@@ -87,9 +85,9 @@ const char *qlcg_bind_key_label(uint16_t vk, uint8_t mods, char *buf, int cap) {
 /* 归一化：左右修饰键视为同一枚 */
 uint16_t qlcg_norm_key(uint16_t vk) {
     switch (vk) {
-        case VK_LSHIFT: case VK_RSHIFT:     return VK_SHIFT;
-        case VK_LCONTROL: case VK_RCONTROL: return VK_CONTROL;
-        case VK_LMENU: case VK_RMENU:       return VK_MENU;
+        case QL_KEY_LSHIFT: case QL_KEY_RSHIFT:     return QL_KEY_SHIFT;
+        case QL_KEY_LCONTROL: case QL_KEY_RCONTROL: return QL_KEY_CONTROL;
+        case QL_KEY_LMENU: case QL_KEY_RMENU:       return QL_KEY_MENU;
         default: return vk;
     }
 }

@@ -87,8 +87,6 @@ static void build_prism(int variant) {
 
 bool qlcg_ice_visual_init(TerrainRenderer *tr) {
     IceVisual *v = &tr->ice_vis;
-    memset(v, 0, sizeof(*v));
-    tr->ice_lift = 0.003f;
     v->ice_prog   = qlcg_gl_compile_program(ICEP_VS_SRC, ICEP_FS_SRC);
     v->ice_top_prog = qlcg_gl_compile_program(ICE_VS_SRC, ICE_FS_SRC);
     v->crack_prog = qlcg_gl_compile_program(CRACK_VS_SRC, CRACK_FS_SRC);
@@ -152,16 +150,16 @@ bool qlcg_ice_visual_init(TerrainRenderer *tr) {
 void qlcg_ice_visual_shutdown(TerrainRenderer *tr) {
     IceVisual *v = &tr->ice_vis;
     for (int t = 0; t < QLCG_ICE_FLOW_TEMPLATES; t++) {
-        if (v->ice_tpl_vao[t]) glDeleteVertexArrays(1, &v->ice_tpl_vao[t]);
-        if (v->ice_tpl_vbo[t]) glDeleteBuffers(1, &v->ice_tpl_vbo[t]);
-        if (v->ice_tpl_ebo[t]) glDeleteBuffers(1, &v->ice_tpl_ebo[t]);
+        if (v->ice_tpl_vao[t]) qlcg_gl_delete_vertex_arrays(1, &v->ice_tpl_vao[t]);
+        if (v->ice_tpl_vbo[t]) qlcg_gl_delete_buffers(1, &v->ice_tpl_vbo[t]);
+        if (v->ice_tpl_ebo[t]) qlcg_gl_delete_buffers(1, &v->ice_tpl_ebo[t]);
     }
-    if (v->ice_inst_vbo) glDeleteBuffers(1, &v->ice_inst_vbo);
-    if (v->crack_vao) glDeleteVertexArrays(1, &v->crack_vao);
-    if (v->crack_vbo) glDeleteBuffers(1, &v->crack_vbo);
-    if (v->ice_prog) glDeleteProgram(v->ice_prog);
-    if (v->ice_top_prog) glDeleteProgram(v->ice_top_prog);
-    if (v->crack_prog) glDeleteProgram(v->crack_prog);
+    if (v->ice_inst_vbo) qlcg_gl_delete_buffers(1, &v->ice_inst_vbo);
+    if (v->crack_vao) qlcg_gl_delete_vertex_arrays(1, &v->crack_vao);
+    if (v->crack_vbo) qlcg_gl_delete_buffers(1, &v->crack_vbo);
+    if (v->ice_prog) qlcg_gl_delete_program(v->ice_prog);
+    if (v->ice_top_prog) qlcg_gl_delete_program(v->ice_top_prog);
+    if (v->crack_prog) qlcg_gl_delete_program(v->crack_prog);
     memset(v, 0, sizeof(*v));
 }
 

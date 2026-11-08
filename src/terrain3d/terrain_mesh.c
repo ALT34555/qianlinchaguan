@@ -16,12 +16,12 @@
 #include <stddef.h>
 
 static void release_mesh(TerrainChunkGPU *c) {
-    if (c->cliff_vao) glDeleteVertexArrays(1, &c->cliff_vao);
-    if (c->cliff_vbo) glDeleteBuffers(1, &c->cliff_vbo);
-    if (c->water_vao) glDeleteVertexArrays(1, &c->water_vao);
-    if (c->water_vbo) glDeleteBuffers(1, &c->water_vbo);
-    if (c->water_ebo) glDeleteBuffers(1, &c->water_ebo);
-    if (c->ice_ebo) glDeleteBuffers(1, &c->ice_ebo);
+    if (c->cliff_vao) qlcg_gl_delete_vertex_arrays(1, &c->cliff_vao);
+    if (c->cliff_vbo) qlcg_gl_delete_buffers(1, &c->cliff_vbo);
+    if (c->water_vao) qlcg_gl_delete_vertex_arrays(1, &c->water_vao);
+    if (c->water_vbo) qlcg_gl_delete_buffers(1, &c->water_vbo);
+    if (c->water_ebo) qlcg_gl_delete_buffers(1, &c->water_ebo);
+    if (c->ice_ebo) qlcg_gl_delete_buffers(1, &c->ice_ebo);
     memset(c, 0, sizeof(*c));
 }
 
@@ -205,7 +205,7 @@ static void reserve_terrain(TerrainRenderer *tr, const RegionStream *st) {
     GLint allocated = 0;
     glGetBufferParameteriv(GL_COPY_WRITE_BUFFER, GL_BUFFER_SIZE, &allocated);
     if (allocated != capacity * stride) {
-        glDeleteBuffers(1, &buffer);
+        qlcg_gl_delete_buffers(1, &buffer);
         return;
     }
     if (tr->terrain_next_slot) {
@@ -220,7 +220,7 @@ static void reserve_terrain(TerrainRenderer *tr, const RegionStream *st) {
         glVertexAttribPointer(i, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVert),
                               (void *)(size_t)(i * 3 * sizeof(float)));
     }
-    glDeleteBuffers(1, &tr->terrain_vbo);
+    qlcg_gl_delete_buffers(1, &tr->terrain_vbo);
     tr->terrain_vbo = buffer;
     tr->terrain_capacity = capacity;
 }
@@ -277,8 +277,8 @@ static void upload_chunk(TerrainRenderer *tr, TerrainChunkGPU *gpu,
             glVertexAttribPointer(i,3,GL_FLOAT,GL_FALSE,sizeof(TerrainVert),(void *)(size_t)(i*3*sizeof(float)));
         }
     } else if (gpu->cliff_vao) {
-        glDeleteVertexArrays(1,&gpu->cliff_vao);
-        glDeleteBuffers(1,&gpu->cliff_vbo);
+        qlcg_gl_delete_vertex_arrays(1,&gpu->cliff_vao);
+        qlcg_gl_delete_buffers(1,&gpu->cliff_vbo);
         gpu->cliff_vao=gpu->cliff_vbo=0;
     }
     free(cliffs.vertices);

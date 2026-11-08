@@ -1,17 +1,24 @@
 /* hua.zhu */
 
-#include "../../plant_arch_internal.h"
+#include "hua_model.h"
 #include "../../plant_forms.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-static LpRgb pick_color(const PdDict *pal, const char *k1, const char *k2, const char *fallback) {
-    const char *v = k1 ? pd_str(pal, k1, NULL) : NULL;
-    if (!v && k2) v = pd_str(pal, k2, NULL);
-    if (!v) v = fallback;
-    return qlcg_lp_hex(v, 255, 0, 255);
-}
+typedef struct {
+    const char *culm, *leaf;
+    double height, spread;
+    int culms;
+} GardenBambooShape;
+
+static const GardenBambooShape shapes[] = {
+    {"#508551", "#3F8149", 1.0, 1.0, 0},
+    {"#88AE58", "#78A541", 1.10, .90, -1},
+    {"#398477", "#2D7561", .93, 1.14, 1},
+};
+
+static const HuaSeedProfile bamboo_seed = {HUA_GRAINS, 8, .046, 2.65, "#C1A674"};
 
 static double num_or(const PdDict *d, const char *key, double dflt) {
     double v = pd_num(d, key, NAN);
@@ -24,45 +31,38 @@ static void build_simple(LpBuilder *b, const PdDef *def, int season) {
     double h = fmax(0.1, num_or(p, "height", num_or(p, "trunk", 1.0)));
     double r = fmax(0.05, num_or(p, "canopy", num_or(p, "spread", h * 0.3)));
 
-    LpRgb leaf = qlcg_lp_wind_color(pick_color(&def->palette, "foliage", "waterweed", "#50843b"), LP_WIND_LEAF);
-    const char *bloom = pd_str(&def->palette, "bloom", "#cf7595");
-    LpRgb flower = qlcg_lp_hex(bloom, 255, 0, 255);
+    const GardenBambooShape *shape = &shapes[qlcg_pa_shape_variant(def)];
+    LpRgb leaf = qlcg_lp_wind_color(qlcg_lp_hex(shape->leaf, 65, 130, 74), LP_WIND_LEAF);
+    LpRgb culm = qlcg_lp_wind_color(qlcg_lp_hex(shape->culm, 78, 129, 76), LP_WIND_BARK);
 
     double o[3] = { 0, 0, 0 };
 
-    qlcg_lp_prism(b, o, h * 0.02, h * 0.02, 0, h * 0.9, 3, leaf, NULL);
-    double radius = fmax(0.06, fmin(r, h * 0.25));
-    for (int i = 0; i < 10; i++) {
-        double a = (double)i * PI / 5.0;
-        double c2 = (double)(i + 1) * PI / 5.0;
-        double ra = radius * (i % 2 ? 0.45 : 1.0);
-        double rc = radius * (i % 2 ? 1.0 : 0.45);
-        double p0[3] = { 0, h * 0.9, 0 };
-        double p1[3] = { cos(c2) * rc, h * 0.9, sin(c2) * rc };
-        double p2[3] = { cos(a) * ra, h * 0.9, sin(a) * ra };
-        qlcg_lp_triangle(b, p0, p1, p2, flower, LP_MAT_BLOOM);
-    }
+    qlcg_lp_prism(b, o, h * 0.025, h * 0.025, 0, h * 0.84, 4, culm, NULL);
+    double crown[3] = {0, h * .64, 0};
+    qlcg_lp_dome(b, crown, r, h * .29, r, 5, leaf, NULL);
 }
 
-static void build_adult(LpBuilder *b, const PdDef *def) {
+static void build_adult(LpBuilder *b, const PdDef *def, int season) {
+    static const double density[] = {.72, 1.0, .83, .57};
+    const GardenBambooShape *shape = &shapes[qlcg_pa_shape_variant(def)];
     LpRng rng;
     qlcg_lp_rng_seed(&rng, def->build_seed);
     LpRng *rand = &rng;
-    double height = qlcg_pa_pnum(def, "height", 6.0);
-    int culms = qlcg_pa_js_round(qlcg_pa_pnum(def, "culms", 4.0));
+    double height = qlcg_pa_pnum(def, "height", 6.0) * shape->height;
+    int culms = qlcg_pa_js_round(qlcg_pa_pnum(def, "culms", 4.0)) + shape->culms;
     if (culms < 2) culms = 2;
     double culm_r = qlcg_pa_pnum(def, "trunkRadius", height * 0.022);
     if (culm_r < 0.04) culm_r = 0.04;
-    double spread = qlcg_pa_pnum(def, "spread", height * 0.16);
+    double spread = qlcg_pa_pnum(def, "spread", height * 0.16) * shape->spread;
     double node_step = qlcg_pa_pnum(def, "nodeStep", height * 0.18);
     if (node_step < 0.35) node_step = 0.35;
-    int blades = qlcg_pa_js_round(qlcg_pa_pnum(def, "blades", 12.0));
+    int blades = qlcg_pa_js_round(qlcg_pa_pnum(def, "blades", 12.0) * density[season]);
     if (blades < 3) blades = 3;
     double leaf_len = qlcg_pa_pnum(def, "frondLength", height * 0.16);
-    LpRgb stem = qlcg_pa_tone(def, "bambooCulm", 1.0);
+    LpRgb stem = qlcg_lp_wind_color(qlcg_lp_hex(shape->culm, 78, 129, 76), LP_WIND_BARK);
     LpRgb node = qlcg_pa_deepen(stem, 0.3);
-    LpRgb leaf = qlcg_pa_tone(def, "bamboo", 1.0);
-    LpRgb leaf_dark = qlcg_pa_tone(def, "foliageDeep", 1.0);
+    LpRgb leaf = qlcg_lp_wind_color(qlcg_lp_hex(shape->leaf, 65, 130, 74), LP_WIND_LEAF);
+    LpRgb leaf_dark = qlcg_pa_deepen(leaf, season == PD_SEASON_AUTUMN ? .28 : .19);
     int sides = qlcg_pa_js_round(qlcg_pa_clampd(qlcg_pa_pnum(def, "sides", 5.0), 3.0, 6.0));
     double jitter = qlcg_pa_pnum(def, "jitter", 0.1);
 
@@ -121,25 +121,12 @@ static void build_adult(LpBuilder *b, const PdDef *def) {
         o.jitter = 0.2; o.rand = rand; o.cap = 1;
         qlcg_lp_cone(b, sc, culm_r * 0.9, culm_r * 0.9, height * 0.07, 4, stem, &o);
     }
-    if (def->bloom && top_count > 0) {
-        int sparse = qlcg_pa_js_round(qlcg_pa_pnum(def, "bloomCount", 2.0));
-        if (sparse < 1) sparse = 1;
-        for (int i = 0; i < sparse; i++) {
-            int pick = (int)floor(qlcg_lp_rng_next(rand) * (double)top_count);
-            if (pick >= top_count) pick = top_count - 1;
-            if (pick < 0) pick = 0;
-            double a = qlcg_lp_rng_next(rand) * TAU;
-            double rr = leaf_len * (0.3 + qlcg_lp_rng_next(rand) * 0.5);
-            double pos[3] = { tops[pick][0] + cos(a) * rr, tops[pick][1] + leaf_len * 0.3,
-                              tops[pick][2] + sin(a) * rr };
-            qlcg_pa_flower_at(b, def, pos, leaf_len * 0.24, rand);
-        }
-    }
+    if (season == PD_SEASON_WINTER && qlcg_pa_has_snow_target(def, "canopy"))
+        for (int i = 0; i < top_count; i++) qlcg_lp_socket(b, tops[i], LP_SOCKET_SNOW_CANOPY);
+    int seeds = qlcg_pa_hua_seed_count(def, season);
+    for (int i = 0; i < top_count && i < seeds; i++)
+        qlcg_pa_hua_seed(b, tops[i], &bamboo_seed, shape->spread, def->state == PD_STATE_FRUITING);
     free(tops);
-    if (qlcg_pa_wants_snow_on(def, "canopy")) {
-        double sc[3] = { 0, height * 0.72, 0 };
-        qlcg_pa_snow_cap(b, def, sc, spread * 0.9, 0.6);
-    }
 }
 
 static void build_seedling(LpBuilder *b, const PdDef *def) {
@@ -379,6 +366,6 @@ void qlcg_plant_hua_zhu(LpBuilder *b, const PdDef *def, int season, int form) {
     switch (def->state) {
         case PD_STATE_SEEDLING: build_seedling(b, def); break;
         case PD_STATE_WITHERED: build_withered(b, def); break;
-        default: build_adult(b, def); break;
+        default: build_adult(b, def, season); break;
     }
 }

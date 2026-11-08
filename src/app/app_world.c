@@ -10,36 +10,26 @@
 #include <limits.h>
 
 /* 系统本地时区偏移（分钟，东正） */
-static int local_offset_min(void) {
-    SYSTEMTIME u, l;
-    FILETIME fu, fl;
-    GetSystemTime(&u);
-    GetLocalTime(&l);
-    if (!SystemTimeToFileTime(&u, &fu) || !SystemTimeToFileTime(&l, &fl)) return 0;
-    ULARGE_INTEGER a, b;
-    a.LowPart = fu.dwLowDateTime; a.HighPart = fu.dwHighDateTime;
-    b.LowPart = fl.dwLowDateTime; b.HighPart = fl.dwHighDateTime;
-    return (int)((long long)(b.QuadPart - a.QuadPart) / 600000000LL);
-}
+static int local_offset_min(void) { return qlcg_platform_local_offset(); }
 
 /* 新世界时钟：元历固定13-10-1，其余取本地 */
 static void app_new_world_clock(CalendarClock *clk, WorldCreatorOptions *opt) {
     if (qlcg_dev_world_clock(clk, opt)) return;
-    SYSTEMTIME st;
+    QlLocalTime st;
     memset(&st, 0, sizeof(st));
-    GetLocalTime(&st);
-    bool ok = (st.wYear >= 1970 && st.wYear <= 3000);
+    qlcg_platform_local_time(&st);
+    bool ok = (st.year >= 1970 && st.year <= 3000);
     int jdn;
     double frac;
     if (opt->calendar_mode == CALENDAR_YUAN) {
         opt->start_year = 13; opt->start_month = 10; opt->start_day = 1;
         jdn = qlcg_yuan_to_jdn(13, 10, 1);
-        frac = ok ? ((double)st.wHour * 3600.0 + st.wMinute * 60.0 + st.wSecond) / 86400.0
+        frac = ok ? ((double)st.hour * 3600.0 + st.minute * 60.0 + st.second) / 86400.0
                   : 8.0 / 24.0;
     } else if (ok) {
-        opt->start_year = st.wYear; opt->start_month = st.wMonth; opt->start_day = st.wDay;
-        jdn = qlcg_gregorian_to_jdn(st.wYear, st.wMonth, st.wDay);
-        frac = ((double)st.wHour * 3600.0 + st.wMinute * 60.0 + st.wSecond) / 86400.0;
+        opt->start_year = st.year; opt->start_month = st.month; opt->start_day = st.day;
+        jdn = qlcg_gregorian_to_jdn(st.year, st.month, st.day);
+        frac = ((double)st.hour * 3600.0 + st.minute * 60.0 + st.second) / 86400.0;
     } else {
         opt->start_year = 1979; opt->start_month = 3; opt->start_day = 6;
         jdn = qlcg_gregorian_to_jdn(1979, 3, 6);

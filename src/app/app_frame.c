@@ -116,5 +116,5 @@ void app_render_frame(float dt) {
     ui_toast_render(&g_app.ui, &g_app.toasts);
 
     ui_end_frame(&g_app.ui);
-    SwapBuffers(g_app.hdc);
+    qlcg_platform_present();
 }

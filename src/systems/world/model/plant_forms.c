@@ -95,8 +95,10 @@ int qlcg_plant_build(const char *id, int season, int form, LpGeometry *out) {
 
     LpBuilder b;
     qlcg_lp_init(&b);
-    int built = form == VEG_FORM_SIMPLE ? build_simple(&def, season, &b)
-                                      : qlcg_plant_species_build(&def, season, VEG_FORM_NORMAL, &b);
+    int cultivated = def.category == PLANT_CAT_HUA || def.category == PLANT_CAT_NONG;
+    int built = form == VEG_FORM_SIMPLE && !cultivated ? build_simple(&def, season, &b)
+                    : qlcg_plant_species_build(&def, season,
+                        form == VEG_FORM_SIMPLE ? VEG_FORM_SIMPLE : VEG_FORM_NORMAL, &b);
     if (!built) {
         qlcg_lp_free(&b);
         qlcg_pd_free_def(&def);

@@ -60,6 +60,92 @@
     }
   },
   "greenery": {
+    "cropBast": {
+      "default": "#DAC492"
+    },
+    "cropPaperBast": {
+      "default": "#E5CEA0"
+    },
+    "cropSesame": {
+      "default": "#AD8A45"
+    },
+    "cropSesameBloom": {
+      "default": "#E7C4DC"
+    },
+    "cropTeaLeaf": {
+      "default": "#568344",
+      "spring": "#80A557",
+      "summer": "#568344",
+      "autumn": "#567B3D",
+      "winter": "#49643A"
+    },
+    "cropTeaShade": {
+      "default": "#365C37",
+      "spring": "#467442",
+      "summer": "#365C37",
+      "autumn": "#415F36",
+      "winter": "#384F32"
+    },
+    "cropTeaCapsule": {
+      "default": "#8D8D49"
+    },
+    "cropAllium": {
+      "default": "#548842",
+      "spring": "#70A753",
+      "summer": "#548842",
+      "autumn": "#5F813D",
+      "winter": "#52713D"
+    },
+    "cropScallion": {
+      "default": "#4E886B",
+      "spring": "#6DA389",
+      "summer": "#4E886B",
+      "autumn": "#648A63",
+      "winter": "#537666"
+    },
+    "cropAlliumSeed": {
+      "default": "#594936"
+    },
+    "cropCabbage": {
+      "default": "#91B967",
+      "spring": "#A9CC7A",
+      "summer": "#91B967",
+      "autumn": "#8AA354",
+      "winter": "#758F57"
+    },
+    "cropWatershieldFruit": {
+      "default": "#826047"
+    },
+    "cropPerillaLeaf": {
+      "default": "#82526E",
+      "spring": "#99647F",
+      "summer": "#82526E",
+      "autumn": "#824657",
+      "winter": "#705169"
+    },
+    "cropPerillaShade": {
+      "default": "#5B354F",
+      "spring": "#75465E",
+      "summer": "#5B354F",
+      "autumn": "#613644",
+      "winter": "#503943"
+    },
+    "cropCarrotLeaf": {
+      "default": "#68A456",
+      "spring": "#87B763",
+      "summer": "#68A456",
+      "autumn": "#6B9648",
+      "winter": "#607D48"
+    },
+    "cropCarrotRoot": {
+      "default": "#E97A32"
+    },
+    "cropRadishRoot": {
+      "default": "#F1E6C9"
+    },
+    "cropMulberryFruit": {
+      "default": "#772D4B"
+    },
     "foliage": {
       "default": "#5f8a3c",
       "spring": "#7ab547",

@@ -415,10 +415,10 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
     qlcg_dev_weather(&tr->cur_weather, &tr->precip_intensity);
 
     if (s->status_feedback) {
-        if (tr->in_water) snprintf(tr->status_text, sizeof(tr->status_text), qlcg_t("status.wading"));
+        if (tr->in_water) snprintf(tr->status_text, sizeof(tr->status_text), "%s", qlcg_t("status.wading"));
         else if (ci.temperature < -6.0f) snprintf(tr->status_text, sizeof(tr->status_text), qlcg_t("status.cold"), ci.temperature);
         else if (ci.temperature > 34.0f) snprintf(tr->status_text, sizeof(tr->status_text), qlcg_t("status.hot"), ci.temperature);
-        else snprintf(tr->status_text, sizeof(tr->status_text), qlcg_t("status.fine"));
+        else snprintf(tr->status_text, sizeof(tr->status_text), "%s", qlcg_t("status.fine"));
     } else {
         tr->status_text[0] = '\0';
     }

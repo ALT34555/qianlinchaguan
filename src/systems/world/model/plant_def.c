@@ -799,9 +799,10 @@ int qlcg_pd_build_def_ex(const char *id, int season, int force_normal, PdDef *ou
     /* 同 toPlantDef：无花/果时退回普通态 */
     PdResolved res;
     resolve_state(variant, declared, &res);
+    int seeds = sp->category == qlcg_pd_category_code("hua") && pd_num(&res.params, "seedCount", 0) > 0;
     int effective = declared;
     if (declared == PD_STATE_FLOWERING && !res.bloom) effective = PD_STATE_NORMAL;
-    else if (declared == PD_STATE_FRUITING && !res.fruit) effective = PD_STATE_NORMAL;
+    else if (declared == PD_STATE_FRUITING && !res.fruit && !seeds) effective = PD_STATE_NORMAL;
     if (effective != declared) {
         resolved_free(&res);
         resolve_state(variant, effective, &res);
@@ -827,7 +828,7 @@ int qlcg_pd_build_def_ex(const char *id, int season, int force_normal, PdDef *ou
     out->tag_count = variant->tag_count;
     out->snow = ((season == PD_SEASON_WINTER || season == PD_SEASON_AUTUMN) && effective != PD_STATE_WITHERED);
     out->bloom = res.bloom && can_bloom(res.archetype);
-    out->fruit = res.fruit;
+    out->fruit = res.fruit && !seeds;
 
     /* archetype:baseId:seed 哈希 */
     char seed_buf[64];

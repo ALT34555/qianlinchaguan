@@ -1,26 +1,23 @@
 /* Sprite9 源图逐张加载为独立纹理 */
-#define COBJMACROS
 #include "ui_sprite.h"
-#include <wincodec.h>
+#include "platform/platform.h"
+#include "core/png_image.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef GL_BGRA
-#define GL_BGRA 0x80E1
-#endif
 
 static SpriteDef g_sprites[SP_MAX_ITEMS];
 static int       g_sprite_count = 0;
 static uint64_t  g_sp_sig       = 0;
 static float     g_last_poll    = 0.0f;
 
-static const wchar_t *const SP_DIRS[] = {
-    L"content\\assets\\ui\\frames",
-    L"content\\assets\\ui\\icons",
-    L"content\\assets\\ui\\decor",
-    L"content\\assets\\ui\\control_pad"
+static const char *const SP_DIRS[] = {
+    "content/assets/ui/frames",
+    "content/assets/ui/icons",
+    "content/assets/ui/decor",
+    "content/assets/ui/control_pad"
 };
 enum { SP_DIR_COUNT = (int)(sizeof(SP_DIRS) / sizeof(SP_DIRS[0])) };
 
@@ -92,48 +89,19 @@ static void sp_content_range(int blk0, int blk1, const SpriteSeg *seg, int nseg,
 }
 
 /* 用 WIC 解码 PNG 为 32bpp BGRA 缓冲区 */
-static uint8_t *sp_decode_bgra(IWICImagingFactory *factory, const wchar_t *path,
-                               int *out_w, int *out_h) {
-    uint8_t *buf = NULL;
-    IWICBitmapDecoder *dec = NULL;
-    if (FAILED(IWICImagingFactory_CreateDecoderFromFilename(
-            factory, path, NULL, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &dec)) || !dec) {
-        return NULL;
-    }
-    IWICBitmapFrameDecode *frm = NULL;
-    if (SUCCEEDED(IWICBitmapDecoder_GetFrame(dec, 0, &frm)) && frm) {
-        IWICFormatConverter *conv = NULL;
-        if (SUCCEEDED(IWICImagingFactory_CreateFormatConverter(factory, &conv)) && conv) {
-            if (SUCCEEDED(IWICFormatConverter_Initialize(
-                    conv, (IWICBitmapSource *)frm, &GUID_WICPixelFormat32bppBGRA,
-                    WICBitmapDitherTypeNone, NULL, 0.0, WICBitmapPaletteTypeCustom))) {
-                UINT w = 0, h = 0;
-                IWICFormatConverter_GetSize(conv, &w, &h);
-                if (w > 0 && h > 0 && w <= 4096 && h <= 4096) {
-                    buf = (uint8_t *)malloc((size_t)w * (size_t)h * 4);
-                    if (buf && SUCCEEDED(IWICBitmapSource_CopyPixels(
-                            conv, NULL, w * 4, w * h * 4, buf))) {
-                        *out_w = (int)w;
-                        *out_h = (int)h;
-                    } else {
-                        free(buf);
-                        buf = NULL;
-                    }
-                }
-            }
-            IWICFormatConverter_Release(conv);
-        }
-        IWICBitmapFrameDecode_Release(frm);
-    }
-    IWICBitmapDecoder_Release(dec);
-    return buf;
+static uint8_t *sp_decode_bgra(const char *path, int *out_w, int *out_h) {
+    wchar_t wide[2048];
+    uint8_t *pixels = NULL;
+    if (!qlcg_utf8_to_wide(path, wide, 2048) || !qlcg_png_load_bgra(wide, &pixels, out_w, out_h)) return NULL;
+    if (*out_w > 4096 || *out_h > 4096) { free(pixels); return NULL; }
+    return pixels;
 }
 
 /* 解析单张四宫格源图，压成一张独立纹理并填好分段表 */
-static bool sp_load_one(IWICImagingFactory *factory, const wchar_t *path,
+static bool sp_load_one(const char *path,
                         const char *stem, SpriteDef *sp) {
     int iw = 0, ih = 0;
-    uint8_t *img = sp_decode_bgra(factory, path, &iw, &ih);
+    uint8_t *img = sp_decode_bgra(path, &iw, &ih);
     if (!img) return false;
 
     int *col_red = (int *)calloc((size_t)(iw + ih), sizeof(int));
@@ -239,7 +207,8 @@ static bool sp_load_one(IWICImagingFactory *factory, const wchar_t *path,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_BGRA, GL_UNSIGNED_BYTE, buf);
+    qlcg_gl_bgra_to_rgba(buf,(size_t)tw*th);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
     sp->tex_w = tw;
     sp->tex_h = th;
 
@@ -250,29 +219,28 @@ static bool sp_load_one(IWICImagingFactory *factory, const wchar_t *path,
 
 /* 宽字符文件名按字母序比较 */
 static int sp_cmp_wname(const void *a, const void *b) {
-    return _wcsicmp((const wchar_t *)a, (const wchar_t *)b);
+    return qlcg_stricmp((const char *)a, (const char *)b);
+}
+
+static bool sp_png(const QlDirectoryEntry *e) {
+    size_t n = strlen(e->name);
+    return !e->directory && n > 4 && qlcg_stricmp(e->name + n - 4, ".png") == 0 &&
+        qlcg_stricmp(e->name, "qianlin_teacup.png") != 0;
 }
 
 /* 计算源图目录状态签名，供热重载比对 */
 static uint64_t sp_calc_signature(void) {
     uint64_t h = 1469598103934665603ULL;
-    for (int d = 0; d < SP_DIR_COUNT; d++) {
-        wchar_t pat[MAX_PATH];
-        swprintf_s(pat, MAX_PATH, L"%s\\*.png", SP_DIRS[d]);
-        WIN32_FIND_DATAW fd;
-        HANDLE hf = FindFirstFileW(pat, &fd);
-        if (hf == INVALID_HANDLE_VALUE) continue;
-        do {
-            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
-            if (_wcsicmp(fd.cFileName, L"qianlin_teacup.png") == 0) continue;
-            for (const wchar_t *p = fd.cFileName; *p; p++) {
-                h = (h ^ (uint64_t)*p) * 1099511628211ULL;
-            }
-            h = (h ^ (uint64_t)fd.ftLastWriteTime.dwLowDateTime) * 1099511628211ULL;
-            h = (h ^ (uint64_t)fd.ftLastWriteTime.dwHighDateTime) * 1099511628211ULL;
-            h = (h ^ (uint64_t)fd.nFileSizeLow) * 1099511628211ULL;
-        } while (FindNextFileW(hf, &fd));
-        FindClose(hf);
+    for (int d = 0; d < SP_DIR_COUNT; ++d) {
+        QlDirectory *dir = qlcg_platform_dir_open(SP_DIRS[d]);
+        QlDirectoryEntry e;
+        while (qlcg_platform_dir_next(dir, &e)) {
+            if (!sp_png(&e)) continue;
+            for (const unsigned char *p = (const unsigned char *)e.name; *p; ++p) h = (h ^ *p) * 1099511628211ULL;
+            h = (h ^ e.modified) * 1099511628211ULL;
+            h = (h ^ e.size) * 1099511628211ULL;
+        }
+        qlcg_platform_dir_close(dir);
     }
     return h;
 }
@@ -280,7 +248,7 @@ static uint64_t sp_calc_signature(void) {
 /* 释放全部已加载纹理 */
 void ui_sprite_release(void) {
     for (int i = 0; i < g_sprite_count; i++) {
-        if (g_sprites[i].tex) glDeleteTextures(1, &g_sprites[i].tex);
+        if (g_sprites[i].tex) qlcg_gl_delete_textures(1, &g_sprites[i].tex);
         g_sprites[i].tex = 0;
     }
     g_sprite_count = 0;
@@ -290,54 +258,30 @@ void ui_sprite_release(void) {
 bool ui_sprite_load_all(UiContext *ui) {
     (void)ui;
     ui_sprite_release();
-
-    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-    IWICImagingFactory *factory = NULL;
-    if (FAILED(CoCreateInstance(&CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER,
-                                &IID_IWICImagingFactory, (void **)&factory)) || !factory) {
-        return false;
-    }
-
     int total = 0;
-    wchar_t names[SP_MAX_ITEMS][MAX_PATH];
-
-    for (int d = 0; d < SP_DIR_COUNT; d++) {
-        wchar_t pat[MAX_PATH];
-        swprintf_s(pat, MAX_PATH, L"%s\\*.png", SP_DIRS[d]);
-        WIN32_FIND_DATAW fd;
-        HANDLE hf = FindFirstFileW(pat, &fd);
-        if (hf == INVALID_HANDLE_VALUE) continue;
+    char (*names)[1024] = malloc(SP_MAX_ITEMS * sizeof(*names));
+    if (!names) return false;
+    for (int d = 0; d < SP_DIR_COUNT; ++d) {
+        QlDirectory *dir = qlcg_platform_dir_open(SP_DIRS[d]);
+        QlDirectoryEntry e;
         int n = 0;
-        do {
-            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
-            if (_wcsicmp(fd.cFileName, L"qianlin_teacup.png") == 0) continue;
-            if (n < SP_MAX_ITEMS) wcscpy_s(names[n++], MAX_PATH, fd.cFileName);
-        } while (FindNextFileW(hf, &fd));
-        FindClose(hf);
-
-        if (n > 1) qsort(names, (size_t)n, sizeof(names[0]), sp_cmp_wname);
-
-        for (int i = 0; i < n && total < SP_MAX_ITEMS; i++) {
-            wchar_t full[MAX_PATH], stem_w[MAX_PATH];
-            swprintf_s(full, MAX_PATH, L"%s\\%s", SP_DIRS[d], names[i]);
-            wcscpy_s(stem_w, MAX_PATH, names[i]);
-            wchar_t *dot = wcsrchr(stem_w, L'.');
-            if (dot) *dot = L'\0';
-            char stem[64] = {0};
-            WideCharToMultiByte(CP_UTF8, 0, stem_w, -1, stem, sizeof(stem) - 1, NULL, NULL);
-
-            if (sp_load_one(factory, full, stem, &g_sprites[total])) {
-                printf("[Sprite] %s -> %dx%d\n", stem, g_sprites[total].w, g_sprites[total].h);
-                total++;
-            } else {
-                printf("[Sprite] %s 加载失败\n", stem);
-            }
+        while (qlcg_platform_dir_next(dir, &e)) {
+            if (sp_png(&e) && n < SP_MAX_ITEMS) snprintf(names[n++], 1024, "%s", e.name);
+        }
+        qlcg_platform_dir_close(dir);
+        qsort(names, (size_t)n, sizeof(*names), sp_cmp_wname);
+        for (int i = 0; i < n && total < SP_MAX_ITEMS; ++i) {
+            char full[2048], stem[1024];
+            snprintf(full, sizeof(full), "%s/%s", SP_DIRS[d], names[i]);
+            snprintf(stem, sizeof(stem), "%s", names[i]);
+            char *dot = strrchr(stem, '.');
+            if (dot) *dot = 0;
+            if (sp_load_one(full, stem, &g_sprites[total])) ++total;
         }
     }
-
-    IWICImagingFactory_Release(factory);
+    free(names);
     g_sprite_count = total;
-    g_sp_sig       = sp_calc_signature();
+    g_sp_sig = sp_calc_signature();
     return total > 0;
 }
 

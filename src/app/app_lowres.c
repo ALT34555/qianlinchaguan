@@ -11,7 +11,6 @@ static GLuint s_ms_depth = 0;
 static int    s_w     = 0;
 static int    s_h     = 0;
 static int    s_requested_samples = 0;
-static int    s_max_samples = -1;
 static bool   s_scaled = false;
 static bool   s_ready = false;
 
@@ -38,8 +37,11 @@ void app_resolution_size(int win_w, int win_h, int *out_w, int *out_h) {
 }
 
 static int requested_samples(void) {
-    if (!g_app.settings.antialias || !glRenderbufferStorageMultisample) return 0;
-    if (s_max_samples < 0) glGetIntegerv(GL_MAX_SAMPLES, &s_max_samples);
+    if (!g_app.settings.antialias) return 0;
+#ifdef _WIN32
+    if(!glRenderbufferStorageMultisample) return 0;
+#endif
+    int s_max_samples=qlcg_gl_caps.max_samples;
     return s_max_samples >= 4 ? 4 : (s_max_samples >= 2 ? 2 : 0);
 }
 
@@ -51,16 +53,16 @@ bool app_lowres_active(int win_w, int win_h) {
 }
 
 static void release_multisample(void) {
-    if (s_ms_color) { glDeleteRenderbuffers(1, &s_ms_color); s_ms_color = 0; }
-    if (s_ms_depth) { glDeleteRenderbuffers(1, &s_ms_depth); s_ms_depth = 0; }
-    if (s_ms_fbo) { glDeleteFramebuffers(1, &s_ms_fbo); s_ms_fbo = 0; }
+    if (s_ms_color) { qlcg_gl_delete_renderbuffers(1, &s_ms_color); s_ms_color = 0; }
+    if (s_ms_depth) { qlcg_gl_delete_renderbuffers(1, &s_ms_depth); s_ms_depth = 0; }
+    if (s_ms_fbo) { qlcg_gl_delete_framebuffers(1, &s_ms_fbo); s_ms_fbo = 0; }
 }
 
 void app_lowres_release(void) {
     release_multisample();
-    if (s_depth) { glDeleteRenderbuffers(1, &s_depth); s_depth = 0; }
-    if (s_fbo)   { glDeleteFramebuffers(1, &s_fbo);    s_fbo   = 0; }
-    if (s_tex)   { glDeleteTextures(1, &s_tex);        s_tex   = 0; }
+    if (s_depth) { qlcg_gl_delete_renderbuffers(1, &s_depth); s_depth = 0; }
+    if (s_fbo)   { qlcg_gl_delete_framebuffers(1, &s_fbo);    s_fbo   = 0; }
+    if (s_tex)   { qlcg_gl_delete_textures(1, &s_tex);        s_tex   = 0; }
     s_w = s_h = 0;
     s_requested_samples = 0;
     s_scaled = false;
@@ -97,11 +99,15 @@ static bool make_single_sample(int w, int h, bool needs_depth) {
 static bool ensure_target(int w, int h, int samples, bool scaled) {
     if (s_ready && s_w == w && s_h == h && s_requested_samples == samples && s_scaled == scaled)
         return s_ms_fbo || s_fbo;
+#ifdef _WIN32
     if (!glGenFramebuffers || !glBindFramebuffer || !glFramebufferTexture2D ||
         !glCheckFramebufferStatus || !glGenRenderbuffers || !glBindRenderbuffer ||
         !glBlitFramebuffer || !glRenderbufferStorage || !glFramebufferRenderbuffer) {
         return false;
     }
+#endif
+    if(w<=0 || h<=0 || w>qlcg_gl_caps.max_texture || h>qlcg_gl_caps.max_texture ||
+       w>qlcg_gl_caps.max_renderbuffer || h>qlcg_gl_caps.max_renderbuffer) return false;
     app_lowres_release();
 
     if (samples > 0) {
@@ -145,7 +151,7 @@ bool app_lowres_begin(int win_w, int win_h) {
     }
     if (!ensure_target(rw, rh, samples, scaled)) return false;
     glBindFramebuffer(GL_FRAMEBUFFER, s_ms_fbo ? s_ms_fbo : s_fbo);
-    if (s_ms_fbo) glEnable(GL_MULTISAMPLE);
+    if (s_ms_fbo) qlcg_gl_multisample(true);
     glViewport(0, 0, rw, rh);
     /* 离屏颜色与深度必须自行清，外层只清默认缓冲 */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

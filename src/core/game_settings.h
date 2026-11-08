@@ -73,7 +73,7 @@ typedef struct {
     float             touch_opacity;       /* 虚拟按键透明度 0.1 ~ 1.0 */
 
     /* 高分辨率屏适配：把窗口整体放大的倍率，1 / 2 / 4 */
-    float             hidpi_scale;   /* 1 / 1.5 / 2 / 3 / 4：UI 放大倍率 */
+    float             hidpi_scale;   /* 新基准倍率，实际缩放为两倍 */
 
     /* 虚拟按键落位：4项×(x%,y%,尺寸) */
     float             touch_layout[4][3];
@@ -84,7 +84,9 @@ typedef struct {
 } GameSettings;
 
 #define QLCG_BINDS_MAGIC 0xB1AD0001u
-#define QLCG_SETTINGS_MAGIC    "QLCGSTG5"
+#define QLCG_SETTINGS_MAGIC    "QLCGSTG7"
+#define QLCG_SETTINGS_MAGIC_V6 "QLCGSTG6"
+#define QLCG_SETTINGS_MAGIC_V5 "QLCGSTG5"
 #define QLCG_SETTINGS_MAGIC_V4 "QLCGSTG4"
 #define QLCG_MAX_VEGETATION_DENSITY 9
 
@@ -100,6 +102,7 @@ VegetationDensity qlcg_vegetation_density(int level);
 void         qlcg_reset_settings_keep_locale(GameSettings *s);
 void         qlcg_apply_graphics_preset(GameSettings *s, GraphicsPreset preset);
 void         qlcg_load_settings_disk(GameSettings *s);
+bool         qlcg_settings_write(const char *path, const GameSettings *s);
 void         qlcg_save_settings_disk(const GameSettings *s);
 /* 对齐 base defaultTouchLayout */
 void         qlcg_touch_layout_default(float out[4][3]);

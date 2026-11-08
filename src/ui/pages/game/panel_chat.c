@@ -103,6 +103,7 @@ static float chat_composer(UiContext *ui, float x, float y, float w, float h, fl
     if (focused && !do_send) {
         float tx = x + pad;
         if (hit && !send_hit && (ui->mouse_dblclicked || ui->mouse_clicked)) {
+            ui->ime_request_frame = ui->frame_idx;
             if (ui->mouse_dblclicked) {
                 ui_edit_select_all(&f);
             } else {
@@ -153,9 +154,9 @@ bool game_chat_over_ui(UiContext *ui) {
     if (!sidebar) return false;   /* 气泡态只读，不吃指针 */
     float z = ui->met.size, sx = ui->safe_x_px, sy = ui->safe_y_px;
     float bar = game_top_bar_height(ui);
-    float avail = (float)ui->win_w - sx * 2;
+    float avail = (float)ui->win_w - (ui->safe_edges[0]+ui->safe_edges[2]);
     float w = qlcg_minf(330 * z, qlcg_maxf(0, avail - game_esc_drawer_width(ui)));
-    float h = qlcg_maxf((float)ui->win_h - sy * 2 - bar, 120 * z);
+    float h = qlcg_maxf((float)ui->win_h - (ui->safe_edges[1]+ui->safe_edges[3]) - bar, 120 * z);
     return ui_pointer_in_rect(ui, sx, sy + bar, w, h);
 }
 
@@ -171,7 +172,7 @@ void game_chat_panel(UiContext *ui) {
     float bar_h = game_top_bar_height(ui);
 
     float chat_top = sy + bar_h;
-    float avail    = (float)ui->win_w - sx * 2.0f;
+    float avail    = (float)ui->win_w - (ui->safe_edges[0]+ui->safe_edges[2]);
     float cw       = qlcg_minf(330.0f * z, avail);
     float px       = 12.0f * sc * 1.3f;   /* base 12px × text-scale */
     float line_h   = px * 1.55f;

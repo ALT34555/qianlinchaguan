@@ -166,10 +166,10 @@ bool qlcg_plant_batch_setup(PlantBatch *b, int species, int form, int season) {
     if (!verts) return false;
 
     if (b->vao) {
-        glDeleteVertexArrays(1, &b->vao);
-        glDeleteBuffers(1, &b->vbo);
-        glDeleteBuffers(1, &b->ebo);
-        glDeleteBuffers(1, &b->inst_vbo);
+        qlcg_gl_delete_vertex_arrays(1, &b->vao);
+        qlcg_gl_delete_buffers(1, &b->vbo);
+        qlcg_gl_delete_buffers(1, &b->ebo);
+        qlcg_gl_delete_buffers(1, &b->inst_vbo);
         memset(b, 0, sizeof(*b));
     }
 
@@ -263,10 +263,10 @@ bool qlcg_rock_batch_setup(PlantBatch *b, int index, int form, int season, int c
     PlantVertex *verts = malloc((size_t)vcnt * sizeof(*verts));
     if (!verts) return false;
     if (b->vao) {
-        glDeleteVertexArrays(1, &b->vao);
-        glDeleteBuffers(1, &b->vbo);
-        glDeleteBuffers(1, &b->ebo);
-        glDeleteBuffers(1, &b->inst_vbo);
+        qlcg_gl_delete_vertex_arrays(1, &b->vao);
+        qlcg_gl_delete_buffers(1, &b->vbo);
+        qlcg_gl_delete_buffers(1, &b->ebo);
+        qlcg_gl_delete_buffers(1, &b->inst_vbo);
         memset(b, 0, sizeof(*b));
     }
 
@@ -337,10 +337,10 @@ void qlcg_rock_batches_clear(TerrainRenderer *tr) {
     for (int i = 0; i < tr->rock_batch_count; i++) {
         PlantBatch *b = &tr->rocks[i];
         if (b->vao) {
-            glDeleteVertexArrays(1, &b->vao);
-            glDeleteBuffers(1, &b->vbo);
-            glDeleteBuffers(1, &b->ebo);
-            glDeleteBuffers(1, &b->inst_vbo);
+            qlcg_gl_delete_vertex_arrays(1, &b->vao);
+            qlcg_gl_delete_buffers(1, &b->vbo);
+            qlcg_gl_delete_buffers(1, &b->ebo);
+            qlcg_gl_delete_buffers(1, &b->inst_vbo);
         }
         memset(b, 0, sizeof(*b));
     }
@@ -358,10 +358,10 @@ void qlcg_plant_batches_clear(TerrainRenderer *tr) {
     for (int i = 0; i < tr->plant_batch_count; i++) {
         PlantBatch *b = &tr->plants[i];
         if (b->vao) {
-            glDeleteVertexArrays(1, &b->vao);
-            glDeleteBuffers(1, &b->vbo);
-            glDeleteBuffers(1, &b->ebo);
-            glDeleteBuffers(1, &b->inst_vbo);
+            qlcg_gl_delete_vertex_arrays(1, &b->vao);
+            qlcg_gl_delete_buffers(1, &b->vbo);
+            qlcg_gl_delete_buffers(1, &b->ebo);
+            qlcg_gl_delete_buffers(1, &b->inst_vbo);
         }
         memset(b, 0, sizeof(*b));
     }
@@ -387,8 +387,7 @@ static int lod_triangle(uint32_t *indices,uint32_t a,uint32_t b,uint32_t c,
     return count;
 }
 
-bool qlcg_terrain_init(TerrainRenderer *tr) {
-    memset(tr, 0, sizeof(*tr));
+bool qlcg_terrain_gpu_restore(TerrainRenderer *tr) {
     tr->sky_prog     = qlcg_gl_compile_program(SKY_VS_SRC, SKY_FS_SRC);
     tr->terrain_prog = qlcg_gl_compile_program(TERR_VS_SRC, TERR_FS_SRC);
     tr->water_prog   = qlcg_gl_compile_program(WATER_VS_SRC, WATER_FS_SRC);
@@ -418,8 +417,7 @@ bool qlcg_terrain_init(TerrainRenderer *tr) {
         setup_far_vao(&tr->far_bill_vao, &tr->far_bill_vbo, &tr->far_bill_ebo,
                       &tr->far_bill_inst, bill_v, 4, bill_i, 6);
     }
-    tr->ice_vis.crack_buf[0] = 0.0f;
-    qlcg_ice_visual_init(tr);
+    if(!qlcg_ice_visual_init(tr)) return false;
 
     float sky_quad[12] = {-1,-1, 1,-1, 1,1, -1,-1, 1,1, -1,1};
     glGenVertexArrays(1, &tr->sky_vao);
@@ -457,10 +455,10 @@ bool qlcg_terrain_init(TerrainRenderer *tr) {
     tr->md_count = malloc(sizeof(*tr->md_count) * QLCG_STREAM_CAP);
     tr->md_index = malloc(sizeof(*tr->md_index) * QLCG_STREAM_CAP);
     tr->md_base = malloc(sizeof(*tr->md_base) * QLCG_STREAM_CAP);
+    if(!tr->md_count || !tr->md_index || !tr->md_base) return false;
     tr->terrain_idx_count = lod_off;
     tr->water_idx_count = lod_off;
     tr->terrain_origin_x = tr->terrain_origin_z = 1e30f;
-    tr->plant_season = 1;
     qlcg_ground_tex_init(tr);
     qlcg_prop_sprites_init(&tr->sprites, qlcg_dev_sprite_dir("src/systems/world/model"));
 
@@ -512,6 +510,7 @@ bool qlcg_terrain_init(TerrainRenderer *tr) {
 
     /* 天气粒子种子 VBO */
     float *wseeds = (float *)malloc(1800 * 3 * sizeof(float));
+    if(!wseeds) return false;
     for (int i = 0; i < 1800 * 3; i++) {
         wseeds[i] = (float)(qlcg_hash32((uint32_t)(i + 77)) & 0xFFFFu) / 65535.0f;
     }
@@ -524,6 +523,13 @@ bool qlcg_terrain_init(TerrainRenderer *tr) {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     free(wseeds);
 
+    tr->props_weather_stamp=0;
+    return tr->sky_prog && tr->terrain_prog && tr->water_prog && tr->prop_prog &&
+        tr->flag_prog && tr->plant_prog && tr->weather_prog && tr->spring_prog && tr->far_prog;
+}
+
+bool qlcg_terrain_init(TerrainRenderer *tr) {
+    memset(tr,0,sizeof(*tr));
     qlcg_weather_init(&tr->weather_sys, 2679841377u);
     tr->cur_weather   = qlcg_get_weather_profile(0);
     tr->brush_radius  = 28.0f;
@@ -533,8 +539,9 @@ bool qlcg_terrain_init(TerrainRenderer *tr) {
     tr->wind_strength = 0.35f;
     tr->precip_intensity = 0.0f;
     tr->weather_unix_ms = 0.0;
-    tr->props_weather_stamp = 0;
-    return true;
+    tr->plant_season=1;
+    tr->ice_lift=.003f;
+    return qlcg_terrain_gpu_restore(tr);
 }
 
 /* 回收山川场景缓存 */
@@ -568,25 +575,25 @@ void qlcg_terrain_shutdown(TerrainRenderer *tr) {
     qlcg_plant_material_shutdown();
     qlcg_rock_material_shutdown();
     qlcg_cliff_shutdown();
-    glDeleteProgram(tr->plant_prog);
-    glDeleteProgram(tr->far_prog);
+    qlcg_gl_delete_program(tr->plant_prog);
+    qlcg_gl_delete_program(tr->far_prog);
     GLuint vaos[] = {tr->sky_vao,tr->terrain_vao,tr->tree_vao,tr->rock_vao,tr->flag_vao,tr->weather_vao,
                      tr->far_cross_vao,tr->far_bill_vao};
     GLuint bufs[] = {tr->sky_vbo,tr->terrain_vbo,tr->terrain_ebo,tr->tree_vbo,tr->tree_ebo,tr->tree_inst_vbo,
         tr->rock_vbo,tr->rock_ebo,tr->rock_inst_vbo,tr->flag_vbo,tr->flag_ebo,tr->flag_inst_vbo,tr->weather_vbo,
         tr->far_cross_vbo,tr->far_cross_ebo,tr->far_cross_inst,
         tr->far_bill_vbo,tr->far_bill_ebo,tr->far_bill_inst};
-    glDeleteVertexArrays(sizeof(vaos)/sizeof(vaos[0]),vaos);
-    glDeleteBuffers(sizeof(bufs)/sizeof(bufs[0]),bufs);
-    glDeleteProgram(tr->sky_prog);
-    glDeleteProgram(tr->terrain_prog);
-    glDeleteProgram(tr->water_prog);
-    glDeleteProgram(tr->prop_prog);
-    glDeleteProgram(tr->flag_prog);
-    glDeleteProgram(tr->weather_prog);
-    glDeleteProgram(tr->spring_prog);
+    qlcg_gl_delete_vertex_arrays(sizeof(vaos)/sizeof(vaos[0]),vaos);
+    qlcg_gl_delete_buffers(sizeof(bufs)/sizeof(bufs[0]),bufs);
+    qlcg_gl_delete_program(tr->sky_prog);
+    qlcg_gl_delete_program(tr->terrain_prog);
+    qlcg_gl_delete_program(tr->water_prog);
+    qlcg_gl_delete_program(tr->prop_prog);
+    qlcg_gl_delete_program(tr->flag_prog);
+    qlcg_gl_delete_program(tr->weather_prog);
+    qlcg_gl_delete_program(tr->spring_prog);
     for (int i = 0; i < QLCG_GROUND_BAND_N; i++)
-        if (tr->ground_tex[i]) { glDeleteTextures(1, &tr->ground_tex[i]); tr->ground_tex[i] = 0; }
+        if (tr->ground_tex[i]) { qlcg_gl_delete_textures(1, &tr->ground_tex[i]); tr->ground_tex[i] = 0; }
     free(tr->far_fade);
     tr->far_fade = NULL;
     tr->far_fade_cap = 0;
@@ -609,9 +616,28 @@ void qlcg_ground_tex_init(TerrainRenderer *tr) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         /* 地面以掠射角观察，各向异性过滤决定远景清晰度 */
-        glTexParameterf(GL_TEXTURE_2D, 0x84FE, 8.0f);
+        if(qlcg_gl_caps.max_anisotropy>1)
+            glTexParameterf(GL_TEXTURE_2D,0x84FE,fminf(8,qlcg_gl_caps.max_anisotropy));
         glGenerateMipmap(GL_TEXTURE_2D);
     }
     free(buf);
 }
 
+
+void qlcg_terrain_gpu_release(TerrainRenderer *tr) {
+    bool observing=tr->astronomy.observing;
+    WeatherSystem weather=tr->weather_sys;
+    IceVisual ice=tr->ice_vis;
+    int season=tr->plant_season;
+    double fade=tr->fade_origin_ms;
+    qlcg_terrain_shutdown(tr);
+    memset((char *)tr+offsetof(TerrainRenderer,terrain_prog),0,
+        offsetof(TerrainRenderer,weather_sys)-offsetof(TerrainRenderer,terrain_prog));
+    tr->weather_sys=weather; tr->plant_season=season; tr->fade_origin_ms=fade;
+    tr->astronomy.observing=observing;
+    memcpy(tr->ice_vis.ice_pool,ice.ice_pool,sizeof(ice.ice_pool));
+    memcpy(tr->ice_vis.cracks,ice.cracks,sizeof(ice.cracks));
+    tr->ice_vis.crack_count=ice.crack_count;
+    tr->ice_vis.ice_seed_cursor=ice.ice_seed_cursor;
+    tr->ice_vis.ice_seed_timer=ice.ice_seed_timer;
+}

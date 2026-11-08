@@ -1,0 +1,38 @@
+{
+  "plants": [
+    {
+      "id": "nong.chu",
+      "name": "楮",
+      "latin": "Broussonetia papyrifera",
+      "climate": "subtropical",
+      "archetype": "broadleaf",
+      "seed": 721,
+      "tags": [
+        "naihan_2",
+        "naire_2",
+        "chai",
+        "shuguan",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 4.9,
+        "spread": 1.9
+      },
+      "palette": {
+        "foliage": "mulberry",
+        "foliageDark": "foliageDeep",
+        "bloom": "bloomWhite",
+        "fruit": "cropPaperBast"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

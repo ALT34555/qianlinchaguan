@@ -1,6 +1,6 @@
 {
   "plants": [
-    {"id":"hua.ju","archetype":"shrub","climate":"temperate","name":"菊","latin":"ju","seed":804,"tags":["kaihua"],"params":{"height":0.8,"canopy":0.5,"blobs":5,"petals":10,"bloomCount":6,"bloomRadius":0.18,"stems":3,"spread":0.36},"palette":{"foliage":"foliageDeep","foliageDark":"foliage","bloom":"chrysBloom"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"hua.ju","archetype":"shrub","climate":"temperate","name":"菊","latin":"ju","seed":804,"tags":["kaihua"],"params":{"seedCount":4,"height":0.8,"canopy":0.5,"blobs":5,"petals":10,"bloomCount":6,"bloomRadius":0.18,"stems":3,"spread":0.36},"palette":{"foliage":"foliageDeep","foliageDark":"foliage","bloom":"chrysBloom"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
     {"id":"hua.ju@seedling","state":"seedling"},
     {"id":"hua.ju@subadult","state":"subadult"},
     {"id":"hua.ju@flowering","state":"flowering"},

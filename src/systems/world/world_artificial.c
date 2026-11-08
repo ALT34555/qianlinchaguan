@@ -3,7 +3,7 @@
 #include "world_internal.h"
 #include "faction_naming.h"
 #include "../../core/math_util.h"
-#include <windows.h>
+#include "platform/platform.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

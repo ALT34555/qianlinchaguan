@@ -6,6 +6,7 @@
 #include "ui_theme.h"
 #include "ui_input.h"
 #include <stddef.h>
+#include <wchar.h>
 
 #define UI_ATLAS_W      2048
 #define UI_ATLAS_H      2048
@@ -30,12 +31,7 @@ typedef enum {
     UI_FACE_MONO    = 2
 } UiFaceKind;
 
-typedef struct {
-    HFONT font;
-    int   face;
-    int   px;
-    bool  bold;
-} UiFontCache;
+
 
 #define UI_FONT_CACHE 48
 
@@ -108,7 +104,7 @@ typedef struct {
 } UiPalette;
 
 typedef struct UiContext {
-    int        win_w, win_h;   /* UI 逻辑尺寸；物理尺寸/hidpi_mul */
+    int        win_w, win_h;   /* UI 绘制尺寸 */
     int        pix_w, pix_h;   /* 物理像素尺寸，背景 blit 用 */
     float      hidpi_mul;      /* 当前生效的 UI 放大倍率 */
     uint32_t   frame_idx;
@@ -157,12 +153,7 @@ typedef struct UiContext {
     GLuint     backdrop_tex;           /* 模糊结果，玻璃面板读它 */
     int        bd_w, bd_h;
     bool       backdrop_ready;         /* 本帧已抓取，玻璃直接采样 */
-    HDC        mem_dc;
-    HBITMAP    dib;
-    uint32_t  *dib_bits;
-    HFONT      fonts[FONT_COUNT];
-    UiFontCache dyn[UI_FONT_CACHE];
-    int        dyn_count;
+    struct QlTextBackend *text_backend;
     wchar_t    family_display[64];   /* 标题字体族，可被 mod 替换 */
     wchar_t    family_body[64];      /* 正文字体族 */
     wchar_t    family_mono[64];      /* 等宽字体族 */
@@ -191,6 +182,8 @@ typedef struct UiContext {
     float      user_size;       /* 控件缩放，<=0 视为 1 */
     float      safe_x_pct;      /* 左右安全区百分比，0 表示无 */
     float      safe_y_pct;      /* 上下安全区百分比 */
+    bool       pointer_touch,touch_double_tap,touch_drag_horizontal;
+    float      system_edges[4],safe_edges[4],device_density;
     float      safe_x_px;       /* 每帧换算出的像素值 */
     float      safe_y_px;
     bool       reduce_motion;   /* 关闭过渡与水波 */
@@ -239,6 +232,7 @@ typedef struct UiContext {
 
     /* 输入法定位：上帧光标矩形（UI 逻辑坐标） */
     bool       ime_caret_valid;
+    uint32_t   ime_request_frame;
     float      ime_caret_x, ime_caret_y, ime_caret_h;
 } UiContext;
 
@@ -259,6 +253,8 @@ static inline uint32_t ui_rgba_hex(uint32_t hex, uint8_t a) {
                    (uint8_t)((hex >> 8) & 0xFF), a);
 }
 
+void ui_gpu_release(UiContext *ui);
+bool ui_gpu_restore(UiContext *ui);
 bool ui_init(UiContext *ui, int w, int h);
 void ui_shutdown(UiContext *ui);
 void ui_apply_theme(UiContext *ui, ThemeMode mode);

@@ -66,7 +66,7 @@ bool game_view_atlas(UiContext *ui) {
 
     float vp_x = sx;
     float vp_y = sy + bar_h + tools_h;
-    float vp_w = (float)ui->win_w - sx * 2.0f;
+    float vp_w = (float)ui->win_w - (ui->safe_edges[0]+ui->safe_edges[2]);
     float vp_h = (float)ui->win_h - vp_y - sy - det_h;
     if (vp_w < 1.0f) vp_w = 1.0f;
     if (vp_h < 1.0f) vp_h = 1.0f;
@@ -228,7 +228,7 @@ bool game_view_atlas(UiContext *ui) {
 
     /* ---- 详情栏：左右随安全区内缩 ---- */
     float det_y = (float)ui->win_h - sy - det_h;
-    float det_w = (float)ui->win_w - sx * 2.0f;
+    float det_w = (float)ui->win_w - (ui->safe_edges[0]+ui->safe_edges[2]);
     ui_draw_rect(ui, sx, det_y, det_w, det_h, tk_of(ui, QL_SURFACE_HI));
     ui_draw_rect(ui, sx, det_y, det_w, 1.0f, tk_of(ui, QL_LINE_SOFT));
     {
@@ -244,7 +244,7 @@ bool game_view_atlas(UiContext *ui) {
         }
         ui_draw_text_ellipsis(ui, UI_FACE_MONO, rf, false, sx + 20.0f * z,
                               det_y + 11.0f * z + (rf * ATLAS_LINE - rf) * 0.5f,
-                              (float)ui->win_w - sx * 2.0f - 40.0f * z, 0, line,
+                              (float)ui->win_w - (ui->safe_edges[0]+ui->safe_edges[2]) - 40.0f * z, 0, line,
                               tk_of(ui, QL_INK_2));
     }
 

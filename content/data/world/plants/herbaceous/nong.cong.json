@@ -1,0 +1,35 @@
+{
+  "plants": [
+    {
+      "id": "nong.cong",
+      "name": "葱",
+      "latin": "Allium fistulosum",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "seed": 725,
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.65,
+        "spread": 0.18
+      },
+      "palette": {
+        "foliage": "cropScallion",
+        "foliageDark": "cropTeaShade",
+        "bloom": "bloomWhite",
+        "fruit": "cropAlliumSeed"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "plants": [
+    {
+      "id": "nong.xie",
+      "name": "薤",
+      "latin": "Allium chinense",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "seed": 726,
+      "tags": [
+        "naihan_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.37,
+        "spread": 0.17
+      },
+      "palette": {
+        "foliage": "cropScallion",
+        "foliageDark": "cropTeaShade",
+        "bloom": "cropSesameBloom",
+        "fruit": "cropAlliumSeed"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

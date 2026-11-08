@@ -4,7 +4,6 @@
 #include "planet_macro.h"
 #include <stdio.h>
 
-bool qlcg_factions_write(FILE *file, const MacroWorld *world);
 /* limit<=0 表示以文件尾为界 */
 bool qlcg_factions_read_lim(FILE *file, MacroWorld *world, long limit);
 bool qlcg_factions_tail_valid_lim(FILE *file, long limit);

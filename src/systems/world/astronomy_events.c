@@ -1,3 +1,4 @@
+#include "core/binary.h"
 #include "astronomy_events.h"
 #include "../../core/math_util.h"
 #include "../calendar/jd_astronomy.h"
@@ -164,22 +165,46 @@ int qlcg_astra_event_vertices(AstraEventState *s,const CalendarClock *clk,const 
     return n;
 }
 typedef struct { uint32_t version,seed;double high_water;int64_t hour[2];unsigned char flags[2][ASTRA_METEORS]; } EventDisk;
+static bool event_fields(FILE *file, EventDisk *d, uint32_t *enabled, uint32_t *policy, bool reading) {
+    QlCodec io=qlcg_codec(file,reading,QLCG_FILE_LIMIT);
+    d->version=(uint32_t)qlcg_io_uint(&io,d->version,4); d->seed=(uint32_t)qlcg_io_uint(&io,d->seed,4);
+    d->high_water=qlcg_io_f64(&io,d->high_water);
+    for(int j=0;j<2;j++) {
+        uint64_t bits=qlcg_io_uint(&io,(uint64_t)d->hour[j],8);
+        d->hour[j]=bits<=INT64_MAX?(int64_t)bits:-1-(int64_t)(UINT64_MAX-bits);
+    }
+    qlcg_io_bytes(&io,d->flags,2*ASTRA_METEORS);
+    *enabled=(uint32_t)qlcg_io_uint(&io,*enabled,4); *policy=(uint32_t)qlcg_io_uint(&io,*policy,4);
+    return io.ok;
+}
 bool qlcg_astra_events_write(FILE *fp,const MacroWorld *w) {
     EventDisk d={0};d.version=ASTRA_EVENT_VERSION;d.seed=w->opt.seed;d.high_water=-1e100;
     const AstraEventState *s=w->astra_events;
     for(int j=0;j<2;j++){d.hour[j]=s?s->hours[j].hour:INT64_MIN;if(s)for(int i=0;i<s->hours[j].count;i++)d.flags[j][i]=s->hours[j].meteors[i].decided|(s->hours[j].meteors[i].skipped<<1);}
-    if(s)d.high_water=s->high_water;uint32_t size=sizeof(d)+8,enabled=0,policy=w->astronomy_broadcast;
-    return policy<=255&&fwrite("ASTE1",1,5,fp)==5&&fwrite(&size,4,1,fp)==1&&fwrite(&d,sizeof(d),1,fp)==1&&fwrite(&enabled,4,1,fp)==1&&fwrite(&policy,4,1,fp)==1;
+    if(s)d.high_water=s->high_water;uint32_t enabled=0,policy=w->astronomy_broadcast;
+    QlCodec io=qlcg_codec(fp,false,9);
+    qlcg_io_bytes(&io,"ASTE2",5); qlcg_io_uint(&io,40+2*ASTRA_METEORS,4);
+    return policy<=255 && io.ok && event_fields(fp,&d,&enabled,&policy,false);
 }
 bool qlcg_astra_events_read(FILE *fp,MacroWorld *w,long limit) {
     long at=ftell(fp);if(at<0)return false;char magic[5];
     if(limit>0&&limit-at<5)return fseek(fp,at,SEEK_SET)==0;
-    if(fread(magic,1,5,fp)!=5||memcmp(magic,"ASTE1",5))return fseek(fp,at,SEEK_SET)==0;
-    uint32_t size,enabled=0,policy=0;EventDisk d;
-    if(fread(&size,4,1,fp)!=1||(size!=sizeof(d)&&size!=sizeof(d)+4&&size!=sizeof(d)+8))return false;
-    if((limit>0&&limit-at<9+(long)size)||fread(&d,sizeof(d),1,fp)!=1)return false;
-    if(size>sizeof(d)&&(fread(&enabled,4,1,fp)!=1||enabled>1))return false;
-    if(size==sizeof(d)+8&&(fread(&policy,4,1,fp)!=1||policy>255))return false;
+    if(fread(magic,1,5,fp)!=5 || (memcmp(magic,"ASTE1",5) && memcmp(magic,"ASTE2",5))) return fseek(fp,at,SEEK_SET)==0;
+    uint32_t size,enabled=0,policy=0; EventDisk d={0};
+    QlCodec io=qlcg_codec(fp,true,4); size=(uint32_t)qlcg_io_uint(&io,0,4);
+    if(!io.ok || (limit>0 && (limit-at<9 || (uint64_t)(limit-at-9)<size))) return false;
+    if(!memcmp(magic,"ASTE2",5)) {
+        if(size!=40+2*ASTRA_METEORS || !event_fields(fp,&d,&enabled,&policy,true)) return false;
+    } else {
+#ifdef _WIN32
+        if((size!=sizeof(d)&&size!=sizeof(d)+4&&size!=sizeof(d)+8) || fread(&d,sizeof(d),1,fp)!=1) return false;
+        if(size>sizeof(d) && fread(&enabled,4,1,fp)!=1) return false;
+        if(size==sizeof(d)+8 && fread(&policy,4,1,fp)!=1) return false;
+#else
+        return false;
+#endif
+    }
+    if(enabled>1 || policy>255) return false;
     if(d.version!=ASTRA_EVENT_VERSION||!isfinite(d.high_water))return false;
     for(int j=0;j<2;j++) {
         if(d.hour[j]!=INT64_MIN&&(d.hour[j]<-1000000000LL||d.hour[j]>1000000000LL))return false;

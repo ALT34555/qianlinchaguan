@@ -1,0 +1,35 @@
+{
+  "plants": [
+    {
+      "id": "hua.tao",
+      "name": "桃",
+      "latin": "Prunus persica",
+      "climate": "temperate",
+      "archetype": "blossomTree",
+      "params": {
+        "seedCount": 4,
+        "height": 3.9,
+        "spread": 2.08,
+        "bloomCount": 6,
+        "fruitless": true
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDark",
+        "barkLight": "barkLight",
+        "bloom": "#E9989F"
+      },
+      "tags": [
+        "kaihua"
+      ],
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

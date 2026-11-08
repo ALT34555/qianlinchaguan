@@ -1,0 +1,37 @@
+{
+  "plants": [
+    {
+      "id": "nong.chun",
+      "name": "莼",
+      "latin": "Brasenia schreberi",
+      "climate": "temperate",
+      "archetype": "floatingPad",
+      "seed": 728,
+      "tags": [
+        "nailao_0",
+        "guzhuo",
+        "fushui",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.33,
+        "spread": 0.56
+      },
+      "palette": {
+        "foliage": "cropTeaLeaf",
+        "foliageDark": "waterweed",
+        "bloom": "cropPerillaLeaf",
+        "fruit": "cropWatershieldFruit"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

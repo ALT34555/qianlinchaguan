@@ -1,0 +1,36 @@
+{
+  "plants": [
+    {
+      "id": "nong.cha",
+      "name": "茶",
+      "latin": "Camellia sinensis",
+      "climate": "subtropical",
+      "archetype": "shrub",
+      "seed": 723,
+      "tags": [
+        "naihan_2",
+        "naire_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 1.17,
+        "spread": 0.75
+      },
+      "palette": {
+        "foliage": "cropTeaLeaf",
+        "foliageDark": "cropTeaShade",
+        "bloom": "bloomWhite",
+        "fruit": "cropTeaCapsule"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

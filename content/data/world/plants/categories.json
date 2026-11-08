@@ -48,7 +48,15 @@
         "hua.mei",
         "hua.lan",
         "hua.zhu",
-        "hua.ju"
+        "hua.ju",
+        "hua.mudan",
+        "hua.yueji",
+        "hua.shancha",
+        "hua.mujin",
+        "hua.tao",
+        "hua.guanshangsong",
+        "hua.shaoyao",
+        "hua.guanshanghe"
       ]
     },
     {
@@ -58,7 +66,23 @@
         "nong.mai",
         "nong.su",
         "nong.da",
-        "nong.sang"
+        "nong.sang",
+        "nong.ganzhe",
+        "nong.youcai",
+        "nong.zhuma",
+        "nong.mianhua",
+        "nong.ma",
+        "nong.chu",
+        "nong.huma",
+        "nong.cha",
+        "nong.jiu",
+        "nong.cong",
+        "nong.xie",
+        "nong.song",
+        "nong.chun",
+        "nong.zisu",
+        "nong.huluobo",
+        "nong.bailuobo"
       ]
     },
     {

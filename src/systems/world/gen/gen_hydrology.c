@@ -356,6 +356,7 @@ void qlcg_build_hydrology(MacroWorld *w) {
     for (int b = 0; b < basin_count; b++) if (!basins[b].visible) status[b] = ST_PLAIN;
     double units = (double)w->equator_chunks * (float)CHUNK_SIZE / (float)w->columns / 64.0;
     double threshold = qlcg_macro_river_threshold(units, w->opt.precipitation);
+    if(qlcg_world_flat(w))threshold*=.25;
     double lake_loss = 0, lake_rain = 0, lake_runoff = 0, dry_loss = 0, river_loss = 0;
     int oasis_slot[8], oasis_shore[8];
     double oasis_gap[8];

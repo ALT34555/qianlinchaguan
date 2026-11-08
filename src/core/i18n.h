@@ -4,7 +4,7 @@
 #include "config.h"
 
 #define QLCG_MAX_LOCALES   16
-#define QLCG_L10N_DIR      L"userdata\\mods\\l10n"
+#define QLCG_L10N_DIR      L"userdata/mods/l10n"
 
 typedef struct {
     char code[32];

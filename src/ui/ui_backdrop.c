@@ -32,10 +32,10 @@ static const char *BD_FS_SRC =
     "}\n";
 
 static void bd_free_targets(UiContext *ui) {
-    if (ui->bd_tex[0]) { glDeleteTextures(1, &ui->bd_tex[0]); ui->bd_tex[0] = 0; }
-    if (ui->bd_tex[1]) { glDeleteTextures(1, &ui->bd_tex[1]); ui->bd_tex[1] = 0; }
-    if (ui->bd_fbo[0]) { glDeleteFramebuffers(1, &ui->bd_fbo[0]); ui->bd_fbo[0] = 0; }
-    if (ui->bd_fbo[1]) { glDeleteFramebuffers(1, &ui->bd_fbo[1]); ui->bd_fbo[1] = 0; }
+    if (ui->bd_tex[0]) { qlcg_gl_delete_textures(1, &ui->bd_tex[0]); ui->bd_tex[0] = 0; }
+    if (ui->bd_tex[1]) { qlcg_gl_delete_textures(1, &ui->bd_tex[1]); ui->bd_tex[1] = 0; }
+    if (ui->bd_fbo[0]) { qlcg_gl_delete_framebuffers(1, &ui->bd_fbo[0]); ui->bd_fbo[0] = 0; }
+    if (ui->bd_fbo[1]) { qlcg_gl_delete_framebuffers(1, &ui->bd_fbo[1]); ui->bd_fbo[1] = 0; }
     ui->backdrop_tex   = 0;
     ui->backdrop_ready = false;
     ui->bd_w = ui->bd_h = 0;
@@ -63,10 +63,12 @@ static bool bd_make_target(UiContext *ui, int idx, int w, int h) {
 }
 
 void ui_backdrop_init(UiContext *ui) {
+#ifdef _WIN32
     if (!glGenFramebuffers || !glBlitFramebuffer) {
         printf("[Backdrop] FBO 扩展不可用，磨砂玻璃降级为半透明\n");
         return;
     }
+#endif
     ui->bd_prog = qlcg_gl_compile_program(BD_VS_SRC, BD_FS_SRC);
     if (!ui->bd_prog) return;
     /* core profile 须绑 VAO 才可 draw */
@@ -153,6 +155,6 @@ void ui_backdrop_end_frame(UiContext *ui) {
 
 void ui_backdrop_release(UiContext *ui) {
     bd_free_targets(ui);
-    if (ui->bd_vao)  { glDeleteVertexArrays(1, &ui->bd_vao);  ui->bd_vao = 0; }
-    if (ui->bd_prog) { glDeleteProgram(ui->bd_prog);          ui->bd_prog = 0; }
+    if (ui->bd_vao)  { qlcg_gl_delete_vertex_arrays(1, &ui->bd_vao);  ui->bd_vao = 0; }
+    if (ui->bd_prog) { qlcg_gl_delete_program(ui->bd_prog);          ui->bd_prog = 0; }
 }

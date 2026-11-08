@@ -1,0 +1,35 @@
+{
+  "plants": [
+    {
+      "id": "nong.ma",
+      "name": "麻",
+      "latin": "Cannabis sativa",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "seed": 720,
+      "tags": [
+        "naire_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 1.55,
+        "spread": 0.53
+      },
+      "palette": {
+        "foliage": "cropGreen",
+        "foliageDark": "foliageDeep",
+        "bloom": "bloomWhite",
+        "fruit": "cropBast"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

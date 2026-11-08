@@ -70,18 +70,24 @@ void ui_touch_begin(UiTouch *t, UiContext *ui, bool enabled, float opacity,
     if (!lay) { qlcg_touch_layout_default(def); lay = def; }
 
     float z  = ui->met.size;
-    float sw = ui->win_w - ui->safe_x_px * 2.0f;
-    float sh = ui->win_h - ui->safe_y_px * 2.0f;
-    float ox = ui->safe_x_px;
-    float oy = ui->safe_y_px;
+    float sw = ui->win_w - ui->safe_edges[0] - ui->safe_edges[2];
+    float sh = ui->win_h - ui->safe_edges[1] - ui->safe_edges[3];
+    float ox = ui->safe_edges[0];
+    float oy = ui->safe_edges[1];
 
     /* 触屏控件跟 UI 缩放，但设上限：过大时反而互相压住 */
     float stick_box = qlcg_clampf(168.0f * z, 150.0f, 210.0f) * lay[UI_TOUCH_ITEM_MOVE][2];
+#ifdef __ANDROID__
+    stick_box=fmaxf(stick_box,150*ui->device_density);
+#endif
     t->stick_r  = stick_box * 0.5f;
     t->stick_cx = ox + lay[UI_TOUCH_ITEM_MOVE][0] * (sw - stick_box) + t->stick_r;
     t->stick_cy = oy + lay[UI_TOUCH_ITEM_MOVE][1] * (sh - stick_box) + t->stick_r;
 
     float btn_box0 = qlcg_clampf(62.0f * z, 56.0f, 78.0f);
+#ifdef __ANDROID__
+    btn_box0=fmaxf(btn_box0,48*ui->device_density);
+#endif
     for (int i = 0; i < UI_TOUCH_BTN_COUNT; i++) {
         int item = UI_TOUCH_ITEM_SPRINT + i;
         float btn_box = btn_box0 * lay[item][2];

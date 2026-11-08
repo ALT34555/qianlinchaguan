@@ -1,0 +1,10 @@
+{
+  "plants": [
+    {"id":"nong.mianhua","archetype":"shrub","climate":"subtropical","name":"棉花","latin":"mianhua","seed":713,"tags":["naire_2","naigan_2","kaihua","jieguo","chai"],"params":{"height":1.1,"spread":0.75,"stems":1,"branches":6,"leaf_len":0.22,"leaf_w":0.20,"bloom_season":1},"palette":{"foliage":"cropGreen","foliageDark":"foliageDeep","barkLight":"barkLight","bloom":"bloomWhite","fruit":"snow"},"states":["normal","seedling","subadult","flowering","fruiting","withered"]},
+    {"id":"nong.mianhua@seedling","state":"seedling"},
+    {"id":"nong.mianhua@subadult","state":"subadult"},
+    {"id":"nong.mianhua@flowering","state":"flowering"},
+    {"id":"nong.mianhua@fruiting","state":"fruiting"},
+    {"id":"nong.mianhua@withered","state":"withered"}
+  ]
+}

@@ -454,7 +454,7 @@ void render_screen_world_creator(UiContext *ui) {
         if (ui_hit(ui, vp_x + ui->global_dx, vp_y + ui->global_dy, vp_w, vp_h)) {
             if (ui->mouse_clicked && ui->mouse_down) {
                 g_app.atlas.dragging = true;
-                SetCapture(g_app.hwnd);
+                qlcg_platform_capture();
             }
             if (ui->wheel_delta != 0) {
                 float dz = qlcg_clampf(ui->wheel_delta / 120.0f, -3.0f, 3.0f) * 0.40f;

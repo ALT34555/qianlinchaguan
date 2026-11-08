@@ -1,3 +1,4 @@
+#include "platform/platform.h"
 /* 精简 JSON DOM 实现 */
 #include "model_json.h"
 
@@ -250,7 +251,7 @@ JsVal *qlcg_js_parse(const char *text, const char **err) {
 
 JsVal *qlcg_js_load(const char *path, const char **err) {
     if (err) *err = NULL;
-    FILE *f = fopen(path, "rb");
+    FILE *f = qlcg_platform_fopen(path, "rb");
     if (!f) { if (err) *err = "open failed"; return NULL; }
     if (fseek(f, 0, SEEK_END) != 0) { fclose(f); if (err) *err = "seek failed"; return NULL; }
     long len = ftell(f);

@@ -113,23 +113,30 @@ bool qlcg_precip_write(FILE *file, const MacroWorld *world) {
     return ok;
 }
 
-bool qlcg_precip_read_optional_lim(FILE *file, MacroWorld *world, long limit) {
-    if (!file || !world) return false;
+static bool read_precip(FILE *file, MacroWorld *world, const WorldCreatorOptions *opt, long limit, bool strict) {
+    if (!file || !opt) return false;
     int day = 0, cols = 0, rows = 0;
     uint32_t seed = 0, payload = 0, checksum = 0;
     int r = read_header(file, &day, &cols, &rows, &seed, &payload, &checksum, limit);
-    if (r <= 0) return true;   /* 缺失或损坏都按无降水尾段 */
+    if (r <= 0) return r == 0 || !strict;
     uint8_t *buf = (uint8_t *)malloc(payload);
-    if (!buf) return true;
+    if (!buf) return false;
     if (fread(buf, 1, payload, file) != payload || fnv32(buf, payload) != checksum) {
         free(buf);
-        return true;
+        return !strict;
     }
-    if (cols != world->columns || rows != world->rows || seed != world->opt.seed) {
+    int expected_cols=world?world->columns:opt->columns;
+    int expected_rows=world?world->rows:opt->columns/(opt->map_mode==WORLD_MAP_INFINITE?1:2);
+    if (cols != expected_cols || rows != expected_rows || seed != opt->seed) {
         fprintf(stderr, "[precip] RAIN1 与当前世界不匹配，忽略\n");
         free(buf);
-        return true;
+        return !strict;
     }
+    size_t cell_total = (size_t)cols * rows;
+    if (strict) for (size_t i = 0; i < cell_total; i++) {
+        if (buf[cell_total * 4 + i] > 1) { free(buf); return false; }
+    }
+    if (!world) { free(buf); return true; }
     if (!world->precip) world->precip = qlcg_precip_create(world);
     if (!world->precip) { free(buf); return false; }
     size_t cells = (size_t)cols * (size_t)rows;
@@ -151,6 +158,14 @@ bool qlcg_precip_read_optional_lim(FILE *file, MacroWorld *world, long limit) {
     bool ok = qlcg_precip_adopt(world->precip, day, water, rain, phase);
     free(water); free(rain); free(phase); free(buf);
     return ok;
+}
+
+bool qlcg_precip_read_optional_lim(FILE *file, MacroWorld *world, long limit) {
+    return world && read_precip(file, world, &world->opt, limit, false);
+}
+
+bool qlcg_precip_read_strict(FILE *file, MacroWorld *world, const WorldCreatorOptions *opt, long limit) {
+    return read_precip(file, world, opt, limit, true);
 }
 
 bool qlcg_precip_tail_valid_lim(FILE *file, long limit) {

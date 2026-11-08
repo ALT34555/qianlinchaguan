@@ -1,0 +1,35 @@
+{
+  "plants": [
+    {
+      "id": "nong.bailuobo",
+      "name": "白萝卜",
+      "latin": "Raphanus sativus",
+      "climate": "temperate",
+      "archetype": "grassClump",
+      "seed": 731,
+      "tags": [
+        "naihan_1",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.5,
+        "spread": 0.35
+      },
+      "palette": {
+        "foliage": "cropCabbage",
+        "foliageDark": "cropAllium",
+        "bloom": "cropSesameBloom",
+        "fruit": "cropRadishRoot"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

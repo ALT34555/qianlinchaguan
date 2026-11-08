@@ -1,0 +1,61 @@
+{
+  "plants": [
+    {
+      "id": "nong.youcai",
+      "archetype": "grassClump",
+      "climate": "subtropical",
+      "name": "油菜",
+      "latin": "youcai",
+      "seed": 711,
+      "tags": [
+        "naihan_2",
+        "nailao_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 1.15,
+        "spread": 0.55,
+        "stems": 1,
+        "branches": 5,
+        "leaf_len": 0.35,
+        "leaf_w": 0.12,
+        "bloom_season": 0
+      },
+      "palette": {
+        "foliage": "cropGreen",
+        "foliageDark": "foliageDeep",
+        "bloom": "bloomGold",
+        "fruit": "grainPale"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "nong.youcai@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "nong.youcai@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "nong.youcai@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "nong.youcai@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "nong.youcai@withered",
+      "state": "withered"
+    }
+  ]
+}

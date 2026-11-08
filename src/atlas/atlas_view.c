@@ -16,9 +16,9 @@
 #define GL_RGBA32F 0x8814
 #endif
 
-bool qlcg_atlas_init(AtlasRenderer *ar) {
-    memset(ar, 0, sizeof(*ar));
+bool qlcg_atlas_gpu_restore(AtlasRenderer *ar) {
     ar->prog = qlcg_gl_compile_program(ATLAS_VS_SRC, ATLAS_FS_SRC);
+    if(!ar->prog) return false;
     glGenVertexArrays(1, &ar->vao);
     glGenBuffers(1, &ar->vbo);
     glBindVertexArray(ar->vao);
@@ -29,6 +29,12 @@ bool qlcg_atlas_init(AtlasRenderer *ar) {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
 
+    return true;
+}
+
+bool qlcg_atlas_init(AtlasRenderer *ar) {
+    memset(ar,0,sizeof(*ar));
+    if(!qlcg_atlas_gpu_restore(ar)) return false;
     ar->planet_view  = PLANET_VIEW_EQUIRECT;
     ar->sat_mode     = false;
     ar->zoom         = 4.0f;
@@ -49,10 +55,10 @@ bool qlcg_atlas_init(AtlasRenderer *ar) {
 void qlcg_atlas_release_world(AtlasRenderer *ar) {
     qlcg_atlas_tiles_destroy(ar->tiles);
     ar->tiles = NULL;
-    glDeleteTextures(1,&ar->eclipse_tex);ar->eclipse_tex=0;
+    qlcg_gl_delete_textures(1,&ar->eclipse_tex);ar->eclipse_tex=0;
     ar->eclipse_ready=false;ar->astronomy_overlay=false;
     GLuint textures[] = {ar->data_tex0, ar->data_tex1, ar->sat_tex, ar->rain_tex};
-    glDeleteTextures(4, textures);
+    qlcg_gl_delete_textures(4, textures);
     ar->data_tex0 = ar->data_tex1 = ar->sat_tex = ar->rain_tex = 0;
     ar->tex_w = ar->tex_h = ar->rain_tex_w = ar->rain_tex_h = 0;
     ar->world_upload_pending = false;
@@ -60,13 +66,17 @@ void qlcg_atlas_release_world(AtlasRenderer *ar) {
     ar->rain_key_day = ar->rain_key_ver = ar->rain_key_stamp = 0;
     ar->rain_last_ms = ar->last_render_ms = 0.0;
     ar->synced_plane_count=0;
+    ar->detail_world=NULL;
 }
 
 void qlcg_atlas_shutdown(AtlasRenderer *ar) {
+    bool overlay=ar->astronomy_overlay;
     qlcg_atlas_release_world(ar);
-    if (ar->vbo)       glDeleteBuffers(1, &ar->vbo);
-    if (ar->vao)       glDeleteVertexArrays(1, &ar->vao);
-    if (ar->prog)      glDeleteProgram(ar->prog);
+    ar->astronomy_overlay=overlay;
+    if (ar->vbo)       qlcg_gl_delete_buffers(1, &ar->vbo);
+    if (ar->vao)       qlcg_gl_delete_vertex_arrays(1, &ar->vao);
+    if (ar->prog)      qlcg_gl_delete_program(ar->prog);
+    ar->prog=ar->vao=ar->vbo=0;
 }
 
 static const MacroWorld *atlas_plane(const MacroWorld *w,double x,double z) {
@@ -78,6 +88,10 @@ static const MacroWorld *atlas_plane(const MacroWorld *w,double x,double z) {
 /* 上传宏观舆图纹理 */
 void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
     if (!w) return;
+    if(ar->detail_world!=w) {
+        qlcg_atlas_tiles_destroy(ar->tiles);ar->tiles=NULL;
+        ar->detail_world=w;ar->eclipse_ready=false;
+    }
     ar->world_upload_pending = true;
     bool flat=qlcg_world_flat(w);
     int pitch=w->columns+1;
@@ -172,8 +186,12 @@ void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
             glTexImage2D(GL_TEXTURE_2D, 0, t == 0 ? GL_RGBA32F : GL_RGBA8, tw, th, 0,
                          GL_RGBA, type, ptrs[t]);
         /* 球面极区压缩，必须有 mip 链压混叠 */
-        glGenerateMipmap(GL_TEXTURE_2D);
-        if (t == 1) {
+        bool float_base=t==0 && (qlcg_gl_caps.es || !qlcg_gl_caps.float_linear);
+        if(!float_base) glGenerateMipmap(GL_TEXTURE_2D);
+        if(float_base) {
+            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,qlcg_gl_caps.float_linear?GL_LINEAR:GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,qlcg_gl_caps.float_linear?GL_LINEAR:GL_NEAREST);
+        } else if (t == 1) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         } else {
@@ -219,3 +237,37 @@ void qlcg_atlas_reset_view(AtlasRenderer *ar, const MacroWorld *w, bool focus_sp
 }
 
 /* 计算当前缩放级对应的像素/米比例 */
+
+/* 图层本地化名称 */
+const char *qlcg_atlas_layer_name(AtlasLayerId id) {
+    switch (id) {
+        case LAYER_TERRITORIES: return tr("layer.civilization");
+        case LAYER_CHUNKS:      return tr("layer.chunks");
+        case LAYER_MERIDIAN:    return tr("layer.baseline");
+        case LAYER_DAYLIGHT:    return tr("layer.daylight");
+        case LAYER_CLOUDS:      return tr("layer.rain");
+        case LAYER_CONTOURS:    return tr("layer.contour");
+        case LAYER_CLIMATE:     return tr("layer.climate");
+        case LAYER_TEMPERATURE: return tr("layer.temperature");
+        case LAYER_ELEVATION:   return tr("layer.height");
+        case LAYER_ICE:         return tr("layer.ice");
+        case LAYER_DEPTH:       return tr("layer.depth");
+        case LAYER_SOURCE_RIVERS: return tr("layer.sourceRivers");
+        default:                return tr("layer.unknown");
+    }
+}
+
+/* 快速筛查名称 */
+const char *qlcg_atlas_filter_name(AtlasQuickFilter f) {
+    switch ((int)f) {
+        case 0:  return tr("atlas.filter.none");
+        case 1:  return tr("atlas.filter.flag");
+        case 2:  return tr("atlas.filter.owned");
+        case 3:  return tr("atlas.filter.water");
+        case 4:  return tr("atlas.filter.frozen");
+        case 5:  return tr("atlas.filter.cold");
+        case 6:  return tr("atlas.filter.temperate");
+        case 7:  return tr("atlas.filter.warm");
+        default: return tr("atlas.filter.unknown");
+    }
+}

@@ -1,0 +1,36 @@
+{
+  "plants": [
+    {
+      "id": "nong.huma",
+      "name": "胡麻",
+      "latin": "Sesamum indicum",
+      "climate": "subtropical",
+      "archetype": "grassClump",
+      "seed": 722,
+      "tags": [
+        "naire_1",
+        "naigan_2",
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.96,
+        "spread": 0.31
+      },
+      "palette": {
+        "foliage": "cropGreen",
+        "foliageDark": "foliageDeep",
+        "bloom": "cropSesameBloom",
+        "fruit": "cropSesame"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    }
+  ]
+}

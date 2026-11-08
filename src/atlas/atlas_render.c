@@ -181,7 +181,7 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
                                  (w->spawn_cz + 0.5) * QLCG_CHUNK_SIZE_M, true);
     }
 
-    if (ar->world_upload_pending || ar->synced_delta_ver != w->delta_version ||
+    if (ar->detail_world!=w || ar->world_upload_pending || ar->synced_delta_ver != w->delta_version ||
         ar->synced_terr_rev != w->territory_revision ||
         (!qlcg_world_flat(w) && (ar->tex_w != w->columns || ar->tex_h != w->rows)) ||
         !ar->tex_w || !ar->tex_h ||
@@ -339,7 +339,7 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
 
     /* 叠加层：球面与平面共用同一投影入口 */
     {
-        if(tile_view.river_mix<1)
+        if(tile_view.river_mix<1 || qlcg_world_flat(w))
             qlcg_atlas_draw_rivers(ar, w, ui, vp_x, vp_y, vp_w, vp_h);
 
         /* 列表从后向前绘制 */
@@ -453,11 +453,33 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
     ar->last_render_ms = qlcg_time_ms() - t0;
 }
 
+static void render_viewed_world(AtlasRenderer *ar,const MacroWorld *w,
+                                const CalendarClock *clk,UiContext *ui,
+                                float x,float y,float width,float height,
+                                bool preview,const AtlasPlayerMarker *player) {
+    double dx=0,dz=0;
+    const MacroWorld *view=w;
+    AtlasPlayerMarker marker=player?*player:(AtlasPlayerMarker){0};
+    if(w && qlcg_world_flat(w) && !preview) {
+        double lx,lz;
+        const MacroWorld *target=qlcg_infinite_resolve(w,ar->cam_wx,ar->cam_wz,&lx,&lz);
+        if(target && target!=w) {
+            double period=w->circumference+(double)w->circumference/w->columns;
+            dx=((double)target->opt.plane_x-w->opt.plane_x)*period;
+            dz=((double)target->opt.plane_z-w->opt.plane_z)*period;
+            view=target;ar->cam_wx-=dx;ar->cam_wz-=dz;
+            marker.wx-=dx;marker.wz-=dz;
+        }
+    }
+    render_viewport(ar,view,clk,ui,x,y,width,height,preview,player?&marker:NULL);
+    ar->cam_wx+=dx;ar->cam_wz+=dz;
+}
+
 void qlcg_atlas_render_player_viewport(AtlasRenderer *ar, const MacroWorld *w,
                                       const CalendarClock *clk, UiContext *ui,
                                       float x, float y, float width, float height,
                                       const AtlasPlayerMarker *player) {
-    render_viewport(ar, w, clk, ui, x, y, width, height, false, player);
+    render_viewed_world(ar, w, clk, ui, x, y, width, height, false, player);
 }
 
 void qlcg_atlas_render_viewport(AtlasRenderer *ar, const MacroWorld *w,
@@ -466,5 +488,5 @@ void qlcg_atlas_render_viewport(AtlasRenderer *ar, const MacroWorld *w,
                                bool is_creator_preview, int player_cx, int player_cz) {
     AtlasPlayerMarker player = {(player_cx + 0.5) * QLCG_CHUNK_SIZE_M,
                                 (player_cz + 0.5) * QLCG_CHUNK_SIZE_M, 0};
-    render_viewport(ar, w, clk, ui, x, y, width, height, is_creator_preview, &player);
+    render_viewed_world(ar, w, clk, ui, x, y, width, height, is_creator_preview, &player);
 }

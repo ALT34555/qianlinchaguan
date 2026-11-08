@@ -17,6 +17,5 @@ void qlcg_infinite_bounds(const MacroWorld *w,double bounds[4]);
 bool qlcg_infinite_attach(MacroWorld *owner,MacroWorld *tile);
 MacroWorld *qlcg_infinite_explore(MacroWorld *w,float *wx,float *wz);
 void qlcg_infinite_free_others(MacroWorld *w);
-bool qlcg_infinite_write(FILE *fp,const MacroWorld *w);
 bool qlcg_infinite_read(FILE *fp,MacroWorld *w,long limit);
 #endif

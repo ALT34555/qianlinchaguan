@@ -25,7 +25,8 @@ static inline int qlcg_plant_model_variant(int form) {
 
 static inline int qlcg_plant_category_has_variants(int category) {
     return category == PLANT_CAT_CAO || category == PLANT_CAT_SHU ||
-           category == PLANT_CAT_GUAN || category == PLANT_CAT_SHUI;
+           category == PLANT_CAT_GUAN || category == PLANT_CAT_SHUI ||
+           category == PLANT_CAT_HUA || category == PLANT_CAT_NONG;
 }
 
 /* 返回1成功；out 由调用方释放 */

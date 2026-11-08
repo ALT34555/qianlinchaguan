@@ -33,3 +33,10 @@ C 运行时静态链接（`/MT`），不需要 VC++ 运行库；不使用 .NET�
 - 天体位置与食相级数：参考 astronomia（MIT）的实现思路 — <https://github.com/commenthol/astronomia>
 - 界面配色：OKLab 空间色混合，语义对齐 CSS Color Module Level 4 的 `color-mix()`。
 - 世界规则与视觉标杆：同项目 Web/TypeScript 基准版（0.2.0 及更早版本存于本仓库 Git 历史）。
+
+## Android 与跨平台组件
+
+- AndroidX GameActivity 3.0.5、AppCompat 1.7.0 及其依赖：Apache-2.0，来源 Google Maven。
+- Kotlin 标准库及 BOM 1.8.22：Apache-2.0。
+- Khronos OpenGL/EGL 头文件：MIT，版权声明保留于 src/third_party/khronos。
+- Android APK 包含 NDK libc++ 运行库：Apache-2.0 WITH LLVM-exception。

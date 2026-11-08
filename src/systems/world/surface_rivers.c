@@ -1,3 +1,4 @@
+#include "river_fields.h"
 /* 主河曲线、贴地剖面与河岸断面 */
 #include "surface_rivers.h"
 #include "surface_internal.h"
@@ -189,7 +190,7 @@ static int finish_curve(const MacroWorld *w,RiverCurve *c,int restored) {
         pad=fmax(pad,c->detail_clear+12+c->valley_span);
     }
     double lat=(fmax(fabs(b.top),fabs(b.bottom))+pad)*2*PI/C;
-    double lon_pad=lat<PI*.5?fmin(C*.5,pad/cos(lat)):C*.5;
+    double lon_pad=c->frame.flat?pad:lat<PI*.5?fmin(C*.5,pad/cos(lat)):C*.5;
     c->detail_bounds=(ReachBounds){b.left-lon_pad,b.right+lon_pad,b.top-pad,b.bottom+pad};
     double extra=fmax(74,pad-2*min_width);
     c->spatial.bin_size=512;
@@ -224,13 +225,13 @@ static int profile_record(RiverProfile *p,RiverBuffer *b) {
             if(fabs((double)level-p->levels[j])>.0005) { count=0; break; }
         }
     }
-    qlcg_river_io(b,&count,sizeof(count));
+    qlcg_river_values(b,&count,(sizeof(count))/4,4);
     if(b->failed||count<0||count>p->count||count==1) { free(indices); free(values); return 0; }
-    if(!count) qlcg_river_io(b,p->levels,(size_t)p->count*sizeof(float));
+    if(!count) qlcg_river_values(b,p->levels,((size_t)p->count*sizeof(float))/4,4);
     else {
         if(b->reading) { indices=malloc((size_t)count*sizeof(*indices)); values=malloc((size_t)count*sizeof(*values)); }
         if(!indices||!values) { free(indices); free(values); return 0; }
-        qlcg_river_io(b,indices,(size_t)count*sizeof(*indices)); qlcg_river_io(b,values,(size_t)count*sizeof(*values));
+        qlcg_river_values(b,indices,((size_t)count*sizeof(*indices))/4,4); qlcg_river_values(b,values,((size_t)count*sizeof(*values))/4,4);
         if(b->failed||indices[0]!=0||indices[count-1]!=p->count-1) { free(indices); free(values); return 0; }
         for(int k=1;k<count;k++) {
             if(indices[k]<=indices[k-1]||indices[k]>=p->count||!isfinite(values[k])||!isfinite(values[k-1])) { free(indices); free(values); return 0; }
@@ -242,14 +243,14 @@ static int profile_record(RiverProfile *p,RiverBuffer *b) {
 }
 static int curve_record(const MacroWorld *w,RiverCurve *c,RiverBuffer *b) {
     int32_t meta[3]={c->count,c->receiver,c->profile.count};
-    qlcg_river_io(b,meta,sizeof(meta));
+    qlcg_river_values(b,meta,(sizeof(meta))/4,4);
     if(b->failed||meta[0]<2||meta[0]>161||meta[1]<0||meta[1]>=w->cell_count||meta[2]<0||meta[2]==1||meta[2]>1000000) return 0;
     c->count=meta[0]; c->receiver=meta[1];
-    qlcg_river_io(b,&c->depth_a,sizeof(double)); qlcg_river_io(b,&c->depth_b,sizeof(double));
-    qlcg_river_io(b,&c->inlet,sizeof(c->inlet)); qlcg_river_io(b,&c->outlet,sizeof(c->outlet));
+    qlcg_river_values(b,&c->depth_a,(sizeof(double))/8,8); qlcg_river_values(b,&c->depth_b,(sizeof(double))/8,8);
+    qlcg_river_RiverMouthPoint(b,&c->inlet); qlcg_river_RiverMouthPoint(b,&c->outlet);
     for(int k=0;k<c->count;k++) {
         CurvePoint *p=c->points+k;
-        double v[5]={p->wx,p->wz,p->x,p->z,p->width}; qlcg_river_io(b,v,sizeof(v));
+        double v[5]={p->wx,p->wz,p->x,p->z,p->width}; qlcg_river_values(b,v,(sizeof(v))/8,8);
         if(b->reading) {
             for(int j=0;j<5;j++) if(!isfinite(v[j])) return 0;
             if(v[4]<=0||v[4]>3000) return 0;
@@ -259,7 +260,7 @@ static int curve_record(const MacroWorld *w,RiverCurve *c,RiverBuffer *b) {
     c->profile.count=meta[2];
     if(meta[2]) {
         if(b->reading) { c->profile.levels=malloc((size_t)meta[2]*sizeof(float)); if(!c->profile.levels) return 0; }
-        qlcg_river_io(b,&c->profile.arc,sizeof(double));
+        qlcg_river_values(b,&c->profile.arc,(sizeof(double))/8,8);
         if(!profile_record(&c->profile,b)) return 0;
         if(b->reading) for(int k=0;k<meta[2];k++) if(!isfinite(c->profile.levels[k])) return 0;
         c->profile_ready=1;
@@ -267,8 +268,8 @@ static int curve_record(const MacroWorld *w,RiverCurve *c,RiverBuffer *b) {
     if(!b->reading || b->at<b->size) {
         int32_t tag=0x57463131,state=c->waterfall.state,style=c->waterfall.style;
         double v[5]={c->waterfall.begin,c->waterfall.end,c->waterfall.top,c->waterfall.bottom,c->waterfall.width};
-        qlcg_river_io(b,&tag,sizeof(tag)); qlcg_river_io(b,&state,sizeof(state));
-        qlcg_river_io(b,&style,sizeof(style)); qlcg_river_io(b,v,sizeof(v));
+        qlcg_river_values(b,&tag,(sizeof(tag))/4,4); qlcg_river_values(b,&state,(sizeof(state))/4,4);
+        qlcg_river_values(b,&style,(sizeof(style))/4,4); qlcg_river_values(b,v,(sizeof(v))/8,8);
         if(tag!=0x57463131 || state<0 || state>2 || style<0 || style>7) return 0;
         for(int j=0;j<5;j++) if(!isfinite(v[j])) return 0;
         if(state==2 && (v[0]<0 || v[1]<=v[0] || v[1]>c->profile.arc || v[2]<=v[3] || v[4]<=0)) return 0;
@@ -276,7 +277,7 @@ static int curve_record(const MacroWorld *w,RiverCurve *c,RiverBuffer *b) {
     }
     if((!b->reading && c->ground_profile.count) || (b->reading && b->at<b->size)) {
         int32_t tag=0x47503131;
-        qlcg_river_io(b,&tag,sizeof(tag));
+        qlcg_river_values(b,&tag,(sizeof(tag))/4,4);
         if(tag!=0x47503131) {
             if(!b->reading||(tag!=0x31444552&&tag!=0x32444552)) return 0;
             b->at-=sizeof(tag);
@@ -294,13 +295,13 @@ static int curve_record(const MacroWorld *w,RiverCurve *c,RiverBuffer *b) {
     }
     if((!b->reading&&c->authored)||(b->reading&&b->at<b->size)) {
         int32_t tag=c->authored==2?0x32444552:0x31444552;
-        qlcg_river_io(b,&tag,sizeof(tag));
+        qlcg_river_values(b,&tag,(sizeof(tag))/4,4);
         if(tag==0x31444552) {
-            qlcg_river_io(b,&c->authored,sizeof(int)); if(c->authored!=1) return 0;
+            qlcg_river_values(b,&c->authored,(sizeof(int))/4,4); if(c->authored!=1) return 0;
         } else if(tag==0x32444552) {
             c->authored=2;
-            qlcg_river_io(b,c->parameters,(size_t)c->count*sizeof(double));
-            qlcg_river_io(b,c->saved_curvature,(size_t)c->count*sizeof(double));
+            qlcg_river_values(b,c->parameters,((size_t)c->count*sizeof(double))/8,8);
+            qlcg_river_values(b,c->saved_curvature,((size_t)c->count*sizeof(double))/8,8);
             qlcg_river_io(b,c->crafted,(size_t)c->count);
             for(int k=0;k<c->count;k++) if(!isfinite(c->parameters[k])||!isfinite(c->saved_curvature[k])||c->crafted[k]>1||
                 c->parameters[k]<0||c->parameters[k]>c->profile.arc+.01||(k&&c->parameters[k]<=c->parameters[k-1])) return 0;
@@ -880,13 +881,13 @@ void qlcg_oxbow_generate(MacroWorld *w,int cell) {
     struct OxbowCatalog *c=w->oxbow_catalog; if(c->lookup[cell]) return;
     c->lookup[cell]=-1; OxbowPlan plan={0}; RiverBuffer record={0}; int32_t valid=0;
     if(qlcg_river_archive_get(w,RIVER_RECORD_OXBOW,cell,&record)) {
-        qlcg_river_io(&record,&valid,sizeof(valid));
-        if(valid) qlcg_river_io(&record,&plan,sizeof(plan));
+        qlcg_river_values(&record,&valid,(sizeof(valid))/4,4);
+        if(valid) qlcg_river_OxbowPlan(&record,&plan);
         if(record.failed||record.at!=record.size) return;
     } else {
         valid=build_oxbow(w,cell,&plan);
-        qlcg_river_io(&record,&valid,sizeof(valid));
-        if(valid) qlcg_river_io(&record,&plan,sizeof(plan));
+        qlcg_river_values(&record,&valid,(sizeof(valid))/4,4);
+        if(valid) qlcg_river_OxbowPlan(&record,&plan);
         int stored=qlcg_river_archive_put(w,RIVER_RECORD_OXBOW,cell,&record);
         qlcg_river_buffer_free(&record); if(!stored) return;
     }
@@ -1448,7 +1449,7 @@ void qlcg_river_surface(const MacroWorld *w,float wx,float wz,float natural,Rive
             double v=(c->frame.east[d]*vx+c->frame.south[d]*vz)/span;
             e+=v*east[d]; n+=v*north[d];
         }
-        out->east=(float)e; out->north=(float)n; out->width=(float)(radius*2);
+        out->east=(float)(c->frame.flat?vx/span:e); out->north=(float)(c->frame.flat?-vz/span:n); out->width=(float)(radius*2);
         out->bank_distance=(float)fmax(0.0,radius-distance);
         out->lateral=(float)clampd(distance/fmax(1e-6,radius),0.0,1.0);
         out->discharge=(float)w->flow[i];

@@ -2,6 +2,7 @@
 #include "app/app_state.h"
 #include "core/dev_tools.h"
 #include "ui/ui_input.h"
+#include "platform/android/bridge.h"
 
 AppState g_app;
 
@@ -34,8 +35,9 @@ void app_rescan_fonts(void) {
 /* 三轴参数同步进 UI 上下文，启动与改设置都走 */
 void app_sync_layout_axes(void) {
     float hmul = g_app.settings.hidpi_scale;
-    if (!(hmul >= 1.0f)) hmul = 1.0f;   /* 顺带拦住 NaN 与 0 */
+    if (!(hmul >= 0.5f)) hmul = 1.0f;   /* 顺带拦住 NaN 与 0 */
     if (hmul > 4.0f) hmul = 4.0f;
+    hmul*=2.0f;
     g_app.ui.hidpi_mul  = hmul;
     g_app.ui.user_size  = (g_app.settings.ui_scale   > 0.0f ? g_app.settings.ui_scale   : 1.0f) * hmul;
     g_app.ui.user_scale = (g_app.settings.text_scale > 0.0f ? g_app.settings.text_scale : 1.0f) * hmul;
@@ -50,9 +52,9 @@ bool app_action_match(int act, unsigned int vk) {
     const QlBind *b = &g_app.settings.binds[act];
     if (b->key == 0) return false;
     if (qlcg_norm_key((uint16_t)vk) != qlcg_norm_key(b->key)) return false;
-    if ((b->mods & QL_MOD_CTRL)  && !(GetKeyState(VK_CONTROL) & 0x8000)) return false;
-    if ((b->mods & QL_MOD_SHIFT) && !(GetKeyState(VK_SHIFT)   & 0x8000)) return false;
-    if ((b->mods & QL_MOD_ALT)   && !(GetKeyState(VK_MENU)    & 0x8000)) return false;
+    if ((b->mods & QL_MOD_CTRL)  && !qlcg_platform_key_down(QL_KEY_CONTROL)) return false;
+    if ((b->mods & QL_MOD_SHIFT) && !qlcg_platform_key_down(QL_KEY_SHIFT)) return false;
+    if ((b->mods & QL_MOD_ALT)   && !qlcg_platform_key_down(QL_KEY_MENU)) return false;
     return true;
 }
 
@@ -122,9 +124,9 @@ bool app_action_down(int act) {
     if (s_virtual[act]) return true;
     const QlBind *b = &g_app.settings.binds[act];
     if (b->key == 0) return false;
-    if ((b->mods & QL_MOD_CTRL)  && !(GetKeyState(VK_CONTROL) & 0x8000)) return false;
-    if ((b->mods & QL_MOD_SHIFT) && !(GetKeyState(VK_SHIFT)   & 0x8000)) return false;
-    if ((b->mods & QL_MOD_ALT)   && !(GetKeyState(VK_MENU)    & 0x8000)) return false;
+    if ((b->mods & QL_MOD_CTRL)  && !qlcg_platform_key_down(QL_KEY_CONTROL)) return false;
+    if ((b->mods & QL_MOD_SHIFT) && !qlcg_platform_key_down(QL_KEY_SHIFT)) return false;
+    if ((b->mods & QL_MOD_ALT)   && !qlcg_platform_key_down(QL_KEY_MENU)) return false;
     return app_key_down(b->key);
 }
 
@@ -327,35 +329,25 @@ void app_slot_kind_label(int slot, char *buf, size_t cap) {
 /* 导出存档文件到 userdata/exports/ */
 bool app_export_save_file(const SaveFileInfo *file) {
     if (!file || !file->file_path[0]) return false;
-    CreateDirectoryW(L"userdata", NULL);
-    CreateDirectoryW(L"userdata\\exports", NULL);
-
-    wchar_t src[300];
-    MultiByteToWideChar(CP_UTF8, 0, file->file_path, -1, src, 300);
-
+#ifdef __ANDROID__
+    return qlcg_android_export_request(file->file_path);
+#else
+    qlcg_platform_mkdir("userdata");
+    qlcg_platform_mkdir("userdata/exports");
     const char *name = file->file_path;
-    for (const char *p = file->file_path; *p; ++p) {
-        if (*p == '/' || *p == '\\') name = p + 1;
+    for (const char *p = name; *p; ++p) if (*p == '/' || *p == '\\') name = p + 1;
+    char dst[1024];
+    bool ok = false;
+    for (int n = 0; n < 100; ++n) {
+        if (!n) snprintf(dst, sizeof(dst), "userdata/exports/%s", name);
+        else snprintf(dst, sizeof(dst), "userdata/exports/%d_%s", n, name);
+        if (qlcg_platform_exists(dst)) continue;
+        ok = qlcg_platform_copy(file->file_path, dst);
+        break;
     }
-    wchar_t wname[200];
-    MultiByteToWideChar(CP_UTF8, 0, name, -1, wname, 200);
-
-    wchar_t dst[520];
-    for (int n = 0; n < 100; n++) {
-        if (n == 0) {
-            swprintf_s(dst, 520, L"userdata\\exports\\%s", wname);
-        } else {
-            swprintf_s(dst, 520, L"userdata\\exports\\%d_%s", n, wname);
-        }
-        if (GetFileAttributesW(dst) == INVALID_FILE_ATTRIBUTES) break;
-    }
-
-    if (!CopyFileW(src, dst, FALSE)) {
-        app_push_toast_k(UI_TOAST_ERROR, NULL, tr("export.failed"));
-        return false;
-    }
-    app_push_toast_k(UI_TOAST_SUCCESS, NULL, tr("export.done"));
-    return true;
+    app_push_toast_k(ok ? UI_TOAST_SUCCESS : UI_TOAST_ERROR, NULL, tr(ok ? "export.done" : "export.failed"));
+    return ok;
+#endif
 }
 
 bool app_export_current_save(void) {

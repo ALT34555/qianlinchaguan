@@ -1,0 +1,62 @@
+{
+  "plants": [
+    {
+      "id": "nong.zhuma",
+      "archetype": "grassClump",
+      "climate": "subtropical",
+      "name": "苎麻",
+      "latin": "zhuma",
+      "seed": 712,
+      "tags": [
+        "naire_2",
+        "nailao_2",
+        "kaihua",
+        "jieguo",
+        "chai"
+      ],
+      "params": {
+        "height": 1.6,
+        "spread": 0.65,
+        "stems": 5,
+        "leaf_len": 0.28,
+        "leaf_w": 0.18,
+        "bloom_season": 1
+      },
+      "palette": {
+        "foliage": "cropGreen",
+        "foliageDark": "foliageDeep",
+        "barkLight": "grassDry",
+        "bloom": "bloomWhite",
+        "fruit": "grainPale"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered"
+      ]
+    },
+    {
+      "id": "nong.zhuma@seedling",
+      "state": "seedling"
+    },
+    {
+      "id": "nong.zhuma@subadult",
+      "state": "subadult"
+    },
+    {
+      "id": "nong.zhuma@flowering",
+      "state": "flowering"
+    },
+    {
+      "id": "nong.zhuma@fruiting",
+      "state": "fruiting"
+    },
+    {
+      "id": "nong.zhuma@withered",
+      "state": "withered"
+    }
+  ]
+}

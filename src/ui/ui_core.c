@@ -1,19 +1,17 @@
-#define COBJMACROS
 #include "ui_core.h"
 #include "ui_sprite.h"
 #include "../core/math_util.h"
-#include <wincodec.h>
+#include "platform/platform.h"
+#include "platform/ui_backend.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
 
-#ifndef GL_BGRA
-#define GL_BGRA 0x80E1
-#endif
 
 static void ui_page_tick(UiContext *ui);
-static void ui_font_rebuild(UiContext *ui);
+
 
 static const char *UI_VS_SRC =
     "#version 330 core\n"
@@ -69,66 +67,8 @@ static const char *UI_FS_SRC =
     "    }\n"
     "}\n";
 
-/* 通过 WIC 加载 teacup.png */
-static void load_teacup_to_atlas(UiContext *ui, const wchar_t *path) {
-    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-    IWICImagingFactory *factory = NULL;
-    HRESULT hr = CoCreateInstance(&CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER,
-                                  &IID_IWICImagingFactory, (LPVOID *)&factory);
-    if (FAILED(hr) || !factory) return;
 
-    IWICBitmapDecoder *decoder = NULL;
-    hr = IWICImagingFactory_CreateDecoderFromFilename(factory, path, NULL, GENERIC_READ,
-                                                      WICDecodeMetadataCacheOnDemand, &decoder);
-    if (SUCCEEDED(hr) && decoder) {
-        IWICBitmapFrameDecode *frame = NULL;
-        if (SUCCEEDED(IWICBitmapDecoder_GetFrame(decoder, 0, &frame)) && frame) {
-            IWICFormatConverter *conv = NULL;
-            if (SUCCEEDED(IWICImagingFactory_CreateFormatConverter(factory, &conv)) && conv) {
-                if (SUCCEEDED(IWICFormatConverter_Initialize(conv, (IWICBitmapSource *)frame,
-                        &GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeNone, NULL, 0.0,
-                        WICBitmapPaletteTypeCustom))) {
-                    UINT w = 0, h = 0;
-                    IWICFormatConverter_GetSize(conv, &w, &h);
-                    if (w > 0 && h > 0) {
-                        /* 统一缩到 512 见方，避免超大 PNG 被拒 */
-                        IWICBitmapScaler *scaler = NULL;
-                        IWICBitmapSource *source = (IWICBitmapSource *)conv;
-                        if (SUCCEEDED(IWICImagingFactory_CreateBitmapScaler(factory, &scaler)) && scaler) {
-                            if (SUCCEEDED(IWICBitmapScaler_Initialize(scaler, (IWICBitmapSource *)conv,
-                                    512, 512, WICBitmapInterpolationModeFant))) {
-                                source = (IWICBitmapSource *)scaler;
-                                w = 512;
-                                h = 512;
-                            }
-                        }
-                        uint8_t *buf = (uint8_t *)malloc((size_t)w * (size_t)h * 4);
-                        if (buf && SUCCEEDED(IWICBitmapSource_CopyPixels(source, NULL, w * 4, w * h * 4, buf))) {
-                            glBindTexture(GL_TEXTURE_2D, ui->atlas_tex);
-                            /* WIC 32bppRGBA 在内存里按 BGRA 排列 */
-                            glTexSubImage2D(GL_TEXTURE_2D, 0, 4, 4, (GLsizei)w, (GLsizei)h,
-                                            GL_BGRA, GL_UNSIGNED_BYTE, buf);
-                            ui->has_teacup = true;
-                            ui->cup_w  = (int)w;
-                            ui->cup_h  = (int)h;
-                            ui->cup_u0 = 4.0f / (float)UI_ATLAS_W;
-                            ui->cup_v0 = 4.0f / (float)UI_ATLAS_H;
-                            ui->cup_u1 = (float)(4 + w) / (float)UI_ATLAS_W;
-                            ui->cup_v1 = (float)(4 + h) / (float)UI_ATLAS_H;
-                            ui->shelf_y = (int)h + 12;
-                        }
-                        free(buf);
-                        if (scaler) IWICBitmapScaler_Release(scaler);
-                    }
-                }
-                IWICFormatConverter_Release(conv);
-            }
-            IWICBitmapFrameDecode_Release(frame);
-        }
-        IWICBitmapDecoder_Release(decoder);
-    }
-    IWICImagingFactory_Release(factory);
-}
+
 
 /* 令牌派生后映射到调色板快捷字段 */
 static void sync_palette_from_tokens(UiContext *ui) {
@@ -149,16 +89,7 @@ static void sync_palette_from_tokens(UiContext *ui) {
 }
 
 /* 读系统深浅色偏好（对齐 auto 主题） */
-static bool system_prefers_dark(void) {
-    HKEY key;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER,
-                      L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-                      0, KEY_READ, &key) != ERROR_SUCCESS) return false;
-    DWORD val = 1, size = sizeof(val), type = 0;
-    RegQueryValueExW(key, L"AppsUseLightTheme", NULL, &type, (LPBYTE)&val, &size);
-    RegCloseKey(key);
-    return val == 0;
-}
+
 
 /* 切换茶席日间/夜间配色主题（令牌重算） */
 void ui_apply_theme(UiContext *ui, ThemeMode mode) {
@@ -167,7 +98,7 @@ void ui_apply_theme(UiContext *ui, ThemeMode mode) {
     if (mode == THEME_DARK)        dark = true;
     else if (mode == THEME_LIGHT)  dark = false;
     else if (ui->night_override >= 0) dark = ui->night_override != 0;  /* 山川按区块时刻 */
-    else                           dark = system_prefers_dark();
+    else                           dark = qlcg_platform_dark();
     if (ui->primary.a <= 0.0f) ui->primary = ql_rgb(0xCB3A56);
     if (ui->accent.a  <= 0.0f) ui->accent  = ql_rgb(0x5D3F51);
 
@@ -205,16 +136,9 @@ void ui_set_night_override(UiContext *ui, int v) {
     ui_apply_theme(ui, ui->theme);
 }
 
-/* 初始化 UI 上下文与字体图集 */
-bool ui_init(UiContext *ui, int w, int h) {
-    memset(ui, 0, sizeof(*ui));
-    ui->drag_slider_id = -1;
-    ui->night_override = -1;   /* 默认不覆盖：跟随设置/系统 */
-    ui->win_w = w;
-    ui->win_h = h;
-    ui_apply_theme(ui, THEME_LIGHT);
-
+bool ui_gpu_restore(UiContext *ui) {
     ui->prog = qlcg_gl_compile_program(UI_VS_SRC, UI_FS_SRC);
+    if(!ui->prog) return false;
     ui_backdrop_init(ui);
     glGenVertexArrays(1, &ui->vao);
     glGenBuffers(1, &ui->vbo);
@@ -239,33 +163,29 @@ bool ui_init(UiContext *ui, int w, int h) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    ui->mem_dc = CreateCompatibleDC(NULL);
-    BITMAPINFO bmi;
-    memset(&bmi, 0, sizeof(bmi));
-    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth       = 1024;
-    bmi.bmiHeader.biHeight      = -224;   /* 大字号烘焙需要更高的画布 */
-    bmi.bmiHeader.biPlanes      = 1;
-    bmi.bmiHeader.biBitCount    = 32;
-    bmi.bmiHeader.biCompression = BI_RGB;
-    ui->dib = CreateDIBSection(ui->mem_dc, &bmi, DIB_RGB_COLORS, (void **)&ui->dib_bits, NULL, 0);
-    SelectObject(ui->mem_dc, ui->dib);
-
-    wcscpy_s(ui->family_display, 64, L"Microsoft YaHei UI");
-    wcscpy_s(ui->family_body,    64, L"Microsoft YaHei UI");
-    wcscpy_s(ui->family_mono,    64, L"Consolas");
-    ui_font_rebuild(ui);
 
     ui->shelf_x = 4;
     ui->shelf_y = 4;
     ui->shelf_row_h = 0;
-    ui->page_enter = 1.0f;
-    ui->global_alpha = 1.0f;
-    ui->capture_action = -1;
 
-    load_teacup_to_atlas(ui, L"content\\assets\\ui\\icons\\qianlin_teacup.png");
+    qlcg_platform_teacup(ui, L"content\\assets\\ui\\icons\\qianlin_teacup.png");
     ui_sprite_load_all(ui);
 
+    return true;
+}
+
+/* 初始化 UI 上下文与字体图集 */
+bool ui_init(UiContext *ui, int w, int h) {
+    memset(ui, 0, sizeof(*ui));
+    ui->drag_slider_id = -1;
+    ui->night_override = -1;   /* 默认不覆盖：跟随设置/系统 */
+    ui->win_w = w;
+    ui->win_h = h;
+    ui_apply_theme(ui, THEME_LIGHT);
+
+    if(!qlcg_platform_font_init(ui) || !ui_gpu_restore(ui)) return false;
+    ui->page_enter=ui->global_alpha=1.0f;
+    ui->capture_action=-1;
     /* 初始化飘落花瓣粒子 */
     for (int i = 0; i < UI_PETAL_COUNT; i++) {
         uint32_t hsh = qlcg_hash32((uint32_t)(i + 101));
@@ -282,22 +202,20 @@ bool ui_init(UiContext *ui, int w, int h) {
 }
 
 /* 释放 UI 资源 */
-void ui_shutdown(UiContext *ui) {
-    if (ui->mem_dc) DeleteDC(ui->mem_dc);
-    for (int i = 0; i < FONT_COUNT; i++) {
-        if (ui->fonts[i]) DeleteObject(ui->fonts[i]);
-    }
-    for (int i = 0; i < ui->dyn_count; i++) {
-        if (ui->dyn[i].font) DeleteObject(ui->dyn[i].font);
-    }
-    ui->dyn_count = 0;
-    if (ui->dib) DeleteObject(ui->dib);
-    if (ui->atlas_tex) glDeleteTextures(1, &ui->atlas_tex);
+void ui_gpu_release(UiContext *ui) {
+    if (ui->atlas_tex) qlcg_gl_delete_textures(1, &ui->atlas_tex);
     ui_sprite_release();
     ui_backdrop_release(ui);
-    if (ui->vbo) glDeleteBuffers(1, &ui->vbo);
-    if (ui->vao) glDeleteVertexArrays(1, &ui->vao);
-    if (ui->prog) glDeleteProgram(ui->prog);
+    if (ui->vbo) qlcg_gl_delete_buffers(1, &ui->vbo);
+    if (ui->vao) qlcg_gl_delete_vertex_arrays(1, &ui->vao);
+    if (ui->prog) qlcg_gl_delete_program(ui->prog);
+    ui->prog=ui->vao=ui->vbo=ui->atlas_tex=ui->cur_sprite_tex=0;
+    ui->has_teacup=false; ui->vert_count=0;
+    memset(ui->slots,0,sizeof(ui->slots));
+}
+void ui_shutdown(UiContext *ui) {
+    ui_gpu_release(ui);
+    qlcg_platform_font_shutdown(ui);
 }
 
 /* 开始一帧 UI 批处理 */
@@ -311,6 +229,12 @@ void ui_begin_frame(UiContext *ui, int w, int h) {
     ui_backdrop_resize(ui, ui->win_w, ui->win_h);
     ui->safe_x_px = (float)ui->win_w * qlcg_clampf(ui->safe_x_pct, 0.0f, 35.0f) * 0.01f;
     ui->safe_y_px = (float)ui->win_h * qlcg_clampf(ui->safe_y_pct, 0.0f, 35.0f) * 0.01f;
+    ui->safe_edges[0]=ui->safe_x_px+ui->system_edges[0];
+    ui->safe_edges[1]=ui->safe_y_px+ui->system_edges[1];
+    ui->safe_edges[2]=ui->safe_x_px+ui->system_edges[2];
+    ui->safe_edges[3]=ui->safe_y_px+ui->system_edges[3];
+    ui->safe_x_px=ui->safe_edges[0];
+    ui->safe_y_px=ui->safe_edges[1];
     ui->vert_count = 0;
     /* 裁剪栈与滚动偏移每帧归零，否则整片被裁/位移 */
     ui->clip_depth = 0;
@@ -331,8 +255,8 @@ void ui_begin_frame(UiContext *ui, int w, int h) {
     ui->dt = qlcg_clampf(dt, 0.0005f, 0.1f);
     ui->time += ui->dt;
     /* 双击判定：350ms 内、位移 6px 以内 */
-    ui->mouse_dblclicked = false;
-    if (ui->mouse_clicked) {
+    ui->mouse_dblclicked = ui->pointer_touch && ui->touch_double_tap;
+    if (!ui->pointer_touch && ui->mouse_clicked) {
         bool close_in_time = (now - ui->last_click_ms) < 350.0 &&
                              abs(ui->mouse_x - ui->last_click_x) < 6 &&
                              abs(ui->mouse_y - ui->last_click_y) < 6;
@@ -408,6 +332,7 @@ void ui_end_frame(UiContext *ui) {
     ui_flush(ui);
     ui->mouse_clicked = false;
     ui->right_clicked = false;
+    ui->touch_double_tap=false;
     ui->wheel_delta   = 0;
 }
 
@@ -600,62 +525,22 @@ void ui_update_and_draw_petals(UiContext *ui, float dt, float area_x, float area
 }
 
 /* 按当前字体族重建固定字号并清空烘焙缓存 */
-static void ui_font_rebuild(UiContext *ui) {
-    for (int i = 0; i < FONT_COUNT; i++) {
-        if (ui->fonts[i]) { DeleteObject(ui->fonts[i]); ui->fonts[i] = NULL; }
-    }
-    const wchar_t *fams[FONT_COUNT] = {
-        ui->family_display, ui->family_display, ui->family_body,
-        ui->family_body,    ui->family_body,    ui->family_mono
-    };
-    static const int   pxs[FONT_COUNT]   = { 34, 20, 15, 15, 13, 13 };
-    static const int   wts[FONT_COUNT]   = { FW_BOLD, FW_SEMIBOLD, FW_NORMAL, FW_BOLD, FW_NORMAL, FW_NORMAL };
-    for (int i = 0; i < FONT_COUNT; i++) {
-        ui->fonts[i] = CreateFontW(-pxs[i], 0, 0, 0, wts[i], FALSE, FALSE, FALSE,
-                                   DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                                   ANTIALIASED_QUALITY, DEFAULT_PITCH, fams[i]);
-    }
-    for (int i = 0; i < ui->dyn_count; i++) {
-        if (ui->dyn[i].font) DeleteObject(ui->dyn[i].font);
-    }
-    ui->dyn_count = 0;
-    for (int i = 0; i < UI_CACHE_SLOTS; i++) ui->slots[i].used = false;
-}
+
 
 /* 切换字体族：重建字体、作废旧烘焙区 */
 void ui_set_font_family(UiContext *ui, const wchar_t *display,
                         const wchar_t *body, const wchar_t *mono) {
-    if (display && display[0]) wcscpy_s(ui->family_display, 64, display);
-    if (body    && body[0])    wcscpy_s(ui->family_body,    64, body);
-    if (mono    && mono[0])    wcscpy_s(ui->family_mono,    64, mono);
-    ui_font_rebuild(ui);
+    if (display && display[0]) swprintf(ui->family_display, 64, L"%ls", display);
+    if (body    && body[0])    swprintf(ui->family_body, 64, L"%ls", body);
+    if (mono    && mono[0])    swprintf(ui->family_mono, 64, L"%ls", mono);
+    qlcg_platform_font_rebuild(ui);
     ui->shelf_x = 4;
     ui->shelf_y = ui->has_teacup ? (ui->cup_h + 12) : 4;
     ui->shelf_row_h = 0;
 }
 
 /* 按族/字号/字重取字体（含缓存） */
-static HFONT ui_font_get(UiContext *ui, int face, int px, bool bold) {
-    if (px < 6) px = 6;
-    if (px > 160) px = 160;   /* 上限160：4倍text_scale约110px */
-    for (int i = 0; i < ui->dyn_count; i++) {
-        if (ui->dyn[i].face == face && ui->dyn[i].px == px && ui->dyn[i].bold == bold) {
-            return ui->dyn[i].font;
-        }
-    }
-    if (ui->dyn_count >= UI_FONT_CACHE) return ui->fonts[FONT_BODY];
-    const wchar_t *family = (face == UI_FACE_DISPLAY) ? ui->family_display
-                          : (face == UI_FACE_MONO ? ui->family_mono : ui->family_body);
-    HFONT f = CreateFontW(-px, 0, 0, 0, bold ? FW_BOLD : FW_NORMAL, FALSE, FALSE, FALSE,
-                          DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                          ANTIALIASED_QUALITY, DEFAULT_PITCH, family);
-    ui->dyn[ui->dyn_count].font = f;
-    ui->dyn[ui->dyn_count].face = face;
-    ui->dyn[ui->dyn_count].px   = px;
-    ui->dyn[ui->dyn_count].bold = bold;
-    ui->dyn_count++;
-    return f;
-}
+
 
 /* 旧字体角色映射到字号 */
 static void legacy_font_map(const UiContext *ui, UiFontId id, int *face, int *px, bool *bold) {
@@ -687,19 +572,9 @@ static UiTextSlot *get_text_slot(UiContext *ui, int face, int px, bool bold, con
         }
     }
 
-    wchar_t wbuf[256];
-    /* 先按字节截断4000再转宽字符，防返0 */
-    int nbytes = (int)strlen(text);
-    if (nbytes > 4000) nbytes = 4000;
-    int wlen = MultiByteToWideChar(CP_UTF8, 0, text, nbytes, wbuf, 255);
-    if (wlen <= 0) return NULL;
-    wbuf[wlen] = L'\0';
-
-    SelectObject(ui->mem_dc, ui_font_get(ui, face, px, bold));
-    SIZE sz = {0, 0};
-    GetTextExtentPoint32W(ui->mem_dc, wbuf, wlen, &sz);
-    int tw = qlcg_clampi(sz.cx + 4, 4, 1020);
-    int th = qlcg_clampi(sz.cy + 2, 4, 216);   /* 上限对齐 DIB 高度 */
+    int tw = 0, th = 0;
+    uint8_t *upload = NULL;
+    if (!qlcg_platform_text_raster(ui, face, px, bold, text, &upload, &tw, &th)) return NULL;
 
     if (ui->shelf_x + tw + 2 >= UI_ATLAS_W) {
         ui->shelf_x = 4;
@@ -712,31 +587,6 @@ static UiTextSlot *get_text_slot(UiContext *ui, int face, int px, bool bold, con
         ui->shelf_x = 4;
         ui->shelf_y = ui->has_teacup ? (ui->cup_h + 12) : 4;
         ui->shelf_row_h = 0;
-    }
-
-    for (int y = 0; y < th; y++) {
-        memset(ui->dib_bits + y * 1024, 0, (size_t)tw * 4);
-    }
-    SetBkMode(ui->mem_dc, TRANSPARENT);
-    SetTextColor(ui->mem_dc, RGB(255, 255, 255));
-    RECT rc = {1, 1, tw, th};
-    DrawTextW(ui->mem_dc, wbuf, wlen, &rc, DT_LEFT | DT_TOP | DT_SINGLELINE | DT_NOPREFIX);
-
-    uint8_t *upload = (uint8_t *)malloc((size_t)tw * (size_t)th * 4);
-    for (int y = 0; y < th; y++) {
-        uint32_t *src = ui->dib_bits + y * 1024;
-        uint8_t  *dst = upload + y * tw * 4;
-        for (int x = 0; x < tw; x++) {
-            uint32_t pix = src[x];
-            uint8_t r = (uint8_t)((pix >> 16) & 0xFF);
-            uint8_t g = (uint8_t)((pix >> 8) & 0xFF);
-            uint8_t b = (uint8_t)(pix & 0xFF);
-            uint8_t lum = (uint8_t)((r * 77 + g * 150 + b * 29) >> 8);
-            dst[x * 4 + 0] = 255;
-            dst[x * 4 + 1] = 255;
-            dst[x * 4 + 2] = 255;
-            dst[x * 4 + 3] = lum;
-        }
     }
 
     glBindTexture(GL_TEXTURE_2D, ui->atlas_tex);
@@ -847,57 +697,7 @@ void ui_draw_sprite_rect(UiContext *ui, float x, float y, float w, float h,
 }
 
 /* PNG 原尺寸上传为纹理，不缩放 */
-bool ui_load_png_texture(const wchar_t *path, GLuint *tex, int *out_w, int *out_h) {
-    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-    IWICImagingFactory *factory = NULL;
-    HRESULT hr = CoCreateInstance(&CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER,
-                                  &IID_IWICImagingFactory, (void **)&factory);
-    if (FAILED(hr) || !factory) return false;
 
-    bool ok = false;
-    IWICBitmapDecoder *decoder = NULL;
-    hr = IWICImagingFactory_CreateDecoderFromFilename(factory, path, NULL, GENERIC_READ,
-                                                      WICDecodeMetadataCacheOnDemand, &decoder);
-    if (SUCCEEDED(hr) && decoder) {
-        IWICBitmapFrameDecode *frame = NULL;
-        if (SUCCEEDED(IWICBitmapDecoder_GetFrame(decoder, 0, &frame)) && frame) {
-            IWICFormatConverter *conv = NULL;
-            if (SUCCEEDED(IWICImagingFactory_CreateFormatConverter(factory, &conv)) && conv) {
-                if (SUCCEEDED(IWICFormatConverter_Initialize(conv, (IWICBitmapSource *)frame,
-                        &GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeNone, NULL, 0.0,
-                        WICBitmapPaletteTypeCustom))) {
-                    UINT w = 0, h = 0;
-                    IWICFormatConverter_GetSize(conv, &w, &h);
-                    if (w > 0 && h > 0) {
-                        uint8_t *buf = (uint8_t *)malloc((size_t)w * (size_t)h * 4);
-                        if (buf && SUCCEEDED(IWICBitmapSource_CopyPixels(conv, NULL, w * 4,
-                                                                        w * h * 4, buf))) {
-                            glGenTextures(1, tex);
-                            glBindTexture(GL_TEXTURE_2D, *tex);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                            /* 显式 BGRA：转换器与 glTexImage 同步 */
-                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h, 0,
-                                         GL_BGRA, GL_UNSIGNED_BYTE, buf);
-                            if (out_w) *out_w = (int)w;
-                            if (out_h) *out_h = (int)h;
-                            ok = true;
-                        }
-                        free(buf);
-                    }
-                }
-                IWICFormatConverter_Release(conv);
-            }
-            IWICBitmapFrameDecode_Release(frame);
-        }
-        IWICBitmapDecoder_Release(decoder);
-    }
-    IWICImagingFactory_Release(factory);
-    return ok;
-}
 
 /* 内部折行实现：draw=false 仅统计行数 */
 static int text_wrapped_impl(UiContext *ui, UiFaceKind face, float px, bool bold,

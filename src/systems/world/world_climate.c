@@ -6,7 +6,7 @@
 #include "gen/gen_water.h"
 #include "gen/gen_river.h"
 #include "../../core/math_util.h"
-#include <windows.h>
+#include "platform/platform.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
