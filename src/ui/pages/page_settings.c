@@ -6,7 +6,7 @@
 #include "ui/ui_touch.h"
 #include "ui/ui_sprite.h"
 
-/* 虚拟按键布局编辑器：全屏自由拖动，写回相对坐标 */
+/* 虚拟按键布局编辑器：按住即拖，松手释放 */
 static int   s_layout_drag = -1;
 static float s_layout_off_x = 0.0f, s_layout_off_y = 0.0f;
 
@@ -20,6 +20,7 @@ static float s_layout_off_x = 0.0f, s_layout_off_y = 0.0f;
 #define SEL_ID_SPEED    0x5E1ECEu
 #define SEL_ID_HIDPI    0x5E1ECFu
 #define SEL_ID_TOUCH_STYLE 0x5E1ED0u
+#define SEL_ID_SCROLL_PALETTE 0x5E1ED1u
 
 static const char *const k_res_ids[7] = {
     "auto", "320x240", "640x480", "960x540",
@@ -182,12 +183,8 @@ void settings_layout_cancel(void) {
 static void touch_edit_boxes(UiContext *ui, const GameSettings *s,
                              float ox, float oy, float sw, float sh,
                              float *bx, float *by, float *bw) {
-    float z = ui->met.size;
     for (int i = 0; i < UI_TOUCH_ITEM_COUNT; i++) {
-        float base = (i == UI_TOUCH_ITEM_MOVE)
-                     ? qlcg_clampf(168.0f * z, 150.0f, 210.0f)
-                     : qlcg_clampf(62.0f * z, 56.0f, 78.0f);
-        float box = base * s->touch_layout[i][2];
+        float box = ui_touch_item_base(ui, i) * s->touch_layout[i][2];
         bx[i] = ox + s->touch_layout[i][0] * (sw - box);
         by[i] = oy + s->touch_layout[i][1] * (sh - box);
         bw[i] = box;
@@ -199,9 +196,10 @@ static void draw_touch_layout_editor(UiContext *ui) {
     GameSettings *s = &g_app.settings;
     float z  = ui->met.size;
     float sc = ui->met.scale;
-    float ox = ui->safe_x_px, oy = ui->safe_y_px;
-    float sw = (float)ui->win_w - ox * 2.0f;
-    float sh = (float)ui->win_h - oy * 2.0f;
+    float ox = ui->safe_edges[0];
+    float oy = ui->safe_edges[1];
+    float sw = (float)ui->win_w - ui->safe_edges[0] - ui->safe_edges[2];
+    float sh = (float)ui->win_h - ui->safe_edges[1] - ui->safe_edges[3];
     float dw = qlcg_minf(380.0f * z, (float)ui->win_w * 0.72f);
     float dh = 306.0f * z;
     float dx = ((float)ui->win_w - dw) * 0.5f;
@@ -214,19 +212,25 @@ static void draw_touch_layout_editor(UiContext *ui) {
     touch_edit_boxes(ui, s, ox, oy, sw, sh, bx, by, bw);
 
     if (!ui->mouse_down) s_layout_drag = -1;
-    for (int i = 0; i < UI_TOUCH_ITEM_COUNT; i++) {
-        if (!over_panel && ui_hit(ui, bx[i], by[i], bw[i], bw[i]) &&
-            ui->mouse_clicked && s_layout_drag < 0) {
+    if (s_layout_drag < 0 && ui->mouse_down && ui->mouse_pressed && !over_panel &&
+        !ui_pointer_blocked(ui)) {
+        /* 触屏加宽抓取范围；后画的控件优先 */
+        float grab_pad = ui->pointer_touch ? 10.0f * z : 0.0f;
+        for (int i = UI_TOUCH_ITEM_COUNT - 1; i >= 0; i--) {
+            if (!ui_hit(ui, bx[i] - grab_pad, by[i] - grab_pad,
+                        bw[i] + grab_pad * 2.0f, bw[i] + grab_pad * 2.0f)) continue;
             s_layout_drag  = i;
             s_layout_off_x = (float)ui->mouse_x - bx[i];
             s_layout_off_y = (float)ui->mouse_y - by[i];
+            break;
         }
-        if (s_layout_drag == i && ui->mouse_down && !ui_pointer_blocked(ui)) {
-            float nx = (float)ui->mouse_x - s_layout_off_x - ox;
-            float ny = (float)ui->mouse_y - s_layout_off_y - oy;
-            s->touch_layout[i][0] = qlcg_clampf(nx / qlcg_maxf(sw - bw[i], 1.0f), 0.0f, 1.0f);
-            s->touch_layout[i][1] = qlcg_clampf(ny / qlcg_maxf(sh - bw[i], 1.0f), 0.0f, 1.0f);
-        }
+    }
+    if (s_layout_drag >= 0 && ui->mouse_down && !ui_pointer_blocked(ui)) {
+        int i = s_layout_drag;
+        float nx = (float)ui->mouse_x - s_layout_off_x - ox;
+        float ny = (float)ui->mouse_y - s_layout_off_y - oy;
+        s->touch_layout[i][0] = qlcg_clampf(nx / qlcg_maxf(sw - bw[i], 1.0f), 0.0f, 1.0f);
+        s->touch_layout[i][1] = qlcg_clampf(ny / qlcg_maxf(sh - bw[i], 1.0f), 0.0f, 1.0f);
     }
 
     for (int i = 0; i < UI_TOUCH_ITEM_COUNT; i++) {
@@ -310,6 +314,7 @@ static void draw_touch_layout_editor(UiContext *ui) {
         if (hov && ui->mouse_clicked) {
             if (i == 0) {
                 g_app.touch_layout_edit = false;
+                s_layout_drag = -1;
                 qlcg_save_settings_disk(s);
             } else if (i == 1) {
                 settings_layout_cancel();
@@ -332,6 +337,7 @@ void render_screen_settings(UiContext *ui) {
 
     bool orig_click = ui->mouse_clicked;
     bool orig_down  = ui->mouse_down;
+    bool orig_pressed = ui->mouse_pressed;
     int  orig_wheel = ui->wheel_delta;
     bool orig_blocked = ui->input_blocked;
     bool had_confirm = s_confirm.active;
@@ -343,6 +349,7 @@ void render_screen_settings(UiContext *ui) {
         ui->input_id = 0;
         ui->mouse_clicked = false;
         ui->mouse_down    = false;
+        ui->mouse_pressed = false;
         ui->wheel_delta   = 0;
     }
 
@@ -742,8 +749,11 @@ void render_screen_settings(UiContext *ui) {
             if (ui_layout_fold(&L, 0x5E1F01u, tr("settings.advancedVisuals"), &open)) {
                 ui_layout_indent_push(&L);
                 struct { const char *key; bool *v; } flags[] = {
+                    { "settings.enhancedLighting",    &s->enhanced_lighting },
                     { "settings.particles",          &s->particles },
                     { "settings.waterReflections",   &s->water_reflections },
+                    { "settings.mirrorReflections",  &s->mirror_reflections },
+                    { "settings.waterMist",          &s->water_mist },
                     { "settings.waterWaves",         &s->water_waves },
                     { "settings.weatherAtmosphere",  &s->weather_atmosphere },
                     { "settings.decorativeClouds",   &s->decorative_clouds },
@@ -753,7 +763,6 @@ void render_screen_settings(UiContext *ui) {
                 for (int i = 0; i < (int)(sizeof(flags) / sizeof(flags[0])); i++) {
                     if (ui_layout_row_checkbox(&L, tr(flags[i].key), tr("common.enable"), flags[i].v)) changed = true;
                 }
-                ui_layout_kv(&L, tr("settings.mirrorReflections"), tr("settings.comingSoon"));
 
                 const char *veg_names[3] = {
                     tr("settings.vegetationForm.simple"),
@@ -780,6 +789,32 @@ void render_screen_settings(UiContext *ui) {
                 ui_layout_indent_pop(&L);
             }
             g_app.set_fold_visual = open;
+
+            ui_layout_divider(&L);
+
+            if (ui_layout_row_checkbox(&L, tr("settings.scrollStyle"), tr("common.enable"), &s->scroll_style)) changed = true;
+            if (s->scroll_style) {
+                ui_layout_indent_push(&L);
+                const char *palettes[3] = {
+                    tr("settings.scrollPalette.qinglu"),
+                    tr("settings.scrollPalette.qianjiang"),
+                    tr("settings.scrollPalette.ink")
+                };
+                ui_layout_select(&L, SEL_ID_SCROLL_PALETTE, tr("settings.scrollPalette"),
+                                 palettes, 3, qlcg_clampi(s->scroll_palette, 0, 2));
+                struct { const char *key; float *v; float lo, hi; } paint[] = {
+                    { "settings.scrollPigment", &s->scroll_pigment, 0.2f, 1.6f },
+                    { "settings.scrollInk", &s->scroll_ink, 0.0f, 1.6f },
+                    { "settings.scrollLineWidth", &s->scroll_line_width, 0.5f, 2.0f }
+                };
+                for (int i = 0; i < 3; i++) {
+                    char value[24];
+                    snprintf(value, sizeof(value), "%.2f", *paint[i].v);
+                    if (ui_layout_slider(&L, tr(paint[i].key), paint[i].v,
+                                         paint[i].lo, paint[i].hi, value)) changed = true;
+                }
+                ui_layout_indent_pop(&L);
+            }
 
             ui_layout_divider(&L);
 
@@ -1119,6 +1154,11 @@ void render_screen_settings(UiContext *ui) {
                     s->vegetation_form = (VegetationForm)picked;
                     changed = true;
                 }
+            } else if (ui->select_result_id == SEL_ID_SCROLL_PALETTE) {
+                if (picked < 3) {
+                    s->scroll_palette = picked;
+                    changed = true;
+                }
             } else if (ui->select_result_id == SEL_ID_MEAS) {
                 if (picked < 3) {
                     s->measurement_system = (MeasurementSystem)picked;
@@ -1151,9 +1191,12 @@ void render_screen_settings(UiContext *ui) {
         ui->drag_slider_id = -1;
         ui->mouse_clicked = had_confirm && orig_click;
         ui->mouse_down    = had_confirm && orig_down;
+        ui->mouse_pressed = had_confirm && orig_pressed;
         ui->wheel_delta   = had_confirm ? orig_wheel : 0;
+        ui->input_blocked = false;
         draw_settings_confirm_modal(ui);
         ui_pointer_consume(ui);
+        ui->input_blocked = orig_blocked;
     }
 
     /* 布局编辑器独占输入：先还原事件再画，遮罩盖住整页 */
@@ -1161,8 +1204,11 @@ void render_screen_settings(UiContext *ui) {
         ui->select_id = 0;
         ui->mouse_clicked = had_editor && orig_click;
         ui->mouse_down    = had_editor && orig_down;
+        ui->mouse_pressed = had_editor && orig_pressed;
         ui->wheel_delta   = 0;
+        ui->input_blocked = false;
         draw_touch_layout_editor(ui);
         ui_pointer_consume(ui);
+        ui->input_blocked = orig_blocked;
     }
 }

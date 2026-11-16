@@ -217,6 +217,7 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                                             (float)pt.x * ui_scale_x(), (float)pt.y * ui_scale_y());
             }
             g_app.ui.mouse_down    = true;
+            g_app.ui.mouse_pressed = !touch_taken;
             g_app.ui.mouse_clicked = !touch_taken;
             if(!touch_taken) app_river_craft_pointer(true,true);
             if(g_app.river_craft.drawing) SetCapture(hwnd);
@@ -238,6 +239,7 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                 ui_touch_up(&g_app.touch, &g_app.ui, UI_TOUCH_MOUSE_POINTER);
             }
             g_app.ui.mouse_down     = false;
+            g_app.ui.mouse_pressed  = false;
             g_app.atlas.dragging    = false;
             if (!g_app.terrain.mouse_captured && GetCapture() == hwnd) ReleaseCapture();
             return 0;
@@ -250,6 +252,7 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             g_app.atlas.dragging = false;
             g_app.atlas.layer_dragging = false;
             g_app.ui.mouse_down = false;
+            g_app.ui.mouse_pressed = false;
             g_app.river_craft.drawing = false;
             g_app.ui.drag_slider_id = -1;
             return 0;

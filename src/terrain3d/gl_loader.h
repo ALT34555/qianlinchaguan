@@ -70,6 +70,9 @@ GLAPI void APIENTRY glBindTexture (GLenum target, GLuint texture);
 GLAPI void APIENTRY glDeleteTextures (GLsizei n, const GLuint *textures);
 GLAPI void APIENTRY glGenTextures (GLsizei n, GLuint *textures);
 GLAPI GLboolean APIENTRY glIsTexture (GLuint texture);
+extern PFNGLFENCESYNCPROC glFenceSync;
+extern PFNGLCLIENTWAITSYNCPROC glClientWaitSync;
+extern PFNGLDELETESYNCPROC glDeleteSync;
 extern PFNGLGENBUFFERSPROC               glGenBuffers;
 extern PFNGLGETSTRINGIPROC              glGetStringi;
 extern PFNGLDELETEBUFFERSPROC            glDeleteBuffers;
@@ -102,6 +105,7 @@ extern PFNGLUNIFORM1IPROC                glUniform1i;
 extern PFNGLUNIFORM1FPROC                glUniform1f;
 extern PFNGLUNIFORM2FPROC                glUniform2f;
 extern PFNGLUNIFORM3FPROC                glUniform3f;
+extern PFNGLUNIFORM3FVPROC               glUniform3fv;
 extern PFNGLUNIFORM4FPROC                glUniform4f;
 extern PFNGLUNIFORMMATRIX4FVPROC         glUniformMatrix4fv;
 extern PFNGLACTIVETEXTUREPROC            glActiveTexture;
@@ -121,6 +125,8 @@ extern PFNGLBINDFRAMEBUFFERPROC          glBindFramebuffer;
 extern PFNGLFRAMEBUFFERTEXTURE2DPROC     glFramebufferTexture2D;
 extern PFNGLCHECKFRAMEBUFFERSTATUSPROC   glCheckFramebufferStatus;
 extern PFNGLBLITFRAMEBUFFERPROC          glBlitFramebuffer;
+extern PFNGLDRAWBUFFERSPROC             glDrawBuffers;
+extern PFNGLBLENDFUNCSEPARATEPROC        glBlendFuncSeparate;
 
 #else
 #include <GLES3/gl3.h>
@@ -148,4 +154,22 @@ GLint qlcg_gl_uniform(GLuint prog, const char *name);
 GLuint qlcg_gl_compile_program(const char *vs_src, const char *fs_src);
 void qlcg_gl_program_point_size(bool enabled);
 void qlcg_gl_multisample(bool enabled);
+void qlcg_gl_frame_begin(void);
+void qlcg_gl_frame_end(void);
+#ifndef QLCG_GL_METRICS_IMPL
+void qlcg_metric_arrays(GLenum,GLint,GLsizei);
+void qlcg_metric_elements(GLenum,GLsizei,GLenum,const void*);
+void qlcg_metric_arrays_inst(GLenum,GLint,GLsizei,GLsizei);
+void qlcg_metric_elements_inst(GLenum,GLsizei,GLenum,const void*,GLsizei);
+void qlcg_metric_multi(GLenum,const GLsizei*,GLenum,const void*const*,GLsizei,const GLint*);
+void qlcg_metric_data(GLenum,GLsizeiptr,const void*,GLenum);
+void qlcg_metric_subdata(GLenum,GLintptr,GLsizeiptr,const void*);
+#define glDrawArrays(...) qlcg_metric_arrays(__VA_ARGS__)
+#define glDrawElements(...) qlcg_metric_elements(__VA_ARGS__)
+#define glDrawArraysInstanced(...) qlcg_metric_arrays_inst(__VA_ARGS__)
+#define glDrawElementsInstanced(...) qlcg_metric_elements_inst(__VA_ARGS__)
+#define glMultiDrawElementsBaseVertex(...) qlcg_metric_multi(__VA_ARGS__)
+#define glBufferData(...) qlcg_metric_data(__VA_ARGS__)
+#define glBufferSubData(...) qlcg_metric_subdata(__VA_ARGS__)
+#endif
 #endif

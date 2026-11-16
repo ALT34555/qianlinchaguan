@@ -53,6 +53,7 @@ static void clear_input(void) {
     for(int i=0;i<ACT_COUNT;i++)app_action_set_virtual(i,false);
     app_key_track_clear();ui_touch_reset(&g_app.touch);
     g_app.ui.mouse_down=g_app.ui.right_down=g_app.ui.touch_active=false;
+    g_app.ui.mouse_pressed=false;
     g_app.atlas.dragging=false;mouse_pointer=-1;pinch=scroll_remainder=0;
     g_app.river_craft.drawing=false;
     memset(&gesture,0,sizeof(gesture));pan_canvas=horizontal_drag=false;
@@ -167,7 +168,7 @@ static void motion(const GameActivityMotionEvent *event) {
         if(pinch>0 && length>0)qlcg_atlas_zoom_step(&g_app.atlas,g_app.world,logf(length/pinch)/logf(1.42f),
             (x0+x1)*.5f,(y0+y1)*.5f,g_app.atlas.last_vp_x,g_app.atlas.last_vp_y,g_app.atlas.last_vp_w,g_app.atlas.last_vp_h);
         pinch=length;ui_gesture_cancel(&gesture);
-        g_app.atlas.dragging=false;ui->mouse_down=ui->mouse_clicked=false;
+        g_app.atlas.dragging=false;ui->mouse_down=ui->mouse_clicked=ui->mouse_pressed=false;
         ui->touch_double_tap=ui->touch_drag_horizontal=false;
     } else pinch=0;
     for(uint32_t i=0;i<event->pointerCount;i++) {
@@ -183,7 +184,7 @@ static void motion(const GameActivityMotionEvent *event) {
                 ui_touch_up(&g_app.touch,ui,id);taken=false;
             }
             if(!taken && mouse_pointer<0) {
-                mouse_pointer=id;ui->mouse_down=true;ui->mouse_clicked=false;
+                mouse_pointer=id;ui->mouse_down=true;ui->mouse_pressed=true;ui->mouse_clicked=false;
                 ui_gesture_down(&gesture,x,y,qlcg_time_ms());
                 horizontal_drag=false;ui->touch_drag_horizontal=false;scroll_remainder=0;
                 pan_canvas=g_app.screen==SCREEN_IN_GAME && g_app.view_mode==VIEW_MODE_ATLAS &&
@@ -221,7 +222,7 @@ static void motion(const GameActivityMotionEvent *event) {
                 ui->mouse_x=(int)x;ui->mouse_y=(int)y;
                 ui->mouse_clicked=ui_gesture_up(&gesture,x,y,qlcg_time_ms(),density);
                 ui->touch_double_tap=ui->mouse_clicked && gesture.double_tap;
-                ui->mouse_down=ui->touch_drag_horizontal=false;
+                ui->mouse_down=ui->touch_drag_horizontal=false;ui->mouse_pressed=false;
                 app_river_craft_pointer(false,false);g_app.atlas.dragging=false;mouse_pointer=-1;pan_canvas=false;
             }
         }

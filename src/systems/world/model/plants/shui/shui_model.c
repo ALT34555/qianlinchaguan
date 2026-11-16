@@ -151,16 +151,90 @@ static void segment(LpBuilder *b, const double a[3], const double z[3],
     qlcg_lp_limb(b, a, d, len, radius, col, &o);
 }
 
+/* 带旋向和盖面茎段 */
+static void seg_rot(LpBuilder *b, const double a[3], const double z[3],
+                    double radius, double taper, int sides, double rot,
+                    int cap, LpRgb col, int mat) {
+    double d[3] = { z[0] - a[0], z[1] - a[1], z[2] - a[2] };
+    double len = sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    if (len <= 1e-5) return;
+    d[0] /= len; d[1] /= len; d[2] /= len;
+    double ref[3] = { 0.0, 1.0, 0.0 };
+    if (fabs(d[1]) > 0.99) {
+        ref[0] = 1.0; ref[1] = 0.0; ref[2] = 0.0;
+    }
+    double tx = ref[1] * d[2] - ref[2] * d[1];
+    double ty = ref[2] * d[0] - ref[0] * d[2];
+    double tz = ref[0] * d[1] - ref[1] * d[0];
+    double tl = sqrt(tx * tx + ty * ty + tz * tz);
+    tx /= tl; ty /= tl; tz /= tl;
+    double bx = d[1] * tz - d[2] * ty;
+    double by = d[2] * tx - d[0] * tz;
+    double bz = d[0] * ty - d[1] * tx;
+    double r1 = radius * taper;
+    double bottom_anchor[3], top_anchor[3];
+    for (int i = 0; i < sides; i++) {
+        double a0 = rot + TAU * (double)i / (double)sides;
+        double a1 = rot + TAU * (double)(i + 1) / (double)sides;
+        double ca0 = cos(a0), sa0 = sin(a0);
+        double ca1 = cos(a1), sa1 = sin(a1);
+        double q0[3] = {
+            a[0] + (tx * ca0 + bx * sa0) * radius,
+            a[1] + (ty * ca0 + by * sa0) * radius,
+            a[2] + (tz * ca0 + bz * sa0) * radius
+        };
+        double q1[3] = {
+            a[0] + (tx * ca1 + bx * sa1) * radius,
+            a[1] + (ty * ca1 + by * sa1) * radius,
+            a[2] + (tz * ca1 + bz * sa1) * radius
+        };
+        double q2[3] = {
+            z[0] + (tx * ca1 + bx * sa1) * r1,
+            z[1] + (ty * ca1 + by * sa1) * r1,
+            z[2] + (tz * ca1 + bz * sa1) * r1
+        };
+        double q3[3] = {
+            z[0] + (tx * ca0 + bx * sa0) * r1,
+            z[1] + (ty * ca0 + by * sa0) * r1,
+            z[2] + (tz * ca0 + bz * sa0) * r1
+        };
+        qlcg_lp_quad(b, q0, q1, q2, q3, col, mat);
+        if (i == 0) {
+            memcpy(bottom_anchor, q0, sizeof(q0));
+            memcpy(top_anchor, q3, sizeof(q3));
+        } else if (i + 1 < sides) {
+            if (cap == 1 && radius > 1e-5)
+                qlcg_lp_triangle(b, bottom_anchor, q1, q0, col, mat);
+            if (cap && r1 > 1e-5)
+                qlcg_lp_triangle(b, top_anchor, q3, q2, col, mat);
+        }
+    }
+}
+
+/* 带花萼锚定花冠 */
+static void shui_flower_at(LpBuilder *b, const PdDef *def, const double at[3],
+                           double r, LpRng *rng) {
+    double c0[3] = { at[0], at[1] - fmax(r * 0.08, 0.004), at[2] };
+    double c1[3] = { at[0], at[1] + fmax(r * 0.36, 0.006), at[2] };
+    seg_rot(b, c0, c1, fmax(r * 0.16, 0.005), 0.70, 5, 0.0, 1,
+            qlcg_pa_tone(def, "foliage", 1.0), LP_MAT_SOLID);
+    qlcg_pa_flower_at(b, def, at, r, rng);
+}
+
 /* 弯曲叶片，可带中脉 */
 static void blade(LpBuilder *b, const double base[3], double bearing, double len, double wid,
                   double rise, double drop, LpRgb col, LpRgb rib, int segs, int mat) {
     if (segs < 1) segs = 1;
     double dx = cos(bearing), dz = sin(bearing);
     double px = -dz, pz = dx;
-    double prev_c[3] = { base[0], base[1], base[2] };
+    double half_rib = fmax(wid * 0.08, 0.0015);
     double prev_l[3] = { base[0] - px * wid * 0.5, base[1], base[2] - pz * wid * 0.5 };
     double prev_r[3] = { base[0] + px * wid * 0.5, base[1], base[2] + pz * wid * 0.5 };
-    double prev_w = wid;
+    double prev_ml[3] = { base[0] - px * half_rib, base[1], base[2] - pz * half_rib };
+    double prev_mr[3] = { base[0] + px * half_rib, base[1], base[2] + pz * half_rib };
+    double prev_c[3] = { base[0], base[1], base[2] };
+    double lift = fmax(0.012 * len, fmax(wid * 0.06, 0.003));
+    double roll = 0.06 * sin(bearing * 3.1 + base[0] * 7.3 + base[2] * 5.7);
     for (int i = 1; i <= segs; i++) {
         double t = (double)i / (double)segs;
         double y = base[1] + rise * t * (2.0 - t) - drop * t * t;
@@ -168,21 +242,33 @@ static void blade(LpBuilder *b, const double base[3], double bearing, double len
         double cz = base[2] + dz * len * t;
         double w = wid * (1.0 - 0.60 * t);
         if (w < wid * 0.05) w = wid * 0.05;
-        double cl[3] = { cx - px * w * 0.5, y, cz - pz * w * 0.5 };
-        double cr[3] = { cx + px * w * 0.5, y, cz + pz * w * 0.5 };
-        qlcg_lp_quad(b, prev_l, prev_r, cr, cl, col, mat);
+        double tw = w * roll * t;
+        if (base[1] >= 0.0) {
+            double min_y = 0.001 + 0.001 * (1.0 - t);
+            if (y - fabs(tw) < min_y) y = min_y + fabs(tw);
+        }
+        double cl[3] = { cx - px * w * 0.5, y + tw, cz - pz * w * 0.5 };
+        double cr[3] = { cx + px * w * 0.5, y - tw, cz + pz * w * 0.5 };
+        double tip_k = (i == segs) ? 0.45 : 1.0;
         if (rib.r >= 0.0) {
-            double lift = 0.012 * len;
-            double ml0[3] = { prev_c[0] - px * prev_w * 0.07, prev_c[1] + lift, prev_c[2] - pz * prev_w * 0.07 };
-            double mr0[3] = { prev_c[0] + px * prev_w * 0.07, prev_c[1] + lift, prev_c[2] + pz * prev_w * 0.07 };
-            double ml1[3] = { cx - px * w * 0.07, y + lift, cz - pz * w * 0.07 };
-            double mr1[3] = { cx + px * w * 0.07, y + lift, cz + pz * w * 0.07 };
-            qlcg_lp_quad(b, ml0, mr0, mr1, ml1, rib, mat);
+            double rw = w * 0.08;
+            if (rw < 0.001) rw = 0.001;
+            double rtw = rw * roll * t;
+            double ml[3] = { cx - px * rw, y + lift * tip_k + rtw, cz - pz * rw };
+            double mr[3] = { cx + px * rw, y + lift * tip_k - rtw, cz + pz * rw };
+            qlcg_lp_quad(b, prev_l, prev_ml, ml, cl, col, mat);
+            qlcg_lp_quad(b, prev_ml, prev_mr, mr, ml, rib, mat);
+            qlcg_lp_quad(b, prev_mr, prev_r, cr, mr, col, mat);
+            memcpy(prev_ml, ml, sizeof(ml));
+            memcpy(prev_mr, mr, sizeof(mr));
+        } else {
+            double cc[3] = { cx, y + lift * 0.7 * tip_k, cz };
+            qlcg_lp_quad(b, prev_l, prev_c, cc, cl, col, mat);
+            qlcg_lp_quad(b, prev_c, prev_r, cr, cc, col, mat);
+            memcpy(prev_c, cc, sizeof(cc));
         }
         memcpy(prev_l, cl, sizeof(cl));
         memcpy(prev_r, cr, sizeof(cr));
-        prev_c[0] = cx; prev_c[1] = y; prev_c[2] = cz;
-        prev_w = w;
     }
 }
 
@@ -227,15 +313,17 @@ static void rachis(LpBuilder *b, const double base[3], double height, double lea
     double dir[3] = { lean, 1.0, lean * 0.5 };
     double len = sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
     dir[0] /= len; dir[1] /= len; dir[2] /= len;
-    LpOpts o = qlcg_lp_opts();
-    o.sides = 3;
-    o.tip_ratio = 0.45;
-    o.mat = mat;
-    o.cap = 0.0;
-    qlcg_lp_limb(b, base, dir, height, radius, col, &o);
+    double embed = fmin(radius * 0.8, height * 0.15);
+    if (base[1] - dir[1] * embed < 0.0) embed = fmax(0.0, base[1]);
+    double sub[3] = {
+        base[0] - dir[0] * embed,
+        base[1] - dir[1] * embed,
+        base[2] - dir[2] * embed
+    };
     tip[0] = base[0] + dir[0] * height;
     tip[1] = base[1] + dir[1] * height;
     tip[2] = base[2] + dir[2] * height;
+    seg_rot(b, sub, tip, radius, 0.45, 4, lean, 1, col, mat);
 }
 
 /* 花穗/果穗 */
@@ -259,13 +347,13 @@ static void build_head(LpBuilder *b, const ShuiCtx *c, int form, const double or
             double end[3] = { node[0] + cos(angle) * blen,
                               node[1] + blen * 0.50 + size * 0.4,
                               node[2] + sin(angle) * blen };
-            segment(b, node, end, size * 0.08, 0.45, 3, col, mat);
+            seg_rot(b, node, end, size * 0.08, 0.45, 4, angle, 1, col, mat);
             for (int j = 0; j < 2; j++) {
-                double off = (double)(j - 1) * size * 0.18;
-                double at[3] = { end[0] + cos(angle + 1.4) * off,
-                                 end[1] - size * 0.20 - (double)j * size * 0.10,
-                                 end[2] + sin(angle + 1.4) * off };
-                spikelet(b, at, angle, size * 0.9, col, mat, c->rng);
+                double u = 0.72 + 0.28 * (double)j;
+                double at[3] = { node[0] + (end[0] - node[0]) * u,
+                                 node[1] + (end[1] - node[1]) * u,
+                                 node[2] + (end[2] - node[2]) * u };
+                spikelet(b, at, angle + (j == 0 ? -0.55 : 0.55), size * 0.9, col, mat, c->rng);
             }
         }
         grain(b, tip, size * 0.22, col, mat);
@@ -289,12 +377,15 @@ static void build_head(LpBuilder *b, const ShuiCtx *c, int form, const double or
             spikelet(b, at, angle, size * 0.55, col, mat, c->rng);
         }
     } else if (form == SHUI_HEAD_UMBEL) {
+        double ubase[3] = { origin[0] + (tip[0] - origin[0]) * 0.90,
+                            origin[1] + (tip[1] - origin[1]) * 0.90,
+                            origin[2] + (tip[2] - origin[2]) * 0.90 };
         for (int i = 0; i < 5; i++) {
             double angle = (double)i * (TAU / 5.0) + 0.4;
             double at[3] = { tip[0] + cos(angle) * spread * 0.40,
                              tip[1] - spread * 0.15,
                              tip[2] + sin(angle) * spread * 0.40 };
-            segment(b, tip, at, size * 0.07, 0.5, 3, c->t->stem, mat);
+            seg_rot(b, ubase, at, size * 0.07, 0.5, 4, angle, 1, c->t->stem, mat);
             spikelet(b, at, angle, size * 0.9, col, mat, c->rng);
             grain(b, at, size * 0.20, col, mat);
         }
@@ -322,29 +413,55 @@ static void build_pad(LpBuilder *b, const double at[3], double r, double angle, 
         }
         if (veins && (i % 2 == 0)) {
             double am = (a0 + a1) * 0.5;
-            double q0[3] = { at[0] + cos(am) * r * 0.20, at[1] + r * 0.01,
-                             at[2] + sin(am) * r * 0.20 };
-            double q1[3] = { at[0] + cos(am) * r * 0.92, at[1] + r * 0.01,
-                             at[2] + sin(am) * r * 0.92 };
-            double w0[3] = { q0[0] - sin(am) * r * 0.02, q0[1], q0[2] + cos(am) * r * 0.02 };
-            double w1[3] = { q1[0] - sin(am) * r * 0.02, q1[1], q1[2] + cos(am) * r * 0.02 };
-            double w2[3] = { q1[0] + sin(am) * r * 0.02, q1[1], q1[2] - cos(am) * r * 0.02 };
-            double w3[3] = { q0[0] + sin(am) * r * 0.02, q0[1], q0[2] - cos(am) * r * 0.02 };
-            qlcg_lp_quad(b, w0, w1, w2, w3, vein, LP_MAT_SOLID);
+            double ca = cos(am), sa = sin(am);
+            double px = -sa, pz = ca;
+            double vh = fmax(r * (0.034 + 0.004 * (double)((i / 2) % 3)), 0.005);
+            double vd = fmax(r * 0.015, 0.003);
+            double hw = fmax(r * 0.025, 0.003);
+            double c0[3] = { at[0] + ca * r * 0.08, at[1] + vh, at[2] + sa * r * 0.08 };
+            double c1[3] = { at[0] + ca * r * 0.92, at[1] + vh * 0.7, at[2] + sa * r * 0.92 };
+            double l0[3] = { c0[0] - px * hw, at[1] - vd, c0[2] - pz * hw };
+            double r0[3] = { c0[0] + px * hw, at[1] - vd, c0[2] + pz * hw };
+            double l1[3] = { c1[0] - px * hw * 0.6, at[1] - vd, c1[2] - pz * hw * 0.6 };
+            double r1[3] = { c1[0] + px * hw * 0.6, at[1] - vd, c1[2] + pz * hw * 0.6 };
+            qlcg_lp_quad(b, l0, l1, c1, c0, vein, LP_MAT_SOLID);
+            qlcg_lp_quad(b, c0, c1, r1, r0, vein, LP_MAT_SOLID);
         }
     }
-    double ctr[3] = { at[0], at[1] + r * 0.02, at[2] };
+    double ctr[3] = { at[0], at[1] - fmax(r * 0.01, 0.002), at[2] };
     LpOpts o = qlcg_lp_opts();
-    o.sides = 5; o.rings = 0; o.squash = 0.4; o.rand = rng;
-    qlcg_lp_dome(b, ctr, r * 0.10, r * 0.05, r * 0.10, 5, vein, &o);
+    o.sides = 5; o.rings = 0; o.floor_on = 1.0; o.squash = 0.4; o.rand = rng;
+    qlcg_lp_dome(b, ctr, r * 0.10, fmax(r * 0.06, 0.008), r * 0.10, 5, vein, &o);
 }
 
 /* 叶柄 */
 static void petiole(LpBuilder *b, const double top[3], double bend, LpRgb col, LpRng *rng) {
-    double mid[3] = { top[0] * 0.42 + bend * 0.5, top[1] * 0.55, top[2] * 0.42 };
-    double base[3] = { 0.0, 0.0, 0.0 };
-    segment(b, base, mid, 0.010, 0.85, 3, col, LP_MAT_SOLID);
-    segment(b, mid, top, 0.006, 0.70, 3, col, LP_MAT_SOLID);
+    double dl = sqrt(top[0] * top[0] + top[2] * top[2]);
+    double dx = dl > 1e-4 ? top[0] / dl : 0.0;
+    double dz = dl > 1e-4 ? top[2] / dl : 0.0;
+    double az = dl > 1e-4 ? atan2(top[2], top[0]) : 0.0;
+    double r_in = dl > 1e-4 ? fmin(0.016, dl * 0.35) * (0.72 + 0.28 * sin(az * 7.3 + dl * 11.0)) : 0.0;
+    double by = fmin(0.004, top[1] * 0.28) * fabs(sin(az * 5.0 + dl * 9.0 + 0.3));
+    double base[3] = { dx * r_in, by, dz * r_in };
+    double ym = (bend == 0.0 ? 0.36 : 0.62) + (top[1] > 0.005 ? 0.04 * sin(az * 5.3 + dl * 17.0) : 0.0);
+    double tb = bend == 0.0 ? -fmax(dl * 0.18, 0.015) : bend * 0.35;
+    double mid[3] = {
+        base[0] * 0.3 + top[0] * 0.45 - dz * tb,
+        fmax(by + 0.002, top[1] * ym),
+        base[2] * 0.3 + top[2] * 0.45 + dx * tb
+    };
+    double brad = dl > 1e-4 ? fmin(0.009, fmax(0.0035, 0.0035 + top[1] * 0.012)) : 0.009;
+    double r1 = 0.17 + az * 1.73 + dl * 19.0 + top[1] * 11.0 + (bend == 0.0 ? 0.53 : 0.0);
+    double r2 = r1 + 0.57;
+    int ps = top[1] > 0.08 ? 6 : 5;
+    r2 = r1 + (ps == 6 ? 0.5236 : 0.6283);
+    seg_rot(b, base, mid, brad, 0.85, ps, r1, 0, col, LP_MAT_SOLID);
+    double sub[3] = {
+        base[0] + (mid[0] - base[0]) * 0.94,
+        base[1] + (mid[1] - base[1]) * 0.94,
+        base[2] + (mid[2] - base[2]) * 0.94
+    };
+    seg_rot(b, sub, top, brad * 0.92, 0.62, ps, r2, 0, col, LP_MAT_SOLID);
     (void)rng;
 }
 
@@ -352,67 +469,77 @@ static void petiole(LpBuilder *b, const double top[3], double bend, LpRgb col, L
 static void build_ribbon(LpBuilder *b, const ShuiCtx *c) {
     double h = c->h, sp = c->sp;
     int basal = c->p->form == 0;
-    double root_y = basal ? h * 0.035 + 0.004 : 0.02;
+    double root_y = basal ? h * 0.035 + 0.004 : 0.0;
     if (basal) {
         double origin[3] = { 0.0, 0.0, 0.0 };
         qlcg_lp_prism(b, origin, sp * 0.21, sp * 0.21, 0.0, root_y * 1.6, 6, c->t->stem, NULL);
     }
     for (int i = 0; i < 3; i++) {
         double angle = (double)i * (TAU / 3.0) + 0.4;
-        double base[3] = { 0.0, root_y, 0.0 };
-        double end[3] = { cos(angle) * sp * 0.55, root_y + (basal ? 0.0 : 0.01), sin(angle) * sp * 0.55 };
-        segment(b, base, end, h * 0.012, 0.4, 3, c->t->stem, LP_MAT_SOLID);
+        double sy = basal ? root_y * 0.35 : 0.0;
+        double base[3] = { 0.0, sy, 0.0 };
+        double end[3] = { cos(angle) * sp * 0.55, sy + (basal ? 0.0 : 0.01), sin(angle) * sp * 0.55 };
+        seg_rot(b, base, end, h * 0.012, 0.4, 5, (double)i * 0.67 + 0.31, 0, c->t->stem, LP_MAT_SOLID);
     }
     int n = qlcg_pa_js_round((double)c->p->blades * c->s->density);
     if (n < 3) n = 3;
     if (c->p->form == 1) {
         for (int i = 0; i < n / 2; i++) {
             double angle = (double)i * GOLDEN + 0.3;
-            double base[3] = { cos(angle) * sp * 0.16, 0.02, sin(angle) * sp * 0.16 };
+            double base[3] = { cos(angle) * sp * 0.16, 0.0, sin(angle) * sp * 0.16 };
             double stem_len = h * c->p->blade_len * (0.8 + 0.3 * qlcg_lp_rng_next(c->rng));
             double tip[3] = { base[0] + cos(angle) * sp * 0.18, base[1] + stem_len,
                               base[2] + sin(angle) * sp * 0.18 };
-            segment(b, base, tip, h * 0.006, 0.35, 3, c->t->stem, LP_MAT_SOLID);
+            seg_rot(b, base, tip, fmax(h * 0.006, 0.004), 0.35, 4, angle, 1, c->t->stem, LP_MAT_SOLID);
             for (int j = 0; j < 8; j++) {
-                double t = 0.15 + 0.80 * (double)j / 7.0;
+                double t = 0.15 + 0.80 * (double)j / 7.0
+                           + 0.014 * sin((double)i * 2.37 + (double)j * 1.13);
                 double node[3] = { base[0] + (tip[0] - base[0]) * t,
                                    base[1] + (tip[1] - base[1]) * t,
                                    base[2] + (tip[2] - base[2]) * t };
                 for (int side = -1; side <= 1; side += 2) {
-                    double dir = angle + side * 1.45;
+                    double ph = (double)i * 2.13 + (double)j * 1.37 + (double)side * 0.41;
+                    double yaw = side > 0 ? 1.51 : -1.40;
+                    double dir = angle + yaw + 0.11 * sin(ph * 1.73);
                     double plen = h * 0.10 * c->p->blade_len * (1.0 - 0.5 * t);
+                    double rl = plen * (0.18 + (side > 0 ? 0.05 : 0.0) + 0.06 * fabs(sin(ph * 2.31)));
+                    double dl = plen * (0.04 + 0.035 * fabs(cos(ph * 1.91)));
                     blade(b, node, dir, plen, c->p->blade_width * 3.0,
-                          plen * 0.10, plen * 0.10, leaf_col(c, i * 8 + j, 2), NO_RIB, 2, LP_MAT_SOLID);
+                          rl, dl, leaf_col(c, i * 8 + j, 2), NO_RIB, 2, LP_MAT_SOLID);
                 }
             }
         }
     } else {
         for (int i = 0; i < n; i++) {
-            double angle = (double)i * GOLDEN + (qlcg_lp_rng_next(c->rng) - 0.5) * 0.4;
-            double ring = 0.20 + 0.80 * (double)(i % 3) / 2.0;
-            double base[3] = { cos(angle) * sp * 0.14 * ring, root_y,
+            double ph = (double)i * 2.13 + 0.47;
+            double frac = (double)i / (double)n;
+            double angle = (double)i * GOLDEN + (qlcg_lp_rng_next(c->rng) - 0.5) * 0.14;
+            double ring = 0.20 + 0.80 * frac;
+            double base[3] = { cos(angle) * sp * 0.14 * ring,
+                               fmax(0.002, root_y * (0.28 + 0.72 * frac)),
                                sin(angle) * sp * 0.14 * ring };
             double len = h * c->p->blade_len * (0.80 + 0.30 * qlcg_lp_rng_next(c->rng));
             double wid = c->p->blade_width * c->s->blade;
-            double rise = len * (0.86 - 0.40 * c->s->droop) * c->p->arch;
-            double drop = fmin(len * (0.30 + 0.80 * c->s->droop), rise + root_y * 0.80);
+            double rise = len * (1.02 - 0.36 * frac - 0.40 * c->s->droop) * c->p->arch;
+            double drop = fmin(len * (0.30 + 0.78 * c->s->droop) * (1.0 + 0.05 * cos(ph * 0.89)),
+                               rise * 0.90 + base[1] * 0.80);
             blade(b, base, angle, len, wid, rise, drop, leaf_col(c, i, 1), c->t->rib, 4, LP_MAT_SOLID);
         }
     }
     for (int i = 0; i < c->s->sprout; i++) {
         double angle = (double)i * (TAU / (double)c->s->sprout) + 0.5;
-        double pos[3] = { cos(angle) * sp * 0.10, root_y + (basal ? 0.0 : 0.01), sin(angle) * sp * 0.10 };
+        double pos[3] = { cos(angle) * sp * 0.10, root_y, sin(angle) * sp * 0.10 };
         LpOpts o = qlcg_lp_opts();
-        o.sides = 4; o.mat = LP_MAT_SOLID; o.cap = 0.0; o.rand = c->rng;
+        o.sides = 4; o.mat = LP_MAT_SOLID; o.cap = 0.0; o.rot_y = (double)i * 0.67 + 0.31; o.rand = c->rng;
         qlcg_lp_cone(b, pos, h * 0.020, h * 0.020, h * 0.16, 4, c->t->rib, &o);
     }
     if (c->season == PD_SEASON_AUTUMN) {
         for (int i = 0; i < 2; i++) {
             double angle = (double)i * 2.7 + 0.9;
             double reach = sp * (basal ? 0.14 : 0.30);
-            double base[3] = { cos(angle) * reach, root_y, sin(angle) * reach };
+            double base[3] = { cos(angle) * reach, basal ? root_y : 0.0, sin(angle) * reach };
             double len = h * 0.55;
-            double drop = basal ? fmin(len * 0.55, len * 0.35 + root_y * 0.80) : len * 0.55;
+            double drop = fmin(len * 0.28 + (basal ? root_y * 0.60 : 0.0), len * 0.32);
             blade(b, base, angle, len, c->p->blade_width * 1.2,
                   len * 0.35, drop, c->t->dry, NO_RIB, 2, LP_MAT_SOLID);
         }
@@ -429,19 +556,25 @@ static void build_sword(LpBuilder *b, const ShuiCtx *c) {
     for (int rank = 0; rank < 2; rank++) {
         int cnt = n - rank * (n / 3);
         for (int i = 0; i < cnt; i++) {
-            double angle = (double)i * GOLDEN + (double)rank * 0.55;
+            double angle = (double)i * GOLDEN + (double)rank * 1.17 + 0.04 * (double)((i + rank) % 5);
             double layer = (double)(i % 3) / 2.0 + 0.2 * (double)rank;
-            double base[3] = { cos(angle) * sp * 0.10, h * 0.02, sin(angle) * sp * 0.10 };
+            double ro = sp * (0.07 + 0.025 * (double)(i % 2) + 0.065 * (double)rank);
+            double base[3] = { cos(angle) * ro, h * (0.011 + 0.005 * (double)(i % 3) + 0.004 * (double)rank),
+                               sin(angle) * ro };
             double len = h * c->p->blade_len * (1.00 - 0.20 * layer) * (0.90 + 0.15 * qlcg_lp_rng_next(c->rng));
             double wid = c->p->blade_width * c->s->blade * (1.10 - 0.25 * layer);
-            double lift = (1.10 - 0.40 * layer) * (1.0 - 0.45 * c->s->droop) * c->p->arch;
-            blade(b, base, angle, len, wid, len * lift, len * (0.10 + 0.50 * c->s->droop),
+            double lv = 0.04 * (double)(i % 2);
+            double lift = (1.14 - 0.36 * layer + lv) * (1.0 - 0.45 * c->s->droop) * c->p->arch;
+            double dv = 0.03 * (double)(i % 2);
+            blade(b, base, angle, len, wid, len * lift, len * (0.10 + 0.50 * c->s->droop + dv),
                   leaf_col(c, rank * 9 + i, 3), c->t->rib, 4, LP_MAT_SOLID);
         }
     }
     int form = c->s->bloom ? c->p->bloom_form : c->p->seed_form;
     if (form != SHUI_HEAD_NONE) {
+        double sb[3] = { 0.0, 0.0, 0.0 };
         double top[3] = { 0.0, h * 0.74, 0.0 };
+        seg_rot(b, sb, top, h * 0.012, 0.60, 5, 0.2, 1, c->t->stem, LP_MAT_SOLID);
         build_head(b, c, form, top, sp * 0.45, c->p->bloom_size, c->s->bloom);
     }
     for (int i = 0; i < c->s->sprout; i++) {
@@ -466,24 +599,36 @@ static void build_reed(LpBuilder *b, const ShuiCtx *c) {
         double base[3] = { cos(angle) * rad, 0.0, sin(angle) * rad };
         double lean = (qlcg_lp_rng_next(c->rng) - 0.5) * 0.16;
         double cur[3] = { base[0], base[1], base[2] };
-        double step = h / (double)segs;
+        double culm_h = h * (0.88 + 0.07 * (double)(i % 4));
+        double step = culm_h / (double)segs;
         LpRgb culm_col = pick_dry(i, 4, c->s->dry) ? c->t->dry : c->t->stem;
         for (int sg = 0; sg < segs; sg++) {
             double t = (double)(sg + 1) / (double)segs;
-            double next[3] = { base[0] + lean * h * t + cos(angle) * sp * 0.05 * t,
+            double next[3] = { base[0] + lean * culm_h * t + cos(angle) * sp * 0.05 * t,
                                step * (double)(sg + 1),
                                base[2] + sin(angle) * sp * 0.05 * t };
-            segment(b, cur, next, h * 0.012 * (1.0 - 0.4 * t), 0.85, 3, culm_col, LP_MAT_SOLID);
+            double start[3] = {
+                cur[0] - (sg > 0 ? (next[0] - cur[0]) * 0.03 : 0.0),
+                cur[1] - (sg > 0 ? (next[1] - cur[1]) * 0.03 : 0.0),
+                cur[2] - (sg > 0 ? (next[2] - cur[2]) * 0.03 : 0.0)
+            };
+            seg_rot(b, start, next, h * 0.012 * (1.0 - 0.4 * t), 0.85,
+                    (i + sg) % 2 ? 4 : 5, (double)i * 0.23 + (double)sg * 0.41,
+                    (sg == segs - 1) ? 2 : 0, culm_col, LP_MAT_SOLID);
             if (sg < segs - 1) {
                 LpOpts no = qlcg_lp_opts();
                 no.sides = 4; no.mat = LP_MAT_SOLID; no.cap = 0.0;
+                no.rot_y = (double)sg * 0.4 + 0.3;
                 qlcg_lp_cone(b, next, h * 0.020, h * 0.020, h * 0.020, 4, c->t->stem, &no);
                 int leaves = 2;
                 for (int l = 0; l < leaves; l++) {
-                    double la = angle + ((double)l ? 1.0 : -1.0) * (1.30 + 0.3 * qlcg_lp_rng_next(c->rng));
+                    double ph = (double)i * 2.13 + (double)sg * 1.37 + (double)l * 0.79;
+                    double la = angle + ((double)l ? 1.0 : -1.0) * (1.30 + 0.3 * qlcg_lp_rng_next(c->rng))
+                                + 0.08 * sin(ph * 1.7);
                     double len = h * 0.24 * c->s->blade * c->p->blade_len;
                     blade(b, next, la, len, c->p->blade_width * c->s->blade,
-                          len * (0.55 - 0.30 * c->s->droop), len * (0.30 + 0.80 * c->s->droop),
+                          len * (0.55 - 0.30 * c->s->droop + 0.06 * cos(ph * 1.3)),
+                          len * (0.30 + 0.80 * c->s->droop + 0.04 * sin(ph * 1.9)),
                           leaf_col(c, i * 5 + sg * 2 + l, 6), c->t->rib, 3, LP_MAT_SOLID);
                 }
             }
@@ -500,7 +645,7 @@ static void build_reed(LpBuilder *b, const ShuiCtx *c) {
     if (c->season == PD_SEASON_SPRING) {
         for (int i = 0; i < 2; i++) {
             double angle = (double)i * 2.8 + 0.5;
-            double pos[3] = { cos(angle) * sp * 0.24, 0.02, sin(angle) * sp * 0.24 };
+            double pos[3] = { cos(angle) * sp * 0.24, 0.0, sin(angle) * sp * 0.24 };
             LpOpts o = qlcg_lp_opts();
             o.sides = 4; o.mat = LP_MAT_SOLID; o.cap = 0.0; o.rand = c->rng;
             qlcg_lp_cone(b, pos, h * 0.024, h * 0.024, h * 0.22, 4, c->t->rib, &o);
@@ -509,10 +654,10 @@ static void build_reed(LpBuilder *b, const ShuiCtx *c) {
     if (c->season == PD_SEASON_AUTUMN) {
         for (int i = 0; i < 3; i++) {
             double angle = (double)i * 2.2 + 0.7;
-            double base[3] = { cos(angle) * sp * 0.28, 0.02, sin(angle) * sp * 0.28 };
+            double base[3] = { cos(angle) * sp * 0.28, 0.0, sin(angle) * sp * 0.28 };
             double len = h * 0.30;
             blade(b, base, angle, len, c->p->blade_width * 1.1,
-                  len * 0.45, len * 0.70, c->t->dry, NO_RIB, 2, LP_MAT_SOLID);
+                  len * 0.45, len * 0.36, c->t->dry, NO_RIB, 2, LP_MAT_SOLID);
         }
     }
 }
@@ -530,7 +675,7 @@ static void build_sedge(LpBuilder *b, const ShuiCtx *c) {
         double top[3] = { base[0] + cos(angle) * sp * 0.12, h * (0.80 + 0.18 * qlcg_lp_rng_next(c->rng)),
                           base[2] + sin(angle) * sp * 0.12 };
         if (i < 3) memcpy(head_bases[i], top, sizeof(top));
-        segment(b, base, top, h * 0.010, 0.55, 3, c->t->stem, LP_MAT_SOLID);
+        seg_rot(b, base, top, h * 0.010, 0.55, 3, (double)i * 0.63, 2, c->t->stem, LP_MAT_SOLID);
         for (int n = 0; n < 2; n++) {
             double t = 0.35 + 0.45 * (double)n;
             double node[3] = { base[0] + (top[0] - base[0]) * t,
@@ -538,12 +683,15 @@ static void build_sedge(LpBuilder *b, const ShuiCtx *c) {
                                base[2] + (top[2] - base[2]) * t };
             LpOpts no = qlcg_lp_opts();
             no.sides = 4; no.mat = LP_MAT_SOLID; no.cap = 0.0;
+            no.rot_y = (double)n * 0.5 + 0.2;
             qlcg_lp_cone(b, node, h * 0.018, h * 0.018, h * 0.018, 4, c->t->stem, &no);
             for (int l = 0; l < 2; l++) {
-                double la = angle + ((double)l ? 1.0 : -1.0) * 1.35;
+                double ph = (double)i * 2.13 + (double)n * 1.37 + (double)l * 0.79;
+                double la = angle + ((double)l ? 1.0 : -1.0) * 1.35 + 0.09 * sin(ph * 1.7);
                 double len = h * 0.32 * c->s->blade * c->p->blade_len;
                 blade(b, node, la, len, c->p->blade_width * c->s->blade,
-                      len * 0.55, len * (0.35 + 0.7 * c->s->droop),
+                      len * (0.55 + 0.06 * cos(ph * 1.3)),
+                      len * (0.35 + 0.7 * c->s->droop + 0.04 * sin(ph * 1.9)),
                       leaf_col(c, i * 4 + n * 2 + l, 5), c->t->rib, 2, LP_MAT_SOLID);
             }
         }
@@ -557,10 +705,10 @@ static void build_sedge(LpBuilder *b, const ShuiCtx *c) {
     if (c->season == PD_SEASON_AUTUMN) {
         for (int i = 0; i < 2; i++) {
             double angle = (double)i * 2.5 + 0.8;
-            double base[3] = { cos(angle) * sp * 0.24, 0.02, sin(angle) * sp * 0.24 };
+            double base[3] = { cos(angle) * sp * 0.24, 0.0, sin(angle) * sp * 0.24 };
             double len = h * 0.45;
             blade(b, base, angle, len, c->p->blade_width * 1.2,
-                  len * 0.40, len * 0.60, c->t->dry, NO_RIB, 2, LP_MAT_SOLID);
+                  len * 0.40, len * 0.32, c->t->dry, NO_RIB, 2, LP_MAT_SOLID);
         }
     }
 }
@@ -587,8 +735,10 @@ static void build_floating(LpBuilder *b, const ShuiCtx *c) {
             }
         }
         double at[3] = { 0.0, c->h * 0.52, 0.0 };
+        double stem_top[3] = { 0.0, at[1] + c->p->seed_size * 0.45, 0.0 };
+        petiole(b, stem_top, 0.0, c->t->dry, c->rng);
         LpOpts po = qlcg_lp_opts();
-        po.sides = 6; po.mat = LP_MAT_SOLID; po.cap = 0.0;
+        po.sides = 6; po.mat = LP_MAT_SOLID; po.cap = 1.0;
         qlcg_lp_cone(b, at, c->p->seed_size, c->p->seed_size, c->p->seed_size * 1.5, 6,
                      c->t->dry, &po);
         double top2[3] = { at[0], at[1] + c->p->seed_size * 1.5, at[2] };
@@ -625,6 +775,12 @@ static void build_floating(LpBuilder *b, const ShuiCtx *c) {
         return;
     }
     if (winter && pads > 3) pads = 3;
+    double hub_r = fmax(sp * 0.08, 0.022);
+    double hub_h = fmax(c->p->float_y * 0.55, 0.006);
+    double hub_c[3] = { 0.0, 0.0, 0.0 };
+    LpOpts oh = qlcg_lp_opts();
+    oh.sides = 7; oh.rings = 1; oh.floor_on = 0.0; oh.squash = 0.0; oh.mat = LP_MAT_SOLID;
+    qlcg_lp_dome(b, hub_c, hub_r, hub_h, hub_r, 7, c->t->stem, &oh);
     double pad_scale = 0.55 + 0.45 * c->s->density;
     double nominal = c->p->pad_radius * c->s->blade * pad_scale;
     int ring_count = pads - 1;
@@ -632,10 +788,12 @@ static void build_floating(LpBuilder *b, const ShuiCtx *c) {
     double spacing = ring_count > 1
         ? fmin(ring_radius, 2.0 * ring_radius * sin(PI / ring_count)) : ring_radius;
     for (int i = 0; i < pads; i++) {
-        double angle = i == 0 ? 0.0 : TAU * (i - 1) / ring_count + 0.4;
+        double angle = i == 0 ? 0.0 : TAU * (i - 1) / ring_count + 0.4 + 0.07 * (double)(i % 3);
         double rad = i == 0 ? 0.0 : ring_radius;
         double level = c->p->float_y;
         if (raised && i % 3 != 0) level += c->h * (0.42 + 0.17 * (i % 3));
+        else if (raised && i == 0) level += 0.014;
+        else level += 0.004 + 0.0024 * (double)((i * 5) % 13);
         double at[3] = { cos(angle) * rad, level, sin(angle) * rad };
         petiole(b, at, rad * 0.25, c->t->stem, c->rng);
         double r = nominal * (0.82 + 0.25 * qlcg_lp_rng_next(c->rng));
@@ -649,12 +807,14 @@ static void build_floating(LpBuilder *b, const ShuiCtx *c) {
             double angle = (double)i * 2.4 + 0.8;
             double at[3] = { cos(angle) * sp * 0.35, c->h * 0.62, sin(angle) * sp * 0.35 };
             petiole(b, at, 0.0, c->t->stem, c->rng);
-            qlcg_pa_flower_at(b, c->def, at, c->p->bloom_size, c->rng);
+            shui_flower_at(b, c->def, at, c->p->bloom_size, c->rng);
         }
         if (c->s->seed_head || c->s->fruit) {
             double at[3] = { 0.0, c->h * 0.55, 0.0 };
+            double stem_top[3] = { 0.0, at[1] + c->p->seed_size * 0.45, 0.0 };
+            petiole(b, stem_top, 0.0, c->t->stem, c->rng);
             LpOpts po = qlcg_lp_opts();
-            po.sides = 6; po.mat = LP_MAT_SOLID; po.cap = 0.0;
+            po.sides = 6; po.mat = LP_MAT_SOLID; po.cap = 1.0;
             qlcg_lp_cone(b, at, c->p->seed_size, c->p->seed_size, c->p->seed_size * 1.4, 6,
                          c->t->dry, &po);
             double top[3] = { at[0], at[1] + c->p->seed_size * 1.4, at[2] };
@@ -672,57 +832,78 @@ static void build_floating(LpBuilder *b, const ShuiCtx *c) {
             double angle = (double)i * GOLDEN + 0.6;
             double at[3] = { cos(angle) * sp * 0.45, c->p->float_y + c->h * 0.10,
                              sin(angle) * sp * 0.45 };
-            qlcg_pa_flower_at(b, c->def, at, c->p->bloom_size, c->rng);
+            petiole(b, at, 0.0, c->t->stem, c->rng);
+            shui_flower_at(b, c->def, at, c->p->bloom_size, c->rng);
         }
         if (c->s->bloom) {
             for (int i = 0; i < 2; i++) {
                 double angle = (double)i * 2.2 + 0.3;
                 double at[3] = { cos(angle) * sp * 0.30, c->p->float_y + c->h * 0.03,
                                  sin(angle) * sp * 0.30 };
+                double btop[3] = { at[0], at[1] + c->h * 0.04, at[2] };
+                petiole(b, btop, 0.0, c->t->stem, c->rng);
                 LpOpts o = qlcg_lp_opts();
-                o.sides = 4; o.mat = LP_MAT_SOLID; o.cap = 0.0;
+                o.sides = 4; o.mat = LP_MAT_SOLID; o.cap = 1.0;
                 qlcg_lp_cone(b, at, sp * 0.05, sp * 0.05, c->h * 0.18, 4, c->t->rib, &o);
             }
         }
     }
     for (int i = 0; i < c->s->sprout; i++) {
         double angle = (double)i * (TAU / (double)c->s->sprout) + 0.5;
-        double at[3] = { cos(angle) * sp * 0.20, c->p->float_y, sin(angle) * sp * 0.20 };
+        double at[3] = { cos(angle) * sp * 0.20,
+                         c->p->float_y + 0.003 * (double)(i + 1),
+                         sin(angle) * sp * 0.20 };
+        if (c->p->float_y > 0.005) {
+            double stop[3] = { at[0], at[1] + sp * 0.02, at[2] };
+            petiole(b, stop, 0.0, c->t->stem, c->rng);
+        }
         LpOpts o = qlcg_lp_opts();
-        o.sides = 4; o.rings = 0; o.squash = 0.5;
-        qlcg_lp_dome(b, at, sp * 0.10, sp * 0.05, sp * 0.10, 4, c->t->leaf, &o);
+        o.sides = 5; o.rings = 1; o.floor_on = 1.0; o.squash = 0.15;
+        o.rot_y = (double)i * 0.97 + 0.43;
+        qlcg_lp_dome(b, at, sp * 0.08, sp * (0.048 + 0.012 * (double)i),
+                     sp * 0.08, 5, c->t->leaf, &o);
     }
 }
 
 /* 凤眼蓝 */
 static void build_hyacinth(LpBuilder *b, const ShuiCtx *c) {
     double sp = c->sp;
+    double hub[3] = { 0.0, 0.0, 0.0 };
+    LpOpts ho = qlcg_lp_opts();
+    ho.floor_on = 1.0;
+    qlcg_lp_dome(b, hub, sp * 0.14, c->h * 0.08, sp * 0.14, 5, c->t->stem, &ho);
     int leaves = qlcg_pa_js_round((double)c->p->blades * c->s->density);
     if (leaves < 3) leaves = 3;
     for (int i = 0; i < leaves; i++) {
-        double angle = (double)i * GOLDEN;
-        double base[3] = { cos(angle) * sp * 0.08, 0.02, sin(angle) * sp * 0.08 };
-        double len = c->h * 0.30 * (0.85 + 0.25 * qlcg_lp_rng_next(c->rng));
-        double lift = (0.95 - 0.35 * c->s->droop) * c->p->arch;
+        double ph = (double)i * 2.31 + 0.73;
+        double ring = (double)i / (double)leaves;
+        double angle = (double)i * GOLDEN + 0.43;
+        double ro = sp * (0.035 + 0.050 * ring);
+        double hub_top = fmin(0.016, c->h * 0.060);
+        double base[3] = { cos(angle) * ro, hub_top * (0.20 + 0.80 * (1.0 - ring)),
+                           sin(angle) * ro };
+        double len = c->h * 0.30 * (1.04 - 0.16 * ring);
+        double lift = (1.50 - 0.56 * ring - 0.35 * c->s->droop) * c->p->arch;
+        double dv = 0.08 * fabs(cos(ph * 0.89));
         blade(b, base, angle, len, c->p->blade_width * c->s->blade,
-              len * lift, len * (0.15 + 0.45 * c->s->droop),
+              len * lift, len * (0.15 + 0.45 * c->s->droop + dv),
               leaf_col(c, i, 2), c->t->rib, 2, LP_MAT_SOLID);
     }
     for (int i = 0; i < 6; i++) {
         double angle = (double)i * (TAU / 6.0) + 0.3;
-        double at[3] = { cos(angle) * sp * 0.22, 0.05, sin(angle) * sp * 0.22 };
+        double at[3] = { cos(angle) * sp * 0.22, 0.034 + 0.005 * (double)(i % 3), sin(angle) * sp * 0.22 };
+        seg_rot(b, hub, at, sp * 0.030, 0.80, 5, (double)i * 0.67 + 0.31, 1, c->t->stem, LP_MAT_SOLID);
         double r[3] = { sp * 0.09, sp * 0.07, sp * 0.09 };
         LpOpts o = qlcg_lp_opts();
-        o.sides = 4; o.rings = 1; o.jitter = 0.15; o.rand = c->rng;
-        qlcg_lp_ico(b, at, r, 4, c->t->stem, &o);
+        o.sides = 5; o.rings = 1; o.rot_y = angle + (double)i * 0.43 + 0.21;
+        o.jitter = 0.15; o.rand = c->rng;
+        qlcg_lp_ico(b, at, r, 5, c->t->stem, &o);
     }
     if (c->s->bloom) {
         double base[3] = { 0.0, c->h * 0.18, 0.0 };
-        double crown[3] = { 0.0, 0.02, 0.0 };
+        double crown[3] = { 0.0, 0.0, 0.0 };
         double stem_radius = c->h * 0.012;
-        LpOpts crown_opts = qlcg_lp_opts();
-        qlcg_lp_dome(b, crown, sp * 0.12, c->h * 0.08, sp * 0.12, 5, c->t->stem, &crown_opts);
-        segment(b, crown, base, stem_radius, 1.0, 3, c->t->stem, LP_MAT_SOLID);
+        seg_rot(b, crown, base, stem_radius, 1.0, 4, 0.1, 1, c->t->stem, LP_MAT_SOLID);
         double tip[3];
         rachis(b, base, c->h * 0.62, 0.04, stem_radius, c->t->stem, LP_MAT_BLOOM, tip);
         for (int i = 0; i < 9; i++) {
@@ -748,14 +929,14 @@ static void build_seedling(LpBuilder *b, const ShuiCtx *c) {
     double h = c->h * 0.26;
     double sp = c->sp * 0.45;
     double root[3] = { 0.0, 0.0, 0.0 };
-    double crown[3] = { 0.0, h * 0.10, 0.0 };
-    segment(b, root, crown, h * 0.03, 0.7, 4, c->t->stem, LP_MAT_SOLID);
+    double crown[3] = { 0.0, h * 0.20, 0.0 };
+    seg_rot(b, root, crown, h * 0.03, 0.7, 4, 0.0, 2, c->t->stem, LP_MAT_SOLID);
     for (int i = 0; i < 4; i++) {
         double angle = (double)i * GOLDEN;
-        double base[3] = { 0.0, h * 0.10, 0.0 };
+        double base[3] = { 0.0, h * (0.05 + 0.025 * (double)i), 0.0 };
         double len = h * (0.55 + 0.15 * (double)(i % 2));
         blade(b, base, angle, len, c->p->blade_width * 0.8,
-              len * 0.70, len * 0.24, i % 2 ? c->t->leaf : c->t->dark, c->t->rib, 2, LP_MAT_SOLID);
+              len * (0.70 + 0.04 * (double)i), len * 0.24, i % 2 ? c->t->leaf : c->t->dark, c->t->rib, 2, LP_MAT_SOLID);
     }
     if (qlcg_pa_has_snow_target(c->def, "canopy")) {
         double at[3] = { 0.0, h * 0.50, 0.0 };
@@ -772,19 +953,21 @@ static void build_withered(LpBuilder *b, const ShuiCtx *c) {
     LpRgb stem = qlcg_pa_tone(c->def, "witheredStem", 1.0);
     double origin[3] = { 0.0, 0.0, 0.0 };
     LpOpts om = qlcg_lp_opts();
-    om.floor_on = 0.0; om.jitter = 0.2; om.rand = c->rng;
+    om.floor_on = 1.0; om.jitter = 0.2; om.rand = c->rng;
     qlcg_lp_dome(b, origin, sp * 0.32, h * 0.10, sp * 0.30, 5, stem, &om);
     int stems = 4 + qlcg_pa_js_round(c->p->culms * 0.4);
     if (stems > 8) stems = 8;
     for (int i = 0; i < stems; i++) {
         double angle = (double)i * GOLDEN + 0.2;
-        double base[3] = { cos(angle) * sp * 0.20, h * 0.04, sin(angle) * sp * 0.20 };
+        double base[3] = { cos(angle) * sp * 0.20, 0.0, sin(angle) * sp * 0.20 };
         double len = h * (0.25 + 0.30 * qlcg_lp_rng_next(c->rng));
         double tip[3] = { base[0] + cos(angle) * len * 0.20, base[1] + len,
                           base[2] + sin(angle) * len * 0.20 };
-        segment(b, base, tip, h * 0.010, 0.25, 3, (i % 2) ? stem : dry_dark, LP_MAT_SOLID);
+        seg_rot(b, base, tip, fmax(h * 0.010, 0.004), 0.30, 5, (double)i * 0.68, 2,
+                (i % 2) ? stem : dry_dark, LP_MAT_SOLID);
+        double anchor[3] = { tip[0], fmax(0.01, tip[1] - h * 0.015), tip[2] };
         double dl = len * 0.55;
-        blade(b, tip, angle, dl, sp * 0.03, dl * 0.15, dl * 0.85, dry, NO_RIB, 2, LP_MAT_SOLID);
+        blade(b, anchor, angle, dl, sp * 0.03, dl * 0.22, dl * 0.72, dry, NO_RIB, 2, LP_MAT_SOLID);
     }
 }
 
@@ -850,19 +1033,20 @@ void qlcg_pa_build_shui(LpBuilder *b, const PdDef *def, int season, int form,
         double mound[3] = { 0.0, 0.0, 0.0 };
         LpRgb mud = qlcg_lp_mix(t.dry, t.stem, 0.35);
         LpOpts om = qlcg_lp_opts();
-        om.floor_on = 0.0; om.jitter = 0.16; om.rand = &rng;
+        om.floor_on = 1.0; om.jitter = 0.16; om.rand = &rng;
         qlcg_lp_dome(b, mound, spread, c.h * 0.46, spread * 0.9, 6, mud, &om);
         for (int i = 0; i < 5; i++) {
             double angle = (double)i * (TAU / 5.0) + 0.3;
             double len = c.h * (0.45 + 0.26 * qlcg_lp_rng_next(&rng));
-            double base[3] = { cos(angle) * spread * 0.45, c.h * 0.02, sin(angle) * spread * 0.45 };
+            double base[3] = { cos(angle) * spread * 0.45, 0.0, sin(angle) * spread * 0.45 };
             double tip[3] = { base[0] + cos(angle) * len * 0.35, base[1] + len,
                               base[2] + sin(angle) * len * 0.35 };
-            segment(b, base, tip, c.h * 0.008, 0.25, 3, t.dry, LP_MAT_SOLID);
+            seg_rot(b, base, tip, fmax(c.h * 0.008, 0.004), 0.25, 4, angle, 1,
+                    t.dry, LP_MAT_SOLID);
         }
         for (int i = 0; i < 3; i++) {
             double angle = (double)i * 2.4 + 0.7;
-            double base[3] = { cos(angle) * spread * 0.6, c.h * 0.02, sin(angle) * spread * 0.6 };
+            double base[3] = { cos(angle) * spread * 0.6, 0.0, sin(angle) * spread * 0.6 };
             double len = c.h * 0.32;
             blade(b, base, angle, len, c.p->blade_width * 1.4,
                   len * 0.20, len * 0.85, t.dry, NO_RIB, 2, LP_MAT_SOLID);

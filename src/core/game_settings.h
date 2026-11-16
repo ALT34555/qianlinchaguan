@@ -63,7 +63,7 @@ typedef struct {
     char              font_id[96];
 
     /* 追加项；旧存档读不到则取默认 */
-    bool              mirror_reflections;  /* base 中为「即将支持」的禁用项 */
+    bool              mirror_reflections;
     char              resolution[16];      /* "auto" 或 "1280x720" */
     char              locale[32];          /* 界面语言代码，如 "zh-CN" / "en" / "ja" */
 
@@ -81,10 +81,18 @@ typedef struct {
     /* 视角反转：鼠标与手柄共用，追加在最末以兼容旧档案 */
     bool              invert_look_x;
     bool              invert_look_y;
+    bool              water_mist;
+    int               scroll_palette;
+    float             scroll_pigment;
+    float             scroll_ink;
+    float             scroll_line_width;
+    bool              enhanced_lighting;
+    bool              scroll_style;
 } GameSettings;
 
 #define QLCG_BINDS_MAGIC 0xB1AD0001u
-#define QLCG_SETTINGS_MAGIC    "QLCGSTG7"
+#define QLCG_SETTINGS_MAGIC    "QLCGSTG8"
+#define QLCG_SETTINGS_MAGIC_V7 "QLCGSTG7"
 #define QLCG_SETTINGS_MAGIC_V6 "QLCGSTG6"
 #define QLCG_SETTINGS_MAGIC_V5 "QLCGSTG5"
 #define QLCG_SETTINGS_MAGIC_V4 "QLCGSTG4"

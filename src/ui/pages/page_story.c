@@ -95,7 +95,7 @@ static int paginate(const float *heights, int n, float avail, float gap,
     return page;
 }
 
-/* 单行槽：返回是否点了读取 */
+/* 单行槽：返回是否点了进入 */
 static bool draw_slot_row(UiContext *ui, const SaveFileInfo *f, int slot,
                           float x, float y, float w, float row_h, float font_px) {
     float z  = ui->met.size;
@@ -113,7 +113,8 @@ static bool draw_slot_row(UiContext *ui, const SaveFileInfo *f, int slot,
         app_slot_kind_label(slot, kind, sizeof(kind));
         title = kind;
     } else if (!m) {
-        title = "-";
+        app_slot_kind_label(slot, kind, sizeof(kind));
+        title = kind;
     } else {
         title = qlcg_save_slot_display_name(m);
         if (!title[0]) title = f->world_name;
@@ -134,8 +135,7 @@ static bool draw_slot_row(UiContext *ui, const SaveFileInfo *f, int slot,
 
     float tx = x + 10.0f * z;
     const char *tag = newest && m ? tr("saves.latest") : "";
-    const char *detail = m ? m->saved_at_str :
-        (slot == SAVE_SLOT_QUICK || slot == SAVE_SLOT_AUTO ? tr("saves.slotEmpty") : "");
+    const char *detail = m ? m->saved_at_str : tr("saves.slotEmpty");
     float tag_px = 9.5f * sc;
     float detail_px = 10.0f * sc;
     float tag_w = *tag ? ui_text_width_px(ui, UI_FACE_BODY, tag_px, false, tag) + 10.0f * z : 0.0f;

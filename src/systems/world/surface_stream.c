@@ -11,8 +11,21 @@ int qlcg_stream_slot(int cx, int cz) {
     return z * QLCG_STREAM_SIDE + x;
 }
 
+static float load_forward[2],load_cos;
+static bool load_view;
+static int offset_tier(const int *p) {
+    int distance=p[0]*p[0]+p[1]*p[1];if(distance<=2||!load_view)return 0;
+    float facing=p[0]*load_forward[0]+p[1]*load_forward[1];
+    return facing+1.5f>=sqrtf((float)distance)*load_cos?1:2;
+}
+void qlcg_region_stream_view(RegionStream *st,float yaw,float half_fov) {
+    if(!st->view_ready||cosf(yaw-st->view_yaw)<.866f||fabsf(cosf(half_fov)-st->view_cos)>.05f) {
+        st->view_yaw=yaw;st->view_cos=cosf(half_fov);st->view_ready=true;st->priority_dirty=true;
+    }
+}
 static int offset_cmp(const void *a, const void *b) {
     const int *p = a, *q = b;
+    int tier=offset_tier(p)-offset_tier(q);if(tier)return tier;
     int d = p[0]*p[0] + p[1]*p[1] - q[0]*q[0] - q[1]*q[1];
     if (d) return d;
     return p[1] != q[1] ? p[1] - q[1] : p[0] - q[0];
@@ -34,6 +47,7 @@ static bool ensure_chunk(RegionStream *st, int cx, int cz) {
     int slot = qlcg_stream_slot(cx, cz);
     RegionChunkSlot *c = &st->slots[slot];
     if (c->data && c->data->center_cx == cx && c->data->center_cz == cz) return true;
+    if(st->job&&st->job_cx==cx&&st->job_cz==cz){qlcg_chunk_build_cancel(st->job);st->job=NULL;}
     release_slot(st, slot);
     c->data = qlcg_chunk_sample(st->world, cx, cz, st->season, &st->settings);
     if (!c->data) return false;
@@ -100,7 +114,12 @@ void qlcg_region_stream_update(RegionData *reg, float lx, float lz,
             st->offsets[st->offset_count][0] = x;
             st->offsets[st->offset_count++][1] = z;
         }
-        qsort(st->offsets, st->offset_count, sizeof(st->offsets[0]), offset_cmp);
+
+    }
+    if(radius_changed||moved||st->priority_dirty) {
+        load_view=st->view_ready;load_forward[0]=sinf(st->view_yaw);load_forward[1]=-cosf(st->view_yaw);load_cos=st->view_cos;
+        qsort(st->offsets,st->offset_count,sizeof(st->offsets[0]),offset_cmp);
+        st->cursor=0;qlcg_chunk_build_cancel(st->job);st->job=NULL;st->priority_dirty=false;
     }
     st->season = season;
     st->settings = *s;
@@ -125,15 +144,28 @@ void qlcg_region_stream_update(RegionData *reg, float lx, float lz,
     }
     /* 脚下与相邻区块优先保证 */
     for (int z = -1; z <= 1; z++) for (int x = -1; x <= 1; x++) ensure_chunk(st, cx+x, cz+z);
+    if(st->job&&(!qlcg_chunk_build_valid(st->job,st->world,season,s)||moved||radius_changed)) {
+        qlcg_chunk_build_cancel(st->job);st->job=NULL;
+    }
     int built = 0;
     while (st->cursor < st->offset_count) {
         int x = cx + st->offsets[st->cursor][0], z = cz + st->offsets[st->cursor][1];
         RegionData *c = st->slots[qlcg_stream_slot(x, z)].data;
         if (c && c->center_cx == x && c->center_cz == z) { st->cursor++; continue; }
-        if (built >= 8 || (built > 0 && qlcg_time_ms() - t0 >= budget_ms)) break;
-        if (!ensure_chunk(st, x, z)) break;
-        built++;
-        st->cursor++;
+        if (built >= 8 || qlcg_time_ms()-t0>=budget_ms) break;
+        if(!st->job){st->job=qlcg_chunk_build_begin(st->world,x,z,season,s);st->job_cx=x;st->job_cz=z;}
+        if(!st->job)break;
+        double operation=qlcg_time_ms();
+        bool complete=qlcg_chunk_build_step(st->job);
+        st->overrun_ms=fmax(st->overrun_ms,fmax(0,qlcg_time_ms()-t0-budget_ms));
+        (void)operation;
+        if(complete) {
+            RegionData *data=qlcg_chunk_build_take(st->job);st->job=NULL;
+            int slot=qlcg_stream_slot(x,z);release_slot(st,slot);
+            RegionChunkSlot *target=&st->slots[slot];target->data=data;target->serial=++st->next_serial;
+            target->active_index=st->count;st->active[st->count++]=slot;
+            st->loaded_total++;st->revision++;built++;st->cursor++;
+        }
     }
     RegionData *here = st->slots[qlcg_stream_slot(cx, cz)].data;
     if (here) {
@@ -169,6 +201,14 @@ RegionData *qlcg_region_sample(const MacroWorld *w, int cx, int cz,
 
 void qlcg_region_stream_free(RegionStream *st) {
     if (!st) return;
+    qlcg_chunk_build_cancel(st->job);st->job=NULL;
     while (st->count > 0) release_slot(st, st->active[st->count-1]);
     free(st);
+}
+
+void qlcg_region_stream_require(RegionData *reg,float x,float z) {
+    if(!reg||!reg->stream)return;
+    int cx=reg->center_cx+(int)floorf((x+CHUNK_SIZE*.5f)/CHUNK_SIZE);
+    int cz=reg->center_cz+(int)floorf((z+CHUNK_SIZE*.5f)/CHUNK_SIZE);
+    for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++)ensure_chunk(reg->stream,cx+dx,cz+dz);
 }

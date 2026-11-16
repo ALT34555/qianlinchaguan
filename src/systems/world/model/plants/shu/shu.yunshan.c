@@ -41,15 +41,16 @@ static void build_simple(LpBuilder *b, const PdDef *def, int season) {
 
     /* 树干基段 */
     double c1[3] = { 0, 0, 0 };
-    qlcg_lp_prism(b, c1, h * 0.035, h * 0.035, 0, h * 0.22, 5, bark, NULL);
+    LpOpts oc1 = qlcg_lp_opts(); oc1.radius_ratio = 0.25;
+    qlcg_lp_cone(b, c1, h * 0.036, h * 0.036, h * 0.72, 5, bark, &oc1);
 
     /* 三段阶梯宝塔锥层 */
     for (int i = 0; i < 3; i++) {
-        double y = h * (0.18 + (double)i * 0.24);
-        double cr = r * (1.0 - (double)i * 0.26);
+        double y = h * (0.18 + (double)i * 0.22);
+        double cr = r * (1.0 - (double)i * 0.25);
         double c2[3] = { 0, y, 0 };
-        LpOpts oc = qlcg_lp_opts(); oc.cap = 1; oc.radius_ratio = (i == 2) ? 0.05 : 0.22;
-        qlcg_lp_cone(b, c2, cr, cr, h * 0.32, 6, (i % 2) ? leaf : dark, &oc);
+        LpOpts oc = qlcg_lp_opts(); oc.cap = 1; oc.radius_ratio = (i == 2) ? 0.0 : 0.22;
+        qlcg_lp_cone(b, c2, cr, cr, h * 0.30, 6, (i % 2) ? leaf : dark, &oc);
     }
 
     /* 雪片挂点 */
@@ -84,15 +85,38 @@ static void build_adult(LpBuilder *b, const PdDef *def, int season) {
     int sides = qlcg_pa_js_round(qlcg_pa_clampd(qlcg_pa_pnum(def, "sides", 6.0), 5.0, 8.0));
     double jitter = qlcg_pa_pnum(def, "jitter", 0.12);
 
-    /* 笔直通顶树干与膨大根颈 */
-    double p0[3] = { 0, 0, 0 };
-    LpOpts ot = qlcg_lp_opts();
-    ot.jitter = jitter * 0.3; ot.rand = rand; ot.cap = 0;
-    qlcg_lp_prism(b, p0, trunk_r * 1.35, trunk_r * 1.35, 0, trunk * 0.4, sides, bark, &ot);
-    double p1[3] = { 0, trunk * 0.36, 0 };
-    qlcg_lp_prism(b, p1, trunk_r, trunk_r, 0, span * 0.8, sides, bark, &ot);
+    /* 锥化主干及顶梢 */
+    double last_y = trunk + step * (double)layers * 0.88;
+    double last_r = (base_radius * pow(0.24, 1.08) + 0.12) * growth.size;
+    double last_lh = (step * 1.32) * (0.75 + 0.25 * growth.density);
+    double last_base = last_y - last_lh * 0.16;
+    double last_ch = last_lh * 0.86;
+    double top_y = last_base + last_ch * 0.85;
+    double st_h = fmax(step * 0.9, trunk + span * 1.05 - top_y);
 
-    /* 逐层生成轮生下垂宝塔层 */
+    double p0[3] = { 0, 0, 0 };
+    LpOpts ot0 = qlcg_lp_opts();
+    ot0.jitter = jitter * 0.3; ot0.rand = rand; ot0.radius_ratio = 0.74;
+    qlcg_lp_cone(b, p0, trunk_r * 1.35, trunk_r * 1.35, trunk * 0.42, sides, bark, &ot0);
+
+    double mid_top = trunk + step * 0.85;
+    double p1[3] = { 0, trunk * 0.35, 0 };
+    LpOpts ot1 = qlcg_lp_opts();
+    ot1.jitter = jitter * 0.25; ot1.rand = rand; ot1.radius_ratio = 0.54;
+    qlcg_lp_cone(b, p1, trunk_r * 0.92, trunk_r * 0.92, mid_top - p1[1], sides, bark, &ot1);
+
+    double p2_y = trunk + step * 0.65;
+    double p2_r = fmin(trunk_r * 0.48, base_radius * 0.24);
+    double p2_top_r = fmax(0.012, fmin(p2_r * 0.18, last_r * 0.05));
+    double p2[3] = { 0, p2_y, 0 };
+    LpOpts ot2 = qlcg_lp_opts();
+    ot2.jitter = jitter * 0.15; ot2.rand = rand; ot2.radius_ratio = p2_top_r / p2_r;
+    qlcg_lp_cone(b, p2, p2_r, p2_r, top_y + st_h * 0.25 - p2_y, sides, bark, &ot2);
+
+    /* 逐层生成轮生宝塔层 */
+    double lr_arr[16] = { 0 };
+    double ly_arr[16] = { 0 };
+    double lh_arr[16] = { 0 };
     for (int i = 1; i <= layers; i++) {
         double t = (double)i / (double)layers;
         double y = trunk + step * (double)i * 0.88;
@@ -101,29 +125,25 @@ static void build_adult(LpBuilder *b, const PdDef *def, int season) {
         double rot = (double)i * 0.52 + (double)def->build_seed * 0.01;
         LpRgb c = qlcg_pa_deepen((i % 2 == 0) ? fol : dark, (1.0 - t) * 0.35);
 
-        /* 上表面平展微倾伞台 */
-        double pc[3] = { 0, y, 0 };
+        /* 叠合冠层主锥 */
+        double y_base = y - lh * 0.16;
+        double cone_h = lh * 0.86;
+        double pc[3] = { 0, y_base, 0 };
         LpOpts oc = qlcg_lp_opts();
         oc.rot_y = rot; oc.jitter = jitter; oc.rand = rand;
-        oc.radius_ratio = (i == layers) ? 0.05 : 0.18;
-        qlcg_lp_cone(b, pc, r, r, lh * 0.62, sides, c, &oc);
+        oc.radius_ratio = 0.22;
+        qlcg_lp_cone(b, pc, r, r, cone_h, sides, c, &oc);
+        if (i <= 16) { lr_arr[i - 1] = r; ly_arr[i - 1] = y_base; lh_arr[i - 1] = cone_h; }
 
-        /* 下层倒锥收敛下垂裙边 */
-        double ps[3] = { 0, y - lh * 0.28, 0 };
-        LpOpts os = qlcg_lp_opts();
-        os.rot_y = rot; os.jitter = jitter * 0.5; os.rand = rand;
-        os.radius_ratio = 1.0;
-        qlcg_lp_cone(b, ps, r * 0.62, r * 0.62, lh * 0.28, sides, dark, &os);
-
-        /* 边缘下垂微翘小枝羽片 */
+        /* 边缘嵌入式下垂羽片 */
         if (i <= layers - 1) {
             int skirts = sides;
             for (int k = 0; k < skirts; k++) {
                 double a = rot + ((double)k / (double)skirts) * TAU;
-                double pos[3] = { cos(a) * r * 0.94, y + lh * 0.04, sin(a) * r * 0.94 };
+                double pos[3] = { cos(a) * r * 0.48, y_base + cone_h * 0.28, sin(a) * r * 0.48 };
                 LpOpts op = qlcg_lp_opts();
-                op.pitch = -0.32; op.cup = 0.28; op.rand = rand;
-                qlcg_lp_petal(b, pos, a, r * 0.38, r * 0.22, c, &op);
+                op.pitch = -0.05; op.cup = 0.28; op.rand = rand;
+                qlcg_lp_petal(b, pos, a, r * 0.68, r * 0.22, c, &op);
             }
         }
 
@@ -135,40 +155,79 @@ static void build_adult(LpBuilder *b, const PdDef *def, int season) {
     }
 
     /* 尖耸挺直宝塔尖梢 */
-    double top_y = trunk + span * 0.92;
     double st[3] = { 0, top_y, 0 };
     LpOpts osp = qlcg_lp_opts();
-    osp.jitter = 0.05; osp.rand = rand;
-    qlcg_lp_cone(b, st, base_radius * 0.1, base_radius * 0.1, span * 0.14, 4, fol, &osp);
+    osp.jitter = 0.05; osp.rand = rand; osp.cap = 1.0; osp.radius_ratio = 0.0;
+    qlcg_lp_cone(b, st, last_r * 0.42, last_r * 0.42, st_h, 5, fol, &osp);
 
     /* 雪片挂点 */
     if (qlcg_pa_has_snow_target(def, "top")) {
-        double sc[3] = { 0, top_y + span * 0.06, 0 };
+        double sc[3] = { 0, top_y + st_h * 0.45, 0 };
         qlcg_lp_socket(b, sc, LP_SOCKET_SNOW_CANOPY);
     }
 
     /* 结实期下垂球果 */
     if (def->fruit) {
         int fc = qlcg_pa_fruit_count_for(def, 6, 8);
-        LpRgb cone_col = qlcg_pa_tone(def, "barkDark", 1.0);
+        LpRgb cone_col = qlcg_pa_deepen(qlcg_pa_tone(def, "barkWarm", 1.0), 0.25);
+        int cap_n = layers < 16 ? layers : 16;
         for (int k = 0; k < fc; k++) {
+            int li = k % (cap_n > 1 ? cap_n - 1 : 1);
+            double frac = 0.20 + qlcg_lp_rng_next(rand) * 0.28;
+            double r_slope = lr_arr[li] * (1.0 - frac * 0.78);
             double a = (double)k * GOLDEN + qlcg_lp_rng_next(rand);
-            double tr = base_radius * 0.55 * (0.8 + qlcg_lp_rng_next(rand) * 0.3);
-            double fy = trunk + span * (0.35 + qlcg_lp_rng_next(rand) * 0.35);
-            double fp[3] = { cos(a) * tr, fy, sin(a) * tr };
+            double fy = ly_arr[li] + lh_arr[li] * frac;
+            double ftw_s[3] = { cos(a) * r_slope * 0.36, fy, sin(a) * r_slope * 0.36 };
+            double ftw_dir[3] = { cos(a), -0.05, sin(a) };
+            double ftw_len = r_slope * 0.76;
+            double fp[3] = {
+                ftw_s[0] + ftw_dir[0] * ftw_len,
+                ftw_s[1] + ftw_dir[1] * ftw_len,
+                ftw_s[2] + ftw_dir[2] * ftw_len
+            };
             qlcg_lp_socket(b, fp, LP_SOCKET_FRUIT);
             if (def->state == PD_STATE_FRUITING) {
+                LpOpts ol = qlcg_lp_opts();
+                ol.sides = 3; ol.tip_ratio = 0.65; ol.cap = 1.0;
+                qlcg_lp_limb(b, ftw_s, ftw_dir, ftw_len, 0.024, cone_col, &ol);
                 double sz[3] = { 0.12, 0.22, 0.12 };
                 LpOpts of = qlcg_lp_opts();
                 of.mat = LP_MAT_FRUIT; of.rand = rand;
+                of.rot_y = a + (double)k * 0.6;
                 qlcg_lp_box(b, fp, sz, cone_col, &of);
             }
         }
     }
 
-    /* 开花期花粉飘散 */
+    /* 开花期冠面雄球花 */
     int pollen = qlcg_pa_bloom_count_for(def, 0, 16);
-    if (pollen > 0) qlcg_pa_pollen_grains(b, def, pollen, base_radius, trunk, top_y, rand);
+    if (pollen > 0) {
+        LpRgb pcol = qlcg_pa_tone(def, "pollen", 1.0);
+        LpRgb twig_c = qlcg_pa_deepen(fol, 0.2);
+        int cap_n = layers < 16 ? layers : 16;
+        for (int k = 0; k < pollen; k++) {
+            int li = k % (cap_n > 1 ? cap_n - 1 : 1);
+            double frac = 0.25 + qlcg_lp_rng_next(rand) * 0.35;
+            double r_slope = lr_arr[li] * (1.0 - frac * 0.78);
+            double a = (double)k * GOLDEN + 0.37;
+            double py = ly_arr[li] + lh_arr[li] * frac;
+            double ptw_s[3] = { cos(a) * r_slope * 0.36, py, sin(a) * r_slope * 0.36 };
+            double ptw_dir[3] = { cos(a), 0.12, sin(a) };
+            double ptw_len = r_slope * 0.76;
+            double gp[3] = {
+                ptw_s[0] + ptw_dir[0] * ptw_len,
+                ptw_s[1] + ptw_dir[1] * ptw_len,
+                ptw_s[2] + ptw_dir[2] * ptw_len
+            };
+            LpOpts ol = qlcg_lp_opts();
+            ol.sides = 3; ol.tip_ratio = 0.65; ol.cap = 1.0;
+            qlcg_lp_limb(b, ptw_s, ptw_dir, ptw_len, 0.020, twig_c, &ol);
+            double sz[3] = { 0.08, 0.10, 0.08 };
+            LpOpts op = qlcg_lp_opts();
+            op.mat = LP_MAT_BLOOM; op.rand = rand;
+            qlcg_lp_ico(b, gp, sz, 3, pcol, &op);
+        }
+    }
 }
 
 /* 幼苗期双生针叶雏形 */
@@ -194,17 +253,13 @@ static void build_seedling(LpBuilder *b, const PdDef *def) {
     double stem_r = fmax(0.012, height * 0.05);
     double p0[3] = { 0, 0, 0 };
     LpOpts o0 = qlcg_lp_opts();
-    o0.rand = rand; o0.jitter = 0.1; o0.cap = 0;
-    qlcg_lp_prism(b, p0, stem_r * 1.3, stem_r * 1.3, 0, trunk * 0.5, 4, stem, &o0);
-    double p1[3] = { 0, trunk * 0.46, 0 };
-    LpOpts o1 = qlcg_lp_opts();
-    o1.rand = rand; o1.jitter = 0.12; o1.cap = 0;
-    qlcg_lp_prism(b, p1, stem_r, stem_r, 0, trunk * 0.56, 4, stem, &o1);
+    o0.rand = rand; o0.jitter = 0.1; o0.radius_ratio = 0.34;
+    qlcg_lp_cone(b, p0, stem_r * 1.25, stem_r * 1.25, trunk + leaf_r * 0.22, 4, stem, &o0);
 
     /* 初生子叶羽片 */
     for (int i = 0; i < 2; i++) {
         double a = (double)i * PI + qlcg_lp_rng_next(rand) * 0.5;
-        double pos[3] = { cos(a) * leaf_r * 0.3, trunk * 0.5, sin(a) * leaf_r * 0.3 };
+        double pos[3] = { cos(a) * stem_r * 0.45, trunk * 0.52, sin(a) * stem_r * 0.45 };
         double plen = leaf_r * (0.95 + qlcg_lp_rng_next(rand) * 0.3);
         LpOpts o = qlcg_lp_opts();
         o.pitch = -0.06 + qlcg_lp_rng_next(rand) * 0.2; o.cup = 0.35; o.rand = rand;
@@ -213,14 +268,14 @@ static void build_seedling(LpBuilder *b, const PdDef *def) {
     for (int i = 0; i < 4; i++) {
         double a = (double)i * GOLDEN + (double)def->build_seed * 0.0017 + qlcg_lp_rng_next(rand) * 0.4;
         double len = leaf_r * (0.7 + qlcg_lp_rng_next(rand) * 0.4);
-        double pos[3] = { cos(a) * leaf_r * 0.22, trunk * (0.62 + (double)i * 0.06), sin(a) * leaf_r * 0.22 };
+        double pos[3] = { cos(a) * stem_r * 0.40, trunk * (0.62 + (double)i * 0.06), sin(a) * stem_r * 0.40 };
         LpOpts o = qlcg_lp_opts();
         o.pitch = 0.12 + qlcg_lp_rng_next(rand) * 0.3; o.cup = 0.4; o.rand = rand;
         qlcg_lp_petal(b, pos, a, len, len * 0.52, (i % 2) ? fol : fol_dark, &o);
     }
-    double dc[3] = { 0, trunk + leaf_r * 0.3, 0 };
+    double dc[3] = { 0, trunk + leaf_r * 0.24, 0 };
     LpOpts od = qlcg_lp_opts();
-    od.jitter = 0.22; od.rand = rand;
+    od.jitter = 0.18; od.rand = rand; od.floor_on = 1.0; od.squash = 0.45;
     qlcg_lp_dome(b, dc, leaf_r * 0.5, leaf_r * 0.62, leaf_r * 0.5, 5, fol_dark, &od);
 
     /* 顶芽微聚 */
@@ -230,7 +285,7 @@ static void build_seedling(LpBuilder *b, const PdDef *def) {
     for (int i = 0; i < buds; i++) {
         double a = (double)i * GOLDEN + qlcg_lp_rng_next(rand);
         double len = leaf_r * (0.55 + qlcg_lp_rng_next(rand) * 0.35);
-        double pos[3] = { 0, trunk + leaf_r * (0.42 + qlcg_lp_rng_next(rand) * 0.2), 0 };
+        double pos[3] = { 0, trunk + leaf_r * (0.34 + qlcg_lp_rng_next(rand) * 0.18), 0 };
         LpOpts o = qlcg_lp_opts();
         o.pitch = 0.45 + qlcg_lp_rng_next(rand) * 0.3; o.cup = 0.42; o.rand = rand;
         qlcg_lp_petal(b, pos, a, len, len * 0.55, (i % 2) ? fol : fol_dark, &o);
@@ -262,44 +317,57 @@ static void build_withered(LpBuilder *b, const PdDef *def) {
     /* 枯立主干基部 */
     double p0[3] = { 0, 0, 0 };
     LpOpts o0 = qlcg_lp_opts();
-    o0.jitter = jitter * 0.5; o0.rand = rand; o0.cap = 0;
-    qlcg_lp_prism(b, p0, trunk_r * 1.4, trunk_r * 1.4, 0, trunk * 0.3, sides, wood, &o0);
-    double p1[3] = { 0, trunk * 0.22, 0 };
+    o0.jitter = jitter * 0.4; o0.rand = rand; o0.radius_ratio = 0.72;
+    qlcg_lp_cone(b, p0, trunk_r * 1.4, trunk_r * 1.4, trunk * 0.34, sides, wood, &o0);
+    double p1[3] = { 0, trunk * 0.26, 0 };
     LpOpts o1 = qlcg_lp_opts();
-    o1.jitter = jitter; o1.rand = rand; o1.cap = 0;
-    qlcg_lp_prism(b, p1, trunk_r * 1.05, trunk_r * 1.05, 0, trunk * 0.62, sides, stem, &o1);
+    o1.jitter = jitter * 0.5; o1.rand = rand; o1.radius_ratio = 0.38;
+    qlcg_lp_cone(b, p1, trunk_r * 0.96, trunk_r * 0.96, trunk * 0.68, sides, stem, &o1);
 
     /* 枯瘦分叉横枝 */
+    double tips[4][3];
     for (int i = 0; i < limbs; i++) {
         double a = ((double)i / (double)limbs) * TAU + qlcg_lp_rng_next(rand) * 0.8;
         double up = 0.15 + qlcg_lp_rng_next(rand) * 0.45;
         double dir[3] = { cos(a) * cos(up), sin(up), sin(a) * cos(up) };
-        double y = trunk * (0.3 + qlcg_lp_rng_next(rand) * 0.5);
+        double dlen = sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
+        double y = trunk * (0.34 + qlcg_lp_rng_next(rand) * 0.45);
         double len = height * (0.2 + qlcg_lp_rng_next(rand) * 0.2);
         double start[3] = { 0, y, 0 };
         double rad = trunk_r * 0.35;
-        double tip[3];
-        qlcg_pa_limb_to(b, start, dir, len, rad, stem, tip);
+        LpOpts ol = qlcg_lp_opts(); ol.sides = 4; ol.tip_ratio = 0.42; ol.cap = 1.0;
+        qlcg_lp_limb(b, start, dir, len, rad, stem, &ol);
+        double tip[3] = {
+            start[0] + dir[0] / dlen * len,
+            start[1] + dir[1] / dlen * len,
+            start[2] + dir[2] / dlen * len
+        };
+        tips[i][0] = tip[0]; tips[i][1] = tip[1]; tips[i][2] = tip[2];
         if (qlcg_lp_rng_next(rand) < 0.65) {
             double a2 = a + (qlcg_lp_rng_next(rand) - 0.5) * 1.2;
             double up2 = up * 0.6 - 0.1;
             double dir2[3] = { cos(a2) * cos(up2), sin(up2), sin(a2) * cos(up2) };
             double len2 = len * 0.4;
-            qlcg_pa_limb_to(b, tip, dir2, len2, trunk_r * 0.2, wood, NULL);
+            double s2[3] = {
+                tip[0] - dir[0] / dlen * rad * 0.6,
+                tip[1] - dir[1] / dlen * rad * 0.6,
+                tip[2] - dir[2] / dlen * rad * 0.6
+            };
+            LpOpts ol2 = qlcg_lp_opts(); ol2.sides = 3; ol2.tip_ratio = 0.40; ol2.cap = 1.0;
+            qlcg_lp_limb(b, s2, dir2, len2, trunk_r * 0.2, wood, &ol2);
         }
     }
 
     /* 零星残存枯针叶簇 */
     for (int i = 0; i < 3; i++) {
+        int li = i % limbs;
         double a = (double)i * GOLDEN + (double)def->build_seed * 0.0017;
-        double rad = fmin(height * 0.15, trunk_r * 3.0);
         double len = fmin(height * 0.08, 0.45);
-        double pos[3] = { cos(a) * rad, trunk * (0.6 + qlcg_lp_rng_next(rand) * 0.4), sin(a) * rad };
         double bearing = a + (qlcg_lp_rng_next(rand) - 0.5) * 0.8;
         LpRgb col = qlcg_pa_deepen(dry_leaf, qlcg_lp_rng_next(rand) * 0.3);
         LpOpts o = qlcg_lp_opts();
         o.pitch = -0.25; o.cup = 0.5; o.rand = rand;
-        qlcg_lp_petal(b, pos, bearing, len, len * 0.5, col, &o);
+        qlcg_lp_petal(b, tips[li], bearing, len, len * 0.5, col, &o);
     }
 }
 

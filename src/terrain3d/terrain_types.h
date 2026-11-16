@@ -1,11 +1,13 @@
 /* 山川网格顶点格式 */
 #ifndef QLCG_TERRAIN_TYPES_H
 #define QLCG_TERRAIN_TYPES_H
+#include <stdint.h>
 
 typedef struct {
     float x, y, z;      /* 相对宏观格锚点 */
     float nx, ny, nz;
     float r, g, b;
+    uint8_t paint[4];   /* 草、沙、岩、盐权重 */
 } TerrainVert;
 
 typedef struct {
@@ -16,8 +18,9 @@ typedef struct {
     float ice_h;            /* 冰厚 m */
     float ice_q;            /* 冰质 0..1 */
     float ice_cover;        /* 覆盖 0..1 */
-    float brine, spring;
+    float brine, spring, source_material, source_foam;
     float coast_mud,coast_sand,coast_rock;
+    float sea,still,river,sediment;
 } WaterVert;
 
 typedef struct {

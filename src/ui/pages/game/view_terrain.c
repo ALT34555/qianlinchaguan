@@ -1,12 +1,17 @@
 /* 游戏内山川视图：3D 场景与自然工程点选 */
 #include "app/app_state.h"
+#include "terrain3d/terrain_metrics.h"
 
 void game_view_terrain(UiContext *ui) {
+    qlcg_terrain_prepare_frame(&g_app.terrain,g_app.region,&g_app.settings);
     /* 3D 山川场景渲染与交互 */
     ui_flush(ui);
     /* 场景抗锯齿与分辨率缩放 */
+    qlcg_metrics.samples=0;
     bool offscreen = g_app.region && app_lowres_begin(ui->win_w, ui->win_h);
+    GLint viewport[4];glGetIntegerv(GL_VIEWPORT,viewport);qlcg_metrics.width=viewport[2];qlcg_metrics.height=viewport[3];
     g_app.terrain.msaa_active = offscreen && app_lowres_msaa();
+    if(g_app.terrain.msaa_active)qlcg_metrics.samples=qlcg_gl_caps.max_samples>=4?4:2;
     qlcg_terrain_render(&g_app.terrain, g_app.region, g_app.world, &g_app.clock,
                         g_app.snap.utc_offset_min, &g_app.settings, ui->win_w, ui->win_h);
     if (offscreen) {

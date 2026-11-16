@@ -1,6 +1,7 @@
 /* 场景分辨率与多重采样抗锯齿 */
 #include "app/app_state.h"
 #include "../terrain3d/gl_loader.h"
+#include "../terrain3d/terrain_visual.h"
 
 static GLuint s_fbo   = 0;
 static GLuint s_tex   = 0;
@@ -36,20 +37,22 @@ void app_resolution_size(int win_w, int win_h, int *out_w, int *out_h) {
     *out_h = h;
 }
 
-static int requested_samples(void) {
+static int requested_samples(int width,int height) {
     if (!g_app.settings.antialias) return 0;
 #ifdef _WIN32
     if(!glRenderbufferStorageMultisample) return 0;
 #endif
     int s_max_samples=qlcg_gl_caps.max_samples;
-    return s_max_samples >= 4 ? 4 : (s_max_samples >= 2 ? 2 : 0);
+    int samples=s_max_samples >= 4 ? 4 : (s_max_samples >= 2 ? 2 : 0);
+    if(g_app.settings.scroll_style&&qlcg_visual_paint_target_ready(&g_app.terrain,width,height,samples))return 0;
+    return samples;
 }
 
 /* 场景离屏路径是否生效 */
 bool app_lowres_active(int win_w, int win_h) {
     int rw, rh;
     app_resolution_size(win_w, win_h, &rw, &rh);
-    return requested_samples() > 0 || (rw != win_w) || (rh != win_h);
+    return requested_samples(rw,rh) > 0 || (rw != win_w) || (rh != win_h);
 }
 
 static void release_multisample(void) {
@@ -143,7 +146,7 @@ static bool ensure_target(int w, int h, int samples, bool scaled) {
 bool app_lowres_begin(int win_w, int win_h) {
     int rw, rh;
     app_resolution_size(win_w, win_h, &rw, &rh);
-    int samples = requested_samples();
+    int samples = requested_samples(rw,rh);
     bool scaled = rw != win_w || rh != win_h;
     if (!scaled && samples == 0) {
         if (s_ready) app_lowres_release();

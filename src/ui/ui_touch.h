@@ -45,6 +45,8 @@ typedef struct {
 } UiTouch;
 
 void ui_touch_reset(UiTouch *t);
+/* 单项基准边长：编辑器与游戏内共用 */
+float ui_touch_item_base(const UiContext *ui, int item);
 /* 每帧重算位置可见性；lay 见 settings */
 void ui_touch_begin(UiTouch *t, UiContext *ui, bool enabled, float opacity,
                     const float lay[4][3]);

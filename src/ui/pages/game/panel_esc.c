@@ -21,48 +21,70 @@ static bool save_and_export(void) {
     return app_export_current_save();
 }
 
+static void sync_manual_slot_name(int slot) {
+    const SaveSlotMeta *meta = app_current_save_slot(slot);
+    char *name = g_app.manual_slot_names[slot - SAVE_SLOT_MANUAL_1];
+    ui_u8_copy(name, QLCG_SAVE_SLOT_DISPLAY_NAME_BYTES,
+               meta ? qlcg_save_slot_display_name(meta) : "");
+}
+
 static void open_manual_slots(void) {
-    for (int slot = SAVE_SLOT_MANUAL_1; slot <= SAVE_SLOT_MANUAL_3; slot++) {
-        const SaveSlotMeta *meta = app_current_save_slot(slot);
-        char *name = g_app.manual_slot_names[slot - SAVE_SLOT_MANUAL_1];
-        ui_u8_copy(name, QLCG_SAVE_SLOT_NAME_BYTES, meta ? meta->name : "");
-    }
+    for (int slot = SAVE_SLOT_MANUAL_1; slot <= SAVE_SLOT_MANUAL_3; slot++)
+        sync_manual_slot_name(slot);
     g_app.manual_slots_open = true;
 }
 
-static float draw_manual_slots(UiContext *ui, float x, float y, float w) {
+static float draw_save_slots(UiContext *ui, float x, float y, float w, int *load_slot) {
     float z = ui->met.size;
     float px = 11.5f * ui->met.scale;
     float gap = 6.0f * z;
     float row_h = ui_ctl_height(30.0f * z, 13.0f * ui->met.scale);
     const char *store = tr("game.pause.store");
     const char *rename = tr("saves.rename");
+    const char *enter = tr("saves.slotLoad");
     float store_w = qlcg_minf(w * 0.25f, ui_text_width_px(ui, UI_FACE_BODY, px, false, store) + 16.0f * z);
     float rename_w = qlcg_minf(w * 0.25f, ui_text_width_px(ui, UI_FACE_BODY, px, false, rename) + 16.0f * z);
+    float enter_w = qlcg_minf(w * 0.25f, ui_text_width_px(ui, UI_FACE_BODY, px, false, enter) + 16.0f * z);
     float ry = y;
-    for (int slot = SAVE_SLOT_MANUAL_1; slot <= SAVE_SLOT_MANUAL_3; slot++) {
+    for (int slot = 0; slot < QLCG_SAVE_SLOT_COUNT; slot++) {
         const SaveSlotMeta *meta = app_current_save_slot(slot);
-        char *name = g_app.manual_slot_names[slot - SAVE_SLOT_MANUAL_1];
+        bool manual = slot >= SAVE_SLOT_MANUAL_1 && slot <= SAVE_SLOT_MANUAL_3;
         char label[64];
         app_slot_kind_label(slot, label, sizeof(label));
-        ui_draw_text_ellipsis(ui, UI_FACE_BODY, px, true, x, ry, w * 0.5f, 0,
+        float action_w = meta ? enter_w : (manual ? store_w : 0.0f);
+        float detail_x = x + w * 0.36f;
+        float detail_w = w * 0.64f - (action_w > 0.0f ? action_w + gap : 0.0f);
+        float ty = ry + (row_h - px * 1.35f) * 0.5f;
+        ui_draw_text_ellipsis(ui, UI_FACE_BODY, px, true, x, ty, w * 0.36f - gap, 0,
                               label, tk_of(ui, QL_INK));
-        ui_draw_text_ellipsis(ui, UI_FACE_BODY, px, false, x + w * 0.5f, ry, w * 0.5f, 0,
+        ui_draw_text_ellipsis(ui, UI_FACE_BODY, px, false, detail_x, ty, detail_w, 0,
                               meta ? meta->saved_at_str : tr("saves.slotEmpty"), tk_of(ui, QL_INK_2));
-        ry += px * 1.55f + gap;
-        float store_x = x + w - store_w;
-        float name_w = store_x - x - gap - (meta ? rename_w + gap : 0.0f);
-        const char *placeholder = meta && meta->default_name[0] ?
-                                  meta->default_name : tr("game.pause.slotName");
-        ui_text_input(ui, SLOT_NAME_INPUT_BASE + (uint32_t)slot, x, ry, name_w, row_h,
-                      name, QLCG_SAVE_SLOT_NAME_BYTES, 80, placeholder);
-        if (meta && ui_btn(ui, store_x - gap - rename_w, ry, rename_w, row_h,
-                           rename, BTN_QUIET, false, px, false) &&
-            strcmp(name, meta->name) != 0) {
-            app_rename_manual_slot(slot, name);
+        if (meta && ui_btn(ui, x + w - enter_w, ry, enter_w, row_h,
+                           enter, BTN_GHOST, false, px, false))
+            *load_slot = slot;
+        if (!meta && manual && ui_btn(ui, x + w - store_w, ry, store_w, row_h,
+                                      store, BTN_GHOST, false, px, false)) {
+            if (app_save_manual_slot(slot, "")) sync_manual_slot_name(slot);
         }
-        if (ui_btn(ui, store_x, ry, store_w, row_h, store, BTN_GHOST, false, px, false))
-            app_save_manual_slot(slot, name);
+        ry += row_h + gap;
+        if (!manual || !meta) {
+            ry += gap;
+            continue;
+        }
+        char *name = g_app.manual_slot_names[slot - SAVE_SLOT_MANUAL_1];
+        float store_x = x + w - store_w;
+        float name_w = store_x - x - rename_w - gap * 2.0f;
+        ui_text_input(ui, SLOT_NAME_INPUT_BASE + (uint32_t)slot, x, ry, name_w, row_h,
+                      name, QLCG_SAVE_SLOT_DISPLAY_NAME_BYTES, 80, tr("game.pause.slotName"));
+        if (ui_btn(ui, store_x - gap - rename_w, ry, rename_w, row_h,
+                   rename, BTN_QUIET, false, px, false) &&
+            strcmp(name, qlcg_save_slot_display_name(meta)) != 0) {
+            if (app_rename_manual_slot(slot, name)) sync_manual_slot_name(slot);
+        }
+        if (ui_btn(ui, store_x, ry, store_w, row_h, store, BTN_GHOST, false, px, false)) {
+            const char *stored_name = !meta->name[0] && strcmp(name, meta->default_name) == 0 ? "" : name;
+            if (app_save_manual_slot(slot, stored_name)) sync_manual_slot_name(slot);
+        }
         ry += row_h + 12.0f * z;
     }
     return ry - y;
@@ -117,20 +139,6 @@ void game_esc_menu(UiContext *ui) {
         y += (float)(nl > 0 ? nl : 1) * desc_lh + 28.0f * z;
     }
 
-    /* .field-title：13px × 1.3 */
-    float label_px = 13.0f * sc * 1.3f;
-    ui_draw_text_px(ui, UI_FACE_DISPLAY, label_px, false, ix, y,
-                    tr("game.saveName"), tk_of(ui, QL_INK));
-    y += label_px * 1.62f + 8.0f * z;
-
-    float field_h = ui_ctl_height(34.0f * z, label_px);
-    if (g_app.world) {
-        ui_text_input(ui, 0x5A7665u, ix, y, iw, field_h,
-                      g_app.save_name, sizeof(g_app.save_name), 80,
-                      tr("game.saveName"));
-    }
-    y += field_h + 14.0f * z;
-
     float btn_px = 12.5f * sc * 1.3f;
     float btn_h  = btn_px * 1.62f + 20.0f * z + 2.0f * z;
     float gap    = 8.0f * z;
@@ -147,7 +155,8 @@ void game_esc_menu(UiContext *ui) {
         }
     }
     y += btn_h + gap;
-    if (g_app.world && g_app.manual_slots_open) y += draw_manual_slots(ui, ix, y, iw);
+    int load_slot = -1;
+    if (g_app.world && g_app.manual_slots_open) y += draw_save_slots(ui, ix, y, iw, &load_slot);
 
     char kb[64];
     qlcg_bind_key_label(g_app.settings.binds[ACT_QUICKSAVE].key,
@@ -191,4 +200,5 @@ void game_esc_menu(UiContext *ui) {
     y += btn_h * 0.9f + 20.0f * z;
 
     ui_scroll_end(ui, 0x5A7A01u, y + sc_off - content_top);
+    if (load_slot >= 0) app_load_current_save_slot(load_slot);
 }

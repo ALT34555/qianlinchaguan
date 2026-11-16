@@ -48,6 +48,19 @@ const char *qlcg_macro_size_label(int idx) {
     return buf;
 }
 
+const char *qlcg_monsoon_name(int mode) {
+    static const char *const KEYS[MONSOON_MODE_COUNT] = {
+        "creator.monsoon.realistic", "creator.monsoon.reversed",
+        "creator.monsoon.easterly", "creator.monsoon.westerly",
+        "creator.monsoon.polarCyclone", "creator.monsoon.equatorCyclone"
+    };
+    int index = mode - MONSOON_REALISTIC;
+    if (index >= 0 && index < MONSOON_MODE_COUNT) return tr(KEYS[index]);
+    static char legacy[24];
+    snprintf(legacy, sizeof(legacy), "%d°", mode);
+    return legacy;
+}
+
 int qlcg_macro_scale_chunks(int idx) {
     return MACRO_SCALES[qlcg_clampi(idx, 0, 6)];
 }
@@ -131,7 +144,7 @@ WorldCreatorOptions qlcg_default_creator_options(PlayMode mode, const GameSettin
     opt.macro_scale_idx = 3;
     opt.climate_rule    = CLIMATE_WIND_FIELD;
     opt.terrain_recipe  = TERRAIN_BALANCED;
-    opt.monsoon_direction = 90;
+    opt.monsoon_direction = MONSOON_REALISTIC;
     opt.axial_tilt_deg  = 23.5f;
     opt.prograde        = true;
     opt.astronomy_enabled = true;

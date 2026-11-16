@@ -1,12 +1,36 @@
 /* F12 调试面板：5×5小地图与区块属性 */
 #include "app/app_state.h"
+#include "terrain3d/terrain_metrics.h"
 #include "systems/world/faction_naming.h"
+#include "systems/world/climate_zone.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
 #define DM_GRID 5
 #define DM_HALF (DM_GRID / 2)
+
+static struct {
+    const MacroWorld *world;
+    int cx,cz;
+    uint32_t delta,surface,territory;
+    ChunkInspectInfo chunks[DM_GRID*DM_GRID];
+} debug_cache;
+
+void game_debug_cache_clear(void) { memset(&debug_cache,0,sizeof(debug_cache)); }
+
+static void debug_cache_update(void) {
+    const MacroWorld *w=g_app.world;
+    if(debug_cache.world==w && debug_cache.cx==g_app.player_cx && debug_cache.cz==g_app.player_cz &&
+       debug_cache.delta==w->delta_version && debug_cache.surface==w->surface_revision &&
+       debug_cache.territory==w->territory_revision)return;
+    for(int z=0;z<DM_GRID;z++)for(int x=0;x<DM_GRID;x++)
+        qlcg_world_inspect_chunk(w,g_app.player_cx+x-DM_HALF,g_app.player_cz+z-DM_HALF,
+                                 &debug_cache.chunks[z*DM_GRID+x]);
+    debug_cache.world=w;debug_cache.cx=g_app.player_cx;debug_cache.cz=g_app.player_cz;
+    debug_cache.delta=w->delta_version;debug_cache.surface=w->surface_revision;
+    debug_cache.territory=w->territory_revision;
+}
 
 /* 八向箭头，索引同 FLOW_DIR_NAMES */
 static const char *k_flow_arrow[8] = {"→", "↗", "↑", "↖", "←", "↙", "↓", "↘"};
@@ -47,12 +71,13 @@ static UiRect debug_panel_rect(UiContext *ui, float *map_size) {
     /* 绘制与输入共用面板边界 */
     float ph = pad + title_h + small_h + gap + map_h + gap * 0.8f
              + small_h * 1.3f
-             + small_h * 6.0f
+             + small_h * 7.0f
              + gap * 1.6f + title_h + small_h * 2.2f
              + gap * 1.6f + small_h * 3.2f
              + gap * 0.8f + pill_h * 2.0f + gap * 0.6f
              + pad;
 
+    if(g_app.view_mode==VIEW_MODE_TERRAIN)ph+=small_h*3.9f;
     /* 高倍率优先压缩小地图 */
     {
         float avail = (float)ui->win_h - 16.0f * z;
@@ -86,6 +111,7 @@ bool game_debug_over_ui(UiContext *ui) {
 
 void render_debug_overlay_f12(UiContext *ui) {
     if (!g_app.show_debug_f12 || !g_app.world) return;
+    debug_cache_update();
 
     const float z   = ui->met.size;
     const float sc  = ui->met.scale;
@@ -113,12 +139,31 @@ void render_debug_overlay_f12(UiContext *ui) {
     y += title_h;
 
     /* ---- 性能行（纯数值，不进 i18n） */
-    snprintf(buf, sizeof(buf), "%.0f FPS · %.0fms · %.2fms · %.1fms",
-             g_app.fps_smooth, g_app.world->gen_ms,
-             g_app.atlas.last_render_ms, g_app.airdrop_ms);
+    snprintf(buf,sizeof(buf),"%.0f FPS · CPU %.2f · Swap %.2f ms",g_app.fps_smooth,
+             qlcg_metrics_last.simulation_ms+qlcg_metrics_last.submit_ms,qlcg_metrics_last.present_ms);
     ui_draw_text(ui, FONT_MONO, px + pad, y, buf, ui->pal.accent_tea);
     y += small_h + gap;
 
+    if(g_app.view_mode==VIEW_MODE_TERRAIN) {
+        const float perf_h=small_h*.65f;
+        snprintf(buf,sizeof(buf),"History G%.0f · A%.2f · D%.1f ms",g_app.world->gen_ms,g_app.atlas.last_render_ms,g_app.airdrop_ms);
+        ui_draw_text(ui,FONT_MONO,px+pad,y,buf,ui->pal.text_sub);y+=perf_h;
+        double gpu=0;bool gpu_ready=false;
+        for(int stage=0;stage<QL_GPU_COUNT;stage++){double value=qlcg_profile_gpu(stage);if(value>=0){gpu+=value;gpu_ready=true;}}
+        if(gpu_ready)snprintf(buf,sizeof(buf),"GPU %.2fms · Q%.2f · W%.2f",gpu,qlcg_metrics_last.queue_ms,qlcg_metrics_last.wait_ms);
+        else snprintf(buf,sizeof(buf),"GPU N/A · Q%.2f · W%.2f ms",qlcg_metrics_last.queue_ms,qlcg_metrics_last.wait_ms);
+        ui_draw_text(ui,FONT_MONO,px+pad,y,buf,ui->pal.text_sub);y+=perf_h;
+        snprintf(buf,sizeof(buf),"%llu draws · %.2fM tris · %.0fKB",(unsigned long long)qlcg_metrics_last.draws,qlcg_metrics_last.triangles/1000000.0,qlcg_metrics_last.upload_bytes/1024.0);
+        ui_draw_text(ui,FONT_MONO,px+pad,y,buf,ui->pal.text_sub);y+=perf_h;
+        snprintf(buf,sizeof(buf),"%.34s",qlcg_gl_caps.renderer);
+        ui_draw_text(ui,FONT_MONO,px+pad,y,buf,ui->pal.text_sub);y+=perf_h;
+        snprintf(buf,sizeof(buf),"%dx%d · %dx MSAA",
+            qlcg_metrics_last.width,qlcg_metrics_last.height,qlcg_metrics_last.samples);
+        ui_draw_text(ui,FONT_MONO,px+pad,y,buf,ui->pal.text_sub);y+=perf_h;
+        snprintf(buf,sizeof(buf),"S %.2f · M %.2f · P %.2f ms",
+            g_app.terrain.stream_ms,g_app.terrain.mesh_cpu_ms,g_app.terrain.props_cpu_ms);
+        ui_draw_text(ui,FONT_MONO,px+pad,y,buf,ui->pal.text_sub);y+=perf_h;
+    }
     /* ---- 5×5 区块小地图 */
     {
         float cell = map_w / (float)DM_GRID;
@@ -128,9 +173,7 @@ void render_debug_overlay_f12(UiContext *ui) {
 
         for (int dz = -DM_HALF; dz <= DM_HALF; dz++) {
             for (int dx = -DM_HALF; dx <= DM_HALF; dx++) {
-                ChunkInspectInfo ci;
-                qlcg_world_inspect_chunk(g_app.world, g_app.player_cx + dx,
-                                         g_app.player_cz + dz, &ci);
+                ChunkInspectInfo ci=debug_cache.chunks[(dz+DM_HALF)*DM_GRID+dx+DM_HALF];
                 float qx = mx0 + (float)(dx + DM_HALF) * cell;
                 float qy = my0 + (float)(dz + DM_HALF) * cell;
                 uint32_t fill = qlcg_chunk_display_color(ci.type_def);
@@ -199,8 +242,7 @@ void render_debug_overlay_f12(UiContext *ui) {
 
     /* ---- 当前区块属性 */
     {
-        ChunkInspectInfo cur;
-        qlcg_world_inspect_chunk(g_app.world, g_app.player_cx, g_app.player_cz, &cur);
+        ChunkInspectInfo cur=debug_cache.chunks[DM_HALF*DM_GRID+DM_HALF];
 
         snprintf(buf, sizeof(buf), "%s (%d, %d) · %s", tr("debug.currentChunk"),
                  g_app.player_cx, g_app.player_cz, player_state_text());
@@ -214,6 +256,11 @@ void render_debug_overlay_f12(UiContext *ui) {
 
         snprintf(buf, sizeof(buf), "%s: %.1f°, %.1f°", tr("debug.coord"),
                  cur.lon_deg, cur.lat_deg);
+        ui_draw_text(ui, FONT_SMALL, px + pad, y, buf, ui->pal.text_sub);
+        y += small_h;
+
+        snprintf(buf, sizeof(buf), "%s: %s", tr("debug.climateZone"),
+                 tr(qlcg_climate_zone_key(cur.climate_zone)));
         ui_draw_text(ui, FONT_SMALL, px + pad, y, buf, ui->pal.text_sub);
         y += small_h;
 

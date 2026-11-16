@@ -2,12 +2,12 @@
 #include "surface_detail.h"
 #include "surface_coast.h"
 #include "surface_islands.h"
-#include "surface_lakes.h"
-#include "surface_rivers.h"
-#include "river_archive.h"
+#include "hydrology_lakes.h"
+#include "hydrology_river.h"
+#include "hydrology_archive.h"
 #include "gen/gen_noise.h"
-#include "gen/gen_water.h"
-#include "gen/gen_river.h"
+#include "gen/hydrology_balance.h"
+#include "gen/hydrology_dimensions.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -401,7 +401,24 @@ int qlcg_headwater_landform(const MacroWorld *w,int cell,HeadwaterLandform *out)
     if (out) *out=(HeadwaterLandform){s->frame,s->dx,s->dz,s->radius,s->amplitude,s->phase};
     return 1;
 }
+
+const HeadwaterPlan *qlcg_headwater_plan(const MacroWorld *w,int cell) {
+    if(qlcg_river_archive_terrain(w)<5) return NULL;
+    MacroCellPlan *macro=(MacroCellPlan *)qlcg_macro_cell_plan(w,cell);
+    if(!macro||!macro->head||!macro->source.valid) return NULL;
+    HeadwaterPlan *p=&macro->headwater;
+    if(!p->state) {
+        p->state=1;
+        HeadwaterPlan built={0};
+        int ok=qlcg_headwater_build(w,cell,&built);
+        macro=(MacroCellPlan *)qlcg_macro_cell_plan(w,cell);
+        if(!macro) return NULL;
+        p=&macro->headwater;*p=built;p->state=ok?2:-1;
+    }
+    return p->state==2?p:NULL;
+}
 double qlcg_headwater_relief(const MacroWorld *w,double wx,double wz) {
+    if(qlcg_river_archive_terrain(w)>=5) return 0;
     int cell=qlcg_macro_cell_at(w,wx,wz);
     const MacroCellPlan *plan=qlcg_macro_cell_plan(w,cell);
     if (!plan || !plan->source.valid || plan->source.amplitude<=0) return 0;
@@ -414,7 +431,7 @@ double qlcg_headwater_relief(const MacroWorld *w,double wx,double wz) {
     return f->amplitude*crown*crown*fold;
 }
 
-static double terrace_level(double h,double step,double transition) {
+double qlcg_detail_terrace_height(double h,double step,double transition) {
     double phase=h/step;
     return (floor(phase)+smooth((phase-floor(phase)-.5)/transition+.5))*step;
 }
@@ -430,7 +447,7 @@ static double cliff_section(double t,const CliffProfile *p) {
     return mix(mix(scarp,split,p->split),smooth(t),p->rounded);
 }
 static double cliff_level(double h,double step,double transition,const CliffProfile *p) {
-    if(!p) return terrace_level(h,step,transition);
+    if(!p) return qlcg_detail_terrace_height(h,step,transition);
     double phase=h/step;
     double t=(phase-floor(phase)-.5)/transition+.5;
     double spur=fmin(.25,transition*p->mass.spur/p->width)/transition;
@@ -478,17 +495,27 @@ static double drainage_field(const MacroWorld *w,const SurfaceMacroContext *c,do
     if(height&&total>0) *height=sum/total;
     return gate*(c->pole>=0?c->pole:1);
 }
-static ReliefField relief_field(const MacroWorld *w,double wx,double wz) {
-    SurfaceMacroContext c=qlcg_macro_context(w,wx,wz);double p[3];sphere(w,wx,wz,w->circumference,p);
-    double base=qlcg_read_macro(w,&c,w->height),g=w->height_scale;
-    double uplift=clampd(qlcg_read_macro(w,&c,w->uplift),0,1),roughness=(base>0?18+uplift*150:12)*g;
+static double regional_bands(const MacroWorld *w,const double p[3],double bands[3]) {
     const double scales[3]={12000,3000,750},weights[3]={.55,.30,.15};
     const uint32_t seeds[3]={0x72656731u,0x72656732u,0x72656733u};
-    double broad=0,bands[3];
+    double broad=0;
     for(int k=0;k<3;k++) {
         bands[k]=qlcg_base_noise_d(p[0]*w->radius/scales[k],p[1]*w->radius/scales[k],p[2]*w->radius/scales[k],w->opt.seed^seeds[k]);
         broad+=bands[k]*weights[k];
     }
+    return broad;
+}
+double qlcg_map_regional_relief(const MacroWorld *w,double wx,double wz,double base,double uplift) {
+    if(base<=0)return 0;
+    double p[3],bands[3];sphere(w,wx,wz,w->circumference,p);
+    double broad=regional_bands(w,p,bands),g=w->height_scale;
+    return smooth(fabs(base)/(160*g))*broad*(18+clampd(uplift,0,1)*150)*g;
+}
+static ReliefField relief_field(const MacroWorld *w,double wx,double wz) {
+    SurfaceMacroContext c=qlcg_macro_context(w,wx,wz);double p[3];sphere(w,wx,wz,w->circumference,p);
+    double base=qlcg_read_macro(w,&c,w->height),g=w->height_scale;
+    double uplift=clampd(qlcg_read_macro(w,&c,w->uplift),0,1),roughness=(base>0?18+uplift*150:12)*g;
+    double bands[3],broad=regional_bands(w,p,bands);
     double pole=c.pole>=0?c.pole:1,coast=smooth((base-4)/(40*g));
     double dx=mix(w->height[c.b]-w->height[c.a],w->height[c.d]-w->height[c.c],c.tz);
     double dz=mix(w->height[c.c]-w->height[c.a],w->height[c.d]-w->height[c.b],c.tx);
@@ -604,7 +631,7 @@ double qlcg_sampled_regional_relief(const MacroWorld *w,double wx,double wz) {
     }
     return mix(mix(c->grid[0],c->grid[1],tx),mix(c->grid[2],c->grid[3],tx),tz);
 }
-double qlcg_natural_detail_coast(const MacroWorld *w,double wx,double wz,CoastSample *out) {
+static double natural_coast(const MacroWorld *w,double wx,double wz,CoastSample *out,int headwater) {
     if(qlcg_world_flat(w) && fmax(fabs(wx),fabs(wz))>=w->circumference*.5) {
         if(out) *out=(CoastSample){.height=-3000};
         return -3000;
@@ -620,8 +647,17 @@ double qlcg_natural_detail_coast(const MacroWorld *w,double wx,double wz,CoastSa
     CoastSample coast={.height=island};
     if(!qlcg_island_coast(w,wx,wz,height,&coast.height))
         coast=qlcg_coast_surface(w,&c,wx,wz,base,height);
+    if(headwater&&coast.height>0&&qlcg_river_archive_terrain(w)>=5)
+        coast.height=qlcg_headwater_height(w,wx,wz,coast.height);
     if(out) *out=coast;
     return coast.height;
+}
+
+double qlcg_natural_detail_coast(const MacroWorld *w,double wx,double wz,CoastSample *out) {
+    return natural_coast(w,wx,wz,out,1);
+}
+double qlcg_natural_base_height(const MacroWorld *w,double wx,double wz) {
+    return natural_coast(w,wx,wz,NULL,0);
 }
 
 double qlcg_natural_detail_height(const MacroWorld *w,double wx,double wz) {

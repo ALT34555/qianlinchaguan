@@ -1,5 +1,5 @@
 #include "save_fields.h"
-_Static_assert(ACT_COUNT==11 && LAYER_ID_COUNT==12 && QLCG_MAX_LOCALES==16,"storage schema counts");
+_Static_assert(ACT_COUNT==11 && LAYER_ID_COUNT==13 && QLCG_MAX_LOCALES==16,"storage schema counts");
 
 void qlcg_fields_profile(QlCodec *io, PlayerProfile *s) {
     qlcg_io_string(io,s->name,256);
@@ -66,6 +66,16 @@ void qlcg_fields_settings(QlCodec *io, GameSettings *s) {
     }
     s->invert_look_x=qlcg_io_bool(io,s->invert_look_x);
     s->invert_look_y=qlcg_io_bool(io,s->invert_look_y);
+    if(!io->reading||io->bytes<io->limit) s->water_mist=qlcg_io_bool(io,s->water_mist);
+    else s->water_mist=s->particles;
+    if(!io->reading||io->bytes<io->limit) {
+        s->enhanced_lighting=qlcg_io_bool(io,s->enhanced_lighting);
+        s->scroll_style=qlcg_io_bool(io,s->scroll_style);
+        s->scroll_palette=(int)qlcg_io_i32(io,s->scroll_palette);
+        s->scroll_pigment=qlcg_io_f32(io,s->scroll_pigment);
+        s->scroll_ink=qlcg_io_f32(io,s->scroll_ink);
+        s->scroll_line_width=qlcg_io_f32(io,s->scroll_line_width);
+    }
 }
 
 void qlcg_fields_options(QlCodec *io, WorldCreatorOptions *s) {
@@ -155,14 +165,19 @@ void qlcg_fields_layer(QlCodec *io, AtlasLayerSetting *s) {
     s->opacity=qlcg_io_f32(io,s->opacity);
 }
 
-void qlcg_fields_atlas(QlCodec *io, AtlasDisplayState *s) {
-    for (int i=0;i<LAYER_ID_COUNT;i++) {
+static void fields_atlas_count(QlCodec *io, AtlasDisplayState *s, int count) {
+    if (io->reading) qlcg_init_atlas_display(s);
+    for (int i=0;i<count;i++) {
         qlcg_fields_layer(io,&s->layers[i]);
     }
     s->contour_density=(int)qlcg_io_i32(io,(int32_t)s->contour_density);
 }
 
-void qlcg_fields_slot(QlCodec *io, SaveSlotInfo *s) {
+void qlcg_fields_atlas(QlCodec *io, AtlasDisplayState *s) {
+    fields_atlas_count(io,s,LAYER_ID_COUNT);
+}
+
+void qlcg_fields_slot_ver(QlCodec *io, SaveSlotInfo *s, uint32_t version) {
     qlcg_io_string(io,s->world_name,240);
     qlcg_io_string(io,s->ren_ming,256);
     s->main_color=(uint32_t)qlcg_io_uint(io,(uint64_t)s->main_color,4);
@@ -181,11 +196,15 @@ void qlcg_fields_slot(QlCodec *io, SaveSlotInfo *s) {
     s->player_pitch=qlcg_io_f32(io,s->player_pitch);
     s->flying=qlcg_io_bool(io,s->flying);
     qlcg_fields_options(io,&s->opt);
-    qlcg_fields_atlas(io,&s->atlas_display);
+    fields_atlas_count(io,&s->atlas_display,version>=15u?LAYER_ID_COUNT:12);
     s->mystery_time_speed=qlcg_io_f32(io,s->mystery_time_speed);
     s->mystery_menu_auto_pause=qlcg_io_bool(io,s->mystery_menu_auto_pause);
     s->delta_count=(int)qlcg_io_i32(io,(int32_t)s->delta_count);
     for (int i=0;i<64;i++) {
         qlcg_fields_delta(io,&s->deltas[i]);
     }
+}
+
+void qlcg_fields_slot(QlCodec *io, SaveSlotInfo *s) {
+    qlcg_fields_slot_ver(io,s,QLCG_SAVE_VERSION);
 }

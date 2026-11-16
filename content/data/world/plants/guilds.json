@@ -1,0 +1,5056 @@
+{
+ "weights": {
+  "trf_giant": 1.0,
+  "trf_palm": 1.0,
+  "tmon_fruit": 1.0,
+  "tsav_acacia": 1.0,
+  "tdes_oasis": 1.0,
+  "coast_coconut": 1.0,
+  "sub_evergreen": 1.0,
+  "sub_pine_oak": 1.0,
+  "sub_mixed": 1.0,
+  "sub_fruit": 1.0,
+  "tea_grove": 1.0,
+  "riparian": 1.0,
+  "temp_decid": 1.0,
+  "temp_mixed": 1.0,
+  "temp_desert": 1.0,
+  "boreal_conifer": 1.0,
+  "taiga_mixed": 1.0,
+  "boreal_birch": 1.0,
+  "mono_coconut": 0.5,
+  "mono_xiangzhang": 0.5,
+  "mono_hongpi": 0.5,
+  "mono_ginkgo": 0.45,
+  "mono_yunshan": 0.6,
+  "mono_luoye": 0.5,
+  "mono_mangrove": 0.4,
+  "z0_mumian": 0.55,
+  "z0_fenghuang": 0.55,
+  "z0_rongshu": 0.55,
+  "z0_bajiao": 0.55,
+  "z1_mumian": 0.55,
+  "z1_fenghuang": 0.55,
+  "z1_rongshu": 0.55,
+  "z1_bailan": 0.55,
+  "z2_jinheguan": 0.55,
+  "z2_fenghuang": 0.55,
+  "z2_mumian": 0.55,
+  "z2_bailan": 0.55,
+  "z3_jinheguan": 0.55,
+  "z3_shazao": 0.55,
+  "z3_hongshu": 0.55,
+  "z3_mumian": 0.55,
+  "z4_rongshu": 0.55,
+  "z4_qingtan": 0.55,
+  "z4_shuishan": 0.55,
+  "z4_bailan": 0.55,
+  "z5_mangguo": 0.55,
+  "z5_rongshu": 0.55,
+  "z5_qingtan": 0.55,
+  "z5_bailan": 0.55,
+  "z6_zishu": 0.55,
+  "z6_paotong": 0.55,
+  "z6_chamu": 0.55,
+  "z6_qingtan": 0.55,
+  "z7_jinheguan": 0.55,
+  "z7_bailan": 0.55,
+  "z7_qiu": 0.55,
+  "z7_zishu": 0.55,
+  "z8_shazao": 0.55,
+  "z8_jinheguan": 0.55,
+  "z8_masan": 0.55,
+  "z8_mumahuang": 0.55,
+  "z9_shuiqueliu": 0.55,
+  "z9_ziduan": 0.55,
+  "z9_yunshan": 0.55,
+  "z9_hongsong": 0.55,
+  "z10_huai": 0.55,
+  "z10_wujiaofeng": 0.55,
+  "z10_shi": 0.55,
+  "z10_baigan": 0.55,
+  "z11_huai": 0.55,
+  "z11_qiu": 0.55,
+  "z11_shi": 0.55,
+  "z11_wujiaofeng": 0.55,
+  "z12_shi": 0.55,
+  "z12_huai": 0.55,
+  "z12_wujiaofeng": 0.55,
+  "z12_hongpi": 0.55,
+  "z13_huyang": 0.55,
+  "z13_shazao": 0.55,
+  "z13_chuiliu": 0.55,
+  "z13_hongpi": 0.55,
+  "z14_lengshan": 0.55,
+  "z14_luoye": 0.55,
+  "z14_huangbo": 0.55,
+  "z14_shuiqueliu": 0.55,
+  "z15_lengshan": 0.55,
+  "z15_luoye": 0.55,
+  "z15_huangbo": 0.55,
+  "z15_ziduan": 0.55,
+  "z16_luoye": 0.55,
+  "z16_hongsong": 0.55,
+  "z16_huangbo": 0.55,
+  "z16_chuizhi": 0.55,
+  "z18_huyang": 0.55,
+  "z18_luoye": 0.55,
+  "z18_yunshan": 0.55,
+  "z18_chuizhi": 0.55
+ },
+ "mixed": [
+  {
+   "id": "trf_giant",
+   "name": "雨林巨木丛",
+   "tier": "tree",
+   "zones": [
+    0
+   ],
+   "members": [
+    {
+     "sp": "shu.longnao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.fusang",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.jianma",
+      "guan.moli",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhizi",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "trf_palm",
+   "name": "雨林棕榈丛",
+   "tier": "tree",
+   "zones": [
+    0,
+    1
+   ],
+   "members": [
+    {
+     "sp": "shu.binglang",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.fusang",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.jianma",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.jianma",
+      "guan.moli",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhizi",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "tmon_fruit",
+   "name": "季雨林果木丛",
+   "tier": "tree",
+   "zones": [
+    1,
+    5
+   ],
+   "members": [
+    {
+     "sp": "shu.mangguo",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.fusang",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.shamomeigui",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.guanggun",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.shamomeigui",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "tsav_acacia",
+   "name": "稀树草原丛",
+   "tier": "tree",
+   "zones": [
+    2,
+    7
+   ],
+   "members": [
+    {
+     "sp": "shu.houmianbao",
+     "n": [
+      1,
+      1
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.jianma",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.guanggun",
+      "guan.fusang",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.xianrenzhu",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "tdes_oasis",
+   "name": "荒漠绿洲丛",
+   "tier": "tree",
+   "zones": [
+    3,
+    8,
+    13
+   ],
+   "members": [
+    {
+     "sp": "shu.haizao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.xianrenzhu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.jianma",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.fusang",
+      "guan.zhizi",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.jianma",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "coast_coconut",
+   "name": "海岸椰林丛",
+   "tier": "tree",
+   "zones": [
+    0,
+    1
+   ],
+   "members": [
+    {
+     "sp": "shu.yezi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.jianma",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.jianma",
+      "guan.moli",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhizi",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sub_evergreen",
+   "name": "亚热常绿丛",
+   "tier": "tree",
+   "zones": [
+    4,
+    5
+   ],
+   "members": [
+    {
+     "sp": "shu.xiangzhang",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.dujuan",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.xuangouzi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sub_pine_oak",
+   "name": "亚热松栎丛",
+   "tier": "tree",
+   "zones": [
+    4,
+    6
+   ],
+   "members": [
+    {
+     "sp": "shu.masan",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.dujuan",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.xuangouzi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sub_mixed",
+   "name": "亚热落叶丛",
+   "tier": "tree",
+   "zones": [
+    6,
+    10
+   ],
+   "members": [
+    {
+     "sp": "shu.qiu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.huanglu",
+      "guan.zhizi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.dujuan",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sub_fruit",
+   "name": "亚热果园丛",
+   "tier": "tree",
+   "zones": [
+    4,
+    5
+   ],
+   "members": [
+    {
+     "sp": "shu.ganju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.xuangouzi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "tea_grove",
+   "name": "亚热茶丛",
+   "tier": "shrub",
+   "zones": [
+    4,
+    5,
+    6
+   ],
+   "members": [
+    {
+     "sp": "shu.cha",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.xuangouzi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "riparian",
+   "name": "河岸柳丛",
+   "tier": "tree",
+   "zones": [
+    9,
+    10,
+    11,
+    12
+   ],
+   "members": [
+    {
+     "sp": "shu.chuiliu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.chengliu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.baici",
+      "guan.zhen",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "temp_decid",
+   "name": "温带落叶丛",
+   "tier": "tree",
+   "zones": [
+    9,
+    10,
+    11
+   ],
+   "members": [
+    {
+     "sp": "shu.yinxing",
+     "n": [
+      1,
+      1
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhen",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.baici",
+      "guan.zhen",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "temp_mixed",
+   "name": "温带针阔丛",
+   "tier": "tree",
+   "zones": [
+    9,
+    10,
+    14
+   ],
+   "members": [
+    {
+     "sp": "shu.hongpi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.baici",
+      "guan.zhen",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "temp_desert",
+   "name": "温带荒漠丛",
+   "tier": "shrub",
+   "zones": [
+    13,
+    18
+   ],
+   "members": [
+    {
+     "sp": "shu.shazao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.suosuo",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.yueju",
+      "guan.lianqiao",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhen",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "boreal_conifer",
+   "name": "北方针叶丛",
+   "tier": "tree",
+   "zones": [
+    14,
+    15,
+    16
+   ],
+   "members": [
+    {
+     "sp": "shu.yunshan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      3,
+      4
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.yanjiao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.jiji",
+      "cao.yanjiao"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "taiga_mixed",
+   "name": "寒温带混交丛",
+   "tier": "tree",
+   "zones": [
+    14,
+    15
+   ],
+   "members": [
+    {
+     "sp": "shu.hongsong",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      3,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.yanjiao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.jiji",
+      "cao.yanjiao"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "boreal_birch",
+   "name": "寒温带桦林丛",
+   "tier": "tree",
+   "zones": [
+    14,
+    15
+   ],
+   "members": [
+    {
+     "sp": "shu.chuizhi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.yanjiao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.jiji",
+      "cao.yanjiao"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z0_mumian",
+   "name": "木棉丛",
+   "tier": "tree",
+   "zones": [
+    0
+   ],
+   "members": [
+    {
+     "sp": "shu.mumian",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.fusang",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.jianma",
+      "guan.moli",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhizi",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z0_fenghuang",
+   "name": "凤凰木丛",
+   "tier": "tree",
+   "zones": [
+    0
+   ],
+   "members": [
+    {
+     "sp": "shu.fenghuang",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.jianma",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.jianma",
+      "guan.moli",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhizi",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z0_rongshu",
+   "name": "榕树丛",
+   "tier": "tree",
+   "zones": [
+    0
+   ],
+   "members": [
+    {
+     "sp": "shu.rongshu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.shamomeigui",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.jianma",
+      "guan.moli",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhizi",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z0_bajiao",
+   "name": "芭蕉丛",
+   "tier": "tree",
+   "zones": [
+    0
+   ],
+   "members": [
+    {
+     "sp": "shu.bajiao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.guanggun",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.jianma",
+      "guan.moli",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhizi",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z1_mumian",
+   "name": "木棉丛",
+   "tier": "tree",
+   "zones": [
+    1
+   ],
+   "members": [
+    {
+     "sp": "shu.mumian",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.fusang",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.guanggun",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.shamomeigui",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z1_fenghuang",
+   "name": "凤凰木丛",
+   "tier": "tree",
+   "zones": [
+    1
+   ],
+   "members": [
+    {
+     "sp": "shu.fenghuang",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.shamomeigui",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.jianma",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.guanggun",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.shamomeigui",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z1_rongshu",
+   "name": "榕树丛",
+   "tier": "tree",
+   "zones": [
+    1
+   ],
+   "members": [
+    {
+     "sp": "shu.rongshu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.guanggun",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.guanggun",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.shamomeigui",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z1_bailan",
+   "name": "白兰丛",
+   "tier": "tree",
+   "zones": [
+    1
+   ],
+   "members": [
+    {
+     "sp": "shu.bailan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.guanggun",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.shamomeigui",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z2_jinheguan",
+   "name": "金合欢丛",
+   "tier": "tree",
+   "zones": [
+    2
+   ],
+   "members": [
+    {
+     "sp": "shu.jinheguan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.xianrenzhu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.guanggun",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.guanggun",
+      "guan.fusang",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.xianrenzhu",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z2_fenghuang",
+   "name": "凤凰木丛",
+   "tier": "tree",
+   "zones": [
+    2
+   ],
+   "members": [
+    {
+     "sp": "shu.fenghuang",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.fusang",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.xianrenzhu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.guanggun",
+      "guan.fusang",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.xianrenzhu",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z2_mumian",
+   "name": "木棉丛",
+   "tier": "tree",
+   "zones": [
+    2
+   ],
+   "members": [
+    {
+     "sp": "shu.mumian",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.jianma",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.fusang",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.guanggun",
+      "guan.fusang",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.xianrenzhu",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z2_bailan",
+   "name": "白兰丛",
+   "tier": "tree",
+   "zones": [
+    2
+   ],
+   "members": [
+    {
+     "sp": "shu.bailan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.guanggun",
+      "guan.fusang",
+      "cao.bamao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.xianrenzhu",
+      "cao.huweilan",
+      "cao.shamo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z3_jinheguan",
+   "name": "金合欢丛",
+   "tier": "tree",
+   "zones": [
+    3
+   ],
+   "members": [
+    {
+     "sp": "shu.jinheguan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.fusang",
+      "guan.zhizi",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.jianma",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z3_shazao",
+   "name": "沙枣丛",
+   "tier": "tree",
+   "zones": [
+    3
+   ],
+   "members": [
+    {
+     "sp": "shu.shazao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.fusang",
+      "guan.zhizi",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.jianma",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z3_hongshu",
+   "name": "红树丛",
+   "tier": "tree",
+   "zones": [
+    3
+   ],
+   "members": [
+    {
+     "sp": "shu.hongshu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.shamomeigui",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.guanggun",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.fusang",
+      "guan.zhizi",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.jianma",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z3_mumian",
+   "name": "木棉丛",
+   "tier": "tree",
+   "zones": [
+    3
+   ],
+   "members": [
+    {
+     "sp": "shu.mumian",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.guanggun",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.xianrenzhu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.fusang",
+      "guan.zhizi",
+      "cao.luhui"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.jianma",
+      "cao.shamo",
+      "cao.huweilan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z4_rongshu",
+   "name": "榕树丛",
+   "tier": "tree",
+   "zones": [
+    4
+   ],
+   "members": [
+    {
+     "sp": "shu.rongshu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.xuangouzi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z4_qingtan",
+   "name": "青檀丛",
+   "tier": "tree",
+   "zones": [
+    4
+   ],
+   "members": [
+    {
+     "sp": "shu.qingtan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.xuangouzi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z4_shuishan",
+   "name": "水杉丛",
+   "tier": "tree",
+   "zones": [
+    4
+   ],
+   "members": [
+    {
+     "sp": "shu.shuishan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.dujuan",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.xuangouzi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z4_bailan",
+   "name": "白兰丛",
+   "tier": "tree",
+   "zones": [
+    4
+   ],
+   "members": [
+    {
+     "sp": "shu.bailan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.moli",
+      "guan.xuangouzi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z5_mangguo",
+   "name": "芒果丛",
+   "tier": "tree",
+   "zones": [
+    5
+   ],
+   "members": [
+    {
+     "sp": "shu.mangguo",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.jianma",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.xianrenzhu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "guan.huanglu",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.maozhu",
+      "cao.hanji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z5_rongshu",
+   "name": "榕树丛",
+   "tier": "tree",
+   "zones": [
+    5
+   ],
+   "members": [
+    {
+     "sp": "shu.rongshu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.dujuan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "guan.huanglu",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.maozhu",
+      "cao.hanji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z5_qingtan",
+   "name": "青檀丛",
+   "tier": "tree",
+   "zones": [
+    5
+   ],
+   "members": [
+    {
+     "sp": "shu.qingtan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "guan.huanglu",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.maozhu",
+      "cao.hanji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z5_bailan",
+   "name": "白兰丛",
+   "tier": "tree",
+   "zones": [
+    5
+   ],
+   "members": [
+    {
+     "sp": "shu.bailan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "guan.huanglu",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.maozhu",
+      "cao.hanji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z6_zishu",
+   "name": "梓树丛",
+   "tier": "tree",
+   "zones": [
+    6
+   ],
+   "members": [
+    {
+     "sp": "shu.zishu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.huanglu",
+      "guan.zhizi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.dujuan",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z6_paotong",
+   "name": "泡桐丛",
+   "tier": "tree",
+   "zones": [
+    6
+   ],
+   "members": [
+    {
+     "sp": "shu.paotong",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.huanglu",
+      "guan.zhizi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.dujuan",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z6_chamu",
+   "name": "檫木丛",
+   "tier": "tree",
+   "zones": [
+    6
+   ],
+   "members": [
+    {
+     "sp": "shu.chamu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.dujuan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.huanglu",
+      "guan.zhizi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.dujuan",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z6_qingtan",
+   "name": "青檀丛",
+   "tier": "tree",
+   "zones": [
+    6
+   ],
+   "members": [
+    {
+     "sp": "shu.qingtan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.dujuan",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.huanglu",
+      "guan.zhizi",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.dujuan",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z7_jinheguan",
+   "name": "金合欢丛",
+   "tier": "tree",
+   "zones": [
+    7
+   ],
+   "members": [
+    {
+     "sp": "shu.jinheguan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.fusang",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.zhizi",
+      "guan.lianqiao",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.moli",
+      "cao.maozhu",
+      "cao.hanji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z7_bailan",
+   "name": "白兰丛",
+   "tier": "tree",
+   "zones": [
+    7
+   ],
+   "members": [
+    {
+     "sp": "shu.bailan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhizi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.zhizi",
+      "guan.lianqiao",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.moli",
+      "cao.maozhu",
+      "cao.hanji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z7_qiu",
+   "name": "楸树丛",
+   "tier": "tree",
+   "zones": [
+    7
+   ],
+   "members": [
+    {
+     "sp": "shu.qiu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.chengliu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.zhizi",
+      "guan.lianqiao",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.moli",
+      "cao.maozhu",
+      "cao.hanji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z7_zishu",
+   "name": "梓树丛",
+   "tier": "tree",
+   "zones": [
+    7
+   ],
+   "members": [
+    {
+     "sp": "shu.zishu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.zhizi",
+      "guan.lianqiao",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.moli",
+      "cao.maozhu",
+      "cao.hanji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z8_shazao",
+   "name": "沙枣丛",
+   "tier": "tree",
+   "zones": [
+    8
+   ],
+   "members": [
+    {
+     "sp": "shu.shazao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.dujuan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "guan.yueju",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z8_jinheguan",
+   "name": "金合欢丛",
+   "tier": "tree",
+   "zones": [
+    8
+   ],
+   "members": [
+    {
+     "sp": "shu.jinheguan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.shamomeigui",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.jianma",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "guan.yueju",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z8_masan",
+   "name": "马尾松丛",
+   "tier": "tree",
+   "zones": [
+    8
+   ],
+   "members": [
+    {
+     "sp": "shu.masan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.moli",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "guan.yueju",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z8_mumahuang",
+   "name": "木麻黄丛",
+   "tier": "tree",
+   "zones": [
+    8
+   ],
+   "members": [
+    {
+     "sp": "shu.mumahuang",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "guan.yueju",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "cao.hanji",
+      "cao.maozhu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z9_shuiqueliu",
+   "name": "水曲柳丛",
+   "tier": "tree",
+   "zones": [
+    9
+   ],
+   "members": [
+    {
+     "sp": "shu.shuiqueliu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.baici",
+      "guan.zhen",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z9_ziduan",
+   "name": "紫椴丛",
+   "tier": "tree",
+   "zones": [
+    9
+   ],
+   "members": [
+    {
+     "sp": "shu.ziduan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.baici",
+      "guan.zhen",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z9_yunshan",
+   "name": "云杉丛",
+   "tier": "tree",
+   "zones": [
+    9
+   ],
+   "members": [
+    {
+     "sp": "shu.yunshan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.baici",
+      "guan.zhen",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z9_hongsong",
+   "name": "红松丛",
+   "tier": "tree",
+   "zones": [
+    9
+   ],
+   "members": [
+    {
+     "sp": "shu.hongsong",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.baici",
+      "guan.zhen",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z10_huai",
+   "name": "国槐丛",
+   "tier": "tree",
+   "zones": [
+    10
+   ],
+   "members": [
+    {
+     "sp": "shu.huai",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.zhen",
+      "guan.xuangouzi",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.jiji",
+      "cao.luobuma"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z10_wujiaofeng",
+   "name": "五角枫丛",
+   "tier": "tree",
+   "zones": [
+    10
+   ],
+   "members": [
+    {
+     "sp": "shu.wujiaofeng",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.chengliu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.zhen",
+      "guan.xuangouzi",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.jiji",
+      "cao.luobuma"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z10_shi",
+   "name": "柿树丛",
+   "tier": "tree",
+   "zones": [
+    10
+   ],
+   "members": [
+    {
+     "sp": "shu.shi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.chengliu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.zhen",
+      "guan.xuangouzi",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.jiji",
+      "cao.luobuma"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z10_baigan",
+   "name": "白干桦丛",
+   "tier": "tree",
+   "zones": [
+    10
+   ],
+   "members": [
+    {
+     "sp": "shu.baigan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.zhen",
+      "guan.xuangouzi",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.lianqiao",
+      "cao.jiji",
+      "cao.luobuma"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z11_huai",
+   "name": "国槐丛",
+   "tier": "tree",
+   "zones": [
+    11
+   ],
+   "members": [
+    {
+     "sp": "shu.huai",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "guan.chengliu",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.huanglu",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z11_qiu",
+   "name": "楸树丛",
+   "tier": "tree",
+   "zones": [
+    11
+   ],
+   "members": [
+    {
+     "sp": "shu.qiu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "guan.chengliu",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.huanglu",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z11_shi",
+   "name": "柿树丛",
+   "tier": "tree",
+   "zones": [
+    11
+   ],
+   "members": [
+    {
+     "sp": "shu.shi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhen",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "guan.chengliu",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.huanglu",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z11_wujiaofeng",
+   "name": "五角枫丛",
+   "tier": "tree",
+   "zones": [
+    11
+   ],
+   "members": [
+    {
+     "sp": "shu.wujiaofeng",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.chengliu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.xuangouzi",
+      "guan.chengliu",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.huanglu",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z12_shi",
+   "name": "柿树丛",
+   "tier": "tree",
+   "zones": [
+    12
+   ],
+   "members": [
+    {
+     "sp": "shu.shi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.chengliu",
+      "guan.yueju",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.baici",
+      "cao.jiji",
+      "cao.luobuma"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z12_huai",
+   "name": "国槐丛",
+   "tier": "tree",
+   "zones": [
+    12
+   ],
+   "members": [
+    {
+     "sp": "shu.huai",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhen",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.chengliu",
+      "guan.yueju",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.baici",
+      "cao.jiji",
+      "cao.luobuma"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z12_wujiaofeng",
+   "name": "五角枫丛",
+   "tier": "tree",
+   "zones": [
+    12
+   ],
+   "members": [
+    {
+     "sp": "shu.wujiaofeng",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.huanglu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.chengliu",
+      "guan.yueju",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.baici",
+      "cao.jiji",
+      "cao.luobuma"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z12_hongpi",
+   "name": "红皮松丛",
+   "tier": "tree",
+   "zones": [
+    12
+   ],
+   "members": [
+    {
+     "sp": "shu.hongpi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.chengliu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.xuangouzi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.chengliu",
+      "guan.yueju",
+      "cao.yangmao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.baici",
+      "cao.jiji",
+      "cao.luobuma"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z13_huyang",
+   "name": "胡杨丛",
+   "tier": "tree",
+   "zones": [
+    13
+   ],
+   "members": [
+    {
+     "sp": "shu.huyang",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.chengliu",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.yueju",
+      "guan.lianqiao",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhen",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z13_shazao",
+   "name": "沙枣丛",
+   "tier": "tree",
+   "zones": [
+    13
+   ],
+   "members": [
+    {
+     "sp": "shu.shazao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.baici",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.yueju",
+      "guan.lianqiao",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhen",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z13_chuiliu",
+   "name": "垂柳丛",
+   "tier": "tree",
+   "zones": [
+    13
+   ],
+   "members": [
+    {
+     "sp": "shu.chuiliu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhen",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.yueju",
+      "guan.lianqiao",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhen",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z13_hongpi",
+   "name": "红皮松丛",
+   "tier": "tree",
+   "zones": [
+    13
+   ],
+   "members": [
+    {
+     "sp": "shu.hongpi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.zhen",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.lianqiao",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.yueju",
+      "guan.lianqiao",
+      "cao.jue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.zhen",
+      "cao.luobuma",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z14_lengshan",
+   "name": "冷杉丛",
+   "tier": "tree",
+   "zones": [
+    14
+   ],
+   "members": [
+    {
+     "sp": "shu.lengshan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.yanjiao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.jiji",
+      "cao.yanjiao"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z14_luoye",
+   "name": "落叶松丛",
+   "tier": "tree",
+   "zones": [
+    14
+   ],
+   "members": [
+    {
+     "sp": "shu.luoye",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.yanjiao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.jiji",
+      "cao.yanjiao"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z14_huangbo",
+   "name": "黄檗丛",
+   "tier": "tree",
+   "zones": [
+    14
+   ],
+   "members": [
+    {
+     "sp": "shu.huangbo",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.yanjiao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.jiji",
+      "cao.yanjiao"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z14_shuiqueliu",
+   "name": "水曲柳丛",
+   "tier": "tree",
+   "zones": [
+    14
+   ],
+   "members": [
+    {
+     "sp": "shu.shuiqueliu",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.yanjiao"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.jiji",
+      "cao.yanjiao"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z15_lengshan",
+   "name": "冷杉丛",
+   "tier": "tree",
+   "zones": [
+    15
+   ],
+   "members": [
+    {
+     "sp": "shu.lengshan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.dixue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.yanjiao",
+      "cao.dixue"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z15_luoye",
+   "name": "落叶松丛",
+   "tier": "tree",
+   "zones": [
+    15
+   ],
+   "members": [
+    {
+     "sp": "shu.luoye",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.dixue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.yanjiao",
+      "cao.dixue"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z15_huangbo",
+   "name": "黄檗丛",
+   "tier": "tree",
+   "zones": [
+    15
+   ],
+   "members": [
+    {
+     "sp": "shu.huangbo",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.dixue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.yanjiao",
+      "cao.dixue"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z15_ziduan",
+   "name": "紫椴丛",
+   "tier": "tree",
+   "zones": [
+    15
+   ],
+   "members": [
+    {
+     "sp": "shu.ziduan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.dixue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.yanjiao",
+      "cao.dixue"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z16_luoye",
+   "name": "落叶松丛",
+   "tier": "tree",
+   "zones": [
+    16
+   ],
+   "members": [
+    {
+     "sp": "shu.luoye",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.jiji"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.dixue",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z16_hongsong",
+   "name": "红松丛",
+   "tier": "tree",
+   "zones": [
+    16
+   ],
+   "members": [
+    {
+     "sp": "shu.hongsong",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.jiji"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.dixue",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z16_huangbo",
+   "name": "黄檗丛",
+   "tier": "tree",
+   "zones": [
+    16
+   ],
+   "members": [
+    {
+     "sp": "shu.huangbo",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.jiji"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.dixue",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z16_chuizhi",
+   "name": "垂枝桦丛",
+   "tier": "tree",
+   "zones": [
+    16
+   ],
+   "members": [
+    {
+     "sp": "shu.chuizhi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.jiji"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.dixue",
+      "cao.jiji"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z18_huyang",
+   "name": "胡杨丛",
+   "tier": "tree",
+   "zones": [
+    18
+   ],
+   "members": [
+    {
+     "sp": "shu.huyang",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.dixue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.yanjiao",
+      "cao.dixue"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z18_luoye",
+   "name": "落叶松丛",
+   "tier": "tree",
+   "zones": [
+    18
+   ],
+   "members": [
+    {
+     "sp": "shu.luoye",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.dixue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.yanjiao",
+      "cao.dixue"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z18_yunshan",
+   "name": "云杉丛",
+   "tier": "tree",
+   "zones": [
+    18
+   ],
+   "members": [
+    {
+     "sp": "shu.yunshan",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.dixue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.yanjiao",
+      "cao.dixue"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "z18_chuizhi",
+   "name": "垂枝桦丛",
+   "tier": "tree",
+   "zones": [
+    18
+   ],
+   "members": [
+    {
+     "sp": "shu.chuizhi",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "core",
+     "clump": false
+    },
+    {
+     "sp": "guan.aili",
+     "n": [
+      2,
+      3
+     ],
+     "ring": "inner",
+     "clump": false
+    },
+    {
+     "sp": "guan.yueju",
+     "n": [
+      1,
+      2
+     ],
+     "ring": "outer",
+     "clump": false
+    }
+   ],
+   "variants": [
+    {
+     "bushes": [
+      "guan.aili",
+      "guan.aili",
+      "cao.dixue"
+     ]
+    },
+    {
+     "bushes": [
+      "guan.yueju",
+      "cao.yanjiao",
+      "cao.dixue"
+     ]
+    }
+   ]
+  }
+ ],
+ "mono": [
+  {
+   "id": "mono_coconut",
+   "name": "椰子林",
+   "sp": "shu.yezi",
+   "tier": "tree",
+   "zones": [
+    0,
+    1
+   ],
+   "layout": "grid",
+   "spacing": 4.2,
+   "jitter": 0.3,
+   "scale": [
+    0.9,
+    1.2
+   ],
+   "weight": 0.5
+  },
+  {
+   "id": "mono_xiangzhang",
+   "name": "香樟林",
+   "sp": "shu.xiangzhang",
+   "tier": "tree",
+   "zones": [
+    4,
+    5
+   ],
+   "layout": "grid",
+   "spacing": 4.6,
+   "jitter": 0.3,
+   "scale": [
+    0.9,
+    1.15
+   ],
+   "weight": 0.5
+  },
+  {
+   "id": "mono_hongpi",
+   "name": "红皮松林",
+   "sp": "shu.hongpi",
+   "tier": "tree",
+   "zones": [
+    9,
+    10,
+    14
+   ],
+   "layout": "scatter",
+   "n": [
+    10,
+    18
+   ],
+   "minGap": 2.3,
+   "scale": [
+    0.85,
+    1.15
+   ],
+   "weight": 0.5
+  },
+  {
+   "id": "mono_ginkgo",
+   "name": "银杏林",
+   "sp": "shu.yinxing",
+   "tier": "tree",
+   "zones": [
+    10,
+    11
+   ],
+   "layout": "grid",
+   "spacing": 4.6,
+   "jitter": 0.3,
+   "scale": [
+    0.9,
+    1.15
+   ],
+   "weight": 0.45
+  },
+  {
+   "id": "mono_yunshan",
+   "name": "云杉纯林",
+   "sp": "shu.yunshan",
+   "tier": "tree",
+   "zones": [
+    14,
+    15
+   ],
+   "layout": "scatter",
+   "n": [
+    12,
+    20
+   ],
+   "minGap": 2.2,
+   "scale": [
+    0.85,
+    1.15
+   ],
+   "weight": 0.6
+  },
+  {
+   "id": "mono_luoye",
+   "name": "落叶松林",
+   "sp": "shu.luoye",
+   "tier": "tree",
+   "zones": [
+    15,
+    16
+   ],
+   "layout": "scatter",
+   "n": [
+    11,
+    18
+   ],
+   "minGap": 2.4,
+   "scale": [
+    0.85,
+    1.15
+   ],
+   "weight": 0.5
+  },
+  {
+   "id": "mono_mangrove",
+   "name": "红树林",
+   "sp": "shu.hongshu",
+   "tier": "tree",
+   "zones": [
+    0,
+    1
+   ],
+   "layout": "scatter",
+   "n": [
+    3,
+    5
+   ],
+   "minGap": 2.0,
+   "scale": [
+    0.9,
+    1.15
+   ],
+   "weight": 0.4
+  }
+ ]
+}

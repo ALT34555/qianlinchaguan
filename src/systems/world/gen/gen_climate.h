@@ -4,6 +4,10 @@
 
 #include "../planet_macro.h"
 
+/* 纬度弧度，返回向东/向南格速 */
+void qlcg_gen_climate_wind(const WorldCreatorOptions *o, double lat_rad,
+                           double *east, double *south);
+
 /* 写温度/降水/蒸发(mm/年)与湿度比 */
 void qlcg_gen_climate(MacroWorld *w);
 

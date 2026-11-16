@@ -22,6 +22,17 @@ typedef struct {
     float light_scale;   /* 地形/植被/水面的天气衰减 */
 } SkyClimate;
 
+typedef struct {
+    WeatherProfile profile;
+    float color[4], precipitation;
+    double updated_ms;
+    bool ready;
+} WeatherVisual;
+
+/* 仅渲染使用的现实时间天气渐变 */
+void qlcg_weather_visual_update(WeatherVisual *visual, const WeatherProfile *target,
+                                float precipitation, double now_ms);
+
 /* precip_override<0 时取天气降水 */
 void qlcg_sky_climate(const CalendarClock *clk, int utc_offset_min, int season,
                       const WeatherProfile *wp, bool atmosphere, float sim_time,

@@ -11,16 +11,48 @@ typedef struct {
     int stems, simple, bloom, seed_count, seed_visible, winter;
 } HuaPlant;
 
+static void stem_rot(LpBuilder *b, const double start[3], const double end[3],
+                     double radius, double taper, int sides, double rot, LpRgb color) {
+    double dir[3] = {end[0] - start[0], end[1] - start[1], end[2] - start[2]};
+    double len = js_hypot3(dir[0], dir[1], dir[2]);
+    if (len <= 0) return;
+    for (int i = 0; i < 3; i++) dir[i] /= len;
+    int n = sides < 3 ? 3 : sides;
+    double up[3] = {0.0, 1.0, 0.0};
+    if (fabs(dir[1]) > 0.99) { up[0] = 1.0; up[1] = 0.0; }
+    double ux = up[1] * dir[2] - up[2] * dir[1];
+    double uy = up[2] * dir[0] - up[0] * dir[2];
+    double uz = up[0] * dir[1] - up[1] * dir[0];
+    double ul = js_hypot3(ux, uy, uz);
+    if (ul <= 1e-12) ul = 1.0;
+    ux /= ul; uy /= ul; uz /= ul;
+    double vx = dir[1] * uz - dir[2] * uy;
+    double vy = dir[2] * ux - dir[0] * uz;
+    double vz = dir[0] * uy - dir[1] * ux;
+    double r0[8][3], r1[8][3];
+    if (n > 8) n = 8;
+    for (int i = 0; i < n; i++) {
+        double a = rot + ((double)i / (double)n) * TAU;
+        double ca = cos(a), sa = sin(a);
+        double dx = ux * ca + vx * sa, dy = uy * ca + vy * sa, dz = uz * ca + vz * sa;
+        r0[i][0] = start[0] + dx * radius;
+        r0[i][1] = start[1] + dy * radius;
+        r0[i][2] = start[2] + dz * radius;
+        r1[i][0] = end[0] + dx * (radius * taper);
+        r1[i][1] = end[1] + dy * (radius * taper);
+        r1[i][2] = end[2] + dz * (radius * taper);
+    }
+    for (int i = 0; i < n; i++) {
+        int j = (i + 1) % n;
+        qlcg_lp_quad(b, r0[i], r0[j], r1[j], r1[i], color, LP_MAT_SOLID);
+    }
+    for (int i = 1; i < n - 1; i++)
+        qlcg_lp_triangle(b, r1[0], r1[i], r1[i + 1], color, LP_MAT_SOLID);
+}
+
 static void stem_to(LpBuilder *b, const double start[3], const double end[3],
                     double radius, double taper, LpRgb color) {
-    double dir[3] = {end[0] - start[0], end[1] - start[1], end[2] - start[2]};
-    double length = js_hypot3(dir[0], dir[1], dir[2]);
-    if (length <= 0) return;
-    for (int i = 0; i < 3; i++) dir[i] /= length;
-    LpOpts opts = qlcg_lp_opts();
-    opts.sides = 5;
-    opts.tip_ratio = taper;
-    qlcg_lp_limb(b, start, dir, length, radius, color, &opts);
+    stem_rot(b, start, end, radius, taper, 5, 0.0, color);
 }
 
 int qlcg_pa_hua_seed_count(const PdDef *def, int season) {
@@ -42,20 +74,30 @@ static void lotus_pod(LpBuilder *b, const double at[3], double r, double h, LpRg
     opts.mat = LP_MAT_FRUIT;
     opts.radius_ratio = 1.82;
     qlcg_lp_cone(b, at, r / 1.82, r / 1.82, h, 12, color, &opts);
+    double bot[3] = {at[0], at[1] - r * .16, at[2]};
+    for (int k = 0; k < 12; k++) {
+        double a0 = TAU * k / 12, a1 = TAU * (k + 1) / 12;
+        double p0[3] = {at[0] + cos(a0) * r / 1.82, at[1], at[2] + sin(a0) * r / 1.82};
+        double p1[3] = {at[0] + cos(a1) * r / 1.82, at[1], at[2] + sin(a1) * r / 1.82};
+        qlcg_lp_triangle(b, p0, p1, bot, color, LP_MAT_FRUIT);
+    }
     LpRgb well = qlcg_pa_deepen(color, .67);
     for (int i = 0; i < 7; i++) {
         double a = TAU * i / 6;
         double reach = i == 0 ? 0 : r * .61;
         double x = at[0] + cos(a) * reach, z = at[2] + sin(a) * reach;
-        double floor[3] = {x, at[1] + h + r * .012, z};
+        double floor[3] = {x, at[1] + h + r * .020, z};
         for (int k = 0; k < 6; k++) {
             double l = TAU * k / 6, m = TAU * (k + 1) / 6;
             double p[3] = {x + cos(l) * r * .14, floor[1], z + sin(l) * r * .14};
             double q[3] = {x + cos(m) * r * .14, floor[1], z + sin(m) * r * .14};
-            double rim[3] = {x + cos(l) * r * .205, floor[1] + r * .027, z + sin(l) * r * .205};
+            double rim[3] = {x + cos(l) * r * .205, floor[1] + r * .025, z + sin(l) * r * .205};
             double next[3] = {x + cos(m) * r * .205, rim[1], z + sin(m) * r * .205};
+            double ob[3] = {x + cos(l) * r * .215, at[1] + h - r * .005, z + sin(l) * r * .215};
+            double on[3] = {x + cos(m) * r * .215, ob[1], z + sin(m) * r * .215};
             qlcg_lp_triangle(b, floor, q, p, well, LP_MAT_FRUIT);
             qlcg_lp_quad(b, p, q, next, rim, qlcg_lp_lighten(color, .14), LP_MAT_FRUIT);
+            qlcg_lp_quad(b, rim, next, on, ob, color, LP_MAT_FRUIT);
         }
     }
 }
@@ -91,7 +133,7 @@ void qlcg_pa_hua_seed(LpBuilder *b, const double at[3], const HuaSeedProfile *p,
     if (p->form == HUA_CAPSULE || p->form == HUA_CONE)
         seed_body(b, ctr, r * .73, h * .52, r * .73, qlcg_pa_deepen(color, .18));
     if (p->form == HUA_ACHENES || p->form == HUA_GRAINS)
-        seed_body(b, ctr, r * .38, h * .50, r * .38, qlcg_pa_deepen(color, .24));
+        seed_body(b, ctr, r * .46, h * .50, r * .46, qlcg_pa_deepen(color, .24));
     if (p->form == HUA_FOLLICLES)
         seed_body(b, ctr, r * .49, h * .55, r * .49, qlcg_pa_deepen(color, .37));
     for (int i = 0; i < p->divisions; i++) {
@@ -106,7 +148,7 @@ void qlcg_pa_hua_seed(LpBuilder *b, const double at[3], const HuaSeedProfile *p,
             width *= .71;
             length *= .30;
         } else if (p->form == HUA_ACHENES) {
-            reach *= 1.33;
+            reach *= 1.12;
             width *= .48;
             length *= .70;
         }
@@ -130,10 +172,8 @@ static void bloom_petal(LpBuilder *b, const double at[3], double a, double len,
     double tip[3] = {at[0] + dx * len, at[1] + lift, at[2] + dz * len};
     double left[3] = {mid[0] - dz * width * .50, mid[1] + width * .16, mid[2] + dx * width * .50};
     double right[3] = {mid[0] + dz * width * .50, mid[1] + width * .16, mid[2] - dx * width * .50};
-    qlcg_lp_triangle(b, at, left, mid, color, LP_MAT_BLOOM);
-    qlcg_lp_triangle(b, left, tip, mid, color, LP_MAT_BLOOM);
-    qlcg_lp_triangle(b, tip, right, mid, color, LP_MAT_BLOOM);
-    qlcg_lp_triangle(b, right, at, mid, color, LP_MAT_BLOOM);
+    qlcg_lp_triangle(b, at, left, tip, color, LP_MAT_BLOOM);
+    qlcg_lp_triangle(b, tip, right, at, color, LP_MAT_BLOOM);
 }
 
 static void flower(LpBuilder *b, const HuaPlant *c, const double at[3], double angle) {
@@ -146,29 +186,34 @@ static void flower(LpBuilder *b, const HuaPlant *c, const double at[3], double a
     if (p->flower == HUA_LIP) {
         for (int i = 0; i < 5; i++) {
             double a = angle + TAU * i / 5;
-            double pitch = i == 0 ? .70 : .32;
+            double dp = .035 * sin(a * 2.7 + (double)i * 1.7);
+            double pitch = (i == 0 ? .70 : .32) + dp;
             double width = i % 2 ? .48 : .28;
             bloom_petal(b, at, a, r, r * width, pitch, c->flower);
         }
-        bloom_petal(b, at, angle + PI, r * .72, r * .48, -.32, qlcg_lp_deepen(c->flower, .34));
+        bloom_petal(b, at, angle + PI, r * .72, r * .48, -.32 + .03 * sin(angle), qlcg_lp_deepen(c->flower, .34));
     } else {
         for (int ring = 0; ring < rings; ring++) {
             double t = (double)ring / rings;
-            double base[3] = {at[0], at[1] + r * .17 * t, at[2]};
+            double base[3] = {at[0], at[1] + r * (.045 + .17 * t), at[2]};
             double length = r * (1 - .49 * t);
             double width = length * (p->flower == HUA_RAY ? .24 : p->flower == HUA_DOUBLE ? .68 : .82);
             double pitch = (p->flower == HUA_DOUBLE ? .32 : p->flower == HUA_OPEN ? .44 : .15) + t * .74;
             LpRgb color = qlcg_lp_deepen(c->flower, t * .24);
             for (int j = 0; j < petals; j++) {
-                double a = angle + TAU * (j + .45 * ring) / petals;
-                bloom_petal(b, base, a, length, width, pitch, color);
+                double a = angle + TAU * (j + .45 * ring) / petals
+                           + .035 * (double)(((j * 3 + ring) % 5) - 2);
+                double ph = a * 2.7 + (double)(ring * 5 + j) * 1.7 + at[0] * 13.0 + at[2] * 17.0;
+                double dp = .05 * sin(ph);
+                bloom_petal(b, base, a, length, width, pitch + dp, color);
             }
         }
     }
     opts.rings = 0;
+    opts.rot_y = atan2(at[2], at[0]) + at[0] * 7.3 + at[1] * 11.7 + at[2] * 5.1 + 0.37;
     LpRgb gold = qlcg_lp_rgb(241, 181, 56);
-    double core[3] = {at[0], at[1] + r * .075, at[2]};
-    qlcg_lp_dome(b, core, r * .21, r * .16, r * .21, 5, gold, &opts);
+    double core[3] = {at[0], at[1], at[2]};
+    qlcg_lp_dome(b, core, r * .21, r * .20, r * .21, 5, gold, &opts);
     if (p->flower == HUA_COLUMN) {
         double tip[3] = {at[0], at[1] + r * .68, at[2]};
         stem_to(b, core, tip, r * .046, .62, qlcg_lp_deepen(c->flower, .45));
@@ -185,11 +230,14 @@ static void leaves_on(LpBuilder *b, const HuaPlant *c, const double start[3], co
                         start[1] + (end[1] - start[1]) * t,
                         start[2] + (end[2] - start[2]) * t};
         double len = c->spread * c->p->leaf_size * (1 - .34 * t) * (.65 + .35 * c->foliage);
-        LpOpts opts = qlcg_lp_opts();
-        opts.pitch = .18;
-        opts.cup = .24;
         double side = i % 2 ? 1.0 : -1.0;
-        qlcg_lp_petal(b, at, bearing + side * 1.14, len, len * c->p->leaf_width,
+        double seed = bearing * 3.7 + (double)i * 1.9 + at[0] * 11.3 + at[1] * 17.7 + at[2] * 13.1;
+        LpOpts opts = qlcg_lp_opts();
+        opts.pitch = .16 + .08 * (double)((i * 2) % 4) + .06 * sin(seed) + (side > 0 ? .06 : -.05);
+        opts.cup = .15 + .08 * (double)((i * 3 + (side > 0 ? 1 : 2)) % 4) + .05 * cos(seed * 1.3);
+        double yaw = (side > 0 ? 1.21 : -1.04) + (double)(((i * 3) % 5) - 2) * .065;
+        double ang_j = .09 * cos(seed * 0.9);
+        qlcg_lp_petal(b, at, bearing + yaw + ang_j, len, len * c->p->leaf_width,
                      i % 2 ? c->leaf : c->shade, &opts);
     }
 }
@@ -200,24 +248,28 @@ static void woody(LpBuilder *b, const PdDef *def, HuaPlant *c) {
     double origin[3] = {0, 0, 0};
     double fork[3] = {r * p->crown_base * .23, h * p->crown_base, 0};
     double root_radius = fmin(h, r) * (p->habit == HUA_TREE ? .14 : .064);
-    stem_to(b, origin, fork, root_radius, .63, c->stem);
+    stem_rot(b, origin, fork, root_radius, .63, 5, 0.0, c->stem);
     double phase = qlcg_lp_rng_next(&c->rng) * TAU;
     for (int i = 0; i < c->stems; i++) {
         double a = phase + GOLDEN * i;
         double dx = cos(a), dz = sin(a);
         double scale = .78 + .22 * qlcg_lp_rng_next(&c->rng);
+        double brot = (double)i * .47 + .19;
         double mid[3] = {fork[0] + dx * r * .45, fork[1] + h * p->rise * .62 * scale, dz * r * .45};
         double tip[3] = {fork[0] + dx * r * scale, fork[1] + h * p->rise * scale, dz * r * scale};
-        stem_to(b, fork, mid, root_radius * .57, .64, c->stem);
-        stem_to(b, mid, tip, root_radius * .39, .43, c->stem);
+        stem_rot(b, fork, mid, root_radius * .57, .64, 5, brot + .31, c->stem);
+        stem_rot(b, mid, tip, root_radius * .39, .43, 5, brot + .73, c->stem);
         leaves_on(b, c, fork, mid, a, c->simple ? 2 : 5);
         leaves_on(b, c, mid, tip, a, c->simple ? 2 : 7);
         if (!c->simple) {
+            double smid[3] = {mid[0] - (mid[0] - fork[0]) * .08,
+                              mid[1] - (mid[1] - fork[1]) * .08,
+                              mid[2] - (mid[2] - fork[2]) * .08};
             double side[3] = {mid[0] + cos(a + .85) * r * .45, mid[1] + h * p->rise * .23,
                               mid[2] + sin(a + .85) * r * .45};
-            stem_to(b, mid, side, root_radius * .26, .37, c->stem);
-            leaves_on(b, c, mid, side, a + .85, 4);
-            if (c->bloom) flower(b, c, side, a);
+            stem_rot(b, smid, side, root_radius * .26, .37, 5, brot + 1.19, c->stem);
+            leaves_on(b, c, smid, side, a + .85, 4);
+            if (c->bloom) flower(b, c, side, a + .53);
         }
         if (c->bloom) {
             flower(b, c, tip, a);
@@ -231,8 +283,9 @@ static void woody(LpBuilder *b, const PdDef *def, HuaPlant *c) {
                     double at[3] = {node[0] + cos(bearing) * c->bloom_size * .48,
                                     node[1] + c->bloom_size * .22,
                                     node[2] + sin(bearing) * c->bloom_size * .48};
-                    stem_to(b, node, at, c->bloom_size * .055, .48, c->stem);
-                    flower(b, c, at, bearing);
+                    stem_rot(b, node, at, c->bloom_size * .055, .48, 5,
+                             brot + (double)j * .41 + .23, c->stem);
+                    flower(b, c, at, bearing + (double)j * .17);
                 }
             }
         }
@@ -251,7 +304,7 @@ static void herb(LpBuilder *b, const HuaPlant *c) {
         double variation = .73 + .27 * (double)(i % 4) / 3;
         double base[3] = {dx * r * .10, h * .055, dz * r * .10};
         double tip[3] = {dx * r * .46 * variation, h * variation, dz * r * .46 * variation};
-        stem_to(b, base, tip, fmin(r, h) * .045, .55, c->stem);
+        stem_rot(b, base, tip, fmin(r, h) * .045, .55, 5, (double)i * .43 + .19, c->stem);
         leaves_on(b, c, base, tip, a, c->simple ? 3 : 7);
         if (c->bloom) flower(b, c, tip, a);
         if (i < c->seed_count) seed_at(b, c, tip);
@@ -320,15 +373,17 @@ static void pine(LpBuilder *b, const PdDef *def, const HuaPlant *c) {
     double h = c->height, r = c->spread;
     double origin[3] = {0, 0, 0};
     double bend[3] = {r * .19, h * .40, 0}, leader[3] = {r * .34, h * .91, 0};
+    double joint[3] = {bend[0] * .94, bend[1] * .94, 0};
     stem_to(b, origin, bend, r * .14, .66, c->stem);
-    stem_to(b, bend, leader, r * .095, .20, c->stem);
+    stem_rot(b, joint, leader, r * .086, .42, 5, 0.37, c->stem);
+    double denom = c->stems > 1 ? (double)(c->stems - 1) : 1.0;
     for (int i = 0; i < c->stems; i++) {
-        double t = (double)(i + 1) / c->stems;
+        double t = 0.15 + 0.75 * (double)i / denom;
         double a = i * GOLDEN + .6;
         double base[3] = {bend[0] + (leader[0] - bend[0]) * t, bend[1] + (leader[1] - bend[1]) * t, 0};
         double reach = r * (1.15 - .81 * t);
         double tip[3] = {base[0] + cos(a) * reach, base[1] + h * .055, sin(a) * reach};
-        stem_to(b, base, tip, r * .047 * (1 - .57 * t), .32, c->stem);
+        stem_rot(b, base, tip, r * .047 * (1 - .57 * t), .32, 5, 0.31 * i + 0.17, c->stem);
         if (i < c->seed_count) seed_at(b, c, tip);
         if (c->foliage < .12) continue;
         double width = r * (.38 - .14 * t) * c->foliage;
@@ -337,7 +392,7 @@ static void pine(LpBuilder *b, const PdDef *def, const HuaPlant *c) {
         opts.rot_y = a;
         qlcg_lp_dome(b, tip, width, width * .54, width * .72, 6, c->leaf, &opts);
         if (!c->simple) {
-            double spray[3] = {tip[0] - cos(a) * width * .46, tip[1], tip[2] - sin(a) * width * .46};
+            double spray[3] = {tip[0] - cos(a) * width * .36, tip[1], tip[2] - sin(a) * width * .36};
             qlcg_lp_dome(b, spray, width * .65, width * .31, width * .54, 5, c->shade, &opts);
         }
         if (c->winter && qlcg_pa_has_snow_target(def, "canopy")) {

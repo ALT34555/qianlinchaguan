@@ -1,13 +1,14 @@
+#include "hydrology_oxbow.h"
 /* planet */
 #include "core/dev_tools.h"
 #include "planet_macro.h"
-#include "surface_lakes.h"
+#include "hydrology_lakes.h"
 #include "surface_islands.h"
 #include "world_internal.h"
 #include "world_infinite.h"
-#include "surface_rivers.h"
-#include "source_rivers.h"
-#include "river_archive.h"
+#include "hydrology_river.h"
+#include "hydrology_sources.h"
+#include "hydrology_archive.h"
 #include "surface_detail.h"
 #include "surface_internal.h"
 #include "ice_runtime.h"
@@ -18,9 +19,9 @@
 #include "gen/gen_recipes.h"
 #include "gen/gen_islands.h"
 #include "gen/gen_valleys.h"
-#include "gen/gen_biomes.h"
+#include "climate_zone.h"
 #include "gen/gen_validate.h"
-#include "gen/gen_river.h"
+#include "gen/hydrology_dimensions.h"
 #include "../../core/math_util.h"
 #include "platform/platform.h"
 #include <stdlib.h>
@@ -62,7 +63,7 @@ MacroWorld *qlcg_world_generate_with_rivers(const WorldCreatorOptions *opt,struc
     w->ridge_push_e   = (float *)calloc((size_t)N, sizeof(float));
     w->ridge_push_n   = (float *)calloc((size_t)N, sizeof(float));
     w->hydro_friction = (float *)calloc((size_t)N, sizeof(float));
-    w->biome          = (uint8_t *)calloc((size_t)N, sizeof(uint8_t));
+    w->climate_zone   = (uint8_t *)calloc((size_t)N, sizeof(uint8_t));
     w->basin          = (float *)calloc((size_t)N, sizeof(float));
     w->boundary       = (uint8_t *)calloc((size_t)N, sizeof(uint8_t));
     w->points         = (float *)calloc((size_t)N * 3, sizeof(float));
@@ -155,7 +156,7 @@ MacroWorld *qlcg_world_generate_with_rivers(const WorldCreatorOptions *opt,struc
             if(warm>=0) w->temperature[warm]=21.0f;
         }
     }
-    qlcg_build_biomes(w);
+    qlcg_climate_zone_build(w);
 
     /* 生成自检：仅开发版校验并回报 */
     QLCG_DEV_ONLY({
@@ -219,8 +220,9 @@ void qlcg_world_free(MacroWorld *w) {
     qlcg_river_surface_free(w);
     qlcg_river_archive_free(w);
     qlcg_terrain_detail_free(w);
+    qlcg_surface_deltas_free(w);
     free(w->plate_id); free(w->ridge_push_e); free(w->ridge_push_n);
-    free(w->hydro_friction); free(w->biome); free(w->basin); free(w->boundary); free(w->points); free(w->areas);
+    free(w->hydro_friction); free(w->climate_zone); free(w->basin); free(w->boundary); free(w->points); free(w->areas);
     free(w->neighbors); free(w->lengths); free(w->uplift); free(w->rift);
     free(w->shear); free(w->height); free(w->spill); free(w->level);
     free(w->flow); free(w->catchment); free(w->lake_id); free(w->river_width);
@@ -247,8 +249,9 @@ void qlcg_world_cell_center(const MacroWorld *w, int cell, float *wx, float *wz)
     *wz = (((float)row + 0.5f) / (float)w->rows - 0.5f) * qlcg_world_depth(w);
 }
 
-/* 九点采样分类 */
-void qlcg_world_inspect_chunk(const MacroWorld *w, int cx, int cz, ChunkInspectInfo *out) {
+/* 九点样本与分类计算分离 */
+void qlcg_world_inspect_sampled_chunk(const MacroWorld *w,int cx,int cz,const float hs[9],
+                                      const SurfaceWater *center,bool is_fall,ChunkInspectInfo *out) {
     memset(out, 0, sizeof(*out));
     out->cx = cx;
     out->cz = cz;
@@ -258,26 +261,9 @@ void qlcg_world_inspect_chunk(const MacroWorld *w, int cx, int cz, ChunkInspectI
     out->cell_id   = cell;
     out->macro_col = cell % w->columns;
     out->macro_row = cell / w->columns;
+    out->climate_zone = (uint8_t)qlcg_climate_zone_cell(w, cell);
 
-    /* 区块内 3x3 九点：间距半个区块 */
-    float hs[9], ws[9];
-    SurfaceWater water={0};
-    bool is_fall=false;
-    const float step = (float)CHUNK_SIZE * 0.5f;
-    float base_x = (float)cx * (float)CHUNK_SIZE;
-    float base_z = (float)cz * (float)CHUNK_SIZE;
-    for (int oz = 0; oz < 3; oz++) {
-        for (int ox = 0; ox < 3; ox++) {
-            float h, wl;
-            SurfaceWater sample;
-            qlcg_sample_surface_water(w, base_x + (float)ox * step, base_z + (float)oz * step, 0,
-                                      &h, &wl, NULL, NULL, NULL, NULL, NULL, NULL, &sample, NULL);
-            is_fall=is_fall || sample.kind==WATER_KIND_FALL;
-            if(ox==1 && oz==1) water=sample;
-            hs[oz * 3 + ox] = h;
-            ws[oz * 3 + ox] = wl;
-        }
-    }
+    SurfaceWater water=*center;
     float center_h = hs[4];
     float relief,slope,relative;
     qlcg_chunk_shape(hs,&relief,&slope,&relative);
@@ -295,7 +281,7 @@ void qlcg_world_inspect_chunk(const MacroWorld *w, int cx, int cz, ChunkInspectI
                                          w->claim_type[cell]);
     out->type_def  = qlcg_get_chunk_type(out->type_id);
     out->elevation = center_h;
-    out->water_level = ws[4];
+    out->water_level = water.level;
     out->temperature = temp;
     out->moisture    = w->moisture[cell];
     out->lon_deg = (wx / w->circumference) * 360.0f;
@@ -317,6 +303,23 @@ void qlcg_world_inspect_chunk(const MacroWorld *w, int cx, int cz, ChunkInspectI
     if (fid >= 0 && fid < w->faction_count && w->factions[fid].active) {
         out->territory = &w->factions[fid];
     }
+}
+
+/* 独立查询仍按九点采样 */
+void qlcg_world_inspect_chunk(const MacroWorld *w,int cx,int cz,ChunkInspectInfo *out) {
+    float hs[9];
+    SurfaceWater water={0};
+    bool is_fall=false;
+    const float step=CHUNK_SIZE*.5f;
+    float base_x=(float)cx*CHUNK_SIZE,base_z=(float)cz*CHUNK_SIZE;
+    for(int oz=0;oz<3;oz++) for(int ox=0;ox<3;ox++) {
+        SurfaceWater sample;
+        qlcg_sample_surface_water(w,base_x+ox*step,base_z+oz*step,0,
+                                   hs+oz*3+ox,NULL,NULL,NULL,NULL,NULL,NULL,NULL,&sample,NULL);
+        is_fall=is_fall||sample.kind==WATER_KIND_FALL;
+        if(ox==1&&oz==1) water=sample;
+    }
+    qlcg_world_inspect_sampled_chunk(w,cx,cz,hs,&water,is_fall,out);
 }
 
 static uint64_t explored_chunk_key(const MacroWorld *w, int cx, int cz) {

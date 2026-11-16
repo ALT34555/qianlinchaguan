@@ -8,6 +8,18 @@
 #define QLCG_PI  3.14159265358979323846f
 #define QLCG_TAU 6.28318530717958647692f
 
+/* 双精度限幅与零一平滑 */
+static inline double qlcg_clampd(double v,double lo,double hi) {
+    return fmax(lo,fmin(hi,v));
+}
+static inline double qlcg_mixd(double a,double b,double t) {
+    return a+(b-a)*t;
+}
+static inline double qlcg_smooth01d(double t) {
+    t=qlcg_clampd(t,0,1);
+    return t*t*(3-2*t);
+}
+
 /* 基础标量与插值内联函数 */
 static inline float qlcg_clampf(float v, float lo, float hi) {
     return v < lo ? lo : (v > hi ? hi : v);

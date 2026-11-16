@@ -5,15 +5,16 @@
 #include "world_faction_save.h"
 #include "world_ice_save.h"
 #include "world_precip_save.h"
-#include "river_archive.h"
+#include "hydrology_archive.h"
 #include "astronomy_events.h"
-#include "surface_rivers.h"
-#include "source_rivers.h"
+#include "hydrology_river.h"
+#include "hydrology_sources.h"
 #include "save_legacy_v5.h"
 #include "save_legacy_v6.h"
 #include "save_legacy_v7.h"
 #include "save_legacy_v9.h"
 #include "save_legacy_v11.h"
+#include "save_legacy_v12.h"
 #include "world_infinite.h"
 #include "../../ui/ui_input.h"
 #include "../../core/math_util.h"
@@ -29,7 +30,7 @@ _Static_assert(sizeof(SaveContainerHeader) == 112, "container header");
 _Static_assert(offsetof(WorldCreatorOptions, world_name) == 0, "options name first");
 _Static_assert(offsetof(SaveSlotInfo, world_name) == offsetof(SaveSlotInfoV8, world_name),
                "v8/v9 slot name offset");
-_Static_assert(sizeof(AtlasDisplayStateV8) == sizeof(AtlasDisplayState), "v8 atlas layout");
+_Static_assert(sizeof(AtlasDisplayStateV8) == 148, "legacy atlas layout");
 
 /* UTF-8 路径转宽字符后走 _wfopen */
 static FILE *fopen_u8(const char *path, const char *mode) { return qlcg_platform_fopen(path, mode); }
@@ -89,7 +90,8 @@ static void make_file_id(char *id, size_t cap, const char *name, uint32_t seed) 
 
 /* 磁盘头布局版本对应的字节数 */
 static long header_size_of(uint32_t version) {
-    if (version == QLCG_SAVE_VERSION) return qlcg_portable_header_size();
+    if (version >= 13u) return qlcg_portable_header_size_ver(version);
+    if (version == 12u) return (long)sizeof(SaveSlotInfoV12);
     if (version == 11u) return (long)sizeof(SaveSlotInfoV11);
     if (version == 5u) return (long)sizeof(SaveSlotInfoV5);
     if (version == 6u) return (long)sizeof(SaveSlotInfoV6);
@@ -115,17 +117,28 @@ static bool read_save_header_at(FILE *file, long base, SaveSlotInfo *slot) {
     return false;
 #else
     SaveSlotInfo cur={0};
-    bool current=fread(&cur,sizeof(cur),1,file)==1 && cur.valid && cur.save_version==12u;
+    SaveSlotInfoV12 raw={0};
+    bool current=fread(&raw,sizeof(raw),1,file)==1 && raw.valid && raw.save_version==12u;
     if(!current) {
         SaveSlotInfoV11 old;
         if(fseek(file,base,SEEK_SET)!=0 || fread(&old,sizeof(old),1,file)!=1 || !old.valid || old.save_version!=11u) return false;
         memset(&cur,0,sizeof(cur));
         memcpy(&cur,&old,offsetof(SaveSlotInfo,opt));
         memcpy(&cur.opt,&old.opt,sizeof(old.opt));
-        memcpy(&cur.atlas_display,&old.atlas_display,sizeof(old)-offsetof(SaveSlotInfoV11,atlas_display));
+        memcpy(cur.atlas_display.layers,old.atlas_display.layers,sizeof(old.atlas_display.layers));
+        cur.atlas_display.contour_density=old.atlas_display.contour_density;
+        memcpy(&cur.mystery_time_speed,&old.mystery_time_speed,sizeof(old)-offsetof(SaveSlotInfoV11,mystery_time_speed));
         cur.save_version=QLCG_SAVE_VERSION;
         cur.disk_version=11u;
-    } else cur.disk_version=12u;
+    } else {
+        memcpy(&cur,&raw,offsetof(SaveSlotInfo,atlas_display));
+        memcpy(cur.atlas_display.layers,raw.atlas_display.layers,sizeof(raw.atlas_display.layers));
+        cur.atlas_display.contour_density=raw.atlas_display.contour_density;
+        memcpy(&cur.mystery_time_speed,&raw.mystery_time_speed,sizeof(raw)-offsetof(SaveSlotInfoV12,mystery_time_speed));
+        cur.disk_version=12u;
+    }
+    cur.atlas_display.layers[LAYER_VEGETATION]=(AtlasLayerSetting){LAYER_VEGETATION,true,1};
+    qlcg_normalize_atlas_display(&cur.atlas_display);
     if((cur.opt.astronomy_enabled && cur.opt.astronomy_version!=1u) ||
        cur.opt.map_mode<WORLD_MAP_PLANET || cur.opt.map_mode>WORLD_MAP_INFINITE ||
        cur.delta_count<0 || cur.delta_count>MAX_MACRO_DELTAS) return false;
@@ -238,9 +251,9 @@ bool qlcg_infinite_read(FILE *fp,MacroWorld *w,long limit) {
 
 /* 各类世界记录受槽尾约束 */
 static bool save_tail_valid(FILE *file, const SaveSlotInfo *slot, long base, long end) {
-    if (slot->disk_version==QLCG_SAVE_VERSION) {
-        return fseek(file,base+qlcg_portable_header_size(),SEEK_SET)==0 &&
-            qlcg_portable_body_read(file,NULL,&slot->opt,slot->delta_count,end);
+    if (slot_disk_version(slot)>=13u) {
+        return fseek(file,base+save_header_size(slot),SEEK_SET)==0 &&
+            qlcg_portable_body_read_ver(file,NULL,&slot->opt,slot->delta_count,end,slot->disk_version);
     }
     if (slot->delta_count < 0 || slot->delta_count > MAX_MACRO_DELTAS) return false;
     int extra = slot->delta_count > 64 ? slot->delta_count - 64 : 0;
@@ -516,19 +529,10 @@ bool qlcg_saves_load_slot(const SaveFileInfo *file, int slot, SaveSlotInfo *out,
     if (slot < 0 || slot >= QLCG_SAVE_SLOT_COUNT) return false;
     if (!file->slots[slot].present || !qlcg_save_version_supported(file->slots[slot].disk_version) ||
         file->slots[slot].size < header_size_of(file->slots[slot].disk_version)) return false;
-    SaveFileInfo refreshed;
-    if(file->slots[slot].disk_version!=QLCG_SAVE_VERSION) {
-        if(!qlcg_saves_migrate_file(file->file_path)) return false;
-        FILE *scan=fopen_u8(file->file_path,"rb"); if(!scan) return false;
-        bool read=catalog_load(scan,file_size_of(scan),&refreshed); fclose(scan);
-        if(!read) return false;
-        ui_u8_copy(refreshed.file_path,sizeof(refreshed.file_path),file->file_path);
-        ui_u8_copy(refreshed.id,sizeof(refreshed.id),file->id); file=&refreshed;
-    }
     FILE *fp = fopen_u8(file->file_path, "rb");
     if (!fp) return false;
     bool ok = read_save_header_at(fp, file->slots[slot].offset, out);
-    if(ok && out->disk_version==QLCG_SAVE_VERSION) ok=save_tail_valid(fp,out,file->slots[slot].offset,file->slots[slot].offset+file->slots[slot].size);
+    if(ok) ok=save_tail_valid(fp,out,file->slots[slot].offset,file->slots[slot].offset+file->slots[slot].size);
     fclose(fp);
     if (!ok) return false;
     ui_u8_copy(out->file_path, sizeof(out->file_path), file->file_path);
@@ -586,8 +590,9 @@ static bool verify_container(const char *path, int target) {
         SaveSlotInfo info;
         if (!read_save_header_at(fp, (long)h.offset[i], &info)) { ok = false; break; }
         present++;
-        if (!save_tail_valid(fp, &info, (long)h.offset[i],
-                                            (long)h.offset[i] + (long)h.size[i])) {
+        if ((target < 0 || i == target) &&
+            !save_tail_valid(fp, &info, (long)h.offset[i],
+                             (long)h.offset[i] + (long)h.size[i])) {
             ok = false;
         }
     }
@@ -625,9 +630,6 @@ bool qlcg_saves_migrate_file(const char *path) {
         if(cat.slots[i].disk_version!=QLCG_SAVE_VERSION) needed=true;
     }
     if(!ok || !needed) { fclose(in); return ok; }
-#ifndef _WIN32
-    fclose(in); return false;
-#else
     char temporary[1024],backup[1024];
     if(snprintf(temporary,sizeof(temporary),"%s.migrate",path)>=(int)sizeof(temporary)) { fclose(in); return false; }
     FILE *out=fopen_u8(temporary,"w+b"); if(!out) { fclose(in); return false; }
@@ -667,7 +669,6 @@ bool qlcg_saves_migrate_file(const char *path) {
     }
     if(!ok) remove_u8(temporary);
     return ok;
-#endif
 }
 
 /* 填槽头：世界状态与视点 */
@@ -761,8 +762,17 @@ bool qlcg_saves_write_slot_named(const MacroWorld *w, const CalendarClock *clk,
     memset(&old_cat, 0, sizeof(old_cat));
     if (old) {
         long bytes = file_size_of(old);
-        if (bytes <= 0 || !catalog_load(old, bytes, &old_cat) ||
-            !qlcg_save_version_supported(old_cat.slots[old_cat.newest_slot].disk_version)) {
+        bool old_ok = bytes > 0 && catalog_load(old, bytes, &old_cat) &&
+                      qlcg_save_version_supported(old_cat.slots[old_cat.newest_slot].disk_version);
+        for (int i = 0; old_ok && i < QLCG_SAVE_SLOT_COUNT; i++) {
+            if (!old_cat.slots[i].present) continue;
+            SaveSlotInfo check_info;
+            old_ok = qlcg_save_version_supported(old_cat.slots[i].disk_version) &&
+                     read_save_header_at(old, old_cat.slots[i].offset, &check_info) &&
+                     save_tail_valid(old, &check_info, old_cat.slots[i].offset,
+                                     old_cat.slots[i].offset + old_cat.slots[i].size);
+        }
+        if (!old_ok) {
             fclose(old);
             snprintf(out_msg, msg_cap, "%s", tr("saves.err.container"));
             return false;
@@ -843,10 +853,11 @@ bool qlcg_saves_write_slot(const MacroWorld *w, const CalendarClock *clk,
 
 bool qlcg_saves_restore_deltas(MacroWorld *w, const SaveSlotInfo *slot, long offset, long size) {
     if (!w || !slot) return false;
-    if(slot->disk_version==QLCG_SAVE_VERSION) {
+    uint32_t ver = slot_disk_version(slot);
+    if(ver>=13u) {
         FILE *fp=fopen_u8(slot->file_path,"rb"); if(!fp) return false;
-        bool ok=offset>=0 && size>0 && offset<=QLCG_FILE_LIMIT-size && fseek(fp,offset+qlcg_portable_header_size(),SEEK_SET)==0 &&
-            qlcg_portable_body_read(fp,w,&slot->opt,slot->delta_count,offset+size);
+        bool ok=offset>=0 && size>0 && offset<=QLCG_FILE_LIMIT-size && fseek(fp,offset+save_header_size(slot),SEEK_SET)==0 &&
+            qlcg_portable_body_read_ver(fp,w,&slot->opt,slot->delta_count,offset+size,ver);
         fclose(fp); return ok;
     }
     int count = qlcg_clampi(slot->delta_count, 0, MAX_MACRO_DELTAS);
@@ -885,9 +896,13 @@ bool qlcg_saves_restore_deltas(MacroWorld *w, const SaveSlotInfo *slot, long off
 bool qlcg_saves_read_rivers(MacroWorld *w,const SaveSlotInfo *slot,long offset,long size) {
     FILE *fp=fopen_u8(slot->file_path,"rb"); if(!fp) return false;
     long end=size>0?offset+size:io_end(fp,0);
-    if(slot->disk_version==QLCG_SAVE_VERSION) {
-        bool ok=fseek(fp,offset+qlcg_portable_header_size(),SEEK_SET)==0 && qlcg_portable_rivers(fp,w,end);
+    uint32_t ver=slot_disk_version(slot);
+    if(ver>=13u) {
+        bool ok=fseek(fp,offset+save_header_size(slot),SEEK_SET)==0 && qlcg_portable_rivers(fp,w,end);
         fclose(fp); return ok;
+    }
+    if(ver<6u) {
+        fclose(fp); return true;
     }
     int extra=slot->delta_count>64?slot->delta_count-64:0;
     long at=offset+save_header_size(slot)+(long)((size_t)extra*sizeof(SparseDeltaRecord));

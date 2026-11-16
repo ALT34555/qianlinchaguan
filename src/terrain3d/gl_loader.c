@@ -1,5 +1,8 @@
 #include "gl_loader.h"
+#include "terrain_metrics.h"
+#include "core/math_util.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 void qlcg_gl_program_point_size(bool enabled) {
@@ -58,31 +61,56 @@ GLuint qlcg_gl_compile_program(const char *vs_src,const char *fs_src) {
 }
 
 /* —— uniform 位置缓存 —— */
-typedef struct { GLuint prog; const void *name; GLint loc; } UniEntry;
-static UniEntry s_uni[512];
-static int s_uni_n;
+typedef struct { GLuint prog; char *name; GLint loc; unsigned state; } UniEntry;
+static UniEntry s_uni[4096];
 static void forget_uniforms(GLuint program) {
-    for(int i=0;i<s_uni_n;) {
-        if(s_uni[i].prog==program) s_uni[i]=s_uni[--s_uni_n]; else i++;
-    }
+    for(int i=0;i<4096;i++)if(s_uni[i].state==1&&s_uni[i].prog==program){free(s_uni[i].name);s_uni[i].name=NULL;s_uni[i].state=2;}
 }
-
-
-GLint qlcg_gl_uniform(GLuint prog, const char *name) {
-    for (int i = 0; i < s_uni_n; i++)
-        if (s_uni[i].prog == prog && s_uni[i].name == (const void *)name) return s_uni[i].loc;
-    GLint loc = glGetUniformLocation(prog, name);
-    if (s_uni_n < (int)(sizeof(s_uni) / sizeof(s_uni[0]))) {
-        s_uni[s_uni_n].prog = prog;
-        s_uni[s_uni_n].name = (const void *)name;
-        s_uni[s_uni_n].loc = loc;
-        s_uni_n++;
+static void clear_uniforms(void) {
+    for(int i=0;i<4096;i++)if(s_uni[i].state==1)free(s_uni[i].name);
+    memset(s_uni,0,sizeof(s_uni));
+}
+GLint qlcg_gl_uniform(GLuint prog,const char *name) {
+    uint32_t hash=2166136261u;
+    for(const unsigned char *c=(const unsigned char*)name;*c;c++)hash=(hash^*c)*16777619u;
+    hash^=prog*0x9e3779b9u;int empty=-1;
+    for(int probe=0;probe<4096;probe++) {
+        int i=(hash+probe)&4095;UniEntry *entry=s_uni+i;
+        if(entry->state==1){if(entry->prog==prog&&!strcmp(entry->name,name))return entry->loc;}
+        else {if(empty<0)empty=i;if(!entry->state)break;}
     }
-    return loc;
+    GLint location=glGetUniformLocation(prog,name);
+    if(empty>=0){size_t size=strlen(name)+1;char *copy=malloc(size);if(copy){memcpy(copy,name,size);s_uni[empty]=(UniEntry){prog,copy,location,1};}}
+    return location;
 }
 
 QlGlCaps qlcg_gl_caps;
-void qlcg_gl_context_reset(void) { context_ready=false; s_uni_n=0; memset(&qlcg_gl_caps,0,sizeof(qlcg_gl_caps)); }
+static GLsync frame_fences[2];
+static unsigned frame_cursor;
+void qlcg_gl_frame_begin(void) {
+    double start=qlcg_time_ms();
+#ifdef _WIN32
+    if(!glFenceSync||!glClientWaitSync||!glDeleteSync)return;
+#endif
+    GLsync fence=frame_fences[frame_cursor];
+    if(fence) {
+        for(int i=0;i<2000;i++){GLenum status=glClientWaitSync(fence,GL_SYNC_FLUSH_COMMANDS_BIT,1000000);if(status!=GL_TIMEOUT_EXPIRED)break;}
+        glDeleteSync(fence);frame_fences[frame_cursor]=NULL;
+    }
+    qlcg_metrics.queue_ms=qlcg_time_ms()-start;
+}
+void qlcg_gl_frame_end(void) {
+#ifdef _WIN32
+    if(!glFenceSync)return;
+#endif
+    frame_fences[frame_cursor]=glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0);
+    frame_cursor=(frame_cursor+1)%2;
+}
+static void frame_fences_clear(void) {
+    for(int i=0;i<2;i++)if(frame_fences[i]){glDeleteSync(frame_fences[i]);frame_fences[i]=NULL;}
+    frame_cursor=0;
+}
+void qlcg_gl_context_reset(void) { qlcg_profile_reset(); frame_fences_clear();context_ready=false; clear_uniforms(); memset(&qlcg_gl_caps,0,sizeof(qlcg_gl_caps)); }
 static bool extension(const char *name) {
     GLint count=0; glGetIntegerv(GL_NUM_EXTENSIONS,&count);
     for(GLint i=0;i<count;i++) {

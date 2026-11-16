@@ -1,5 +1,6 @@
 /* 冰视觉：浮冰实例池、碎冰与裂纹反馈 */
 #include "terrain_view.h"
+#include "terrain_visual.h"
 #include "terrain_types.h"
 #include "terrain_shaders.h"
 #include "gl_loader.h"
@@ -90,6 +91,9 @@ bool qlcg_ice_visual_init(TerrainRenderer *tr) {
     v->ice_prog   = qlcg_gl_compile_program(ICEP_VS_SRC, ICEP_FS_SRC);
     v->ice_top_prog = qlcg_gl_compile_program(ICE_VS_SRC, ICE_FS_SRC);
     v->crack_prog = qlcg_gl_compile_program(CRACK_VS_SRC, CRACK_FS_SRC);
+    qlcg_visual_program_init(v->ice_prog);
+    qlcg_visual_program_init(v->ice_top_prog);
+    qlcg_visual_program_init(v->crack_prog);
     for (int t = 0; t < QLCG_ICE_FLOW_TEMPLATES; t++) {
         build_prism(t);
         glGenVertexArrays(1, &v->ice_tpl_vao[t]);
@@ -384,8 +388,7 @@ void qlcg_ice_visual_draw_flow(TerrainRenderer *tr, const float *mvp, const floa
     int total = QLCG_ICE_FLOW_NATURAL + QLCG_ICE_FLOW_FRAGMENT;
     for (int i = 0; i < total; i++) if (v->ice_pool[i].used) counts[v->ice_pool[i].tpl & 3]++;
     if (!counts[0] && !counts[1] && !counts[2] && !counts[3]) return;
-    float *buf = (float *)malloc((size_t)total * ICE_VIS_FLOATS * sizeof(float));
-    if (!buf) return;
+    float *buf = v->flow_buf;
     int off[QLCG_ICE_FLOW_TEMPLATES];
     int base = 0;
     for (int t = 0; t < QLCG_ICE_FLOW_TEMPLATES; t++) { off[t] = base; base += counts[t]; }
@@ -403,18 +406,18 @@ void qlcg_ice_visual_draw_flow(TerrainRenderer *tr, const float *mvp, const floa
         p[6] = f->alpha;
         p[7] = f->rot * 0.6180339f + f->x * 0.0137f + f->z * 0.0071f;   /* 实例 seed */
     }
-    glUseProgram(v->ice_prog);
-    glUniformMatrix4fv(qlcg_gl_uniform(v->ice_prog, "uMVP"), 1, GL_FALSE, mvp);
-    glUniform3f(qlcg_gl_uniform(v->ice_prog, "uCamPos"), cam[0], cam[1], cam[2]);
-    glUniform3f(qlcg_gl_uniform(v->ice_prog, "uSunDir"), sun[0], sun[1], sun[2]);
-    glUniform3f(qlcg_gl_uniform(v->ice_prog, "uFogCol"), fog_col[0], fog_col[1], fog_col[2]);
-    glUniform2f(qlcg_gl_uniform(v->ice_prog, "uFogRange"), fog_near, fog_far);
-    glUniform1f(qlcg_gl_uniform(v->ice_prog, "uLightScale"), light_scale);
-    glUniform3f(qlcg_gl_uniform(v->ice_prog, "uTint"), tint[0], tint[1], tint[2]);
+    GLuint program=qlcg_visual_program(tr,v->ice_prog,QL_VIS_ICE_FLOW);
+    qlcg_visual_bind(tr,program);
+    glUniformMatrix4fv(qlcg_gl_uniform(program, "uMVP"), 1, GL_FALSE, mvp);
+    glUniform3f(qlcg_gl_uniform(program, "uCamPos"), cam[0], cam[1], cam[2]);
+    glUniform3f(qlcg_gl_uniform(program, "uSunDir"), sun[0], sun[1], sun[2]);
+    glUniform3f(qlcg_gl_uniform(program, "uFogCol"), fog_col[0], fog_col[1], fog_col[2]);
+    glUniform2f(qlcg_gl_uniform(program, "uFogRange"), fog_near, fog_far);
+    glUniform1f(qlcg_gl_uniform(program, "uLightScale"), light_scale);
+    glUniform3f(qlcg_gl_uniform(program, "uTint"), tint[0], tint[1], tint[2]);
     glBindBuffer(GL_ARRAY_BUFFER, v->ice_inst_vbo);
     glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(base * ICE_VIS_FLOATS * (int)sizeof(float)),
                  buf, GL_DYNAMIC_DRAW);
-    free(buf);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_CULL_FACE);
@@ -462,12 +465,13 @@ void qlcg_ice_visual_draw_cracks(TerrainRenderer *tr, const float *mvp, const fl
         }
     }
     if (n <= 0) return;
-    glUseProgram(v->crack_prog);
-    glUniformMatrix4fv(qlcg_gl_uniform(v->crack_prog, "uMVP"), 1, GL_FALSE, mvp);
-    glUniform3f(qlcg_gl_uniform(v->crack_prog, "uCamPos"), cam[0], cam[1], cam[2]);
-    glUniform3f(qlcg_gl_uniform(v->crack_prog, "uFogCol"), fog_col[0], fog_col[1], fog_col[2]);
-    glUniform2f(qlcg_gl_uniform(v->crack_prog, "uFogRange"), fog_near, fog_far);
-    glUniform1f(qlcg_gl_uniform(v->crack_prog, "uLightScale"), light_scale);
+    GLuint program=qlcg_visual_program(tr,v->crack_prog,QL_VIS_CRACK);
+    qlcg_visual_bind(tr,program);
+    glUniformMatrix4fv(qlcg_gl_uniform(program, "uMVP"), 1, GL_FALSE, mvp);
+    glUniform3f(qlcg_gl_uniform(program, "uCamPos"), cam[0], cam[1], cam[2]);
+    glUniform3f(qlcg_gl_uniform(program, "uFogCol"), fog_col[0], fog_col[1], fog_col[2]);
+    glUniform2f(qlcg_gl_uniform(program, "uFogRange"), fog_near, fog_far);
+    glUniform1f(qlcg_gl_uniform(program, "uLightScale"), light_scale);
     glBindVertexArray(v->crack_vao);
     glBindBuffer(GL_ARRAY_BUFFER, v->crack_vbo);
     glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(n * 4 * (int)sizeof(float)), buf, GL_DYNAMIC_DRAW);

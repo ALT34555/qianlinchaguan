@@ -62,12 +62,19 @@ GameSettings qlcg_default_settings(void) {
     s.frame_rate          = 0;
     s.antialias           = true;
     s.water_reflections   = true;
+    s.water_mist          = true;
     s.water_waves         = true;
     s.particles           = true;
     s.weather_atmosphere  = true;
     s.decorative_clouds   = true;
     s.natural_physics     = true;
     s.status_feedback     = true;
+    s.enhanced_lighting   = false;
+    s.scroll_style        = false;
+    s.scroll_palette      = 0;
+    s.scroll_pigment      = 1.05f;
+    s.scroll_ink          = 1.15f;
+    s.scroll_line_width   = 1.0f;
 
     s.view_mode           = VIEW_MODE_2D;
 #ifdef __ANDROID__
@@ -93,14 +100,16 @@ void qlcg_reset_settings_keep_locale(GameSettings *s) {
 void qlcg_apply_graphics_preset(GameSettings *s, GraphicsPreset preset) {
     s->graphics_preset = preset;
     bool vis = (preset == PRESET_BALANCED || preset == PRESET_HIGH || preset == PRESET_EXTREME);
+    if (!vis) s->enhanced_lighting = false;
     s->antialias          = vis;
     s->water_reflections  = vis;
-    s->water_waves        = (preset == PRESET_EXTREME);
+    s->water_waves        = (preset == PRESET_HIGH || preset == PRESET_EXTREME);
     s->weather_atmosphere = vis;
     s->natural_physics    = vis;
     s->decorative_clouds  = vis;
     s->mirror_reflections = false;
     s->particles          = vis;
+    s->water_mist         = vis;
     s->status_feedback    = (preset != PRESET_MINIMAL);
     s->vegetation_form    = (preset == PRESET_EXTREME || preset == PRESET_HIGH)
                           ? VEG_FORM_RICH : (vis ? VEG_FORM_NORMAL : VEG_FORM_SIMPLE);
@@ -183,11 +192,11 @@ void qlcg_load_settings_disk(GameSettings *s) {
         fclose(fp);
         return;
     }
-    bool old_scale=memcmp(magic,QLCG_SETTINGS_MAGIC,8)!=0;
-    if (!memcmp(magic,QLCG_SETTINGS_MAGIC,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V6,8)) {
+    bool old_scale=memcmp(magic,QLCG_SETTINGS_MAGIC,8)!=0&&memcmp(magic,QLCG_SETTINGS_MAGIC_V7,8)!=0;
+    if (!memcmp(magic,QLCG_SETTINGS_MAGIC,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V7,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V6,8)) {
         long end,size=qlcg_file_size(fp);
         bool ok=size>8 && size<65536 && qlcg_section_open(fp,"SETT",size,&end) && end==size;
-        QlCodec io=qlcg_codec(fp,true,65536);
+        QlCodec io=qlcg_codec(fp,true,ok?(uint64_t)(end-ftell(fp)):0);
         if(ok) qlcg_fields_settings(&io,&tmp);
         ok=ok && io.ok && ftell(fp)==size; fclose(fp);
         if(!ok) return;
@@ -227,6 +236,10 @@ void qlcg_load_settings_disk(GameSettings *s) {
     tmp.joystick_style = qlcg_clampi(tmp.joystick_style, 0, 7);
     tmp.invert_look_x = tmp.invert_look_x != 0;
     tmp.invert_look_y = tmp.invert_look_y != 0;
+    tmp.scroll_palette = qlcg_clampi(tmp.scroll_palette, 0, 2);
+    tmp.scroll_pigment = qlcg_clampf(isfinite(tmp.scroll_pigment) ? tmp.scroll_pigment : 1.05f, 0.2f, 1.6f);
+    tmp.scroll_ink = qlcg_clampf(isfinite(tmp.scroll_ink) ? tmp.scroll_ink : 1.15f, 0.0f, 1.6f);
+    tmp.scroll_line_width = qlcg_clampf(isfinite(tmp.scroll_line_width) ? tmp.scroll_line_width : 1.0f, 0.5f, 2.0f);
     if (tmp.text_scale <= 0.0f) tmp.text_scale = 1.0f;
     {
         bool sane = tmp.font_id[0] != '\0';
@@ -265,7 +278,7 @@ static bool read_portable_settings(const char *path) {
     char magic[8]; long end,size=qlcg_file_size(fp);
     bool ok=size>8 && size<65536 && fread(magic,1,8,fp)==8 && !memcmp(magic,QLCG_SETTINGS_MAGIC,8) &&
         qlcg_section_open(fp,"SETT",size,&end) && end==size;
-    GameSettings tmp={0}; QlCodec io=qlcg_codec(fp,true,65536);
+    GameSettings tmp={0}; QlCodec io=qlcg_codec(fp,true,ok?(uint64_t)(end-ftell(fp)):0);
     if(ok) qlcg_fields_settings(&io,&tmp);
     ok=ok && io.ok && ftell(fp)==size; fclose(fp); return ok;
 }

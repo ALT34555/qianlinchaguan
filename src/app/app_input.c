@@ -178,7 +178,7 @@ void app_input_key_down(unsigned key, bool repeat) {
                 return;
             }
             if (key == 'L' && g_app.screen == SCREEN_IN_GAME && g_app.view_mode == VIEW_MODE_ATLAS &&
-                g_app.world && g_app.world->opt.play_mode == PLAY_MODE_LEISURE) {
+                g_app.world) {
                 g_app.atlas.layer_panel_open = !g_app.atlas.layer_panel_open;
                 return;
             }

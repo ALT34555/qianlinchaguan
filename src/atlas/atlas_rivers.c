@@ -2,12 +2,41 @@
 #include "atlas_view.h"
 #include "atlas_tiles.h"
 #include "../ui/ui_widgets.h"
-#include "../systems/world/surface_rivers.h"
-#include "../systems/world/source_rivers.h"
+#include "../systems/world/hydrology_river.h"
+#include "../systems/world/hydrology_sources.h"
 #include "../systems/world/surface_macro.h"
 #include "../systems/world/world_infinite.h"
 #include "../core/math_util.h"
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define RIVER_PATH_SLOTS 64
+struct AtlasRiverCache {
+    struct {
+        const MacroWorld *world;
+        int cell,count;
+        uint32_t delta,surface;
+        RiverMapPoint points[161];
+    } slots[RIVER_PATH_SLOTS];
+};
+void qlcg_atlas_rivers_release(AtlasRenderer *ar) { free(ar->river_cache);ar->river_cache=NULL; }
+
+static int river_path(struct AtlasRiverCache *cache,const MacroWorld *w,int cell,RiverMapPoint points[161]) {
+    unsigned slot=qlcg_hash_u32((uint32_t)cell^w->opt.seed)%RIVER_PATH_SLOTS;
+    if(cache && cache->slots[slot].world==w && cache->slots[slot].cell==cell &&
+       cache->slots[slot].delta==w->delta_version && cache->slots[slot].surface==w->surface_revision) {
+        int count=cache->slots[slot].count;
+        memcpy(points,cache->slots[slot].points,(size_t)count*sizeof(*points));return count;
+    }
+    int count=qlcg_river_map_path(w,cell,points,161);
+    if(cache && count>=2) {
+        cache->slots[slot].world=w;cache->slots[slot].cell=cell;cache->slots[slot].count=count;
+        cache->slots[slot].delta=w->delta_version;cache->slots[slot].surface=w->surface_revision;
+        memcpy(cache->slots[slot].points,points,(size_t)count*sizeof(*points));
+    }
+    return count;
+}
 
 static double short_arc(double x, double C) { return x-floor(x/C+.5)*C; }
 static double map_delta(const MacroWorld *w,double x) { return qlcg_world_flat(w)?x:short_arc(x,w->circumference); }
@@ -30,7 +59,7 @@ static void stroke(UiContext *ui, float ax, float ay, float bx, float by, float 
 }
 
 static void draw_span(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
-                       RiverMapPoint a,RiverMapPoint b,float minimum,uint32_t color,
+                       RiverMapPoint a,RiverMapPoint b,float minimum,uint32_t color,float ring,
                        float x,float y,float width,float height) {
     double C=w->circumference,dx=map_delta(w,b.wx-a.wx),dz=b.wz-a.wz;
     int steps=(int)ceil(hypot(dx,dz)/C*6.283185307/.03);
@@ -50,7 +79,6 @@ static void draw_span(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
         } else {
             qlcg_atlas_world_to_screen(ar,w,ax,az,x,y,width,height,&sx0,&sy0);
             qlcg_atlas_world_to_screen(ar,w,bx,bz,x,y,width,height,&sx1,&sy1);
-            float ring=calc_zoom_scale(ar,w,width)*w->circumference;
             if(!qlcg_world_flat(w)) sx1-=floorf((sx1-sx0)/ring+.5f)*ring;
         }
         bool width_ok=true;
@@ -65,7 +93,6 @@ static void draw_span(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
         if(screen_len<.001f) continue;
         float native=width_ok?2*fabsf((sox-scx)*screen_dy-(soy-scy)*screen_dx)/screen_len:minimum;
         if(ar->planet_view!=PLANET_VIEW_GLOBE) {
-            float ring=calc_zoom_scale(ar,w,width)*w->circumference;
             float delta=sox-scx;
             if(!qlcg_world_flat(w)) delta-=floorf(delta/ring+.5f)*ring;
             native=2*fabsf(delta*screen_dy-(soy-scy)*screen_dx)/screen_len;
@@ -79,7 +106,7 @@ static void draw_span(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
 }
 
 static void draw_world_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
-                            float x,float y,float width,float height) {
+                            struct AtlasRiverCache *cache,float x,float y,float width,float height) {
     int level=qlcg_atlas_river_level(ar,w,width,height),band=qlcg_clampi(level+3,4,8);
     float minimum=level>=12?5:3;
     AtlasTileView tiles;
@@ -87,6 +114,7 @@ static void draw_world_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiCont
     if(tiles.river_mix>=1)return;
     uint32_t color=ui_rgba(51,113,139,(uint8_t)(255*(1-tiles.river_mix)));
     float scale=calc_zoom_scale(ar,w,width),span=w->circumference/w->columns;
+    float ring=scale*w->circumference;
     int any=0;
     for(int i=0;i<w->river_count;i++) if(w->rivers[i].min_level<=band) { any=1; break; }
     if(!any) band=8;
@@ -112,7 +140,7 @@ static void draw_world_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiCont
             qlcg_world_cell_center(w,cell,&ax,&az); qlcg_world_cell_center(w,r,&bx,&bz);
             if(hypot(map_delta(w,ax-rv->ax),az-rv->az)<1 &&
                hypot(map_delta(w,bx-rv->bx),bz-rv->bz)<1) {
-                count=qlcg_river_map_path(w,cell,points,161);
+                count=river_path(cache,w,cell,points);
                 if(count<2) continue;
             }
         }
@@ -120,14 +148,15 @@ static void draw_world_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiCont
             points[0]=(RiverMapPoint){rv->ax,rv->az,rv->width_m*.5};
             points[1]=(RiverMapPoint){rv->bx,rv->bz,rv->width_m*.5}; count=2;
         }
-        for(int k=1;k<count;k++) draw_span(ar,w,ui,points[k-1],points[k],minimum,color,x,y,width,height);
+        for(int k=1;k<count;k++) draw_span(ar,w,ui,points[k-1],points[k],minimum,color,ring,x,y,width,height);
     }
     ui_clip_pop(ui);
 }
 
-void qlcg_atlas_draw_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
+void qlcg_atlas_draw_rivers(AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
                             float x,float y,float width,float height) {
-    draw_world_rivers(ar,w,ui,x,y,width,height);
+    if(!ar->river_cache)ar->river_cache=calloc(1,sizeof(*ar->river_cache));
+    draw_world_rivers(ar,w,ui,ar->river_cache,x,y,width,height);
     if(!qlcg_world_flat(w) || !w->planes)return;
     double scale=calc_zoom_scale(ar,w,width),half=w->circumference*.5;
     double period=w->circumference+(double)w->circumference/w->columns;
@@ -137,7 +166,7 @@ void qlcg_atlas_draw_rivers(const AtlasRenderer *ar,const MacroWorld *w,UiContex
         double cz=ar->cam_wz-((double)v->opt.plane_z-w->opt.plane_z)*period;
         if(fabs(cx)>half+width/(2*scale) || fabs(cz)>half+height/(2*scale))continue;
         AtlasRenderer view=*ar;view.cam_wx=cx;view.cam_wz=cz;view.tiles=NULL;
-        draw_world_rivers(&view,v,ui,x,y,width,height);
+        draw_world_rivers(&view,v,ui,ar->river_cache,x,y,width,height);
     }
 }
 
@@ -160,6 +189,7 @@ static uint32_t source_color(const MacroWorld *w,double wx,double wz,double leve
 
 void qlcg_atlas_draw_sources(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
                               float opacity,float x,float y,float width,float height) {
+    float ring=calc_zoom_scale(ar,w,width)*w->circumference;
     int level=qlcg_atlas_river_level(ar,w,width,height);
     if(level<4||opacity<=0||!w->river_width) return;
     double max_width=w->columns<=256?12:w->columns<=512?24:32;
@@ -206,8 +236,9 @@ void qlcg_atlas_draw_sources(const AtlasRenderer *ar,const MacroWorld *w,UiConte
             for(int v=1;v<e->count;v++) {
                 const RiverVectorPoint *a=e->points+v-1,*b=a+1;
                 uint32_t color=source_color(w,a->wx,a->wz,a->level,a->depth,a->width,ICE_KIND_RIVER,opacity,show_ice);
+                float span_min=e->target_kind==1?minimum:fmaxf(minimum,2.0f);
                 draw_span(ar,w,ui,(RiverMapPoint){a->wx,a->wz,a->width},
-                    (RiverMapPoint){b->wx,b->wz,b->width},minimum,color,x,y,width,height);
+                    (RiverMapPoint){b->wx,b->wz,b->width},span_min,color,ring,x,y,width,height);
             }
             if(e->target_kind==SOURCE_TARGET_POOL) {
                 RiverSource pool; qlcg_source_terminal_pool(n,e,&pool);
@@ -220,7 +251,7 @@ void qlcg_atlas_draw_sources(const AtlasRenderer *ar,const MacroWorld *w,UiConte
                     double along0=(a0+form->shift)*pool.pool_rx,along1=(a1+form->shift)*pool.pool_rx;
                     SurfacePoint a=qlcg_frame_coordinates(&n->frame,pool.x+along0*pool.direction_x,pool.z+along0*pool.direction_z);
                     SurfacePoint b=qlcg_frame_coordinates(&n->frame,pool.x+along1*pool.direction_x,pool.z+along1*pool.direction_z);
-                    draw_span(ar,w,ui,(RiverMapPoint){a.x,a.z,radius},(RiverMapPoint){b.x,b.z,radius},minimum,color,x,y,width,height);
+                    draw_span(ar,w,ui,(RiverMapPoint){a.x,a.z,radius},(RiverMapPoint){b.x,b.z,radius},minimum,color,ring,x,y,width,height);
                 }
             }
         }
@@ -237,7 +268,7 @@ void qlcg_atlas_draw_sources(const AtlasRenderer *ar,const MacroWorld *w,UiConte
             SurfacePoint b=qlcg_frame_coordinates(&n->frame,s->x+radius*.4,s->z);
             uint32_t color=source_color(w,a.x,a.z,level_m,depth,radius,ICE_KIND_STATIC,opacity,show_ice);
             draw_span(ar,w,ui,(RiverMapPoint){a.x,a.z,radius},(RiverMapPoint){b.x,b.z,radius},
-                minimum,color,x,y,width,height);
+                minimum,color,ring,x,y,width,height);
         }
     }
     ui_clip_pop(ui);

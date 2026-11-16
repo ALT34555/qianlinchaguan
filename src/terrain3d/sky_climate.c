@@ -46,6 +46,41 @@ static void scale3(const float *a, float k, float *out) {
     out[2] = a[2] * k;
 }
 
+void qlcg_weather_visual_update(WeatherVisual *visual, const WeatherProfile *target,
+                                float precipitation, double now_ms) {
+    if (!target) target = qlcg_get_weather_profile(0);
+    precipitation = qlcg_clampf(precipitation, 0.0f, 1.0f);
+    if (!visual->ready) {
+        visual->profile = *target;
+        for (int k = 0; k < 4; k++)
+            visual->color[k] = (float)((target->color >> (24 - 8 * k)) & 255u);
+        visual->precipitation = precipitation;
+        visual->updated_ms = now_ms;
+        visual->ready = true;
+        return;
+    }
+    float dt = qlcg_clampf((float)((now_ms - visual->updated_ms) * 0.001), 0.0f, 0.1f);
+    float blend = 1.0f - expf(-dt / 0.65f);
+    visual->updated_ms = now_ms;
+    WeatherProfile next = *target;
+    next.clouds = qlcg_lerpf(visual->profile.clouds, target->clouds, blend);
+    next.dim = qlcg_lerpf(visual->profile.dim, target->dim, blend);
+    next.wind = qlcg_lerpf(visual->profile.wind, target->wind, blend);
+    next.rain = qlcg_lerpf(visual->profile.rain, target->rain, blend);
+    next.snow = qlcg_lerpf(visual->profile.snow, target->snow, blend);
+    next.hail = qlcg_lerpf(visual->profile.hail, target->hail, blend);
+    next.dust = qlcg_lerpf(visual->profile.dust, target->dust, blend);
+    next.fog = qlcg_lerpf(visual->profile.fog, target->fog, blend);
+    next.color = 0;
+    for (int k = 0; k < 4; k++) {
+        float channel = (float)((target->color >> (24 - 8 * k)) & 255u);
+        visual->color[k] = qlcg_lerpf(visual->color[k], channel, blend);
+        next.color |= (uint32_t)(visual->color[k] + 0.5f) << (24 - 8 * k);
+    }
+    visual->profile = next;
+    visual->precipitation = qlcg_lerpf(visual->precipitation, precipitation, blend);
+}
+
 /* 天气压暗天色（base WorldLighting） */
 static void apply_weather(const WeatherProfile *wp, bool atmosphere, float daylight,
                           float precip, float *horizon, float *zenith) {

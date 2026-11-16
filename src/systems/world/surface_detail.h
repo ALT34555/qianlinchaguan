@@ -2,6 +2,7 @@
 #define QLCG_SURFACE_DETAIL_H
 #include "surface_macro.h"
 #include "surface_frame.h"
+#include "hydrology_headwater.h"
 
 typedef struct { double uplift,rift,shear,region,weights[6]; } LocalLandformProfile;
 typedef struct { SurfaceFrame frame; double dx,dz,radius,amplitude,phase; } HeadwaterLandform;
@@ -21,6 +22,7 @@ typedef struct {
 typedef struct {
     int cell,head,near_river,lake_in,lake_out;
     SourcePlan source;
+    HeadwaterPlan headwater;
 } MacroCellPlan;
 typedef struct {
     int nodes,features,masks,heads;
@@ -35,8 +37,11 @@ int qlcg_headwater_landform(const MacroWorld *w,int cell,HeadwaterLandform *out)
 const MacroCellPlan *qlcg_macro_cell_plan(const MacroWorld *w,int cell);
 double qlcg_headwater_relief(const MacroWorld *w,double wx,double wz);
 double qlcg_regional_relief(const MacroWorld *w,double wx,double wz);
+double qlcg_map_regional_relief(const MacroWorld *w,double wx,double wz,double base,double uplift);
 double qlcg_sampled_regional_relief(const MacroWorld *w,double wx,double wz);
 double qlcg_natural_detail_height(const MacroWorld *w,double wx,double wz);
+double qlcg_natural_base_height(const MacroWorld *w,double wx,double wz);
+double qlcg_detail_terrace_height(double height,double step,double transition);
 void qlcg_terrain_detail_free(MacroWorld *w);
 TerrainDetailStats qlcg_terrain_detail_stats(const MacroWorld *w);
 

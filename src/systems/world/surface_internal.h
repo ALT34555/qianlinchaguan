@@ -5,11 +5,20 @@
 #include "planet_macro.h"
 
 float dist_to_seg2d(float px, float pz, float ax, float az, float bx, float bz, float *out_t);
+PropInstance *qlcg_region_add_plant(RegionData *reg, int species, int category,
+                                    int aquatic, float lx, float lz, float y,
+                                    float rot_y, float size_xz, float size_y,
+                                    int visual_season, int variant, uint32_t roll);
 float qlcg_sample_natural_height(const MacroWorld *w, float wx, float wz);
 void qlcg_chunk_shape(const float height[9],float *relief,float *slope,float *relative);
+void qlcg_world_inspect_sampled_chunk(const MacroWorld *w,int cx,int cz,const float heights[9],
+                                      const SurfaceWater *water,bool is_fall,ChunkInspectInfo *out);
+void qlcg_surface_apply_deltas(const MacroWorld *w,float wx,float wz,
+                                float *h,float *wl,float *wet,float *desert,float *forest);
+void qlcg_surface_deltas_free(MacroWorld *w);
 void qlcg_sample_surface_map(const MacroWorld *w, double wx, double wz,
-                              float *out_h, float *out_wl, float *out_temp);
-typedef struct { float h,wl,temp,depth,source_depth,coast_tint; } SurfaceMapPoint;
+                              float *out_h, float *out_wl, float *out_temp, float *out_wet_gain);
+typedef struct { float h,wl,temp,depth,source_depth,coast_tint,wet_gain; } SurfaceMapPoint;
 void qlcg_sample_surface_detail_map(const MacroWorld *w,double wx,double wz,SurfaceMapPoint *out);
 void qlcg_water_ice_state(const MacroWorld *w, float wz, int season, float bed, float level,
                           float annual_temperature, SurfaceWater *out);

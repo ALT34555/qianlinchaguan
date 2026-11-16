@@ -165,7 +165,7 @@ int qlcg_astra_event_vertices(AstraEventState *s,const CalendarClock *clk,const 
     return n;
 }
 typedef struct { uint32_t version,seed;double high_water;int64_t hour[2];unsigned char flags[2][ASTRA_METEORS]; } EventDisk;
-static bool event_fields(FILE *file, EventDisk *d, uint32_t *enabled, uint32_t *policy, bool reading) {
+static bool event_fields(FILE *file, EventDisk *d, uint32_t *enabled, uint32_t *policy, bool reading, bool has_policy) {
     QlCodec io=qlcg_codec(file,reading,QLCG_FILE_LIMIT);
     d->version=(uint32_t)qlcg_io_uint(&io,d->version,4); d->seed=(uint32_t)qlcg_io_uint(&io,d->seed,4);
     d->high_water=qlcg_io_f64(&io,d->high_water);
@@ -174,7 +174,9 @@ static bool event_fields(FILE *file, EventDisk *d, uint32_t *enabled, uint32_t *
         d->hour[j]=bits<=INT64_MAX?(int64_t)bits:-1-(int64_t)(UINT64_MAX-bits);
     }
     qlcg_io_bytes(&io,d->flags,2*ASTRA_METEORS);
-    *enabled=(uint32_t)qlcg_io_uint(&io,*enabled,4); *policy=(uint32_t)qlcg_io_uint(&io,*policy,4);
+    *enabled=(uint32_t)qlcg_io_uint(&io,*enabled,4);
+    if(has_policy) *policy=(uint32_t)qlcg_io_uint(&io,*policy,4);
+    else if(reading) *policy=0;
     return io.ok;
 }
 bool qlcg_astra_events_write(FILE *fp,const MacroWorld *w) {
@@ -184,7 +186,7 @@ bool qlcg_astra_events_write(FILE *fp,const MacroWorld *w) {
     if(s)d.high_water=s->high_water;uint32_t enabled=0,policy=w->astronomy_broadcast;
     QlCodec io=qlcg_codec(fp,false,9);
     qlcg_io_bytes(&io,"ASTE2",5); qlcg_io_uint(&io,40+2*ASTRA_METEORS,4);
-    return policy<=255 && io.ok && event_fields(fp,&d,&enabled,&policy,false);
+    return policy<=255 && io.ok && event_fields(fp,&d,&enabled,&policy,false,true);
 }
 bool qlcg_astra_events_read(FILE *fp,MacroWorld *w,long limit) {
     long at=ftell(fp);if(at<0)return false;char magic[5];
@@ -194,7 +196,8 @@ bool qlcg_astra_events_read(FILE *fp,MacroWorld *w,long limit) {
     QlCodec io=qlcg_codec(fp,true,4); size=(uint32_t)qlcg_io_uint(&io,0,4);
     if(!io.ok || (limit>0 && (limit-at<9 || (uint64_t)(limit-at-9)<size))) return false;
     if(!memcmp(magic,"ASTE2",5)) {
-        if(size!=40+2*ASTRA_METEORS || !event_fields(fp,&d,&enabled,&policy,true)) return false;
+        if((size!=40+2*ASTRA_METEORS && size!=36+2*ASTRA_METEORS) ||
+           !event_fields(fp,&d,&enabled,&policy,true,size==40+2*ASTRA_METEORS)) return false;
     } else {
 #ifdef _WIN32
         if((size!=sizeof(d)&&size!=sizeof(d)+4&&size!=sizeof(d)+8) || fread(&d,sizeof(d),1,fp)!=1) return false;

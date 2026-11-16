@@ -2,7 +2,9 @@
 #include "planet_macro.h"
 #include "surface_internal.h"
 #include "surface_stream.h"
-#include "source_rivers.h"
+#include "hydrology_sources.h"
+#include "surface_detail.h"
+#include "climate_season.h"
 #include "ice_runtime.h"
 #include "faction_naming.h"
 #include "gen/gen_palette.h"
@@ -20,6 +22,9 @@
 #include "model/rock_def.h"
 #include "plant_distribution.h"
 #include "rock_distribution.h"
+#include "surface_guild.h"
+#include "climate_zone.h"
+#include "model/plant_guild.h"
 
 /* 林漠修正后的有效干燥度 */
 static float effective_aridity(const RegionData *reg, int idx) {
@@ -81,23 +86,24 @@ static void fill_site(PlantSite *site, const RegionData *reg, const MacroWorld *
     site->material = mat;
     site->saline = salt ? 1.0f : 0.0f;
 }
-void qlcg_region_recolor(RegionData *reg, const MacroWorld *w, int season_idx) {
-    if (reg->stream) {
-        RegionStream *st = reg->stream;
-        for (int i = 0; i < st->count; i++)
-            qlcg_region_recolor(st->slots[st->active[i]].data, w, season_idx);
-        st->revision++;
-        return;
-    }
-    reg->mesh_revision++;
+static void recolor_row(RegionData *reg,const MacroWorld *w,int season_idx,int row) {
+    if(row==0)reg->mesh_revision++;
 
     int gw = reg->width;
     int gh = reg->height;
     float span = (float)(reg->width - 1) * reg->step;
     float half = span * 0.5f;
     int season = (season_idx >= 0 && season_idx < 4) ? season_idx : -1;
+    const HeadwaterPlan *head=qlcg_headwater_plan(w,reg->site_cell);
+    SurfaceFrame frame=qlcg_surface_frame(w,reg->site_cell);
+    if(head) {
+        SurfacePoint center=qlcg_frame_local(&frame,reg->center_x,reg->center_z);
+        if(hypot(center.x-head->x,center.z-head->z)>head->radius+span)head=NULL;
+    }
+    QlcgClimateSeason climate={0};
+    if(head) qlcg_climate_season_at(w,reg->site_cell,w->plant_calendar,&climate);
 
-    for (int z = 0; z < gh; z++) {
+    for (int z = row; z < row+1; z++) {
         for (int x = 0; x < gw; x++) {
             int idx = z * gw + x;
             float h   = reg->heights[idx];
@@ -152,11 +158,19 @@ void qlcg_region_recolor(RegionData *reg, const MacroWorld *w, int season_idx) {
                 if(amount==255) amount=122;
                 for(int c=0;c<3;c++) col[c]=(uint8_t)((col[c]*(255-amount)+crust[c]*amount)/255);
             }
+            if(head&&h>=wl-.02f) {
+                SurfacePoint p=qlcg_frame_local(&frame,reg->center_x+x*reg->step-half,reg->center_z+z*reg->step-half);
+                qlcg_headwater_color(head,p.x,p.z,climate.temperature,col);
+            }
             reg->colors[idx * 3 + 0] = col[0];
             reg->colors[idx * 3 + 1] = col[1];
             reg->colors[idx * 3 + 2] = col[2];
         }
     }
+}
+void qlcg_region_recolor(RegionData *reg,const MacroWorld *w,int season_idx) {
+    if(reg->stream){RegionStream *st=reg->stream;for(int i=0;i<st->count;i++)qlcg_region_recolor(st->slots[st->active[i]].data,w,season_idx);st->revision++;return;}
+    for(int row=0;row<reg->height;row++)recolor_row(reg,w,season_idx,row);
 }
 
 static PropInstance *append_plant(RegionData *reg) {
@@ -168,6 +182,33 @@ static PropInstance *append_plant(RegionData *reg) {
         reg->tree_cap = cap;
     }
     return &reg->trees[reg->tree_count++];
+}
+
+/* 丛与散点共用的植株落地 */
+PropInstance *qlcg_region_add_plant(RegionData *reg, int species, int category,
+                                    int aquatic, float lx, float lz, float y,
+                                    float rot_y, float size_xz, float size_y,
+                                    int visual_season, int variant, uint32_t roll) {
+    PropInstance *p = append_plant(reg);
+    if (!p) return NULL;
+    memset(p, 0, sizeof(*p));
+    const PdSpecies *sp = qlcg_pd_species(species);
+    p->x = lx;
+    p->z = lz;
+    p->y = y;
+    p->rot_y = rot_y;
+    p->scale_x = p->scale_z = size_xz;
+    p->scale_y = size_y;
+    p->r = 0.24f; p->g = 0.56f; p->b = 0.30f;
+    p->archetype = (uint8_t)(aquatic ? roll % 3u : (roll >> 8) % 5u);
+    p->model_state = PLANT_STATE_NORMAL;
+    p->species = (uint8_t)(species < 0 ? 0xFF : species);
+    p->category = (uint8_t)(category < 0 ? 0 : category);
+    p->visual_season = (uint8_t)visual_season;
+    p->shape_variant = (uint8_t)variant;
+    if (sp && sp->base.name)
+        snprintf(p->label, sizeof(p->label), "%s", sp->base.name);
+    return p;
 }
 
 /* 岩石落点复用已有网格 */
@@ -217,21 +258,41 @@ static void scatter_rock(RegionData *reg, int idx, float lx, float lz, float spa
     snprintf(rk->label, sizeof(rk->label), "%s", name ? name : "山岩");
 }
 
+/* 旗帜直接读取本块领地 */
+static void scatter_flag(RegionData *reg,const MacroWorld *w) {
+    int cell=reg->site_cell,fid=w->claim_faction[cell];
+    if(fid<0||fid>=w->faction_count||reg->flag_count>=32) return;
+    const TerritoryFaction *territory=w->factions+fid;
+    if(!territory->active||territory->cx!=reg->center_cx||territory->cz!=reg->center_cz) return;
+    PropInstance *fl=&reg->flags[reg->flag_count++];
+    fl->x=fl->z=0;
+    fl->y=qlcg_region_height_at(reg,0,0);
+    fl->scale_x=fl->scale_y=fl->scale_z=1;
+    fl->r=(float)((territory->main_color>>16)&0xFF)/255;
+    fl->g=(float)((territory->main_color>>8)&0xFF)/255;
+    fl->b=(float)(territory->main_color&0xFF)/255;
+    fl->trim_color=territory->trim_color;
+    fl->faction_id=(int16_t)territory->id;
+    snprintf(fl->label,sizeof(fl->label),"%s · %s",qlcg_faction_display_name(territory),
+             w->claim_type[cell]==2?"置旗地主旗":"有主界标");
+}
+
 /* 散布植被、岩石与旗帜 */
-void qlcg_region_scatter_props(RegionData *reg, const MacroWorld *w,
-                               int season_idx, const GameSettings *settings) {
-    if (reg->stream) {
-        RegionStream *st = reg->stream;
-        for (int i = 0; i < st->count; i++)
-            qlcg_region_scatter_props(st->slots[st->active[i]].data, w, season_idx, settings);
-        st->revision++;
-        return;
-    }
+typedef struct {
+    QlcgClimateSeason cs;
+    QlcgGuildShape guild_shapes[QLCG_GUILD_BOX_MAX];
+    int guild_shape_n,zone_cached,scatter_pool[96],scatter_pool_n;
+    int passes,stride,rock_material,row;
+    float half;
+    VegetationDensity density;
+} ScatterJob;
+static void scatter_begin(ScatterJob *job,RegionData *reg,const MacroWorld *w,int season_idx,const GameSettings *settings,bool markers) {
+    QlcgClimateSeason cs;QlcgGuildShape guild_shapes[QLCG_GUILD_BOX_MAX];
     /* 散布前必须已有物种表，否则物种号全为未定 */
     qlcg_plant_material_init();
     qlcg_rock_material_init();
     qlcg_plant_habitat_prepare();
-    QlcgClimateSeason cs;
+
     if (w->plant_season_forced) {
         memset(&cs, 0, sizeof(cs));
         cs.season = qlcg_clampi(season_idx, 0, 3);
@@ -243,18 +304,45 @@ void qlcg_region_scatter_props(RegionData *reg, const MacroWorld *w,
     reg->rock_count = 0;
     reg->flag_count = 0;
 
+    int guild_shape_n = 0;
+    if (markers) {
+        int x0=(int)floorf(reg->origin_x/QLCG_GUILD_CELL);
+        int z0=(int)floorf(reg->origin_z/QLCG_GUILD_CELL);
+        float span=(reg->width-1)*reg->step;
+        int x1=(int)floorf((reg->origin_x+span-.001f)/QLCG_GUILD_CELL);
+        int z1=(int)floorf((reg->origin_z+span-.001f)/QLCG_GUILD_CELL);
+        for(int z=z0;z<=z1;z++) for(int x=x0;x<=x1;x++) {
+            QlcgGuildShape shape;
+            if(qlcg_guild_query(w,x,z,&shape)>=0 && guild_shape_n<QLCG_GUILD_BOX_MAX)
+                guild_shapes[guild_shape_n++]=shape;
+        }
+    } else guild_shape_n=qlcg_guild_scatter(reg,w,season_idx,settings,&cs,guild_shapes,QLCG_GUILD_BOX_MAX);
+    int zone_cached = -2;
+    int scatter_pool_n = 0;
+
     float span = (float)(reg->width - 1) * reg->step;
     float half = span * 0.5f;
     VegetationDensity density = qlcg_vegetation_density(settings->dense_vegetation);
     int passes = (int)ceilf(density.understory);
-    const float base_density = 1.35f;
     /* 采样间距对齐 base 的 8m 区块网格 */
     int stride = qlcg_clampi((int)roundf(8.0f / reg->step), 1, 8);
     int rock_material = qlcg_chunk_material(reg->site_chunk_type);
     if (!rock_material)
         rock_material = site_material(w, reg->site_cell, WATER_KIND_DRY, 0);
 
-    for (int gz = 3; gz < reg->height - 1; gz += stride) {
+
+    job->cs=cs;memcpy(job->guild_shapes,guild_shapes,sizeof(guild_shapes));job->guild_shape_n=guild_shape_n;
+    job->zone_cached=zone_cached;job->scatter_pool_n=scatter_pool_n;
+    job->passes=passes;job->stride=stride;job->rock_material=rock_material;job->half=half;job->density=density;job->row=3;
+}
+static bool scatter_step(ScatterJob *job,RegionData *reg,const MacroWorld *w,int season_idx,const GameSettings *settings,bool markers) {
+    QlcgClimateSeason cs=job->cs;
+    QlcgGuildShape *guild_shapes=job->guild_shapes;
+    int guild_shape_n=job->guild_shape_n,zone_cached=job->zone_cached;
+    int *scatter_pool=job->scatter_pool,scatter_pool_n=job->scatter_pool_n;
+    int passes=job->passes,stride=job->stride,rock_material=job->rock_material;
+    float half=job->half;VegetationDensity density=job->density;const float base_density=1.35f;
+    for (int gz = job->row; gz < job->row+stride && gz < reg->height-1; gz += stride) {
         for (int gx = 3; gx < reg->width - 1; gx += stride) {
             int idx = gz * reg->width + gx;
             float h   = reg->heights[idx];
@@ -276,6 +364,7 @@ void qlcg_region_scatter_props(RegionData *reg, const MacroWorld *w,
             float sd = fabsf(reg->heights[idx + reg->width] - h);
             float slope = fmaxf(fmaxf(sl, sr), fmaxf(su, sd)) / reg->step;
 
+            if(!markers && !qlcg_headwater_excludes(w,reg->center_x+lx,reg->center_z+lz,4))
             scatter_rock(reg, idx, lx, lz, stride * reg->step, slope,
                          rock_material, patch.rocks, hsh, season_idx);
 
@@ -325,6 +414,16 @@ void qlcg_region_scatter_props(RegionData *reg, const MacroWorld *w,
                     if (aquatic ? !(depth > 0.15f && depth < 2.2f) : water > bed)
                         continue;
                 }
+                int pzone = qlcg_climate_zone_at(w, reg->center_x + px, reg->center_z + pz);
+                if (pzone != zone_cached) {
+                    zone_cached = pzone;
+                    scatter_pool_n = (pzone >= 0 && pzone < QLCG_ZONE_COUNT)
+                        ? qlcg_pg_zone_pool(pzone, scatter_pool, 96) : 0;
+                }
+                if (scatter_pool_n <= 0) continue;
+                if (qlcg_guild_inside(guild_shapes, guild_shape_n,
+                                      reg->center_x + px, reg->center_z + pz, 0.4f))
+                    continue;
                 float site_x = pass ? px : lx;
                 float site_z = pass ? pz : lz;
                 int cell = qlcg_world_cell_at_wxz(w, reg->center_x + site_x, reg->center_z + site_z);
@@ -335,13 +434,19 @@ void qlcg_region_scatter_props(RegionData *reg, const MacroWorld *w,
                 PlantSite site;
                 fill_site(&site, reg, w, sample, cell, site_slope, kind);
                 site.water_depth = aquatic ? depth : 0.0f;
-                int sid = qlcg_plant_pick_patch(&site, species_roll,
-                                               reg->center_x + px, reg->center_z + pz, &patch);
+                int sid = qlcg_plant_pick_from(&site, species_roll,
+                                               scatter_pool, scatter_pool_n);
                 const PdSpecies *species = qlcg_pd_species(sid);
                 if (!species) continue;
                 int cat = qlcg_plant_species_category(sid);
+                if(cat==PLANT_CAT_SHU&&qlcg_headwater_excludes(w,reg->center_x+px,reg->center_z+pz,4)) continue;
                 if (pass && !aquatic && cat != PLANT_CAT_CAO && cat != PLANT_CAT_GUAN) {
                     if (cat != PLANT_CAT_SHU || pass_roll >= density.trees - pass) continue;
+                }
+                if (markers) {
+                    if (cat==PLANT_CAT_SHU && !aquatic)
+                        qlcg_region_add_plant(reg,sid,cat,0,px,pz,bed,0,1,1,0,0,roll);
+                    continue;
                 }
                 bool floating = aquatic && qlcg_pd_has_tag(species, "fushui");
                 int visual_season = qlcg_plant_visual_season(&cs, site.temperature, roll);
@@ -354,63 +459,34 @@ void qlcg_region_scatter_props(RegionData *reg, const MacroWorld *w,
                 const LpGeometry *geometry = qlcg_plant_geometry(sid, model_form, visual_season);
                 if (!geometry || geometry->height <= 0.01) continue;
                 float scale = 0.85f + v * 0.3f;
-                PropInstance *p = append_plant(reg);
-                if (!p) continue;
-                p->x = px;
-                p->z = pz;
-                p->y = aquatic ? (floating ? water - 0.01f : bed - 0.06f) : bed;
-                p->rot_y = (aquatic ? v : u) * 6.28318f;
-                p->scale_x = p->scale_z = (float)geometry->radius * 2.0f * scale;
-                p->scale_y = (float)geometry->height * scale;
-                p->r = 0.24f; p->g = 0.56f; p->b = 0.30f;
-                p->archetype = (uint8_t)(aquatic ? roll % 3 : (roll >> 8) % 5);
-                p->model_state = PLANT_STATE_NORMAL;
-                snprintf(p->label, sizeof(p->label), "%s", species->base.name ? species->base.name : species->base.id);
-                p->species = (uint8_t)sid;
-                p->category = cat >= 0 ? (uint8_t)cat : (aquatic ? PLANT_CAT_SHUI : PLANT_CAT_CAO);
-                p->visual_season = (uint8_t)visual_season;
-                p->shape_variant = (uint8_t)variant;
+                qlcg_region_add_plant(reg, sid, cat, aquatic ? 1 : 0, px, pz,
+                    aquatic ? (floating ? water - 0.01f : bed - 0.06f) : bed,
+                    (aquatic ? v : u) * 6.28318f,
+                    (float)geometry->radius * 2.0f * scale,
+                    (float)geometry->height * scale,
+                    visual_season, (int)variant, roll);
             }
         }
     }
 
-    /* 散布置旗地旗帜，配色取自势力 */
-    int rad_chunks = 0;
-    for (int dz = -rad_chunks; dz <= rad_chunks; dz++) {
-        for (int dx = -rad_chunks; dx <= rad_chunks; dx++) {
-            int cx = reg->center_cx + dx;
-            int cz = reg->center_cz + dz;
-            ChunkInspectInfo info;
-            qlcg_world_inspect_chunk(w, cx, cz, &info);
-            if (info.territory && info.territory->cx == cx && info.territory->cz == cz &&
-                reg->flag_count < 32) {
-                float lx = (float)(dx * QLCG_CHUNK_SIZE_M);
-                float lz = (float)(dz * QLCG_CHUNK_SIZE_M);
-                float fy = qlcg_region_height_at(reg, lx, lz);
-                PropInstance *fl = &reg->flags[reg->flag_count++];
-                fl->x = lx;
-                fl->z = lz;
-                fl->y = fy;
-                fl->scale_x = 1.0f;
-                fl->scale_y = 1.0f;   /* 新旗网格已是真实米制 6.5m */
-                fl->scale_z = 1.0f;
-                fl->r = (float)((info.territory->main_color >> 16) & 0xFF) / 255.0f;
-                fl->g = (float)((info.territory->main_color >> 8) & 0xFF) / 255.0f;
-                fl->b = (float)(info.territory->main_color & 0xFF) / 255.0f;
-                fl->trim_color = info.territory->trim_color;
-                fl->faction_id = (int16_t)info.territory->id;
-                snprintf(fl->label, sizeof(fl->label), "%s · %s",
-                         qlcg_faction_display_name(info.territory),
-                         (info.type_id == 9001) ? "置旗地主旗" : "有主界标");
-            }
-        }
-    }
+
+    job->zone_cached=zone_cached;job->scatter_pool_n=scatter_pool_n;job->row+=stride;
+    return job->row>=reg->height-1;
+}
+static void scatter_end(RegionData *reg,const MacroWorld *w,int season_idx,const GameSettings *settings) {
+    scatter_flag(reg,w);
     qlcg_source_rocks(reg,w);
     qlcg_region_build_colliders(reg, season_idx, settings->vegetation_form);
 }
+void qlcg_region_scatter_props(RegionData *reg,const MacroWorld *w,int season_idx,const GameSettings *settings) {
+    if(reg->stream){RegionStream *st=reg->stream;for(int i=0;i<st->count;i++)qlcg_region_scatter_props(st->slots[st->active[i]].data,w,season_idx,settings);st->revision++;return;}
+    ScatterJob job;scatter_begin(&job,reg,w,season_idx,settings,false);
+    while(!scatter_step(&job,reg,w,season_idx,settings,false)){}
+    scatter_end(reg,w,season_idx,settings);
+}
 
 /* 采样生成 3D 山川活跃区域（含近景网格 */
-RegionData *qlcg_chunk_sample(const MacroWorld *w, int center_cx, int center_cz,
+static RegionData *chunk_allocate(const MacroWorld *w, int center_cx, int center_cz,
                                int season_idx, const GameSettings *settings) {
     double t0 = qlcg_time_ms();
     RegionData *reg = (RegionData *)calloc(1, sizeof(RegionData));
@@ -458,20 +534,51 @@ RegionData *qlcg_chunk_sample(const MacroWorld *w, int center_cx, int center_cz,
         qlcg_region_free(reg);
         return NULL;
     }
-    qlcg_chunk_resample(reg, w, season_idx, settings);
+
 
     reg->sample_ms = qlcg_time_ms() - t0;
     return reg;
 }
 
 /* 单块重新采样 */
-void qlcg_chunk_resample(RegionData *reg, const MacroWorld *w,
-                          int season_idx, const GameSettings *settings) {
-    qlcg_ice_chunk_free(reg->ice);
-    reg->ice = NULL;
-    bool effects_allocation_failed=false;
-    for (int z = 0; z < reg->height; z++) {
+struct RegionBuildJob {
+    RegionData *data;
+    const MacroWorld *world;
+    GameSettings settings;
+    int season,row,phase,color_row;
+    ScatterJob scatter;
+    float inspect_heights[9];
+    SurfaceWater center_water;
+    bool is_fall,effects_allocation_failed,markers;
+    uint32_t delta,surface,territory;
+};
+RegionBuildJob *qlcg_chunk_build_begin(const MacroWorld *w,int cx,int cz,int season,const GameSettings *settings) {
+    RegionBuildJob *job=calloc(1,sizeof(*job));if(!job)return NULL;
+    job->data=chunk_allocate(w,cx,cz,season,settings);
+    if(!job->data){free(job);return NULL;}
+    job->world=w;job->settings=*settings;job->season=season;
+    job->delta=w->delta_version;job->surface=w->surface_revision;job->territory=w->territory_revision;
+    return job;
+}
+RegionBuildJob *qlcg_chunk_plants_begin(const MacroWorld *w,int cx,int cz) {
+    GameSettings settings={0};
+    RegionBuildJob *job=qlcg_chunk_build_begin(w,cx,cz,1,&settings);
+    if(job) job->markers=true;
+    return job;
+}
+bool qlcg_chunk_build_valid(const RegionBuildJob *j,const MacroWorld *w,int season,const GameSettings *s) {
+    return j&&j->world==w&&j->season==season&&j->delta==w->delta_version&&
+        j->surface==w->surface_revision&&j->territory==w->territory_revision&&
+        j->settings.dense_vegetation==s->dense_vegetation&&j->settings.vegetation_form==s->vegetation_form;
+}
+void qlcg_chunk_build_cancel(RegionBuildJob *job) { if(job){qlcg_region_free(job->data);free(job);} }
+bool qlcg_chunk_build_step(RegionBuildJob *job) {
+    RegionData *reg=job->data;const MacroWorld *w=job->world;
+    int season_idx=job->season;const GameSettings *settings=&job->settings;
+    if(job->phase==0) {
+    for (int z = job->row; z < job->row+1; z++) {
         float wz = reg->origin_z + (float)z * reg->step;
+        int iz=z==1?0:(z==reg->height/2?1:(z==reg->height-2?2:-1));
         for (int x = 0; x < reg->width; x++) {
             float wx = reg->origin_x + (float)x * reg->step;
             int idx = z * reg->width + x;
@@ -482,6 +589,12 @@ void qlcg_chunk_resample(RegionData *reg, const MacroWorld *w,
                                       &reg->temperatures[idx], &reg->wetness[idx],
                                       &reg->desert[idx], &reg->forest[idx],
                                       &reg->aridities[idx], &reg->uplifts[idx], &sw, &site);
+            int ix=x==1?0:(x==reg->width/2?1:(x==reg->width-2?2:-1));
+            if(ix>=0&&iz>=0) {
+                job->inspect_heights[iz*3+ix]=reg->heights[idx];
+                job->is_fall=job->is_fall||sw.kind==WATER_KIND_FALL;
+                if(ix==1&&iz==1) job->center_water=sw;
+            }
             reg->water_levels[idx] = sw.level;
             reg->shore_depth[idx] = sw.shore_depth;
             memcpy(reg->coast_material+idx*3,sw.coast_material,3);
@@ -490,16 +603,16 @@ void qlcg_chunk_resample(RegionData *reg, const MacroWorld *w,
             reg->water_kind[idx] = sw.kind;
             reg->river_sediment[idx] = sw.river_sediment;
             reg->water_fresh[idx] = sw.fresh;
-            if(!reg->source_effects&&!effects_allocation_failed&&
-               (sw.source_effects.salt||sw.source_effects.spring)) {
+            if(!reg->source_effects&&!job->effects_allocation_failed&&
+               (sw.source_effects.salt||sw.source_effects.spring||sw.source_effects.material||sw.source_effects.foam)) {
                 reg->source_effects=calloc((size_t)reg->width*reg->height,sizeof(*reg->source_effects));
-                effects_allocation_failed=!reg->source_effects;
+                job->effects_allocation_failed=!reg->source_effects;
             }
             if(reg->source_effects) reg->source_effects[idx]=sw.source_effects;
             reg->ice_bottom[idx]   = sw.ice_bottom;
             reg->ice_coverage[idx] = sw.ice_coverage;
             /* 只有真水才分配冰缓存，干块不做额外内存 */
-            if (sw.kind != WATER_KIND_DRY && sw.depth > .02f) {
+            if (!job->markers && sw.kind != WATER_KIND_DRY && sw.depth > .02f) {
                 if (!reg->ice) reg->ice = qlcg_ice_chunk_create();
                 if (reg->ice) {
                     qlcg_ice_cache_site(reg->ice, idx, &site);
@@ -509,24 +622,43 @@ void qlcg_chunk_resample(RegionData *reg, const MacroWorld *w,
             }
         }
     }
+
+        if(++job->row==reg->height)job->phase=1;
+    } else if(job->phase==1) {
     if (reg->ice) qlcg_ice_chunk_attach(w, reg);
 
     ChunkInspectInfo ci;
-    qlcg_world_inspect_chunk(w, reg->center_cx, reg->center_cz, &ci);
+    qlcg_world_inspect_sampled_chunk(w,reg->center_cx,reg->center_cz,job->inspect_heights,&job->center_water,job->is_fall,&ci);
     reg->site_cell       = ci.cell_id;
     reg->climate_season  = qlcg_clampi(season_idx, 0, 3);
     reg->site_chunk_type = ci.type_id;
     reg->site_height     = ci.elevation;
 
-    /* 水体四态按区块中心点级采样，冻态仅作兼容统计 */
-    {
-        SurfaceWater cw;
-        qlcg_sample_water(w, reg->center_x, reg->center_z, season_idx, &cw, NULL);
-        reg->water_form   = (WaterFormState)cw.form;
-        reg->water_freeze = (WaterFreezeState)cw.freeze;
+    /* 水体兼容统计复用中心样本 */
+    reg->water_form   = (WaterFormState)job->center_water.form;
+    reg->water_freeze = (WaterFreezeState)job->center_water.freeze;
+
+
+        job->phase=job->markers?3:2;
+    } else if(job->phase==2) {
+        recolor_row(reg,w,season_idx,job->color_row);if(++job->color_row==reg->height)job->phase=3;
+    } else if(job->phase==3) {
+        scatter_begin(&job->scatter,reg,w,season_idx,settings,job->markers);job->phase=4;
+    } else if(job->phase==4) {
+        if(scatter_step(&job->scatter,reg,w,season_idx,settings,job->markers))job->phase=5;
+    } else if(job->phase==5) {
+        if(!job->markers) scatter_end(reg,w,season_idx,settings);job->phase=6;
     }
-
-    qlcg_region_recolor(reg, w, season_idx);
-    qlcg_region_scatter_props(reg, w, season_idx, settings);
-
+    return job->phase==6;
+}
+RegionData *qlcg_chunk_build_take(RegionBuildJob *job) { RegionData *data=job->data;job->data=NULL;free(job);return data; }
+RegionData *qlcg_chunk_sample(const MacroWorld *w,int cx,int cz,int season,const GameSettings *settings) {
+    double start=qlcg_time_ms();RegionBuildJob *job=qlcg_chunk_build_begin(w,cx,cz,season,settings);if(!job)return NULL;
+    while(!qlcg_chunk_build_step(job)){}
+    RegionData *data=qlcg_chunk_build_take(job);data->sample_ms=qlcg_time_ms()-start;return data;
+}
+void qlcg_chunk_resample(RegionData *reg,const MacroWorld *w,int season_idx,const GameSettings *settings) {
+    qlcg_ice_chunk_free(reg->ice);reg->ice=NULL;
+    RegionBuildJob job={0};job.data=reg;job.world=w;job.season=season_idx;job.settings=*settings;
+    while(!qlcg_chunk_build_step(&job)){}
 }

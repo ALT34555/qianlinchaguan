@@ -10,5 +10,6 @@ void qlcg_fields_delta(QlCodec *io, SparseDeltaRecord *s);
 void qlcg_fields_faction(QlCodec *io, TerritoryFaction *s);
 void qlcg_fields_layer(QlCodec *io, AtlasLayerSetting *s);
 void qlcg_fields_atlas(QlCodec *io, AtlasDisplayState *s);
+void qlcg_fields_slot_ver(QlCodec *io, SaveSlotInfo *s, uint32_t version);
 void qlcg_fields_slot(QlCodec *io, SaveSlotInfo *s);
 #endif

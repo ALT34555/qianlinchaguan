@@ -10,12 +10,13 @@ static const AtlasLayerSetting DEFAULT_LAYERS[LAYER_ID_COUNT] = {
     { LAYER_DAYLIGHT, true, 0.5f },
     { LAYER_RAIN, false, 0.55f },
     { LAYER_CONTOUR, false, 1.0f },
-    { LAYER_CLIMATE, false, 0.5f },
+    { LAYER_CLIMATE, false, 0.75f },
     { LAYER_TEMPERATURE, false, 0.45f },
     { LAYER_HEIGHT, false, 0.5f },
     { LAYER_ICE, true, 1.0f },
     { LAYER_DEPTH, false, 1.0f },
-    { LAYER_SOURCE_RIVERS, true, 1.0f }
+    { LAYER_SOURCE_RIVERS, true, 1.0f },
+    { LAYER_VEGETATION, true, 1.0f }
 };
 
 void qlcg_init_atlas_display(AtlasDisplayState *st) {
@@ -74,6 +75,6 @@ float qlcg_atlas_layer_opacity(const AtlasDisplayState *st, AtlasLayerId id) {
 }
 
 bool qlcg_atlas_layer_has_opacity(AtlasLayerId id) {
-    return id == LAYER_SOURCE_RIVERS || id == LAYER_CIVILIZATION || id == LAYER_DAYLIGHT || id == LAYER_RAIN ||
+    return id == LAYER_VEGETATION || id == LAYER_SOURCE_RIVERS || id == LAYER_CIVILIZATION || id == LAYER_DAYLIGHT || id == LAYER_RAIN ||
            id == LAYER_CLIMATE || id == LAYER_TEMPERATURE || id == LAYER_HEIGHT;
 }

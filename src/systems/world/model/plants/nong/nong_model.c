@@ -164,6 +164,66 @@ static void crop_stem_seg(LpBuilder *b, const double p0[3], const double p1[3],
     crop_segment(b, p0, p1, r, taper, sides, col, LP_MAT_SOLID);
 }
 
+/* 带旋向和盖面茎段 */
+static void crop_seg_rot(LpBuilder *b, const double p0[3], const double p1[3],
+                         double r, double taper, int sides, double rot,
+                         int cap, LpRgb col, int mat) {
+    double d[3] = { p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2] };
+    double len = sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    if (len <= 1e-5) return;
+    d[0] /= len; d[1] /= len; d[2] /= len;
+    double ref[3] = { 0.0, 1.0, 0.0 };
+    if (fabs(d[1]) > 0.99) {
+        ref[0] = 1.0; ref[1] = 0.0; ref[2] = 0.0;
+    }
+    double tx = ref[1] * d[2] - ref[2] * d[1];
+    double ty = ref[2] * d[0] - ref[0] * d[2];
+    double tz = ref[0] * d[1] - ref[1] * d[0];
+    double tl = sqrt(tx * tx + ty * ty + tz * tz);
+    tx /= tl; ty /= tl; tz /= tl;
+    double bx = d[1] * tz - d[2] * ty;
+    double by = d[2] * tx - d[0] * tz;
+    double bz = d[0] * ty - d[1] * tx;
+    double r1 = r * taper;
+    double bottom_anchor[3], top_anchor[3];
+    for (int i = 0; i < sides; i++) {
+        double a0 = rot + TAU * (double)i / (double)sides;
+        double a1 = rot + TAU * (double)(i + 1) / (double)sides;
+        double ca0 = cos(a0), sa0 = sin(a0);
+        double ca1 = cos(a1), sa1 = sin(a1);
+        double q0[3] = {
+            p0[0] + (tx * ca0 + bx * sa0) * r,
+            p0[1] + (ty * ca0 + by * sa0) * r,
+            p0[2] + (tz * ca0 + bz * sa0) * r
+        };
+        double q1[3] = {
+            p0[0] + (tx * ca1 + bx * sa1) * r,
+            p0[1] + (ty * ca1 + by * sa1) * r,
+            p0[2] + (tz * ca1 + bz * sa1) * r
+        };
+        double q2[3] = {
+            p1[0] + (tx * ca1 + bx * sa1) * r1,
+            p1[1] + (ty * ca1 + by * sa1) * r1,
+            p1[2] + (tz * ca1 + bz * sa1) * r1
+        };
+        double q3[3] = {
+            p1[0] + (tx * ca0 + bx * sa0) * r1,
+            p1[1] + (ty * ca0 + by * sa0) * r1,
+            p1[2] + (tz * ca0 + bz * sa0) * r1
+        };
+        qlcg_lp_quad(b, q0, q1, q2, q3, col, mat);
+        if (i == 0) {
+            memcpy(bottom_anchor, q0, sizeof(q0));
+            memcpy(top_anchor, q3, sizeof(q3));
+        } else if (i + 1 < sides) {
+            if (cap && r > 1e-5 && p0[1] > 1e-4)
+                qlcg_lp_triangle(b, bottom_anchor, q1, q0, col, mat);
+            if (cap && r1 > 1e-5)
+                qlcg_lp_triangle(b, top_anchor, q3, q2, col, mat);
+        }
+    }
+}
+
 /* 带弧度叶片 */
 static void crop_blade(LpBuilder *b, const double base[3], double dir, double len,
                        double w, double rise, double fall, LpRgb col) {
@@ -189,6 +249,9 @@ static void crop_blade(LpBuilder *b, const double base[3], double dir, double le
 /* 卵形带齿叶片 */
 static void crop_ovate_leaf(LpBuilder *b, const double base[3], double dir, double len,
                             double w, double elevation, LpRgb col, LpRgb underside) {
+    double seed = base[0] * 13.7 + base[1] * 17.3 + base[2] * 11.9 + dir * 2.71;
+    dir += 0.14 * sin(seed);
+    elevation = fmax(0.05, elevation + 0.14 * cos(seed * 1.37) + 0.08 * sin(seed * 2.93));
     double cos_a = cos(dir), sin_a = sin(dir);
     double up = sin(elevation);
     double fwd = cos(elevation);
@@ -202,14 +265,21 @@ static void crop_ovate_leaf(LpBuilder *b, const double base[3], double dir, doub
         base[1] + len * 0.55 * up,
         base[2] + sin_a * len * 0.5 * fwd
     };
-    double l[3] = { mid[0] - sin_a * w * 0.5, mid[1], mid[2] + cos_a * w * 0.5 };
-    double r[3] = { mid[0] + sin_a * w * 0.5, mid[1], mid[2] - cos_a * w * 0.5 };
-    qlcg_lp_quad(b, base, l, tip, r, col, LP_MAT_SOLID);
-    double under_base[3] = { base[0], base[1] - 0.005, base[2] };
-    double under_tip[3] = { tip[0], tip[1] - 0.005, tip[2] };
-    double under_left[3] = {l[0], l[1] - .005, l[2]};
-    double under_right[3] = {r[0], r[1] - .005, r[2]};
-    qlcg_lp_quad(b, under_base, under_right, under_tip, under_left, underside, LP_MAT_SOLID);
+    double rs = sin(seed * 1.73);
+    double roll = w * ((rs >= 0.0 ? 0.10 : -0.10) + 0.12 * rs);
+    double l[3] = { mid[0] - sin_a * w * 0.5, mid[1] + roll, mid[2] + cos_a * w * 0.5 };
+    double r[3] = { mid[0] + sin_a * w * 0.5, mid[1] - roll, mid[2] - cos_a * w * 0.5 };
+    double lift = fmax(w * 0.055, 0.003);
+    double tm[3] = { mid[0], mid[1] + lift, mid[2] };
+    double bm[3] = { mid[0], mid[1] - lift, mid[2] };
+    qlcg_lp_triangle(b, base, l, tm, col, LP_MAT_SOLID);
+    qlcg_lp_triangle(b, l, tip, tm, col, LP_MAT_SOLID);
+    qlcg_lp_triangle(b, base, tm, r, col, LP_MAT_SOLID);
+    qlcg_lp_triangle(b, tm, tip, r, col, LP_MAT_SOLID);
+    qlcg_lp_triangle(b, base, bm, l, underside, LP_MAT_SOLID);
+    qlcg_lp_triangle(b, l, bm, tip, underside, LP_MAT_SOLID);
+    qlcg_lp_triangle(b, base, r, bm, underside, LP_MAT_SOLID);
+    qlcg_lp_triangle(b, bm, r, tip, underside, LP_MAT_SOLID);
 }
 
 /* 掌状多裂小叶片 */
@@ -235,7 +305,7 @@ static void crop_four_petal_flower(LpBuilder *b, const double pos[3], double sz,
         o.rand = rng;
         qlcg_lp_petal(b, pos, a, sz, sz * 0.52, col, &o);
     }
-    double center[3] = { pos[0], pos[1] + 0.01, pos[2] };
+    double center[3] = { pos[0], pos[1] + sz * 0.08, pos[2] };
     double c_sz[3] = { sz * 0.25, sz * 0.25, sz * 0.25 };
     LpOpts oc = qlcg_lp_opts();
     oc.mat = LP_MAT_SOLID;
@@ -281,13 +351,19 @@ static void crop_cotton_boll(LpBuilder *b, const double pos[3], double sz,
     }
 }
 
-static void crop_body(LpBuilder *b, const double at[3], double x, double y, double z,
-                      LpRgb color, int material) {
+static void crop_body_rot(LpBuilder *b, const double at[3], double x, double y, double z,
+                          double rot_y, LpRgb color, int material) {
     double size[3] = { x, y, z };
     LpOpts opts = qlcg_lp_opts();
     opts.rings = 0;
+    opts.rot_y = rot_y;
     opts.mat = material;
     qlcg_lp_ico(b, at, size, 5, color, &opts);
+}
+
+static void crop_body(LpBuilder *b, const double at[3], double x, double y, double z,
+                      LpRgb color, int material) {
+    crop_body_rot(b, at, x, y, z, 0.0, color, material);
 }
 
 static void crop_fruit_mesh(LpBuilder *b, CropCtx *c, const double at[3], double a) {
@@ -298,7 +374,7 @@ static void crop_fruit_mesh(LpBuilder *b, CropCtx *c, const double at[3], double
     case CROP_BAST:
     case CROP_BARK:
         for (int i = -1; i <= 1; i++) {
-            double rib[3] = {at[0] - z * r * .36 * i, at[1], at[2] + x * r * .36 * i};
+            double rib[3] = {at[0] - z * r * .20 * i, at[1], at[2] + x * r * .20 * i};
             LpOpts opts = qlcg_lp_opts();
             opts.mat = LP_MAT_FRUIT;
             opts.pitch = 1.25;
@@ -313,21 +389,33 @@ static void crop_fruit_mesh(LpBuilder *b, CropCtx *c, const double at[3], double
             double node[3] = {at[0] + x * r * (.28 + i * .24), at[1] - r * (.30 + i * .52),
                               at[2] + z * r * (.28 + i * .24)};
             crop_segment(b, prev, node, r * (i == 0 ? .13 : .25), .92, 5, col, LP_MAT_FRUIT);
-            crop_body(b, node, r * .39, r * .52, r * .39, i % 2 ? qlcg_lp_lighten(col, .15) : col, LP_MAT_FRUIT);
+            crop_body_rot(b, node, r * .39, r * .52, r * .39, a + i * .4,
+                          i % 2 ? qlcg_lp_lighten(col, .15) : col, LP_MAT_FRUIT);
             memcpy(prev, node, sizeof(prev));
         }
         break;
     }
     case CROP_SESAME:
-    case CROP_CAPSULE:
+    case CROP_CAPSULE: {
+        int is_cap = c->p->produce == CROP_CAPSULE;
+        if (is_cap) {
+            double st[3] = {at[0], at[1] - r * .22, at[2]};
+            double tp[3] = {at[0], at[1] + r * .45, at[2]};
+            crop_seg_rot(b, st, tp, fmax(r * .18, .005), .75, 5, a, 1,
+                         c->t->stem, LP_MAT_SOLID);
+        }
+        double rk = is_cap ? .25 : .31;
+        double yoff = is_cap ? .42 : .58;
         for (int i = 0; i < 4; i++) {
             double bearing = a + TAU * i / 4;
-            double lobe[3] = {at[0] + cos(bearing) * r * .31, at[1] + r * .58,
-                              at[2] + sin(bearing) * r * .31};
-            double height = c->p->produce == CROP_SESAME ? r * 1.75 : r * .77;
-            crop_body(b, lobe, r * .46, height, r * .46, i % 2 ? col : qlcg_lp_lighten(col, .12), LP_MAT_FRUIT);
+            double lobe[3] = {at[0] + cos(bearing) * r * rk, at[1] + r * yoff,
+                              at[2] + sin(bearing) * r * rk};
+            double height = is_cap ? r * .77 : r * 1.75;
+            crop_body_rot(b, lobe, r * .46, height, r * .46, bearing + .15 * i,
+                          i % 2 ? col : qlcg_lp_lighten(col, .12), LP_MAT_FRUIT);
         }
         break;
+    }
     case CROP_SILIQUE: {
         double top[3] = {at[0], at[1] + r * 2.8, at[2]};
         crop_stem_seg(b, at, top, r * .10, .36, 3, c->t->stem);
@@ -335,7 +423,7 @@ static void crop_fruit_mesh(LpBuilder *b, CropCtx *c, const double at[3], double
             double theta = a + i * GOLDEN;
             double pod[3] = {at[0] + cos(theta) * r * .55, at[1] + r * (.40 + i * .72),
                              at[2] + sin(theta) * r * .55};
-            crop_body(b, pod, r * .23, r * 1.17, r * .23, col, LP_MAT_FRUIT);
+            crop_body_rot(b, pod, r * .23, r * 1.17, r * .23, theta, col, LP_MAT_FRUIT);
             double node[3] = {at[0], pod[1], at[2]};
             crop_stem_seg(b, node, pod, r * .064, .53, 3, c->t->stem);
         }
@@ -348,16 +436,19 @@ static void crop_fruit_mesh(LpBuilder *b, CropCtx *c, const double at[3], double
         int upright = c->p->produce == CROP_PERILLA_HEAD;
         int pendent = c->p->produce == CROP_MULBERRY;
         int count = upright ? 11 : 7;
-        double axis[3] = {at[0], at[1] + r * (upright ? 2.38 : pendent ? -1.31 : .61), at[2]};
-        crop_stem_seg(b, at, axis, r * .105, .41, 3, c->t->stem);
+        double start[3] = {at[0], at[1] + (pendent ? r * .12 : -r * .15), at[2]};
+        double axis[3] = {at[0], at[1] + r * (upright ? 2.48 : pendent ? -1.45 : .88), at[2]};
+        crop_seg_rot(b, start, axis, fmax(r * .14, c->p->stem_r * .32), .45, 5, a, 1,
+                     c->t->stem, LP_MAT_SOLID);
         for (int i = 0; i < count; i++) {
             double theta = a + i * GOLDEN;
             double reach = r * (upright || pendent ? .40 : .62);
             double height = r * (upright ? .18 + i * .22 : pendent ? -.34 - i * .17 : .20 + (i % 3) * .26);
             double lobe[3] = {at[0] + cos(theta) * reach, at[1] + height, at[2] + sin(theta) * reach};
             double node[3] = {at[0], lobe[1], at[2]};
-            crop_stem_seg(b, node, lobe, r * .065, .35, 3, c->t->stem);
-            crop_body(b, lobe, r * .35, r * .43, r * .35, i % 2 ? col : qlcg_lp_lighten(col, .12), LP_MAT_FRUIT);
+            crop_seg_rot(b, node, lobe, r * .075, .45, 4, theta, 1, c->t->stem, LP_MAT_SOLID);
+            crop_body_rot(b, lobe, r * .35, r * .43, r * .35, theta,
+                          i % 2 ? col : qlcg_lp_lighten(col, .12), LP_MAT_FRUIT);
         }
         break;
     }
@@ -365,6 +456,8 @@ static void crop_fruit_mesh(LpBuilder *b, CropCtx *c, const double at[3], double
     case CROP_RADISH: {
         int carrot = c->p->produce == CROP_CARROT;
         double depth = r * (carrot ? 5.4 : 4.2);
+        double crown[3] = {at[0], at[1] - r * .01, at[2]};
+        crop_body_rot(b, crown, r * .75, r * .30, r * .75, a, col, LP_MAT_FRUIT);
         double top[3] = {at[0], at[1], at[2]};
         LpOpts opts = qlcg_lp_opts();
         opts.mat = LP_MAT_FRUIT;
@@ -398,26 +491,43 @@ static void crop_leaf_of(LpBuilder *b, CropCtx *c, const double at[3], double a,
         int fingers = c->p->leaf_form == CROP_LEAF_TRIFOLIATE ? 1 : 2;
         double leaf_base[3] = {at[0] + cos(a) * len * .29, at[1] + len * .12, at[2] + sin(a) * len * .29};
         crop_stem_seg(b, at, leaf_base, c->p->stem_r * .26, .62, 3, c->t->stem);
-        for (int i = -fingers; i <= fingers; i++)
-            crop_ovate_leaf(b, leaf_base, a + .64 * i, len * (.74 - .13 * abs(i)),
-                            width * (.57 - .08 * abs(i)), rise, color, c->t->dark);
+        for (int i = -fingers; i <= fingers; i++) {
+            double ps = sin(a * 1.9 + (double)i * 1.31);
+            crop_ovate_leaf(b, leaf_base, a + .64 * i + (i ? .03 * i : .02) + .06 * ps,
+                            len * (.74 - .13 * abs(i)), width * (.57 - .08 * abs(i)),
+                            rise + (double)(i + fingers) * .055 - (i % 2 ? .03 : 0.0) + .06 * cos(a * 2.3 + (double)i),
+                            color, c->t->dark);
+        }
         break;
     }
-    case CROP_LEAF_FEATHER:
+    case CROP_LEAF_FEATHER: {
+        double lift = sin(rise) * len * .53;
+        double prev[3] = {at[0], at[1], at[2]};
         for (int i = 1; i <= 4; i++) {
             double t = i * .19;
-            double node[3] = {at[0] + cos(a) * len * t, at[1] + sin(rise) * len * t,
+            double node[3] = {at[0] + cos(a) * len * t, at[1] + lift * (2.0 * t - t * t),
                               at[2] + sin(a) * len * t};
+            crop_seg_rot(b, prev, node, fmax(width * .045, .0035), .85,
+                         i % 2 ? 4 : 5, a + i * .35, 1, c->t->stem, LP_MAT_SOLID);
             double side = width * (1.2 - t);
             crop_lobed_leaf(b, node, a - .83, side, side * .49, side * .19, color);
             crop_lobed_leaf(b, node, a + .83, side, side * .49, side * .19, c->t->dark);
+            memcpy(prev, node, sizeof(prev));
         }
-        crop_blade(b, at, a, len, width * .16, sin(rise) * len * .53, 0, color);
+        double tip[3] = {at[0] + cos(a) * len, at[1] + lift, at[2] + sin(a) * len};
+        crop_seg_rot(b, prev, tip, fmax(width * .032, .0025), .35, 4, a, 1,
+                     c->t->stem, LP_MAT_SOLID);
+        crop_blade(b, prev, a, len * .24, width * .22, (lift - (prev[1] - at[1])) * 1.1, 0, color);
         break;
+    }
     case CROP_LEAF_LOBED:
-        crop_ovate_leaf(b, at, a, len, width, rise, color, c->t->dark);
-        for (int i = -1; i <= 1; i += 2)
-            crop_ovate_leaf(b, at, a + .65 * i, len * .61, width * .58, rise * .83, color, c->t->dark);
+        crop_ovate_leaf(b, at, a + 0.06 * sin(at[0] * 17.0 + at[1] * 23.0),
+                        len, width, rise + 0.04 * cos(at[2] * 19.0 + a), color, c->t->dark);
+        for (int i = -1; i <= 1; i += 2) {
+            double s = sin(a * 2.7 + at[1] * 19.0 + (double)i * 1.13);
+            crop_ovate_leaf(b, at, a + (.65 + 0.09 * s) * i, len * .61, width * .58,
+                            rise * ((i < 0 ? 0.74 : 0.98) + 0.10 * s), color, c->t->dark);
+        }
         break;
     case CROP_LEAF_CUP: {
         LpOpts opts = qlcg_lp_opts();
@@ -457,26 +567,34 @@ static void crop_grain_head(LpBuilder *b, CropCtx *c, const double at[3], double
             }
         }
     } else if (c->p->produce == CROP_WHEAT) {
+        double sub[3] = {at[0], at[1] - size * .06, at[2]};
         double top[3] = {at[0], at[1] + size * 1.03, at[2]};
-        crop_stem_seg(b, at, top, size * .095, .26, 4, grain);
+        crop_seg_rot(b, sub, top, size * .095, .26, 5, a, 1, grain, LP_MAT_SOLID);
         for (int i = 0; i < 5; i++) {
             for (int j = -1; j <= 1; j += 2) {
-                double offset = size * (.16 - .018 * i) * j;
+                double offset = size * (.14 - .016 * i) * j;
                 double row[3] = {at[0] + x * offset, at[1] + size * (.15 + i * .17), at[2] + z * offset};
-                crop_body(b, row, size * .124, size * .176, size * .125, grain, LP_MAT_SOLID);
+                crop_body_rot(b, row, size * .124, size * .176, size * .125, a + i * .25 * j,
+                              grain, LP_MAT_SOLID);
                 double awn[3] = {row[0] + x * offset * .82, row[1] + size * .35, row[2] + z * offset * .82};
                 crop_stem_seg(b, row, awn, size * .016, .07, 3, c->t->bloom);
             }
         }
     } else {
-        double core[3] = {at[0] + x * size * .16, at[1] + size * .48, at[2] + z * size * .16};
-        crop_body(b, core, size * .28, size * .60, size * .28, grain, LP_MAT_SOLID);
+        double sub[3] = {at[0], at[1] - size * .05, at[2]};
+        double top[3] = {at[0] + x * size * .16, at[1] + size * .98, at[2] + z * size * .16};
+        crop_seg_rot(b, sub, top, fmax(size * .06, c->p->stem_r * .45), .45, 5, a, 1, grain, LP_MAT_SOLID);
+        double core[3] = {at[0] + x * size * .08, at[1] + size * .48, at[2] + z * size * .08};
+        crop_body_rot(b, core, size * .28, size * .60, size * .28, a, grain, LP_MAT_SOLID);
         for (int i = 0; i < 14; i++) {
-            double dir = a + i * GOLDEN;
+            double dir = a + i * GOLDEN + (double)(i % 3) * .17;
             double t = (i + 1.0) / 15;
-            double reach = size * (.10 + .18 * sin(PI * t));
-            double tuft[3] = {core[0] + cos(dir) * reach, at[1] + size * t, core[2] + sin(dir) * reach};
-            crop_body(b, tuft, size * .08, size * .135, size * .08, c->t->bloom, LP_MAT_SOLID);
+            double reach = size * (.08 + .13 * sin(PI * t));
+            double ax[3] = {at[0] + x * size * .16 * t, at[1] + size * t, at[2] + z * size * .16 * t};
+            double tuft[3] = {ax[0] + cos(dir) * reach, at[1] + size * t, ax[2] + sin(dir) * reach};
+            crop_seg_rot(b, ax, tuft, size * .025, .60, 4, dir, 1, grain, LP_MAT_SOLID);
+            crop_body_rot(b, tuft, size * .08, size * (.115 + .022 * (double)(i % 3)),
+                          size * .08, dir + (double)i * .21, c->t->bloom, LP_MAT_SOLID);
         }
     }
 }
@@ -560,21 +678,30 @@ static void build_crop_cane(LpBuilder *b, CropCtx *c) {
                 cur[2] + sin(angle) * node_step * 0.04
             };
             double seg_r = c->p->stem_r * (1.0 - (double)n * 0.05);
-            crop_stem_seg(b, cur, next, seg_r, 0.95, 4, culm_col);
+            double p0[3] = {
+                cur[0] - (next[0] - cur[0]) * (n > 0 ? 0.04 : 0.0),
+                cur[1] - (n > 0 ? node_step * 0.04 : 0.0),
+                cur[2] - (next[2] - cur[2]) * (n > 0 ? 0.04 : 0.0)
+            };
+            double rot = angle + (double)n * 0.43;
+            crop_seg_rot(b, p0, next, seg_r, 0.95, (i + n) % 2 ? 5 : 6, rot,
+                         (n == nodes - 1) ? 1 : 0, culm_col, LP_MAT_SOLID);
             if (c->s->fruit) {
-                double ring[3] = {next[0], next[1] - node_step * .044, next[2]};
-                qlcg_lp_prism(b, ring, seg_r * 1.07, seg_r * 1.07, 0, node_step * .044, 4,
-                              qlcg_lp_lighten(culm_col, .19), NULL);
+                double r0[3] = {next[0], next[1] - node_step * .05, next[2]};
+                double r1[3] = {next[0], next[1] + node_step * .01, next[2]};
+                crop_seg_rot(b, r0, r1, seg_r * 1.18, 1.0, (i + n) % 2 ? 6 : 5,
+                             rot + 0.52, 1, qlcg_lp_lighten(culm_col, .19), LP_MAT_SOLID);
             }
             int leaf_start = c->s->fruit ? nodes * 2 / 3 : nodes / 2;
             if (n >= leaf_start && c->s->density > 0.2) {
                 int blade_pair = 2;
+                double lb[3] = {next[0], next[1] - fmax(seg_r * 0.6, node_step * 0.05), next[2]};
                 for (int l = 0; l < blade_pair; l++) {
                     double l_dir = angle + (double)l * 2.3 + (double)n * 0.8;
                     double l_len = c->p->leaf_len * c->s->leaf_len * (0.8 + 0.3 * qlcg_lp_rng_next(c->rng));
                     double rise = l_len * (0.28 - c->s->droop * 0.1);
                     double fall = l_len * (0.45 + c->s->droop * 0.4);
-                    crop_blade(b, next, l_dir, l_len, c->p->leaf_w * c->s->leaf_w, rise, fall, leaf_col);
+                    crop_blade(b, lb, l_dir, l_len, c->p->leaf_w * c->s->leaf_w, rise, fall, leaf_col);
                 }
             }
             cur[0] = next[0]; cur[1] = next[1]; cur[2] = next[2];
@@ -582,7 +709,10 @@ static void build_crop_cane(LpBuilder *b, CropCtx *c) {
         crop_record_fruit(c, cur);
 
         if (c->s->bloom && i == 0) {
+            double ts_sub[3] = { cur[0], cur[1] - h * 0.03, cur[2] };
             double tassel_top[3] = { cur[0], cur[1] + h * 0.28, cur[2] };
+            crop_seg_rot(b, ts_sub, tassel_top, c->p->stem_r * 0.45, 0.35, 5, angle, 1,
+                         c->t->bloom, LP_MAT_SOLID);
             double plume_sz[3] = { sp * 0.25, h * 0.24, sp * 0.25 };
             LpOpts op = qlcg_lp_opts();
             op.mat = LP_MAT_SOLID;
@@ -619,7 +749,7 @@ static void build_crop_brassica(LpBuilder *b, CropCtx *c) {
 
     double base[3] = { 0.0, 0.0, 0.0 };
     double main_tip[3] = { 0.0, h * 0.95, 0.0 };
-    crop_stem_seg(b, base, main_tip, c->p->stem_r, 0.45, 4, c->t->stem);
+    crop_seg_rot(b, base, main_tip, c->p->stem_r, 0.45, 5, 0.23, 1, c->t->stem, LP_MAT_SOLID);
     if (!c->s->fruit) crop_record_fruit(c, main_tip);
 
     int basal = c->season == PD_SEASON_SUMMER ? 9 : c->season == PD_SEASON_AUTUMN ? 5 : 7;
@@ -640,18 +770,31 @@ static void build_crop_brassica(LpBuilder *b, CropCtx *c) {
             attach[1] + b_len * 0.85,
             attach[2] + sin(b_dir) * b_len
         };
-        crop_stem_seg(b, attach, b_tip, c->p->stem_r * 0.6, 0.4, 3, c->t->stem);
+        crop_seg_rot(b, attach, b_tip, c->p->stem_r * 0.6, 0.4, 5,
+                     (double)i * 0.47 + 0.19, 1, c->t->stem, LP_MAT_SOLID);
         if (!c->s->fruit) crop_record_fruit(c, b_tip);
 
         if (c->s->bloom) {
+            double fl_sub[3] = { b_tip[0] - cos(b_dir) * 0.01, b_tip[1] - 0.01, b_tip[2] - sin(b_dir) * 0.01 };
+            double fl_top[3] = { b_tip[0] + cos(b_dir) * 0.02, b_tip[1] + 0.115, b_tip[2] + sin(b_dir) * 0.02 };
+            crop_seg_rot(b, fl_sub, fl_top, c->p->stem_r * 0.38, 0.40, 4,
+                         b_dir + (double)i * 0.37, 1, c->t->stem, LP_MAT_SOLID);
             int flowers = 4;
             for (int f = 0; f < flowers; f++) {
                 double t = (double)f / (double)flowers;
-                double fl_pos[3] = {
-                    b_tip[0] + cos(b_dir + (double)f) * 0.04,
+                double u = (double)f / 3.0;
+                double node[3] = {
+                    b_tip[0] + (fl_top[0] - b_tip[0]) * u,
                     b_tip[1] + (double)f * 0.035,
-                    b_tip[2] + sin(b_dir + (double)f) * 0.04
+                    b_tip[2] + (fl_top[2] - b_tip[2]) * u
                 };
+                double fl_pos[3] = {
+                    node[0] + cos(b_dir + (double)f) * 0.028,
+                    node[1] + 0.01,
+                    node[2] + sin(b_dir + (double)f) * 0.028
+                };
+                crop_seg_rot(b, node, fl_pos, c->p->stem_r * 0.22, 0.65, 3,
+                             b_dir + (double)(i * 3 + f) * 0.41, 1, c->t->stem, LP_MAT_SOLID);
                 crop_four_petal_flower(b, fl_pos, c->p->bloom_size * (0.8 + 0.4 * t), c->t->bloom, c->rng);
             }
         } else if (c->s->fruit) {
@@ -688,7 +831,8 @@ static void build_crop_fiber_herb(LpBuilder *b, CropCtx *c) {
             double r = sp * 0.35;
             double base[3] = { cos(angle) * r, 0.0, sin(angle) * r };
             double stub[3] = { base[0], h * (0.14 + 0.10 * qlcg_lp_rng_next(c->rng)), base[2] };
-            crop_stem_seg(b, base, stub, c->p->stem_r * 0.9, 0.6, 4, c->t->dry);
+            crop_seg_rot(b, base, stub, c->p->stem_r * 0.9, 0.6, 5,
+                         angle + (double)i * 0.47, 1, c->t->dry, LP_MAT_SOLID);
             crop_record_fruit(c, stub);
             if (i == 0) crop_record_snow(c, stub);
         }
@@ -698,7 +842,7 @@ static void build_crop_fiber_herb(LpBuilder *b, CropCtx *c) {
     }
 
     for (int i = 0; i < culm_count; i++) {
-        double angle = (double)i * (TAU / (double)culm_count) + (double)i * 0.18;
+        double angle = (double)i * (TAU / (double)culm_count) + (double)i * 0.18 + 0.27;
         double rad = sp * (0.16 + 0.18 * qlcg_lp_rng_next(c->rng));
         double base[3] = { cos(angle) * rad, 0.0, sin(angle) * rad };
         double tip[3] = {
@@ -706,26 +850,32 @@ static void build_crop_fiber_herb(LpBuilder *b, CropCtx *c) {
             h * (0.85 + 0.25 * qlcg_lp_rng_next(c->rng)),
             base[2] + sin(angle) * sp * 0.22
         };
-        crop_stem_seg(b, base, tip, c->p->stem_r, 0.45, 4, c->t->stem);
-        double fiber[3] = {base[0] + (tip[0] - base[0]) * .32 + cos(angle) * c->p->stem_r * .75,
-                           tip[1] * .32, base[2] + (tip[2] - base[2]) * .32 + sin(angle) * c->p->stem_r * .75};
+        crop_seg_rot(b, base, tip, c->p->stem_r, 0.45, 5,
+                     angle + (double)i * 0.47 + 0.19, 1, c->t->stem, LP_MAT_SOLID);
+        double fiber[3] = {base[0] + (tip[0] - base[0]) * .32 + cos(angle) * c->p->stem_r * .30,
+                           tip[1] * .32, base[2] + (tip[2] - base[2]) * .32 + sin(angle) * c->p->stem_r * .30};
         crop_produce_at(b, c, fiber, angle);
 
         int leaves = 6 + qlcg_pa_js_round(4.0 * c->s->density);
         for (int l = 0; l < leaves; l++) {
-            double t = 0.25 + (double)l * (0.72 / (double)leaves);
+            double jph = (double)i * 2.13 + (double)l * 1.47;
+            double t = 0.25 + (double)l * (0.72 / (double)leaves) + 0.025 * sin(jph);
+            if (t > 0.97) t = 0.97;
             double l_pos[3] = {
                 base[0] + (tip[0] - base[0]) * t,
                 base[1] + (tip[1] - base[1]) * t,
                 base[2] + (tip[2] - base[2]) * t
             };
-            double l_dir = angle + (double)l * 2.3999;
+            double l_dir = angle + (double)l * 2.3999 + (double)i * 0.73;
             double l_len = c->p->leaf_len * c->s->leaf_len * (0.8 + 0.3 * qlcg_lp_rng_next(c->rng));
             double l_w = c->p->leaf_w * c->s->leaf_w;
             if (c->p->leaf_form == CROP_LEAF_PALMATE) {
-                crop_leaf_of(b, c, l_pos, l_dir, l_len, l_w, .25, leaf_col);
+                crop_leaf_of(b, c, l_pos, l_dir + 0.09 * cos(jph), l_len, l_w,
+                             .25 + 0.09 * sin(jph), leaf_col);
             } else {
-                crop_ovate_leaf(b, l_pos, l_dir, l_len, l_w, .25 - c->s->droop * 0.2, leaf_col, under_col);
+                crop_ovate_leaf(b, l_pos, l_dir + 0.09 * cos(jph), l_len, l_w,
+                                .23 - c->s->droop * 0.2 + 0.10 * sin(jph),
+                                leaf_col, under_col);
             }
 
             if (c->s->bloom && l % 2 == 0) {
@@ -733,6 +883,7 @@ static void build_crop_fiber_herb(LpBuilder *b, CropCtx *c) {
                 double fl_sz[3] = { 0.04, 0.08, 0.04 };
                 LpOpts of = qlcg_lp_opts();
                 of.mat = LP_MAT_SOLID;
+                of.rot_y = angle + (double)l * 0.61 + (double)i * 0.43;
                 qlcg_lp_ico(b, fl_pt, fl_sz, 4, c->t->bloom, &of);
             }
         }
@@ -813,11 +964,13 @@ static void crop_bloom_head(LpBuilder *b, CropCtx *c, const double at[3], double
         crop_mallow_flower(b, at, size, c->t->bloom, c->rng);
     } else if (c->p->produce == CROP_ALLIUM_HEAD || c->p->produce == CROP_CARROT) {
         int count = c->p->produce == CROP_CARROT ? 9 : 7;
+        double orig[3] = {at[0], at[1] - size * .05, at[2]};
         for (int i = 0; i < count; i++) {
             double dir = a + TAU * i / count;
             double tip[3] = {at[0] + cos(dir) * size * .86, at[1] + size * (.39 + .21 * (i % 3)),
                              at[2] + sin(dir) * size * .86};
-            crop_stem_seg(b, at, tip, c->p->stem_r * .17, .43, 3, c->t->stem);
+            crop_seg_rot(b, orig, tip, fmax(c->p->stem_r * .22, size * .035), .45,
+                         i % 2 ? 4 : 5, dir, 1, c->t->stem, LP_MAT_SOLID);
             crop_four_petal_flower(b, tip, size * .27, c->t->bloom, c->rng);
         }
     } else {
@@ -839,19 +992,27 @@ static void build_crop_herb(LpBuilder *b, CropCtx *c) {
         if (winter) tip[1] *= .49;
         crop_stem_seg(b, base, tip, c->p->stem_r, .46, 4, winter ? c->t->dry : c->t->stem);
         for (int j = 0; j < leaves; j++) {
-            double t = .20 + .69 * (j + 1) / leaves;
+            double jph = (double)i * 2.13 + (double)j * 1.37;
+            double t = fmin(0.95, .20 + .69 * (j + 1) / leaves + 0.025 * sin(jph));
             double at[3] = {base[0] + (tip[0] - base[0]) * t, tip[1] * t, base[2] + (tip[2] - base[2]) * t};
-            double angle = a + j * GOLDEN;
-            double len = c->p->leaf_len * c->s->leaf_len * (1.17 - .42 * t);
-            double width = c->p->leaf_w * c->s->leaf_w;
+            double angle = a + j * GOLDEN + (double)i * 0.37;
+            double r_at = c->p->stem_r * (1.0 - .54 * t);
+            double len = fmax(c->p->leaf_len * c->s->leaf_len * (1.17 - .42 * t), r_at * 4.5);
+            double width = fmax(c->p->leaf_w * c->s->leaf_w, r_at * 1.2);
             LpRgb col = winter ? c->t->dry : j % 2 ? c->t->leaf : c->t->dark;
-            crop_leaf_of(b, c, at, angle, len, width, .23, col);
+            double ph = angle * 2.13 + (double)j * 1.37 + at[1] * 11.0;
+            crop_leaf_of(b, c, at, angle + 0.08 * cos(ph), len, width,
+                         .23 + 0.08 * sin(ph), col);
             if ((c->p->produce == CROP_POD || c->p->produce == CROP_SESAME) && j % 2 == 1) {
-                double pedicel[3] = {at[0] + cos(angle) * len * .21, at[1] + len * .075,
-                                     at[2] + sin(angle) * len * .21};
-                crop_stem_seg(b, at, pedicel, c->p->stem_r * .30, .46, 3, c->t->stem);
-                if (c->s->bloom) crop_bloom_head(b, c, pedicel, angle);
-                crop_produce_at(b, c, pedicel, angle);
+                double p_ang = angle + .35;
+                double p_reach = fmax(len * .21, r_at * 1.9);
+                double p_rise = fmax(len * .075, r_at * .8);
+                double pedicel[3] = {at[0] + cos(p_ang) * p_reach, at[1] + p_rise,
+                                     at[2] + sin(p_ang) * p_reach};
+                crop_seg_rot(b, at, pedicel, c->p->stem_r * .30, .48, 4, p_ang + .5,
+                             1, c->t->stem, LP_MAT_SOLID);
+                if (c->s->bloom) crop_bloom_head(b, c, pedicel, p_ang);
+                crop_produce_at(b, c, pedicel, p_ang);
             }
         }
         if (c->p->produce == CROP_PERILLA_HEAD) {
@@ -888,15 +1049,26 @@ static void build_crop_allium(LpBuilder *b, CropCtx *c) {
         LpRgb color = i % 2 ? c->t->leaf : c->t->dark;
         if (c->p->leaf_form == CROP_LEAF_TUBE) {
             double sheath[3] = {base[0], height * .21, base[2]};
-            crop_stem_seg(b, base, sheath, w * .55, .88, 6, qlcg_lp_rgb(215, 224, 187));
-            crop_stem_seg(b, sheath, knee, w * .49, .77, 6, color);
-            crop_stem_seg(b, knee, tip, w * .38, .16, 6, color);
+            double sh_dn[3] = {sheath[0], sheath[1] * .95, sheath[2]};
+            double kn_dn[3] = {
+                knee[0] - (tip[0] - knee[0]) * .04,
+                knee[1] - (tip[1] - knee[1]) * .04,
+                knee[2] - (tip[2] - knee[2]) * .04
+            };
+            crop_seg_rot(b, base, sheath, w * .55, .88, i % 2 ? 5 : 6,
+                         a + .21 + (double)i * .41, 0, qlcg_lp_rgb(215, 224, 187), LP_MAT_SOLID);
+            crop_seg_rot(b, sh_dn, knee, w * .49, .77, i % 2 ? 6 : 5,
+                         a + .68 + (double)i * .53, 0, color, LP_MAT_SOLID);
+            crop_seg_rot(b, kn_dn, tip, w * .38, .16, i % 2 ? 5 : 6,
+                         a + 1.15 + (double)i * .67, 1, color, LP_MAT_SOLID);
         } else {
             LpOpts opts = qlcg_lp_opts();
             opts.both = 1;
-            opts.pitch = atan2(height, reach);
-            opts.cup = c->p->leaf_form == CROP_LEAF_KEEL ? .49 : .12;
-            qlcg_lp_petal(b, base, a, hypot(height, reach), w, color, &opts);
+            opts.pitch = atan2(height, reach) + .06 * (double)(((i * 2) % 5) - 2);
+            opts.cup = (c->p->leaf_form == CROP_LEAF_KEEL ? .49 : .12)
+                       + .05 * (double)(((i * 3) % 7) - 3);
+            double aj = .04 * ((double)((i * 5) % 6) - 2.5);
+            qlcg_lp_petal(b, base, a + aj, hypot(height, reach), w, color, &opts);
         }
     }
     int scapes = c->p->branches;
@@ -905,7 +1077,8 @@ static void build_crop_allium(LpBuilder *b, CropCtx *c) {
         double base[3] = {cos(a) * sp * .28, 0, sin(a) * sp * .28};
         double tip[3] = {base[0] + cos(a) * sp * .10, h * (1.01 + .10 * i), base[2] + sin(a) * sp * .10};
         if (c->s->bloom || c->s->fruit)
-            crop_stem_seg(b, base, tip, c->p->stem_r, .55, 5, c->t->stem);
+            crop_seg_rot(b, base, tip, c->p->stem_r, .55, 7,
+                         a + .57 + (double)i * .83, 1, c->t->stem, LP_MAT_SOLID);
         if (c->s->bloom) crop_bloom_head(b, c, tip, a);
         crop_produce_at(b, c, c->s->bloom || c->s->fruit ? tip : base, a);
     }
@@ -948,12 +1121,12 @@ static void build_crop_floating(LpBuilder *b, CropCtx *c) {
         double reach = c->sp * c->s->spread * (.43 + .12 * (i % 4));
         double base[3] = {dx * reach * .18, 0, dz * reach * .18};
         double mid[3] = {dx * reach * .62, h * .42, dz * reach * .62};
-        double tip[3] = {dx * reach, h * (.88 + .055 * (i % 3)), dz * reach};
+        double tip[3] = {dx * reach, h * (.84 + .022 * i), dz * reach};
         crop_stem_seg(b, base, mid, c->p->stem_r, .82, 4, c->t->stem);
         crop_stem_seg(b, mid, tip, c->p->stem_r * .82, .56, 4, c->t->stem);
         double len = c->p->leaf_len * c->s->leaf_len * (winter ? 1.42 : 1);
         double w = c->p->leaf_w * c->s->leaf_w * (winter ? 1.40 : 1);
-        double under[3] = {tip[0], tip[1] - .004, tip[2]};
+        double under[3] = {tip[0], tip[1] - fmax(w * .03, .003), tip[2]};
         for (int j = 0; j < 10; j++) {
             double alpha = TAU * j / 10, beta = TAU * (j + 1) / 10;
             double left[3] = {tip[0] + dx * cos(alpha) * len - dz * sin(alpha) * w,
@@ -961,8 +1134,6 @@ static void build_crop_floating(LpBuilder *b, CropCtx *c) {
             double right[3] = {tip[0] + dx * cos(beta) * len - dz * sin(beta) * w,
                                tip[1] + w * .075, tip[2] + dz * cos(beta) * len + dx * sin(beta) * w};
             qlcg_lp_triangle(b, tip, right, left, j % 2 ? c->t->leaf : c->t->dark, LP_MAT_SOLID);
-            left[1] -= .004;
-            right[1] -= .004;
             qlcg_lp_triangle(b, under, left, right, qlcg_lp_rgb(98, 63, 78), LP_MAT_SOLID);
         }
         if (i % 2 == 0) {
@@ -1001,18 +1172,26 @@ static void build_crop_woody(LpBuilder *b, CropCtx *c) {
         double mid[3] = {root[0] + cos(a) * reach * .56, shoulder, root[2] + sin(a) * reach * .56};
         double end[3] = {root[0] + cos(a) * reach, crown, root[2] + sin(a) * reach};
         double width = c->p->stem_r * (.55 - .27 * t);
-        crop_stem_seg(b, root, mid, width, .72, 5, c->t->stem);
-        crop_stem_seg(b, mid, end, width * .72, .25, 4, c->t->stem);
+        crop_seg_rot(b, root, mid, width, .72, 5, (double)i * .47 + .19, 1, c->t->stem, LP_MAT_SOLID);
+        crop_seg_rot(b, mid, end, width * .72, .25, 5, (double)i * .47 + .61, 1, c->t->stem, LP_MAT_SOLID);
         for (int j = 0; j < leaves; j++) {
-            double f = (j + 1.0) / leaves;
+            double ph = (double)i * 2.13 + (double)j * 1.37;
+            double f = fmin(0.96, .20 + .72 * (j + 1.0) / leaves + 0.03 * sin(ph));
             double at[3] = {mid[0] + (end[0] - mid[0]) * f, mid[1] + (end[1] - mid[1]) * f,
                             mid[2] + (end[2] - mid[2]) * f};
-            double dir = a + (j % 2 ? -.88 : .88);
+            double dir = a + (j % 2 ? -.88 : .88) + 0.16 * cos(ph);
             double len = c->p->leaf_len * c->s->leaf_len * (1.27 - .52 * f);
-            crop_leaf_of(b, c, at, dir, len, c->p->leaf_w * c->s->leaf_w, .22, j % 2 ? c->t->leaf : c->t->dark);
+            crop_leaf_of(b, c, at, dir, len, c->p->leaf_w * c->s->leaf_w,
+                         .24 + 0.14 * sin(ph), j % 2 ? c->t->leaf : c->t->dark);
         }
         if (c->p->produce == CROP_BARK) {
-            double at[3] = {root[0] + cos(a) * c->p->stem_r * .86, root[1] * .93, sin(a) * c->p->stem_r * .86};
+            double tf = t * .93;
+            double tr = c->p->stem_r * (1.0 - .71 * tf);
+            double at[3] = {
+                shrub ? root[0] + cos(a) * reach * .28 : top[0] * tf + cos(a) * tr * .45,
+                shrub ? root[1] + (shoulder - root[1]) * .45 : top[1] * tf,
+                shrub ? root[2] + sin(a) * reach * .28 : top[2] * tf + sin(a) * tr * .45
+            };
             crop_produce_at(b, c, at, a);
         } else {
             if (c->s->bloom) crop_bloom_head(b, c, end, a);
@@ -1043,13 +1222,15 @@ static void build_crop_withered(LpBuilder *b, CropCtx *c) {
     int stalks = c->p->stems > 1 ? c->p->stems : 3;
     for (int i = 0; i < stalks; i++) {
         double a = (double)i * (TAU / (double)stalks);
-        double base[3] = { cos(a) * sp * 0.35, 0.0, sin(a) * sp * 0.35 };
+        double rad = sp * (.32 + .06 * (double)(i % 3));
+        double base[3] = { cos(a) * rad, 0.0, sin(a) * rad };
         double tip[3] = {
             base[0] + cos(a + 0.6) * sp * 0.35,
             h * (0.35 + 0.35 * qlcg_lp_rng_next(c->rng)),
             base[2] + sin(a + 0.6) * sp * 0.35
         };
-        crop_stem_seg(b, base, tip, c->p->stem_r * 0.8, 0.3, 3, c->t->dry);
+        crop_seg_rot(b, base, tip, c->p->stem_r * 0.8, 0.3, 5,
+                     (double)i * 0.67 + 0.31, 1, c->t->dry, LP_MAT_SOLID);
     }
 }
 

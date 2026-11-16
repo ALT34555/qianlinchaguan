@@ -52,16 +52,16 @@ static void build_seedling(LpBuilder *b, const PdDef *def) {
     double stem_r = fmax(0.012, height * 0.05);
     double p0[3] = { 0, 0, 0 };
     LpOpts o0 = qlcg_lp_opts();
-    o0.rand = rand; o0.jitter = 0.1; o0.cap = 0;
+    o0.rand = rand; o0.jitter = 0.1; o0.cap = 1;
     qlcg_lp_prism(b, p0, stem_r * 1.3, stem_r * 1.3, 0, trunk * 0.5, 4, stem, &o0);
-    double p1[3] = { 0, trunk * 0.46, 0 };
+    double p1[3] = { 0, trunk * 0.45, 0 };
     LpOpts o1 = qlcg_lp_opts();
-    o1.rand = rand; o1.jitter = 0.12; o1.cap = 0;
+    o1.rand = rand; o1.jitter = 0.12; o1.cap = 1; o1.rot_y = 0.78;
     qlcg_lp_prism(b, p1, stem_r, stem_r, 0, trunk * 0.56, 4, stem, &o1);
 
     for (int i = 0; i < 2; i++) {
         double a = (double)i * PI + qlcg_lp_rng_next(rand) * 0.5;
-        double pos[3] = { cos(a) * leaf_r * 0.3, trunk * 0.5, sin(a) * leaf_r * 0.3 };
+        double pos[3] = { cos(a) * stem_r * 0.25, trunk * (0.44 + (double)i * 0.05), sin(a) * stem_r * 0.25 };
 
         double plen = leaf_r * (0.95 + qlcg_lp_rng_next(rand) * 0.3);
         LpOpts o = qlcg_lp_opts();
@@ -71,7 +71,7 @@ static void build_seedling(LpBuilder *b, const PdDef *def) {
     for (int i = 0; i < 4; i++) {
         double a = (double)i * GOLDEN + (double)def->build_seed * 0.0017 + qlcg_lp_rng_next(rand) * 0.4;
         double len = leaf_r * (0.7 + qlcg_lp_rng_next(rand) * 0.4);
-        double pos[3] = { cos(a) * leaf_r * 0.22, trunk * (0.62 + (double)i * 0.06), sin(a) * leaf_r * 0.22 };
+        double pos[3] = { cos(a) * stem_r * 0.25, trunk * (0.62 + (double)i * 0.08), sin(a) * stem_r * 0.25 };
         LpOpts o = qlcg_lp_opts();
         o.pitch = 0.12 + qlcg_lp_rng_next(rand) * 0.3; o.cup = 0.4; o.rand = rand;
         qlcg_lp_petal(b, pos, a, len, len * 0.52, (i % 2) ? fol : fol_dark, &o);
@@ -87,7 +87,7 @@ static void build_seedling(LpBuilder *b, const PdDef *def) {
     for (int i = 0; i < buds; i++) {
         double a = (double)i * GOLDEN + qlcg_lp_rng_next(rand);
         double len = leaf_r * (0.55 + qlcg_lp_rng_next(rand) * 0.35);
-        double pos[3] = { 0, trunk + leaf_r * (0.42 + qlcg_lp_rng_next(rand) * 0.2), 0 };
+        double pos[3] = { 0, trunk + leaf_r * (0.34 + qlcg_lp_rng_next(rand) * 0.16), 0 };
         LpOpts o = qlcg_lp_opts();
         o.pitch = 0.45 + qlcg_lp_rng_next(rand) * 0.3; o.cup = 0.42; o.rand = rand;
         qlcg_lp_petal(b, pos, a, len, len * 0.55, (i % 2) ? fol : fol_dark, &o);
@@ -173,11 +173,14 @@ static void build_withered(LpBuilder *b, const PdDef *def) {
             double h = height * (0.28 + qlcg_lp_rng_next(rand) * 0.18);
             double lean = (qlcg_lp_rng_next(rand) - 0.5) * 0.12;
             double pc[3] = { cx, 0, cz };
+            double dx = lean * h, dy = h;
+            double sl = sqrt(dx * dx + dy * dy);
+            double dir[3] = { dx / sl, dy / sl, 0.0 };
             LpOpts op = qlcg_lp_opts();
-            op.rand = rand; op.jitter = 0.1; op.cap = 0;
-            qlcg_lp_prism(b, pc, culm_r, culm_r, 0, h, 4, wood, &op);
+            op.sides = 4; op.tip_ratio = 0.82; op.cap = 1;
+            qlcg_lp_limb(b, pc, dir, sl, culm_r, wood, &op);
             double leaf_len = h * 0.45;
-            double pos[3] = { cx + lean * h, h * 0.85, cz };
+            double pos[3] = { cx + lean * h * 0.85, h * 0.85, cz };
             double bearing = a + qlcg_lp_rng_next(rand) * 0.5;
             LpOpts o = qlcg_lp_opts();
             o.pitch = -0.4 + qlcg_lp_rng_next(rand) * 0.2; o.cup = 0.3; o.rand = rand;
@@ -192,22 +195,26 @@ static void build_withered(LpBuilder *b, const PdDef *def) {
         if (stems > 6) stems = 6;
         double spread = qlcg_pa_pnum(def, "spread", height * 0.4);
         double branch_r = fmax(0.025, fmin(0.06, height * 0.03));
+        double tips[6][3];
         for (int i = 0; i < stems; i++) {
             double a = ((double)i / (double)stems) * TAU + qlcg_lp_rng_next(rand) * 0.6;
             double up = 0.25 + qlcg_lp_rng_next(rand) * 0.45;
             double dir[3] = { cos(a) * cos(up), sin(up), sin(a) * cos(up) };
             double start[3] = { cos(a) * spread * 0.15, 0.02, sin(a) * spread * 0.15 };
             double len = height * (0.28 + qlcg_lp_rng_next(rand) * 0.18);
-            qlcg_pa_limb_to(b, start, dir, len, branch_r, stem, NULL);
+            LpOpts ol = qlcg_lp_opts();
+            ol.sides = 3; ol.tip_ratio = 0.42; ol.cap = 1;
+            qlcg_lp_limb(b, start, dir, len, branch_r, stem, &ol);
+            tips[i][0] = start[0] + dir[0] * len * 0.7;
+            tips[i][1] = start[1] + dir[1] * len * 0.7;
+            tips[i][2] = start[2] + dir[2] * len * 0.7;
         }
         for (int i = 0; i < 3; i++) {
             double a = qlcg_lp_rng_next(rand) * TAU;
-            double rad = spread * 0.3;
             double len = height * 0.12;
-            double pos[3] = { cos(a) * rad, 0.04, sin(a) * rad };
             LpOpts o = qlcg_lp_opts();
             o.pitch = 0.1; o.cup = 0.3; o.rand = rand;
-            qlcg_lp_petal(b, pos, a, len, len * 0.45, dry_leaf, &o);
+            qlcg_lp_petal(b, tips[i % stems], a, len, len * 0.45, dry_leaf, &o);
         }
         return;
     }
@@ -220,16 +227,21 @@ static void build_withered(LpBuilder *b, const PdDef *def) {
     if (limbs < 2) limbs = 2;
     if (limbs > 5) limbs = 5;
     double lean = qlcg_pa_pnum(def, "lean", 0.06);
+    double off = lean * trunk * 0.2;
+    if (fabs(off) > trunk_r * 0.35) off = (off < 0.0 ? -1.0 : 1.0) * trunk_r * 0.35;
 
     double p0[3] = { 0, 0, 0 };
     LpOpts o0 = qlcg_lp_opts();
-    o0.jitter = jitter * 0.5; o0.rand = rand; o0.cap = 0;
+    o0.jitter = jitter * 0.5; o0.rand = rand; o0.cap = 1;
     qlcg_lp_prism(b, p0, trunk_r * 1.4, trunk_r * 1.4, 0, trunk * 0.3, sides, wood, &o0);
-    double p1[3] = { lean * trunk * 0.2, trunk * 0.22, 0 };
+    double p1[3] = { off, trunk * 0.22, 0 };
     LpOpts o1 = qlcg_lp_opts();
-    o1.jitter = jitter; o1.rand = rand; o1.cap = 0;
+    o1.jitter = jitter; o1.rand = rand; o1.cap = 1; o1.rot_y = 0.55;
     qlcg_lp_prism(b, p1, trunk_r * 1.05, trunk_r * 1.05, 0, trunk * 0.62, sides, stem, &o1);
 
+    double anchors[10][3];
+    double angles[10];
+    int n_anc = 0;
     for (int i = 0; i < limbs; i++) {
         double a = ((double)i / (double)limbs) * TAU + qlcg_lp_rng_next(rand) * 0.8;
         double up = 0.28 + qlcg_lp_rng_next(rand) * 0.75;
@@ -237,16 +249,32 @@ static void build_withered(LpBuilder *b, const PdDef *def) {
         double y = trunk * (0.3 + qlcg_lp_rng_next(rand) * 0.5);
         double len = height * (0.2 + qlcg_lp_rng_next(rand) * 0.2);
         if (len > height * 0.35) len = height * 0.35;
-        double start[3] = { lean * trunk * 0.2, y, 0 };
+        double start[3] = { off, y, 0 };
         double rad = trunk_r * (0.34 + qlcg_lp_rng_next(rand) * 0.24);
-        double tip[3];
-        qlcg_pa_limb_to(b, start, dir, len, rad, stem, tip);
+        LpOpts ol = qlcg_lp_opts();
+        ol.sides = 3; ol.tip_ratio = 0.42; ol.cap = 1;
+        qlcg_lp_limb(b, start, dir, len, rad, stem, &ol);
+        if (n_anc < 10) {
+            anchors[n_anc][0] = start[0] + dir[0] * len * 0.65;
+            anchors[n_anc][1] = start[1] + dir[1] * len * 0.65;
+            anchors[n_anc][2] = start[2] + dir[2] * len * 0.65;
+            angles[n_anc++] = a;
+        }
         if (qlcg_lp_rng_next(rand) < 0.65) {
             double a2 = a + (qlcg_lp_rng_next(rand) - 0.5) * 1.4;
             double up2 = up * (0.6 + qlcg_lp_rng_next(rand) * 0.7);
             double dir2[3] = { cos(a2) * cos(up2), sin(up2), sin(a2) * cos(up2) };
             double len2 = len * (0.35 + qlcg_lp_rng_next(rand) * 0.3);
-            qlcg_pa_limb_to(b, tip, dir2, len2, trunk_r * 0.22, wood, NULL);
+            double fk[3] = { start[0] + dir[0] * len * 0.85,
+                             start[1] + dir[1] * len * 0.85,
+                             start[2] + dir[2] * len * 0.85 };
+            qlcg_lp_limb(b, fk, dir2, len2, trunk_r * 0.22, wood, &ol);
+            if (n_anc < 10) {
+                anchors[n_anc][0] = fk[0] + dir2[0] * len2 * 0.6;
+                anchors[n_anc][1] = fk[1] + dir2[1] * len2 * 0.6;
+                anchors[n_anc][2] = fk[2] + dir2[2] * len2 * 0.6;
+                angles[n_anc++] = a2;
+            }
         }
     }
 
@@ -254,15 +282,12 @@ static void build_withered(LpBuilder *b, const PdDef *def) {
     if (clumps < 2) clumps = 2;
     if (clumps > 5) clumps = 5;
     for (int i = 0; i < clumps; i++) {
-        double a = (double)i * GOLDEN + (double)def->build_seed * 0.0017;
-        double rad = fmin(height * (0.12 + qlcg_lp_rng_next(rand) * 0.22), trunk_r * 3.0);
         double len = fmin(height * 0.085 * (0.8 + qlcg_lp_rng_next(rand) * 0.5), 0.5);
-        double pos[3] = { cos(a) * rad, trunk * (0.6 + qlcg_lp_rng_next(rand) * 0.6), sin(a) * rad };
-        double bearing = a + (qlcg_lp_rng_next(rand) - 0.5) * 0.8;
+        double bearing = angles[i % n_anc] + (qlcg_lp_rng_next(rand) - 0.5) * 0.8;
         LpRgb col = qlcg_pa_deepen(dry_leaf, qlcg_lp_rng_next(rand) * 0.3);
         LpOpts o = qlcg_lp_opts();
         o.pitch = -0.25 + qlcg_lp_rng_next(rand) * 0.4; o.cup = 0.5; o.rand = rand;
-        qlcg_lp_petal(b, pos, bearing, len, len * 0.5, col, &o);
+        qlcg_lp_petal(b, anchors[i % n_anc], bearing, len, len * 0.5, col, &o);
     }
 }
 

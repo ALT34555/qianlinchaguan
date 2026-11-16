@@ -126,6 +126,7 @@ typedef struct UiContext {
     /* 鼠标与键盘瞬时状态 */
     int        mouse_x, mouse_y;
     bool       mouse_down;
+    bool       mouse_pressed;       /* 本帧按下沿 */
     bool       mouse_clicked;
     bool       right_down;
     bool       right_clicked;
@@ -152,6 +153,7 @@ typedef struct UiContext {
     GLuint     bd_prog, bd_vao;
     GLuint     backdrop_tex;           /* 模糊结果，玻璃面板读它 */
     int        bd_w, bd_h;
+    bool       backdrop_pending;
     bool       backdrop_ready;         /* 本帧已抓取，玻璃直接采样 */
     struct QlTextBackend *text_backend;
     wchar_t    family_display[64];   /* 标题字体族，可被 mod 替换 */
@@ -283,6 +285,10 @@ void ui_draw_atlas_rect(UiContext *ui, float x, float y, float w, float h,
 void ui_draw_sprite_rect(UiContext *ui, float x, float y, float w, float h,
                          float u0, float v0, float u1, float v1, uint32_t tint);
 
+/* 预乘贴图按普通透明混合绘制 */
+void ui_draw_premult_sprite(UiContext *ui,float x,float y,float w,float h,
+                            float u0,float v0,float u1,float v1,uint32_t tint);
+
 /* 同上，绕中心旋转 rad 弧度；正值顺时针 */
 void ui_draw_sprite_rect_rot(UiContext *ui, float cx, float cy, float w, float h,
                              float rad, float u0, float v0, float u1, float v1,
@@ -298,6 +304,7 @@ bool ui_load_png_texture(const wchar_t *path, GLuint *tex, int *out_w, int *out_
 void ui_backdrop_init(UiContext *ui);
 void ui_backdrop_resize(UiContext *ui, int win_w, int win_h);
 /* 抓后台缓冲并模糊；须在 UI 提交前调用 */
+void ui_backdrop_finish(UiContext *ui);
 void ui_backdrop_capture(UiContext *ui);
 /* 501：模糊整屏场景后盖回，UI 清晰 */
 void ui_backdrop_blur_overlay(UiContext *ui, float radius_px);

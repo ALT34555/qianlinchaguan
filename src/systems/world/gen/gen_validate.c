@@ -1,6 +1,6 @@
 /* 校验：有限值、汇流、板块、湖面、水量 */
 #include "gen_validate.h"
-#include "gen_water.h"
+#include "hydrology_balance.h"
 #include <math.h>
 #include <string.h>
 

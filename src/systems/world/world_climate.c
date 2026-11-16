@@ -2,9 +2,9 @@
 #include "planet_macro.h"
 #include "world_internal.h"
 #include "gen/gen_climate.h"
-#include "gen/gen_hydrology.h"
-#include "gen/gen_water.h"
-#include "gen/gen_river.h"
+#include "gen/hydrology_generate.h"
+#include "gen/hydrology_balance.h"
+#include "gen/hydrology_dimensions.h"
 #include "../../core/math_util.h"
 #include "platform/platform.h"
 #include <stdlib.h>

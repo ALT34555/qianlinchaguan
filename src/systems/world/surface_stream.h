@@ -13,7 +13,14 @@ typedef struct {
     int active_index;
 } RegionChunkSlot;
 
+typedef struct RegionBuildJob RegionBuildJob;
+
 typedef struct RegionStream {
+    RegionBuildJob *job;
+    int job_cx, job_cz;
+    double overrun_ms;
+    float view_yaw,view_cos;
+    bool view_ready,priority_dirty;
     const MacroWorld *world;
     GameSettings settings;
     int season, radius, center_cx, center_cz;
@@ -27,6 +34,15 @@ typedef struct RegionStream {
     double update_ms;
 } RegionStream;
 
+RegionBuildJob *qlcg_chunk_build_begin(const MacroWorld *w,int cx,int cz,int season,const GameSettings *settings);
+/* 无几何与碰撞的基准散生乔木任务 */
+RegionBuildJob *qlcg_chunk_plants_begin(const MacroWorld *w,int cx,int cz);
+bool qlcg_chunk_build_step(RegionBuildJob *job);
+bool qlcg_chunk_build_valid(const RegionBuildJob *j,const MacroWorld *w,int season,const GameSettings *s);
+RegionData *qlcg_chunk_build_take(RegionBuildJob *job);
+void qlcg_chunk_build_cancel(RegionBuildJob *job);
+void qlcg_region_stream_view(RegionStream *st,float yaw,float half_fov);
+void qlcg_region_stream_require(RegionData *reg,float x,float z);
 RegionData *qlcg_chunk_sample(const MacroWorld *w, int cx, int cz,
                               int season, const GameSettings *s);
 void qlcg_chunk_resample(RegionData *reg, const MacroWorld *w,

@@ -1,6 +1,6 @@
 #ifndef QLCG_SAVE_LEGACY_V9_H
 #define QLCG_SAVE_LEGACY_V9_H
-#include "planet_macro.h"
+#include "save_legacy_v8.h"
 
 typedef struct {
     char               world_name[240];
@@ -62,7 +62,7 @@ typedef struct {
     float               player_yaw, player_pitch;
     bool                flying;
     WorldCreatorOptionsV9 opt;
-    AtlasDisplayState   atlas_display;
+    AtlasDisplayStateV8 atlas_display;
 
     float               mystery_time_speed;
     bool                mystery_menu_auto_pause;

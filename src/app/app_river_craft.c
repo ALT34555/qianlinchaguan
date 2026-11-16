@@ -1,6 +1,6 @@
 /* 舆图河道草稿编辑器 */
 #include "app_state.h"
-#include "systems/world/river_archive.h"
+#include "systems/world/hydrology_archive.h"
 #include "atlas/atlas_tiles.h"
 #include "ui/pages/game/hud_layout.h"
 #include "ui/pages/game/view_atlas_layers.h"
@@ -64,7 +64,7 @@ void app_river_craft_stroke(double wx,double wz,double radius,bool begin,bool do
         SurfacePoint q=qlcg_frame_local(&f,e->nodes[e->count-1].wx,e->nodes[e->count-1].wz);
         if(hypot(p.x-q.x,p.z-q.z)<c->spacing) return;
     }
-    if(e->count==SOURCE_POINT_LIMIT) {
+    if(e->count==HYDROLOGY_PATH_POINTS) {
         int used=1; for(int k=2;k<e->count;k+=2) e->nodes[used++]=e->nodes[k];
         e->count=used; c->spacing*=2;
     }
@@ -111,7 +111,7 @@ void app_river_craft_click(double wx,double wz,double radius) {
     }
     if(c->tool==4) {
         RiverPathPoint point=qlcg_river_edit_point(w,wx,wz,e->source<0&&e->kind==RIVER_RECORD_SOURCE?radius:0);
-        if(e->count>=(e->kind==RIVER_RECORD_MAIN?161:SOURCE_POINT_LIMIT)) { craft_message(RIVER_EDIT_INVALID); return; }
+        if(e->count>=(e->kind==RIVER_RECORD_MAIN?161:HYDROLOGY_PATH_POINTS)) { craft_message(RIVER_EDIT_INVALID); return; }
         int at=e->count;
         if(e->kind==RIVER_RECORD_MAIN||e->source>=0) {
             SurfaceFrame f=qlcg_surface_frame(w,e->cell); SurfacePoint p=qlcg_frame_local(&f,point.wx,point.wz); double best=INFINITY;

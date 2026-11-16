@@ -4,6 +4,7 @@
 #include "../systems/world/faction_naming.h"
 #include "../systems/calendar/gan_zhi.h"
 #include "terrain_types.h"
+#include "terrain_visibility.h"
 #include "../systems/world/model/plant_material.h"
 #include "../core/math_util.h"
 #include "../core/measurements.h"
@@ -79,8 +80,10 @@ static const PropInstance *probe_plant(const TerrainRenderer *tr, const RegionDa
                                        const float dir[3], float *limit) {
     if (tr->bound_stream != reg->stream || !tr->plant_inst_total) return NULL;
     const LpGeometry *geometry[QLCG_MAX_PLANT_BATCH] = {0};
+    const PlantBatch *bounds[QLCG_MAX_PLANT_BATCH]={0};
     for (int i = 0; i < tr->plant_batch_count; i++) {
         const PlantBatch *batch = &tr->plants[i];
+        if(batch->inst_count>0)bounds[qlcg_plant_batch_key(batch->species,batch->season,batch->form)]=batch;
         if (batch->inst_count > 0)
             geometry[qlcg_plant_batch_key(batch->species, batch->season, batch->form)] =
                 qlcg_plant_geometry(batch->species, batch->form, batch->season);
@@ -107,7 +110,11 @@ static const PropInstance *probe_plant(const TerrainRenderer *tr, const RegionDa
             : 0.0f;
         float near_x = x + along * dir[0], near_z = z + along * dir[2];
         float scale = qlcg_plant_instance_scale(p->scale_y, g->height);
-        float radius = (float)g->radius * scale;
+        const PlantBatch *box=bounds[qlcg_plant_batch_key(p->species,p->visual_season,form)];
+        float radius=(box?box->radius:(float)g->radius)*scale;
+        if(box){float low=box->low_y*scale,high=box->high_y*scale;
+            if(fminf(y,y+*limit*dir[1])>high||fmaxf(y,y+*limit*dir[1])<low)continue;}
+
         if (near_x * near_x + near_z * near_z > radius * radius) continue;
         if (fminf(y, y + *limit * dir[1]) > (float)g->height * scale) continue;
 
@@ -126,8 +133,28 @@ static const PropInstance *probe_plant(const TerrainRenderer *tr, const RegionDa
 }
 void qlcg_terrain_update_aim_probe(TerrainRenderer *tr, const RegionData *reg,
                                    const MacroWorld *w, const GameSettings *s, bool inspect_plants) {
-    memset(&tr->aim, 0, sizeof(tr->aim));
-    if (!reg) return;
+    if (!reg || !w) {
+        memset(&tr->aim,0,sizeof(tr->aim));tr->has_hover=false;tr->probe_cache.valid=false;return;
+    }
+    float pose[5]={tr->x,tr->y,tr->z,tr->yaw,tr->pitch};
+    uint64_t revision=reg->stream?reg->stream->revision:0;
+    int locale=qlcg_i18n_get_index();
+    if(tr->probe_cache.valid && !inspect_plants && !tr->probe_cache.inspecting &&
+       tr->eng_tool==ENG_TOOL_NONE && tr->aim.kind!=AIM_HIT_WATER &&
+       tr->probe_cache.region==reg && tr->probe_cache.world==w &&
+       !memcmp(tr->probe_cache.pose,pose,sizeof(pose)) && tr->probe_cache.stream==revision &&
+       tr->probe_cache.mesh==tr->mesh_version && tr->probe_cache.props==tr->props_revision &&
+       tr->probe_cache.delta==w->delta_version && tr->probe_cache.surface==w->surface_revision &&
+       tr->probe_cache.territory==w->territory_revision && tr->probe_cache.region_revision==reg->mesh_revision &&
+       tr->probe_cache.measurement==s->measurement_system && tr->probe_cache.locale==locale)return;
+    tr->probe_cache.valid=tr->eng_tool==ENG_TOOL_NONE;
+    tr->probe_cache.region=reg;tr->probe_cache.world=w;tr->probe_cache.inspecting=inspect_plants;
+    memcpy(tr->probe_cache.pose,pose,sizeof(pose));tr->probe_cache.stream=revision;
+    tr->probe_cache.mesh=tr->mesh_version;tr->probe_cache.props=tr->props_revision;
+    tr->probe_cache.delta=w->delta_version;tr->probe_cache.surface=w->surface_revision;
+    tr->probe_cache.territory=w->territory_revision;tr->probe_cache.region_revision=reg->mesh_revision;
+    tr->probe_cache.measurement=s->measurement_system;tr->probe_cache.locale=locale;
+    memset(&tr->aim,0,sizeof(tr->aim));
 
     float cp = cosf(tr->pitch), sp = sinf(tr->pitch);
     float cy = cosf(tr->yaw),   sy = sinf(tr->yaw);
@@ -205,8 +232,13 @@ void qlcg_terrain_update_aim_probe(TerrainRenderer *tr, const RegionData *reg,
     float wl = qlcg_region_water_at(reg, hx, hz);
     int cx = (int)floorf(tr->aim.wx / (float)QLCG_CHUNK_SIZE_M);
     int cz = (int)floorf(tr->aim.wz / (float)QLCG_CHUNK_SIZE_M);
-    ChunkInspectInfo ci;
-    qlcg_world_inspect_chunk(w, cx, cz, &ci);
+    ChunkInspectInfo ci={0};
+    if(wl<=gh+.1f && reg->stream && reg->stream->delta_revision==w->delta_version &&
+       reg->stream->surface_revision==w->surface_revision && reg->stream->territory_revision==w->territory_revision) {
+        ci.type_def=qlcg_get_chunk_type(hit_chunk->site_chunk_type);
+        int cell=qlcg_world_cell_at_wxz(w,(cx+.5f)*CHUNK_SIZE,(cz+.5f)*CHUNK_SIZE);
+        ci.temperature=w->temperature[cell];ci.moisture=w->moisture[cell];
+    } else qlcg_world_inspect_chunk(w,cx,cz,&ci);
 
     if (wl > gh + 0.1f) {
         SurfaceWater sw;

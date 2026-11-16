@@ -1,6 +1,7 @@
 /* 页面调度与单帧渲染 */
 #include "app/app_state.h"
 #include "core/dev_tools.h"
+#include "terrain3d/terrain_metrics.h"
 
 /* 触屏状态映射虚拟动作，关闭时清零防卡键 */
 static void touch_sync_actions(void) {
@@ -24,6 +25,13 @@ static void touch_sync_actions(void) {
 
 /* 主循环单帧渲染 */
 void app_render_frame(float dt) {
+    qlcg_gl_frame_begin();
+    double render_begin=qlcg_time_ms();
+    qlcg_metrics.buffer_ms=0;
+    qlcg_metrics.draws=qlcg_metrics.triangles=qlcg_metrics.upload_bytes=0;
+    qlcg_metrics.culled_chunks=qlcg_metrics.culled_instances=0;
+    qlcg_profile_frame();
+    qlcg_profile_begin(QL_GPU_UI);
     /* 屏幕切换时重放入场淡入 */
     static int last_screen = -1;
     if ((int)g_app.screen != last_screen) {
@@ -116,5 +124,9 @@ void app_render_frame(float dt) {
     ui_toast_render(&g_app.ui, &g_app.toasts);
 
     ui_end_frame(&g_app.ui);
-    qlcg_platform_present();
+    qlcg_profile_end(QL_GPU_UI);
+    qlcg_metrics.submit_ms=qlcg_time_ms()-render_begin;
+    qlcg_gl_frame_end();
+    double present_begin=qlcg_time_ms();qlcg_platform_present();
+    qlcg_metrics.present_ms=qlcg_time_ms()-present_begin;qlcg_metrics_last=qlcg_metrics;
 }

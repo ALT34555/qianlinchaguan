@@ -3,7 +3,9 @@
 #include "../systems/world/astronomy.h"
 #include "atlas_tiles.h"
 #include "atlas_rain.h"
+#include "atlas_vegetation.h"
 #include "../systems/world/world_infinite.h"
+#include "../systems/world/climate_zone.h"
 #include "../ui/ui_widgets.h"
 #include "../ui/ui_sprite.h"
 #include "../systems/world/faction_naming.h"
@@ -47,13 +49,15 @@ static bool proj_point(const AtlasRenderer *ar, const MacroWorld *w, double wx, 
 }
 
 /* UI 提交后恢复舆图管线 */
-static void draw_map_pass(const AtlasRenderer *ar, int id, float opacity, const AtlasTileView *tv) {
-    const GLuint textures[] = { ar->data_tex0, ar->data_tex1, ar->sat_tex,
-                                tv->tex, tv->meta, ar->rain_tex, tv->water };
+static void draw_map_pass(const AtlasRenderer *ar, int id, float opacity, const AtlasTileView *tv, bool *textures_dirty) {
+    const GLuint textures[] = { ar->data_tex0, ar->data_tex1, ar->sat_tex, tv->tex };
     glUseProgram(ar->prog);
-    for (int i = 0; i < 7; i++) {
-        glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, textures[i]);
+    if(*textures_dirty) {
+        for (int i = 0; i < 4; i++) {
+            glActiveTexture(GL_TEXTURE0 + i);
+            glBindTexture(GL_TEXTURE_2D, textures[i]);
+        }
+        *textures_dirty=false;
     }
     glEnable(GL_BLEND);
     if (id == LAYER_DAYLIGHT || id == LAYER_CONTOURS) glBlendFunc(GL_ZERO, GL_SRC_COLOR);
@@ -163,11 +167,17 @@ static void draw_player_marker(const AtlasRenderer *ar, const MacroWorld *w, UiC
     }
 }
 
+static void flush_map_ui(UiContext *ui,bool *textures_dirty) {
+    if(ui->vert_count>0)*textures_dirty=true;
+    ui_flush(ui);
+}
+
 static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
                                 const CalendarClock *clk, UiContext *ui,
                                 float vp_x, float vp_y, float vp_w, float vp_h,
                                 bool is_creator_preview, const AtlasPlayerMarker *player) {
     if (!w) return;
+    bool textures_dirty=true;
     double t0 = qlcg_time_ms();
 
     bool survival = w->opt.play_mode == PLAY_MODE_SURVIVAL;
@@ -189,6 +199,7 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
         qlcg_atlas_upload_world(ar, w);
     }
     if (ar->world_upload_pending) return;
+    if(qlcg_atlas_layer_opacity(&ar->display,LAYER_VEGETATION)<=0) qlcg_atlas_vegetation_release(ar);
 
     /* 全览档随视口比例换算：世界宽或高铺满 88% */
     {
@@ -217,15 +228,15 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
     /* 雨云图层：降水场纹理（4 小时档，限流重建） */
     qlcg_atlas_rain_sync(ar, w, clk);
 
-    ui_flush(ui);
+    flush_map_ui(ui,&textures_dirty);
 
     float zscale = calc_zoom_scale(ar, w, vp_w);
     AtlasTileView tile_view = {0};
     qlcg_atlas_tiles_view(ar->tiles,&tile_view);
-    float utc_h  = clk ? qlcg_utc_sun_hours(clk->unix_ms) : 12.0f;
+    float utc_h  = clk && !w->opt.astronomy_enabled ? qlcg_utc_sun_hours(clk->unix_ms) : 12.0f;
     float sun_lon = (12.0f - utc_h) / 24.0f * 6.2831853f;
     float sun_lat = 0.1f;
-    if (clk) {
+    if (clk && !w->opt.astronomy_enabled) {
         CalendarSnapshot snap;
         qlcg_calendar_snapshot(clk, 0, &snap);
         sun_lat = sinf(snap.season_phase * 6.2831853f) * 0.409f;
@@ -304,28 +315,14 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
         glUniform1f(qlcg_gl_uniform(ar->prog, "uContourStep"), cstep);
     }
     glUniform1i(qlcg_gl_uniform(ar->prog, "uQuickFilter"), (int)ar->quick_filter);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, ar->data_tex0);
-    glUniform1i(qlcg_gl_uniform(ar->prog, "uTex0"), 0);
-    glActiveTexture(GL_TEXTURE0 + 1);
-    glBindTexture(GL_TEXTURE_2D, ar->data_tex1);
-    glUniform1i(qlcg_gl_uniform(ar->prog, "uTex1"), 1);
-    glActiveTexture(GL_TEXTURE0 + 2);
-    glBindTexture(GL_TEXTURE_2D, ar->sat_tex);
-    glUniform1i(qlcg_gl_uniform(ar->prog, "uSatTex"), 2);
-
-    glActiveTexture(GL_TEXTURE0 + 3);
-    glBindTexture(GL_TEXTURE_2D, tile_view.tex);
-    glUniform1i(qlcg_gl_uniform(ar->prog, "uTileTex"), 3);
     glActiveTexture(GL_TEXTURE0 + 4);
     glBindTexture(GL_TEXTURE_2D, tile_view.meta);
-    glUniform1i(qlcg_gl_uniform(ar->prog, "uTileMeta"), 4);
     glActiveTexture(GL_TEXTURE0+6);
     glBindTexture(GL_TEXTURE_2D,tile_view.water);
-    glUniform1i(qlcg_gl_uniform(ar->prog,"uTileWater"),6);
     glActiveTexture(GL_TEXTURE0 + 5);
     glBindTexture(GL_TEXTURE_2D, ar->rain_tex);
-    glUniform1i(qlcg_gl_uniform(ar->prog, "uRainTex"), 5);
+    glActiveTexture(GL_TEXTURE0 + 8);
+    glBindTexture(GL_TEXTURE_2D, ar->zone_tex);
     glUniform1i(qlcg_gl_uniform(ar->prog, "uDetailLevel"), tile_view.level);
     glUniform1f(qlcg_gl_uniform(ar->prog, "uRiverMix"), tile_view.river_mix);
     glUniform1f(qlcg_gl_uniform(ar->prog, "uTileSamples"), (float)ATLAS_TILE_SAMPLE_PX);
@@ -333,36 +330,44 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
     glBindVertexArray(ar->vao);
     glBindBuffer(GL_ARRAY_BUFFER, ar->vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(qv), qv);
-    draw_map_pass(ar, -1, 1.0f, &tile_view);
+    draw_map_pass(ar, -1, 1.0f, &tile_view,&textures_dirty);
 
     ui_clip_push(ui, vp_x, vp_y, vp_w, vp_h);
 
     /* 叠加层：球面与平面共用同一投影入口 */
     {
-        if(tile_view.river_mix<1 || qlcg_world_flat(w))
+        if(tile_view.river_mix<1 || qlcg_world_flat(w)) {
             qlcg_atlas_draw_rivers(ar, w, ui, vp_x, vp_y, vp_w, vp_h);
+            textures_dirty=true;
+        }
 
         /* 列表从后向前绘制 */
         for (int i = LAYER_ID_COUNT - 1; i >= 0; i--) {
             const AtlasLayerSetting *layer = &ar->display.layers[i];
             if (!layer->on || layer->opacity <= 0.0f) continue;
             if (layer->id == LAYER_RAIN && !ar->rain_tex) continue;
-            if (layer->id == LAYER_SOURCE_RIVERS) {
-                ui_flush(ui);
-                if(tile_view.river_mix>0) draw_map_pass(ar,layer->id,layer->opacity,&tile_view);
-                if(tile_view.river_mix<1)
+            if (layer->id == LAYER_VEGETATION) {
+                qlcg_atlas_draw_vegetation(ar,w,clk,ui,layer->opacity,vp_x,vp_y,vp_w,vp_h);
+                textures_dirty=true;
+            } else if (layer->id == LAYER_SOURCE_RIVERS) {
+                flush_map_ui(ui,&textures_dirty);
+                if(tile_view.river_mix>0) draw_map_pass(ar,layer->id,layer->opacity,&tile_view,&textures_dirty);
+                if(tile_view.river_mix<1) {
                     qlcg_atlas_draw_sources(ar,w,ui,layer->opacity*(1-tile_view.river_mix),
                                            vp_x,vp_y,vp_w,vp_h);
+                    textures_dirty=true;
+                }
             } else if (layer->id == LAYER_CIVILIZATION || layer->id == LAYER_CHUNKS) {
                 draw_vector_layer(ar, w, ui, layer, vp_x, vp_y, vp_w, vp_h);
+                textures_dirty=true;
             } else {
-                ui_flush(ui);
-                draw_map_pass(ar, layer->id, layer->opacity, &tile_view);
+                flush_map_ui(ui,&textures_dirty);
+                draw_map_pass(ar, layer->id, layer->opacity, &tile_view,&textures_dirty);
             }
         }
         if (ar->quick_filter != FILTER_NONE) {
-            ui_flush(ui);
-            draw_map_pass(ar, -2, 1.0f, &tile_view);
+            flush_map_ui(ui,&textures_dirty);
+            draw_map_pass(ar, -2, 1.0f, &tile_view,&textures_dirty);
         }
 
         if(ar->astronomy_overlay&&w->opt.astronomy_enabled&&clk) {
@@ -384,10 +389,10 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
                     }
                 } else ar->eclipse.end=clk->unix_ms+86400000;
             }
-            ui_flush(ui);glUseProgram(ar->prog);glActiveTexture(GL_TEXTURE0+7);glBindTexture(GL_TEXTURE_2D,ar->eclipse_tex);
+            flush_map_ui(ui,&textures_dirty);glUseProgram(ar->prog);glActiveTexture(GL_TEXTURE0+7);glBindTexture(GL_TEXTURE_2D,ar->eclipse_tex);
             glUniform1i(qlcg_gl_uniform(ar->prog,"uEclipseChart"),7);
             glUniform1i(qlcg_gl_uniform(ar->prog,"uEclipseKind"),ar->eclipse.type?ar->eclipse.kind:0);
-            draw_map_pass(ar,-3,1,&tile_view);
+            draw_map_pass(ar,-3,1,&tile_view,&textures_dirty);
         }
         /* 活跃自然灾害事件波纹标记 */
         for (int i = 0; i < MAX_ACTIVE_EVENTS; i++) {
@@ -447,9 +452,7 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
         }
         ui->global_alpha = alpha;
     }
-    ui_flush(ui);
-    /* 舆图已落地，抓一张背景供叠在上面的玻璃面板采样 */
-    ui_backdrop_capture(ui);
+    flush_map_ui(ui,&textures_dirty);
     ar->last_render_ms = qlcg_time_ms() - t0;
 }
 
@@ -489,4 +492,5 @@ void qlcg_atlas_render_viewport(AtlasRenderer *ar, const MacroWorld *w,
     AtlasPlayerMarker player = {(player_cx + 0.5) * QLCG_CHUNK_SIZE_M,
                                 (player_cz + 0.5) * QLCG_CHUNK_SIZE_M, 0};
     render_viewed_world(ar, w, clk, ui, x, y, width, height, is_creator_preview, &player);
+    if(w)ui_backdrop_capture(ui);
 }

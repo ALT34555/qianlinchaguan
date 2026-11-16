@@ -37,7 +37,7 @@ static void bd_free_targets(UiContext *ui) {
     if (ui->bd_fbo[0]) { qlcg_gl_delete_framebuffers(1, &ui->bd_fbo[0]); ui->bd_fbo[0] = 0; }
     if (ui->bd_fbo[1]) { qlcg_gl_delete_framebuffers(1, &ui->bd_fbo[1]); ui->bd_fbo[1] = 0; }
     ui->backdrop_tex   = 0;
-    ui->backdrop_ready = false;
+    ui->backdrop_ready = false;ui->backdrop_pending=false;
     ui->bd_w = ui->bd_h = 0;
 }
 
@@ -129,7 +129,12 @@ static void bd_blur_passes(UiContext *ui, float step_scale) {
 void ui_backdrop_capture(UiContext *ui) {
     if (!ui->bd_prog || !ui->bd_tex[0] || ui->bd_w <= 0) return;
     if (ui->reduce_motion) return;   /* 简化UI：不做磨砂，玻璃退化为半透明 */
-    bd_capture(ui);
+    bd_capture(ui);glBindFramebuffer(GL_FRAMEBUFFER,0);
+    ui->backdrop_pending=true;
+}
+void ui_backdrop_finish(UiContext *ui) {
+    if(!ui->backdrop_pending)return;
+    ui->backdrop_pending=false;
     bd_blur_passes(ui, 1.0f);
     ui->backdrop_tex   = ui->bd_tex[1];   /* 第二趟的输出 */
     ui->backdrop_ready = true;
@@ -150,7 +155,7 @@ void ui_backdrop_blur_overlay(UiContext *ui, float radius_px) {
 }
 
 void ui_backdrop_end_frame(UiContext *ui) {
-    ui->backdrop_ready = false;
+    ui->backdrop_ready = false;ui->backdrop_pending=false;
 }
 
 void ui_backdrop_release(UiContext *ui) {

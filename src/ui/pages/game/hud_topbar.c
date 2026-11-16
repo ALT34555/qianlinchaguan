@@ -121,7 +121,7 @@ void game_top_bar(UiContext *ui) {
     qlcg_calendar_format_topbar(&g_app.snap, g_app.clock.mode, cal_bar, sizeof(cal_bar));
 
     float x = bar_x + 20.0f * z;
-    const char *title = g_app.loaded_slot_name[0] ? g_app.loaded_slot_name : g_app.world->opt.world_name;
+    const char *title = g_app.save_name[0] ? g_app.save_name : g_app.world->opt.world_name;
     char plane_title[320];
     if(qlcg_world_flat(g_app.world)) {
         snprintf(plane_title,sizeof(plane_title),"%s [%d, %d]",title,g_app.world->opt.plane_x,g_app.world->opt.plane_z);

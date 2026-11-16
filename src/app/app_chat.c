@@ -16,7 +16,7 @@ static void world_param_command(const char *cmd) {
                  o->seed, o->columns, o->columns / 2, o->chunks_per_cell,
                  qlcg_terrain_recipe_name(o->terrain_recipe), o->land_ratio * 100.0f,
                  o->precipitation, o->pole_temp, o->equator_temp,
-                 o->tectonic_activity, o->monsoon_direction, o->axial_tilt_deg,
+                 o->tectonic_activity, qlcg_monsoon_name(o->monsoon_direction), o->axial_tilt_deg,
                  o->prograde ? tr("creator.rotation.prograde") : tr("creator.rotation.retrograde"));
         app_push_chat(reply);
         return;
@@ -44,7 +44,24 @@ static void world_param_command(const char *cmd) {
     } else if (strncmp(key, "equator", 7) == 0) {
         if (sp) { o->equator_temp = qlcg_clampf(v, -100.0f, 100.0f); changed = true; }
     } else if (strncmp(key, "monsoon", 7) == 0) {
-        if (sp) { o->monsoon_direction = qlcg_clampi((int)v, 0, 359); changed = true; }
+        static const char *const modes[MONSOON_MODE_COUNT] = {
+            "realistic", "reversed", "easterly", "westerly", "polar", "equatorial"
+        };
+        if (sp) {
+            for (int i=0;i<MONSOON_MODE_COUNT;i++) {
+                if (strcmp(sp+1,modes[i])==0 || strcmp(sp+1,qlcg_monsoon_name(MONSOON_REALISTIC+i))==0) {
+                    o->monsoon_direction=MONSOON_REALISTIC+i; changed=true; break;
+                }
+            }
+            if (!changed) {
+                char *end;
+                long value=strtol(sp+1,&end,10);
+                if (end!=sp+1 && *end=='\0') {
+                    o->monsoon_direction=(int)qlcg_clampd((double)value,0,MONSOON_EQUATOR_CYCLONE);
+                    changed=true;
+                }
+            }
+        }
     } else if (strncmp(key, "tilt", 4) == 0) {
         if (sp) { o->axial_tilt_deg = qlcg_clampf(v, 0.0f, 60.0f); changed = true; }
     } else if (strncmp(key, "prograde", 8) == 0) {

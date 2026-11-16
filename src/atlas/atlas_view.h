@@ -7,6 +7,7 @@
 #include "../systems/world/astronomy_eclipses.h"
 
 struct AtlasTileCache;
+struct AtlasVegetation;
 
 typedef struct {
     double wx, wz;
@@ -19,6 +20,7 @@ typedef struct {
     GLuint             data_tex0;
     GLuint             data_tex1;
     GLuint             sat_tex;
+    GLuint             zone_tex;      /* 气候区索引图 */
     GLuint             rain_tex;      /* 雨云图层降水纹理 */
     int                rain_tex_w, rain_tex_h;
     uint32_t           rain_key_day;
@@ -31,6 +33,8 @@ typedef struct {
     uint32_t           synced_terr_rev;
     /* 分级细节瓦片缓存（见 atlas_tiles.h） */
     struct AtlasTileCache *tiles;
+    struct AtlasVegetation *vegetation;
+    struct AtlasRiverCache *river_cache;
     bool               tiles_off;   /* 调试：关闭细节瓦片做 A/B */
 
     PlanetView         planet_view;
@@ -65,8 +69,10 @@ typedef struct {
     bool               has_selection;
     int                sel_cx, sel_cz;
     ChunkInspectInfo   sel_info;
+    const MacroWorld   *hover_world;
+    uint32_t           hover_delta, hover_surface, hover_territory;
     int                hover_cx, hover_cz;
-    ChunkInspectInfo   hover_info;
+    ChunkInspectInfo   hover_info,hover_cached_info;
 
     /* 舆图工程与事件工具状态 */
     EngToolType        eng_tool;
@@ -80,6 +86,7 @@ typedef struct {
     const MacroWorld   *detail_world;
 } AtlasRenderer;
 
+void qlcg_atlas_inspect_hover(AtlasRenderer *ar,const MacroWorld *w,int cx,int cz);
 bool qlcg_atlas_gpu_restore(AtlasRenderer *ar);
 bool        qlcg_atlas_init(AtlasRenderer *ar);
 void        qlcg_atlas_shutdown(AtlasRenderer *ar);
@@ -133,7 +140,8 @@ void        qlcg_atlas_center_on(AtlasRenderer *ar, const MacroWorld *w,
 float       qlcg_atlas_globe_radius(const AtlasRenderer *ar, float vp_w, float vp_h);
 
 /* 河流 LOD 层级：绕行一圈像素 / 128 的二进制阶 */
-void        qlcg_atlas_draw_rivers(const AtlasRenderer *ar, const MacroWorld *w, UiContext *ui,
+void qlcg_atlas_rivers_release(AtlasRenderer *ar);
+void        qlcg_atlas_draw_rivers(AtlasRenderer *ar, const MacroWorld *w, UiContext *ui,
                                   float vp_x, float vp_y, float vp_w, float vp_h);
 
 int         qlcg_atlas_river_level(const AtlasRenderer *ar, const MacroWorld *w,

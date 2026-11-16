@@ -5,7 +5,7 @@
 #include "../terrain3d/ground_detail.h"
 #include "../systems/world/gen/gen_cover.h"
 #include "../systems/world/surface_internal.h"
-#include "../systems/world/source_rivers.h"
+#include "../systems/world/hydrology_sources.h"
 #include "../systems/world/surface_coast.h"
 #include <stdlib.h>
 #include <string.h>
@@ -213,7 +213,7 @@ static SurfaceMapPoint tile_surface(struct AtlasTileCache *tc,const MacroWorld *
                                     double wx,double wz,double step) {
     SurfaceMapPoint result={.depth=-1,.source_depth=-1};
     if(step>32) {
-        qlcg_sample_surface_map(w,wx,wz,&result.h,&result.wl,&result.temp);
+        qlcg_sample_surface_map(w,wx,wz,&result.h,&result.wl,&result.temp,&result.wet_gain);
         if(result.wl>result.h+.02f) result.depth=result.wl-result.h;
         return result;
     }
@@ -234,6 +234,7 @@ static SurfaceMapPoint tile_surface(struct AtlasTileCache *tc,const MacroWorld *
     result.depth=wa*a.depth+wb*b.depth+wc*c.depth+wd*d.depth;
     result.source_depth=wa*a.source_depth+wb*b.source_depth+wc*c.source_depth+wd*d.source_depth;
     result.coast_tint=wa*a.coast_tint+wb*b.coast_tint+wc*c.coast_tint+wd*d.coast_tint;
+    result.wet_gain=wa*a.wet_gain+wb*b.wet_gain+wc*c.wet_gain+wd*d.wet_gain;
     if(tc->node_step>2) {
         float sx[4],sz[4];
         tile_smooth_weights(u,sx); tile_smooth_weights(v,sz);
@@ -303,6 +304,9 @@ static void tile_emit_row(struct AtlasTileCache *tc, const MacroWorld *w, int ro
             k = 0.97f;   /* 水面不显地形明暗 */
         } else {
             qlcg_land_color(qlcg_elevation_ramp(hc), qlcg_snow_value(tp), col);
+            float moss=mid->wet_gain*.30f*(1-qlcg_snow_value(tp));
+            const float wet_tint[3]={74,106,66};
+            for(int ch=0;ch<3;ch++) col[ch]=(uint8_t)qlcg_lerpf(col[ch],wet_tint[ch],moss);
             /* 西北向光照：细节来自逐纹素坡度，非宏观格坡度 */
             float inv = 1.0f / sqrtf(dhx * dhx + dhz * dhz + 1.0f);
             float lam = (-dhx * 0.62f - dhz * 0.62f) * inv;

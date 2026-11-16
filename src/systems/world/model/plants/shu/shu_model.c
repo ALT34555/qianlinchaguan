@@ -58,9 +58,13 @@ static void tree_leaf(LpBuilder *b, const double tip[3], double a, double len,
     o.cup = .28;
     double width = len * p->leaf_width;
     if (p->leaf_style == SHU_LEAF_FAN) {
-        double dx = cos(a), dz = sin(a), y = tip[1] + len * sin(o.pitch);
-        double left[3] = {tip[0] + dx * len * .58 + dz * width * .50, y, tip[2] + dz * len * .58 - dx * width * .50};
-        double right[3] = {tip[0] + dx * len * .58 - dz * width * .50, y, tip[2] + dz * len * .58 + dx * width * .50};
+        double fpitch = o.pitch + .08 * sin(a * 2.0 + tip[1] * 1.7);
+        double dx = cos(a), dz = sin(a), y = tip[1] + len * sin(fpitch);
+        double roll = cos(a * 3.0 + tip[0] * 1.3) * width * .06;
+        double left[3] = {tip[0] + dx * len * .58 + dz * width * .50, y + roll,
+                          tip[2] + dz * len * .58 - dx * width * .50};
+        double right[3] = {tip[0] + dx * len * .58 - dz * width * .50, y - roll,
+                           tip[2] + dz * len * .58 + dx * width * .50};
         double outer[3] = {tip[0] + dx * len, y + len * .09, tip[2] + dz * len};
         qlcg_lp_quad(b, tip, left, outer, right, color, LP_MAT_SOLID);
     } else if (p->leaf_style == SHU_LEAF_LOBED) {
@@ -68,9 +72,12 @@ static void tree_leaf(LpBuilder *b, const double tip[3], double a, double len,
             qlcg_lp_petal(b, tip, a + .52 * i, len * (i ? .77 : 1.0), width * .64, color, &o);
         }
     } else if (p->leaf_style == SHU_LEAF_COMPOUND) {
+        double dx = cos(a), dz = sin(a);
+        double rend[3] = {tip[0] + dx * len * .74, tip[1], tip[2] + dz * len * .74};
+        tree_segment(b, tip, rend, fmax(.008, len * .022), .45, 3, color);
         for (int i = 0; i < 3; i++) {
             double t = (i + 1) * .23;
-            double node[3] = {tip[0] + cos(a) * len * t, tip[1], tip[2] + sin(a) * len * t};
+            double node[3] = {tip[0] + dx * len * t, tip[1], tip[2] + dz * len * t};
             for (int side = -1; side <= 1; side += 2)
                 qlcg_lp_petal(b, node, a + side * .91, len * (.62 - t * .35), width, color, &o);
         }
@@ -99,9 +106,10 @@ void qlcg_pa_shu_broadleaf(LpBuilder *b, const PdDef *def, int season, int form,
     LpRgb twig = qlcg_pa_tone(def, "barkLight", 1);
     LpRgb leaf = qlcg_pa_tone(def, "foliage", 1);
     LpRgb dark = qlcg_pa_tone(def, "foliageDark", 1);
-    LpRng skeleton, detail;
+    LpRng skeleton, detail, dome_rng;
     qlcg_lp_rng_seed(&skeleton, def->build_seed);
     qlcg_lp_rng_seed(&detail, def->build_seed ^ 0x6f3d8ab1u);
+    qlcg_lp_rng_seed(&dome_rng, def->build_seed ^ 0x9e3779b9u);
     double phase = qlcg_lp_rng_next(&skeleton) * TAU;
 
     double root[3] = {0, 0, 0};
@@ -182,6 +190,8 @@ void qlcg_pa_shu_broadleaf(LpBuilder *b, const PdDef *def, int season, int form,
                              node[2] + vz * r * .23};
             tree_segment(b, node, tip, branch_r * .23, .26, 3, twig);
             double fill = (j + .5) / sites;
+            int has_dome = 0;
+            double clump = 0.0, top = 0.0;
             if (umbrella && s.density > 0) {
                 int leaves = simple ? 2 : qlcg_pa_js_round(2 + s.density * 4);
                 double length = r * .19 * s.size;
@@ -194,13 +204,17 @@ void qlcg_pa_shu_broadleaf(LpBuilder *b, const PdDef *def, int season, int form,
                               length * (1.04 - .32 * v), p, &s, k % 2 ? leaf : dark);
                 }
             } else if (fill <= s.density) {
-                double clump = r * p->cluster * s.size * (.81 + .24 * u);
-                double top = clump * (.72 - .34 * p->hang);
+                has_dome = 1;
+                clump = r * p->cluster * s.size * (.81 + .24 * u);
+                top = clump * (.72 - .34 * p->hang) * (.95 + .05 * (double)((i * 2 + j) % 3));
                 LpOpts o = qlcg_lp_opts();
-                o.rot_y = bearing;
-                o.squash = .25;
+                o.rot_y = bearing + (double)j * .29 + (double)i * .43;
+                o.squash = .22 + .06 * (double)((i + j) % 3);
+                o.jitter = .14;
+                o.rand = &dome_rng;
                 qlcg_lp_dome(b, tip, clump, top, clump * .83, 5, i % 2 ? leaf : dark, &o);
-                double point[3] = {tip[0] + vx * clump * .48, tip[1] + top * .31, tip[2] + vz * clump * .48};
+                double point[3] = {tip[0] + vx * clump * .24, tip[1] + top * .18,
+                                   tip[2] + vz * clump * .24};
                 if (!simple) {
                     tree_leaf(b, point, bearing, clump * 1.18, p, &s, leaf);
                     if (fan) {
@@ -226,7 +240,19 @@ void qlcg_pa_shu_broadleaf(LpBuilder *b, const PdDef *def, int season, int form,
             }
 
             int slot = j * limbs + i;
-            if (slot < flowers) qlcg_pa_flower_at(b, def, tip, bloom_size, &detail);
+            if (slot < flowers) {
+                double fpos[3] = {tip[0], tip[1], tip[2]};
+                if (has_dome) {
+                    fpos[0] = tip[0] + vx * clump * .56;
+                    fpos[1] = tip[1] + top * .68;
+                    fpos[2] = tip[2] + vz * clump * .56;
+                    tree_segment(b, tip, fpos, fmax(.008, bloom_size * .07), .65, 4, twig);
+                }
+                double fbot[3] = {fpos[0], fpos[1] - bloom_size * .05, fpos[2]};
+                double ftop[3] = {fpos[0], fpos[1] + bloom_size * .36, fpos[2]};
+                tree_segment(b, fbot, ftop, fmax(.008, bloom_size * .08), .5, 5, twig);
+                qlcg_pa_flower_at(b, def, fpos, bloom_size, &detail);
+            }
             if (slot < fruits) {
                 qlcg_lp_socket(b, tip, LP_SOCKET_FRUIT);
                 if (def->state == PD_STATE_FRUITING) draw_fruit(b, def, tip, fruit_size, &detail);

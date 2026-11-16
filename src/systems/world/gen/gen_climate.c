@@ -10,6 +10,33 @@ static double mix(double a, double b, double t) { return a+(b-a)*t; }
 static double smooth(double t) { t=clampd(t,0,1); return t*t*(3-2*t); }
 static double gauss(double v, double m, double s) { double z=(v-m)/s; return exp(-z*z); }
 
+void qlcg_gen_climate_wind(const WorldCreatorOptions *o, double lat_rad,
+                           double *east, double *south) {
+    double lat=clampd(lat_rad,-PI/2,PI/2),deg=fabs(lat)*180/PI;
+    double zonal=o->prograde?1.0:-1.0,scale=fmax(.25,cos(lat));
+    int mode=o->monsoon_direction;
+    if (mode>=0 && mode<360) {
+        double mrad=mode*PI/180,monsoon=gauss(deg,18,13)*.6;
+        double e=(-gauss(deg,12,15)+gauss(deg,48,14)-.8*gauss(deg,80,9))*zonal;
+        double s=(lat>0?1:-1)*(.35*gauss(deg,18,15)-.22*gauss(deg,45,15)+.25*gauss(deg,72,12));
+        *east=e/scale+monsoon*cos(mrad); *south=s+monsoon*sin(mrad);
+        return;
+    }
+    if (mode==MONSOON_EASTERLY || mode==MONSOON_WESTERLY) {
+        *east=mode==MONSOON_EASTERLY?-1.0:1.0; *south=0;
+        return;
+    }
+    if (mode==MONSOON_POLAR_CYCLONE || mode==MONSOON_EQUATOR_CYCLONE) {
+        double turn=mode==MONSOON_POLAR_CYCLONE?1.0:-1.0;
+        double spiral=sin(lat)*cos(lat)*turn;
+        *east=spiral/scale; *south=-.45*spiral;
+        return;
+    }
+    double belt=sin(6*fabs(lat)),reverse=mode==MONSOON_REVERSED?-1.0:1.0;
+    *east=-belt*zonal/scale*reverse;
+    *south=(lat>0?1:-1)*.45*belt*reverse;
+}
+
 static int index_at(int cols, int rows, int x, int y) {
     if(rows==cols) return (y<0?0:y>=rows?rows-1:y)*cols+(x<0?0:x>=cols?cols-1:x);
     y=(y%(rows*2)+rows*2)%(rows*2);
@@ -117,17 +144,14 @@ static int climate_base(int cols, int rows, const WorldCreatorOptions *o, const 
         grad_e[i]=(float)((read_at(cols,rows,land,x+1,y)-read_at(cols,rows,land,x-1,y))*.5);
         grad_s[i]=(float)((read_at(cols,rows,land,x,y+1)-read_at(cols,rows,land,x,y-1))*.5);
     }
-    double mrad=o->monsoon_direction*PI/180;
     double amp_scale=tilt_amp_scale(o);
-    double zonal=o->prograde?1.0:-1.0;
     for (int y=0;y<rows;y++) {
         double lat=PI/2-(y+.5)*PI/rows,deg=fabs(lat)*180/PI;
-        double east=(-gauss(deg,12,15)+gauss(deg,48,14)-.8*gauss(deg,80,9))*zonal;
-        double merid=(lat>0?1:-1)*(.35*gauss(deg,18,15)-.22*gauss(deg,45,15)+.25*gauss(deg,72,12));
+        double ax,ay;
+        qlcg_gen_climate_wind(o,lat,&ax,&ay);
         double monsoon=gauss(deg,18,13)*.6;
         for (int x=0;x<cols;x++) {
             int i=y*cols+x;
-            double ax=east/fmax(.25,cos(lat))+monsoon*cos(mrad),ay=merid+monsoon*sin(mrad);
             double ahead=0,behind=0;
             for (int k=1;k<=3;k++) {
                 ahead=fmax(ahead,read_at(cols,rows,barrier,x+ax*k,y+ay*k)-land[i]);

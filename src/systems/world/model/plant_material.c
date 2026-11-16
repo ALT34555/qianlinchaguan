@@ -2,6 +2,7 @@
 #include "plant_material.h"
 #include "plant_def.h"
 #include "plant_forms.h"
+#include "plant_guild.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,6 +38,7 @@ int qlcg_plant_material_init(void) {
         return 0;
     }
     g_species = n;
+    qlcg_pg_load(PLANT_DATA_DIR);
     g_loaded = 1;
     return n;
 }
@@ -47,6 +49,7 @@ void qlcg_plant_material_shutdown(void) {
     }
     free(g_geo);
     g_geo = NULL;
+    qlcg_pg_unload();
     if (g_loaded) qlcg_pd_unload();
     g_loaded = 0;
     g_species = 0;

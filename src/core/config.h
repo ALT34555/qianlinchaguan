@@ -17,6 +17,14 @@
 #define DEFAULT_RENDER_DIST    12
 /* 植被近景全量半径（米） */
 #define QLCG_PROP_NEAR_M       330.0f
+/* 植物丛：格宽、命中、成片阈值 */
+#define QLCG_GUILD_CELL        18.0f
+#define QLCG_GUILD_RATE        0.75f
+#define QLCG_GUILD_NOISE      -0.12f
+/* 优势丛占比与每区块上限 */
+#define QLCG_GUILD_MONO_SHARE  0.35f
+#define QLCG_GUILD_PLANTS_MAX  420
+#define QLCG_GUILD_TRIS_MAX    40000
 /* 3D 全模型半径（区块） */
 #define QLCG_PROP_FULL_CHUNKS  12
 /* 交叉面片起点（区块），与 3D 同界 */
@@ -238,7 +246,8 @@ typedef enum {
     LAYER_ICE          = 9,
     LAYER_DEPTH        = 10,
     LAYER_SOURCE_RIVERS = 11,
-    LAYER_ID_COUNT     = 12
+    LAYER_VEGETATION   = 12,
+    LAYER_ID_COUNT     = 13
 } AtlasLayerId;
 
 /* 舆图特定区块筛选器 */

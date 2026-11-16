@@ -1,6 +1,9 @@
 /* 山川资源：上下文、实例布局与上传入口 */
 #include "terrain_view.h"
+#include "terrain_visual.h"
+#include "water_reflection.h"
 #include "terrain_types.h"
+#include "terrain_visibility.h"
 #include "ground_detail.h"
 #include "../core/math_util.h"
 #include "../core/measurements.h"
@@ -54,6 +57,40 @@ static void setup_instanced_vao(GLuint *vao, GLuint *vbo, GLuint *ebo, GLuint *i
     glVertexAttribDivisor(5, 1);
 }
 
+void qlcg_batch_vao(const PlantBatch *b,GLuint vao,GLuint instance) {
+    const GLint sizes[5]={3,3,3,1,1};
+    const size_t offsets[5]={0,3*sizeof(float),6*sizeof(float),9*sizeof(float),10*sizeof(float)};
+    glBindVertexArray(vao);glBindBuffer(GL_ARRAY_BUFFER,b->vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,b->ebo);
+    for(int i=0;i<5;i++) {
+        glEnableVertexAttribArray(i);glVertexAttribDivisor(i,0);
+        glVertexAttribPointer(i,sizes[i],GL_FLOAT,GL_FALSE,sizeof(PlantVertex),(void*)offsets[i]);
+    }
+    const size_t inst_offsets[4]={0,offsetof(PlantInstGPU,rot),offsetof(PlantInstGPU,scale),offsetof(PlantInstGPU,level)};
+    glBindBuffer(GL_ARRAY_BUFFER,instance);
+    for(int i=0;i<4;i++) {
+        glEnableVertexAttribArray(5+i);glVertexAttribDivisor(5+i,1);
+        glVertexAttribPointer(5+i,i?1:3,GL_FLOAT,GL_FALSE,sizeof(PlantInstGPU),(void*)inst_offsets[i]);
+    }
+}
+void qlcg_far_vao(GLuint vao,GLuint mesh,GLuint indices,GLuint instance) {
+    glBindVertexArray(vao);glBindBuffer(GL_ARRAY_BUFFER,mesh);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,indices);
+    glEnableVertexAttribArray(0);glVertexAttribDivisor(0,0);
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,4*sizeof(float),0);
+    glEnableVertexAttribArray(6);glVertexAttribDivisor(6,0);
+    glVertexAttribPointer(6,2,GL_FLOAT,GL_FALSE,4*sizeof(float),(void*)(2*sizeof(float)));
+    const GLuint attributes[6]={1,2,3,4,5,7};
+    const GLint sizes[6]={3,2,4,1,1,1};
+    const size_t offsets[6]={offsetof(FarPropInst,x),offsetof(FarPropInst,w),offsetof(FarPropInst,u0),
+        offsetof(FarPropInst,rot),offsetof(FarPropInst,shade),offsetof(FarPropInst,birth)};
+    glBindBuffer(GL_ARRAY_BUFFER,instance);
+    for(int i=0;i<6;i++) {
+        glEnableVertexAttribArray(attributes[i]);glVertexAttribDivisor(attributes[i],1);
+        glVertexAttribPointer(attributes[i],sizes[i],GL_FLOAT,GL_FALSE,sizeof(FarPropInst),(void*)offsets[i]);
+    }
+}
+
 /* 远景贴图 VAO：aCorner(0) + aDir(6) + 实例 1..5 */
 static void setup_far_vao(GLuint *vao, GLuint *vbo, GLuint *ebo, GLuint *inst,
                           const float *verts, int vcount, const uint16_t *indices, int icount) {
@@ -68,37 +105,8 @@ static void setup_far_vao(GLuint *vao, GLuint *vbo, GLuint *ebo, GLuint *inst,
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)((size_t)icount * sizeof(uint16_t)),
                  indices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
-    glEnableVertexAttribArray(6);
-    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                          (void *)(2 * sizeof(float)));
-    glBindBuffer(GL_ARRAY_BUFFER, *inst);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(64 * sizeof(FarPropInst)), NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(FarPropInst),
-                          (void *)offsetof(FarPropInst, x));
-    glVertexAttribDivisor(1, 1);
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(FarPropInst),
-                          (void *)offsetof(FarPropInst, w));
-    glVertexAttribDivisor(2, 1);
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(FarPropInst),
-                          (void *)offsetof(FarPropInst, u0));
-    glVertexAttribDivisor(3, 1);
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(FarPropInst),
-                          (void *)offsetof(FarPropInst, rot));
-    glVertexAttribDivisor(4, 1);
-    glEnableVertexAttribArray(5);
-    glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(FarPropInst),
-                          (void *)offsetof(FarPropInst, shade));
-    glVertexAttribDivisor(5, 1);
-    glEnableVertexAttribArray(7);
-    glVertexAttribPointer(7, 1, GL_FLOAT, GL_FALSE, sizeof(FarPropInst),
-                          (void *)offsetof(FarPropInst, birth));
-    glVertexAttribDivisor(7, 1);
+    qlcg_far_vao(*vao,*vbo,*ebo,*inst);
+    glBufferData(GL_ARRAY_BUFFER,(GLsizeiptr)(64*sizeof(FarPropInst)),NULL,GL_DYNAMIC_DRAW);
     glBindVertexArray(0);
 }
 
@@ -170,9 +178,14 @@ bool qlcg_plant_batch_setup(PlantBatch *b, int species, int form, int season) {
         qlcg_gl_delete_buffers(1, &b->vbo);
         qlcg_gl_delete_buffers(1, &b->ebo);
         qlcg_gl_delete_buffers(1, &b->inst_vbo);
+        qlcg_batch_cpu_free(b);
         memset(b, 0, sizeof(*b));
     }
 
+    b->height=(float)g->height;b->radius=(float)g->radius;b->low_y=1e30f;b->high_y=-1e30f;
+    for(int i=0;i<vcnt;i++)b->radius=fmaxf(b->radius,hypotf(g->positions[i*3],g->positions[i*3+2]));
+    for(int i=0;i<vcnt;i++){b->low_y=fminf(b->low_y,g->positions[i*3+1]);b->high_y=fmaxf(b->high_y,g->positions[i*3+1]);}
+    b->wind_pad=(float)g->height*.247f;
     float maxh = (float)g->height;
     if (maxh < 0.01f) maxh = 0.01f;
     for (int i = 0; i < vcnt; i++) {
@@ -201,31 +214,8 @@ bool qlcg_plant_batch_setup(PlantBatch *b, int species, int form, int season) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(g->index_count * (int)sizeof(uint32_t)), g->indices, GL_STATIC_DRAW);
     free(verts);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)(3 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)(6 * sizeof(float)));
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)(9 * sizeof(float)));
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)(10 * sizeof(float)));
-
-    glBindBuffer(GL_ARRAY_BUFFER, b->inst_vbo);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(cap * (int)sizeof(PlantInstGPU)), NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(5);
-    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(PlantInstGPU), (void *)0);
-    glVertexAttribDivisor(5, 1);
-    glEnableVertexAttribArray(6);
-    glVertexAttribPointer(6, 1, GL_FLOAT, GL_FALSE, sizeof(PlantInstGPU), (void *)offsetof(PlantInstGPU, rot));
-    glVertexAttribDivisor(6, 1);
-    glEnableVertexAttribArray(7);
-    glVertexAttribPointer(7, 1, GL_FLOAT, GL_FALSE, sizeof(PlantInstGPU), (void *)offsetof(PlantInstGPU, scale));
-    glVertexAttribDivisor(7, 1);
-    glEnableVertexAttribArray(8);
-    glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, sizeof(PlantInstGPU), (void *)offsetof(PlantInstGPU, level));
-    glVertexAttribDivisor(8, 1);
+    qlcg_batch_vao(b,b->vao,b->inst_vbo);
+    glBufferData(GL_ARRAY_BUFFER,(GLsizeiptr)((size_t)cap*sizeof(PlantInstGPU)),NULL,GL_DYNAMIC_DRAW);
     glBindVertexArray(0);
 
     b->species = species;
@@ -241,15 +231,15 @@ bool qlcg_plant_batch_setup(PlantBatch *b, int species, int form, int season) {
 /* 实例缓冲按需扩容 */
 void qlcg_plant_batch_instances(PlantBatch *b, const PlantInstGPU *inst, int count) {
     if (!b->vao) return;
-    if (count <= 0) { b->inst_count = 0; return; }
-    glBindBuffer(GL_ARRAY_BUFFER, b->inst_vbo);
-    if (count > b->inst_cap) {
-        b->inst_cap = count;
-        glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)((size_t)count*sizeof(*inst)), inst, GL_DYNAMIC_DRAW);
-    } else {
-        glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizeiptr)((size_t)count*sizeof(*inst)), inst);
+    if(count<=0){b->inst_count=0;return;}
+    if(b->all_instances&&b->cached_count==count&&!memcmp(b->all_instances,inst,(size_t)count*sizeof(*inst))){b->inst_count=count;return;}
+    if(count>b->cpu_capacity) {
+        int capacity=count+count/2+32;
+        void *all=malloc((size_t)capacity*sizeof(*inst)),*visible=malloc((size_t)capacity*sizeof(*inst));
+        if(!all||!visible){free(all);free(visible);return;}
+        qlcg_batch_cpu_free(b);b->all_instances=all;b->visible_instances=visible;b->cpu_capacity=capacity;
     }
-    b->inst_count = count;
+    memcpy(b->all_instances,inst,(size_t)count*sizeof(*inst));b->inst_count=count;b->cached_count=count;b->content_version++;
 }
 
 
@@ -267,6 +257,7 @@ bool qlcg_rock_batch_setup(PlantBatch *b, int index, int form, int season, int c
         qlcg_gl_delete_buffers(1, &b->vbo);
         qlcg_gl_delete_buffers(1, &b->ebo);
         qlcg_gl_delete_buffers(1, &b->inst_vbo);
+        qlcg_batch_cpu_free(b);
         memset(b, 0, sizeof(*b));
     }
 
@@ -296,33 +287,14 @@ bool qlcg_rock_batch_setup(PlantBatch *b, int index, int form, int season, int c
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(g->index_count * (int)sizeof(uint32_t)), g->indices, GL_STATIC_DRAW);
     free(verts);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)(3 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)(6 * sizeof(float)));
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)(9 * sizeof(float)));
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(PlantVertex), (void *)(10 * sizeof(float)));
-
-    glBindBuffer(GL_ARRAY_BUFFER, b->inst_vbo);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(cap * (int)sizeof(PlantInstGPU)), NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(5);
-    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(PlantInstGPU), (void *)0);
-    glVertexAttribDivisor(5, 1);
-    glEnableVertexAttribArray(6);
-    glVertexAttribPointer(6, 1, GL_FLOAT, GL_FALSE, sizeof(PlantInstGPU), (void *)offsetof(PlantInstGPU, rot));
-    glVertexAttribDivisor(6, 1);
-    glEnableVertexAttribArray(7);
-    glVertexAttribPointer(7, 1, GL_FLOAT, GL_FALSE, sizeof(PlantInstGPU), (void *)offsetof(PlantInstGPU, scale));
-    glVertexAttribDivisor(7, 1);
-    glEnableVertexAttribArray(8);
-    glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, sizeof(PlantInstGPU), (void *)offsetof(PlantInstGPU, level));
-    glVertexAttribDivisor(8, 1);
+    qlcg_batch_vao(b,b->vao,b->inst_vbo);
+    glBufferData(GL_ARRAY_BUFFER,(GLsizeiptr)((size_t)cap*sizeof(PlantInstGPU)),NULL,GL_DYNAMIC_DRAW);
     glBindVertexArray(0);
 
+    b->height=(float)g->height;b->radius=(float)g->radius;b->low_y=1e30f;b->high_y=-1e30f;
+    for(int i=0;i<vcnt;i++)b->radius=fmaxf(b->radius,hypotf(g->positions[i*3],g->positions[i*3+2]));
+    for(int i=0;i<vcnt;i++){b->low_y=fminf(b->low_y,g->positions[i*3+1]);b->high_y=fmaxf(b->high_y,g->positions[i*3+1]);}
+    b->wind_pad=0;
     b->species = index;
     b->form = form;
     b->season = season;
@@ -342,6 +314,7 @@ void qlcg_rock_batches_clear(TerrainRenderer *tr) {
             qlcg_gl_delete_buffers(1, &b->ebo);
             qlcg_gl_delete_buffers(1, &b->inst_vbo);
         }
+        qlcg_batch_cpu_free(b);
         memset(b, 0, sizeof(*b));
     }
     tr->rock_batch_count = 0;
@@ -363,6 +336,7 @@ void qlcg_plant_batches_clear(TerrainRenderer *tr) {
             qlcg_gl_delete_buffers(1, &b->ebo);
             qlcg_gl_delete_buffers(1, &b->inst_vbo);
         }
+        qlcg_batch_cpu_free(b);
         memset(b, 0, sizeof(*b));
     }
     tr->plant_batch_count = 0;
@@ -397,6 +371,9 @@ bool qlcg_terrain_gpu_restore(TerrainRenderer *tr) {
     tr->weather_prog = qlcg_gl_compile_program(WEATHER_VS_SRC, WEATHER_FS_SRC);
     tr->spring_prog  = qlcg_gl_compile_program(SPRING_VS_SRC, SPRING_FS_SRC);
     tr->far_prog     = qlcg_gl_compile_program(FAR_VS_SRC, FAR_FS_SRC);
+    const GLuint programs[]={tr->sky_prog,tr->terrain_prog,tr->water_prog,tr->prop_prog,
+        tr->flag_prog,tr->plant_prog,tr->weather_prog,tr->spring_prog,tr->far_prog};
+    for(int i=0;i<9;i++)qlcg_visual_program_init(programs[i]);
     {
         static const float cross_v[8 * 4] = {
             -0.5f, 0.0f, 1.0f, 0.0f,   0.5f, 0.0f, 1.0f, 0.0f,
@@ -546,6 +523,8 @@ bool qlcg_terrain_init(TerrainRenderer *tr) {
 
 /* 回收山川场景缓存 */
 void qlcg_terrain_release_scene(TerrainRenderer *tr) {
+    qlcg_visual_reset(tr);
+    tr->weather_visual.ready = false;
     qlcg_astra_release(&tr->astronomy);
     qlcg_terrain_clear_chunks(tr);
     qlcg_plant_batches_clear(tr);
@@ -562,6 +541,7 @@ void qlcg_terrain_release_scene(TerrainRenderer *tr) {
 }
 
 void qlcg_terrain_shutdown(TerrainRenderer *tr) {
+    qlcg_visual_free(tr);
     qlcg_astra_release(&tr->astronomy);
     qlcg_ice_visual_shutdown(tr);
     qlcg_terrain_clear_chunks(tr);
@@ -592,6 +572,7 @@ void qlcg_terrain_shutdown(TerrainRenderer *tr) {
     qlcg_gl_delete_program(tr->flag_prog);
     qlcg_gl_delete_program(tr->weather_prog);
     qlcg_gl_delete_program(tr->spring_prog);
+    qlcg_reflection_free(tr);
     for (int i = 0; i < QLCG_GROUND_BAND_N; i++)
         if (tr->ground_tex[i]) { qlcg_gl_delete_textures(1, &tr->ground_tex[i]); tr->ground_tex[i] = 0; }
     free(tr->far_fade);

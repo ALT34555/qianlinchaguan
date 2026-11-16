@@ -43,7 +43,10 @@ static const char *UI_FS_SRC =
     "uniform vec2 uScreen;\n"
     "out vec4 FragColor;\n"
     "void main() {\n"
-    "    if (vMode < 0.5) {\n"
+    "    if (vMode > 6.5) {\n"
+    "        vec4 c = texture(uSprite, vUV);\n"
+    "        FragColor = vec4(c.rgb / max(c.a, 0.001) * vColor.rgb, c.a * vColor.a);\n"
+    "    } else if (vMode < 0.5) {\n"
     "        FragColor = vColor;\n"
     "    } else if (vMode < 1.5) {\n"
     "        float a = texture(uTex, vUV).a;\n"
@@ -225,7 +228,7 @@ void ui_begin_frame(UiContext *ui, int w, int h) {
     ui->win_w = ui->pix_w;
     ui->win_h = ui->pix_h;
     /* 背景模糊只在场景画完后重抓，跨帧不复用，避免残影 */
-    ui->backdrop_ready = false;
+    ui->backdrop_ready = false;ui->backdrop_pending=false;
     ui_backdrop_resize(ui, ui->win_w, ui->win_h);
     ui->safe_x_px = (float)ui->win_w * qlcg_clampf(ui->safe_x_pct, 0.0f, 35.0f) * 0.01f;
     ui->safe_y_px = (float)ui->win_h * qlcg_clampf(ui->safe_y_pct, 0.0f, 35.0f) * 0.01f;
@@ -331,6 +334,7 @@ void ui_use_sprite_tex(UiContext *ui, GLuint tex) {
 void ui_end_frame(UiContext *ui) {
     ui_flush(ui);
     ui->mouse_clicked = false;
+    ui->mouse_pressed = false;
     ui->right_clicked = false;
     ui->touch_double_tap=false;
     ui->wheel_delta   = 0;
@@ -368,6 +372,7 @@ void ui_draw_rect(UiContext *ui, float x, float y, float w, float h, uint32_t co
 
 /* 玻璃底板：有模糊就用，否则半透明 */
 void ui_draw_rect_glass(UiContext *ui, float x, float y, float w, float h, uint32_t tint) {
+    ui_backdrop_finish(ui);
     bool glass = ui->backdrop_ready && ui->backdrop_tex && !ui->reduce_motion;
     float mode = glass ? 5.0f : 0.0f;
     push_quad(ui, x, y, x + w, y + h, 0, 0, 0, 0, tint, tint, mode);
@@ -694,6 +699,11 @@ void ui_draw_atlas_rect(UiContext *ui, float x, float y, float w, float h,
 void ui_draw_sprite_rect(UiContext *ui, float x, float y, float w, float h,
                          float u0, float v0, float u1, float v1, uint32_t tint) {
     push_quad(ui, x, y, x + w, y + h, u0, v0, u1, v1, tint, tint, 3.0f);
+}
+
+void ui_draw_premult_sprite(UiContext *ui,float x,float y,float w,float h,
+                            float u0,float v0,float u1,float v1,uint32_t tint) {
+    push_quad(ui,x,y,x+w,y+h,u0,v0,u1,v1,tint,tint,7.0f);
 }
 
 /* PNG 原尺寸上传为纹理，不缩放 */

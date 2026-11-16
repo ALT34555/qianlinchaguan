@@ -16,6 +16,7 @@ typedef struct {
 } PropUvRect;
 
 typedef struct {
+    struct PropSpriteCache *cache;
     GLuint     tex;
     int        plant_count;
     int        rock_count;

@@ -14,9 +14,11 @@ static void build_fruit(LpBuilder *b, const PdDef *def, const double point[3],
     double phase = qlcg_lp_rng_next(rng) * TAU;
     for (int i = 0; i < 6; i++) {
         double angle = phase + i * GOLDEN;
-        double reach = radius * (i < 4 ? .49 : .25);
-        double center[3] = {point[0] + cos(angle) * reach, point[1] + radius * (i < 4 ? .12 : -.45),
+        double reach = radius * (i < 4 ? .44 : .22);
+        double y_off = i < 4 ? .12 + (i % 2) * .06 : -.36 - (i - 4) * .08;
+        double center[3] = {point[0] + cos(angle) * reach, point[1] + radius * y_off,
                             point[2] + sin(angle) * reach};
+        opts.rot_y = angle;
         qlcg_lp_ico(b, center, pip, 5, qlcg_pa_deepen(color, i * .035), &opts);
     }
 }

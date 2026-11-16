@@ -2,7 +2,8 @@
 #include "../systems/world/model/cliff_rock.h"
 #include "../systems/world/surface_internal.h"
 #include "../systems/world/surface_macro.h"
-#include "../systems/world/surface_rivers.h"
+#include "../systems/world/hydrology_river.h"
+#include "../systems/world/hydrology_archive.h"
 #include "../core/math_util.h"
 #include <math.h>
 #include <stdlib.h>
@@ -43,6 +44,7 @@ static const CliffAnchor *anchor_at(const MacroWorld *w,int cx,int cz) {
     *a=(CliffAnchor){.cx=cx,.cz=cz,.seed=seed,.valid=1};
     a->x=(double)cx*32+((seed&65535)/65535.0- .5)*14;
     a->z=(double)cz*32+((seed>>16)/65535.0- .5)*14;
+    if(qlcg_river_archive_terrain(w)>=8&&qlcg_is_river_head(w,qlcg_macro_cell_at(w,a->x,a->z)))return a;
     SurfaceMacroContext c=qlcg_macro_context(w,a->x,a->z);
     float rift=field(w,&c,w->rift), shear=field(w,&c,w->shear), uplift=field(w,&c,w->uplift);
     a->activity=qlcg_clampf(fmaxf(rift*1.6f,fmaxf(shear*1.7f,uplift*1.3f)),0,1);

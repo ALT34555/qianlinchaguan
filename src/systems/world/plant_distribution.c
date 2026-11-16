@@ -32,6 +32,9 @@ static const float ZONE_CENTER[4] = { 1.0f, 11.0f, 20.0f, 27.0f };
 static const float ZONE_SIGMA[4]  = { 9.0f, 8.0f, 7.5f, 6.5f };
 static const float BASE_WET[4]    = { .55f, .52f, .60f, .65f };
 
+/* 选种候选上限 */
+#define PD_PICK_MAX 256
+
 static float clamp01(float v) {
     return qlcg_clampf(v, 0.0f, 1.0f);
 }
@@ -129,8 +132,7 @@ float qlcg_plant_suitability(int species, const PlantSite *site) {
     if (!site || species < 0 || species >= g_profile_count || !g_profile)
         return 0.0f;
     const PlantProfile *p = &g_profile[species];
-    if (p->category < 0 || p->category == PLANT_CAT_HUA ||
-        p->category == PLANT_CAT_NONG) return 0.0f;
+    if (p->category < 0) return 0.0f;   /* 类别筛选交给候选池 */
     int material = site->material;
     if (material < 1 || material > 5) return 0.0f;
 
@@ -195,83 +197,49 @@ void qlcg_plant_patch(double x, double z, uint32_t seed, PlantPatch *patch) {
     float stone = (float)qlcg_base_noise_d(x / 40.0, 0, z / 40.0, seed ^ 0x726f636bu);
     patch->density = qlcg_clampf(1.0f + .85f * broad + 1.15f * fine, .20f, 1.80f);
     patch->rocks = qlcg_clampf(1.0f + 1.70f * stone, .15f, 1.70f);
-    patch->grove = smooth01(.05f, .45f, broad);
     patch->warp_x = fine * 8.0f;
     patch->warp_z = broad * 12.0f;
     patch->seed = seed;
 }
 
-/* 平滑混合群落，边界保留随机过渡 */
-static uint32_t community_roll(double x, double z, int category,
-                               uint32_t roll, const PlantPatch *patch) {
-    double span = category == PLANT_CAT_SHU ? 112.0 :
-                  category == PLANT_CAT_GUAN ? 40.0 : 24.0;
-    x = (x + patch->warp_x) / span;
-    z = (z + patch->warp_z) / span;
-    int ix = (int)floor(x), iz = (int)floor(z);
-    float tx = smooth01(0, 1, (float)(x - ix));
-    float tz = smooth01(0, 1, (float)(z - iz));
-    uint32_t edge = qlcg_hash_u32(roll ^ 0x65646765u);
-    ix += (edge & 0xffffu) / 65536.0f < tx;
-    iz += (edge >> 16) / 65536.0f < tz;
-    return qlcg_hash_u32((uint32_t)ix * 73856093u ^ (uint32_t)iz * 19349663u ^
-                        patch->seed ^ ((uint32_t)category + 1u) * 0x9e3779b9u);
-}
+/* 给定候选池按适宜度平方加权选种 */
+int qlcg_plant_pick_from(const PlantSite *site, uint32_t roll,
+                         const int *pool, int pool_count) {
+    if (!site || !g_profile || g_profile_count <= 0) return -1;
+    if (!pool) pool_count = g_profile_count;
+    if (pool_count <= 0) return -1;
+    if (pool_count > PD_PICK_MAX) pool_count = PD_PICK_MAX;
 
-static float community_weight(float score, const PlantProfile *p, float grove) {
-    float weight = score * score;
-    if (p->category == PLANT_CAT_SHU)
-        weight *= 1.0f - grove + grove * weight * (1.0f + p->canopy + .5f * p->anch);
-    return weight;
-}
-
-int qlcg_plant_pick_patch(const PlantSite *site, uint32_t roll,
-                          double x, double z, const PlantPatch *patch) {
-    if (qlcg_plant_habitat_prepare() <= 0 || !site) return -1;
-    float totals[PLANT_CAT_COUNT] = {0}, clustered[PLANT_CAT_COUNT] = {0};
-    float total = 0.0f, grove = patch ? patch->grove : 0.0f;
-    for (int i = 0; i < g_profile_count; i++) {
-        float s = qlcg_plant_suitability(i, site);
-        int cat = g_profile[i].category;
-        if (s < .01f || cat < 0 || cat >= PLANT_CAT_COUNT) continue;
-        totals[cat] += s * s;
-        clustered[cat] += community_weight(s, &g_profile[i], grove);
-        total += s * s;
+    int cand[PD_PICK_MAX];
+    float weight[PD_PICK_MAX];
+    int n = 0;
+    float total = 0.0f;
+    for (int i = 0; i < pool_count; i++) {
+        int sp = pool ? pool[i] : i;
+        float s = qlcg_plant_suitability(sp, site);
+        if (s < .01f) continue;
+        cand[n] = sp;
+        weight[n] = s * s;
+        total += weight[n];
+        n++;
     }
-    if (!(total > 1e-8f)) return -1;
+    if (n <= 0 || !(total > 1e-8f)) return -1;
 
     float target = total * (((float)(roll & 0xFFFFu) + .5f) / 65536.0f);
-    int category = -1;
-    for (int cat = 0; cat < PLANT_CAT_COUNT; cat++) {
-        if (totals[cat] <= 0.0f) continue;
-        category = cat;
-        if (target <= totals[cat]) break;
-        target -= totals[cat];
+    for (int i = 0; i < n; i++) {
+        target -= weight[i];
+        if (target <= 0.0f) return cand[i];
     }
-    int coherent = 0;
-    if (patch) {
-        float share = category == PLANT_CAT_SHU ? .35f + .65f * grove :
-                      category == PLANT_CAT_SHUI ? .75f : .88f;
-        uint32_t choice = qlcg_hash_u32(roll ^ 0x636c756du);
-        coherent = (choice & 0xffffu) / 65536.0f < share;
-        uint32_t local = coherent ? community_roll(x, z, category, roll, patch) :
-                                   qlcg_hash_u32(roll ^ 0x6d697865u);
-        target = (coherent ? clustered[category] : totals[category]) *
-                 (((float)(local & 0xffffu) + .5f) / 65536.0f);
-    }
-    int last = -1;
-    for (int i = 0; i < g_profile_count; i++) {
-        if (g_profile[i].category != category) continue;
-        float s = qlcg_plant_suitability(i, site);
-        if (s < .01f) continue;
-        float w = coherent ? community_weight(s, &g_profile[i], grove) : s * s;
-        last = i;
-        if (target <= w) return i;
-        target -= w;
-    }
-    return last;
+    return cand[n - 1];
 }
 
 int qlcg_plant_pick(const PlantSite *site, uint32_t roll) {
-    return qlcg_plant_pick_patch(site, roll, 0, 0, NULL);
+    int pool[PD_PICK_MAX];
+    int n = 0;
+    for (int i = 0; i < g_profile_count && n < PD_PICK_MAX; i++) {
+        if (g_profile[i].category == PLANT_CAT_HUA ||
+            g_profile[i].category == PLANT_CAT_NONG) continue;
+        pool[n++] = i;
+    }
+    return qlcg_plant_pick_from(site, roll, pool, n);
 }

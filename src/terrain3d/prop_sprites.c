@@ -18,6 +18,14 @@
 #define GL_UNPACK_ALIGNMENT 0x0CF5
 #endif
 
+typedef struct PropSpriteCache {
+    PropSprites sprites;
+    char root[512];
+    unsigned refs;
+    struct PropSpriteCache *next;
+} PropSpriteCache;
+static PropSpriteCache *g_sprite_cache;
+
 static const char *k_cat_dirs[PLANT_CAT_COUNT] = { "cao", "guan", "hua", "nong", "shu", "shui" };
 
 static bool make_path(char *out, size_t cap, const char *root, bool rock,
@@ -102,6 +110,10 @@ static bool tile_source(const uint8_t *px, int w, int season,
 bool qlcg_prop_sprites_init(PropSprites *ps, const char *root) {
     if (!ps) return false;
     memset(ps, 0, sizeof(*ps));
+    if(!root || strlen(root)>=512) return false;
+    for(PropSpriteCache *c=g_sprite_cache;c;c=c->next) {
+        if(!strcmp(c->root,root)) { c->refs++; *ps=c->sprites; return true; }
+    }
     qlcg_plant_material_init();
     qlcg_rock_material_init();
     int plants = qlcg_plant_species_count();
@@ -203,6 +215,10 @@ bool qlcg_prop_sprites_init(PropSprites *ps, const char *root) {
     glGenerateMipmap(GL_TEXTURE_2D);
     free(atlas);
     ps->ready = true;
+    PropSpriteCache *cache=calloc(1,sizeof(*cache));
+    if(!cache) { qlcg_prop_sprites_free(ps); return false; }
+    ps->cache=cache;cache->sprites=*ps;cache->refs=1;
+    strcpy(cache->root,root);cache->next=g_sprite_cache;g_sprite_cache=cache;
     printf("[sprite] 图集就绪：%d 格，缺 %d 张，%dx%d，%.0f ms\n",
            loaded, missing, QLCG_SPRITE_ATLAS, atlas_height, qlcg_time_ms() - t0);
     return true;
@@ -210,6 +226,14 @@ bool qlcg_prop_sprites_init(PropSprites *ps, const char *root) {
 
 void qlcg_prop_sprites_free(PropSprites *ps) {
     if (!ps) return;
+    PropSpriteCache *cache=ps->cache;
+    if(cache) {
+        if(--cache->refs) { memset(ps,0,sizeof(*ps)); return; }
+        PropSpriteCache **link=&g_sprite_cache;
+        while(*link && *link!=cache) link=&(*link)->next;
+        if(*link) *link=cache->next;
+        free(cache);
+    }
     if (ps->tex) qlcg_gl_delete_textures(1, &ps->tex);
     free(ps->plant_uv);
     free(ps->rock_uv);

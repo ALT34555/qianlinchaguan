@@ -9,7 +9,9 @@
 
 #include "atlas_shaders.h"
 #include "atlas_tiles.h"
+#include "atlas_vegetation.h"
 #include "../systems/world/world_infinite.h"
+#include "../systems/world/climate_zone.h"
 #include <limits.h>
 
 #ifndef GL_RGBA32F
@@ -19,6 +21,21 @@
 bool qlcg_atlas_gpu_restore(AtlasRenderer *ar) {
     ar->prog = qlcg_gl_compile_program(ATLAS_VS_SRC, ATLAS_FS_SRC);
     if(!ar->prog) return false;
+    glUseProgram(ar->prog);
+    const char *samplers[]={"uTex0","uTex1","uSatTex","uTileTex","uTileMeta","uRainTex","uTileWater","uZoneTex"};
+    const int slots[]={0,1,2,3,4,5,6,8};
+    for(int i=0;i<8;i++)glUniform1i(qlcg_gl_uniform(ar->prog,samplers[i]),slots[i]);
+    {
+        float zc[QLCG_ZONE_COUNT * 3];
+        for (int z = 0; z < QLCG_ZONE_COUNT; z++) {
+            const QlcgClimateZoneInfo *info = qlcg_climate_zone_info(z);
+            zc[z * 3 + 0] = info ? (float)info->rgb[0] : 0.0f;
+            zc[z * 3 + 1] = info ? (float)info->rgb[1] : 0.0f;
+            zc[z * 3 + 2] = info ? (float)info->rgb[2] : 0.0f;
+        }
+        glUniform3fv(qlcg_gl_uniform(ar->prog, "uZoneColors"), QLCG_ZONE_COUNT, zc);
+    }
+
     glGenVertexArrays(1, &ar->vao);
     glGenBuffers(1, &ar->vbo);
     glBindVertexArray(ar->vao);
@@ -52,14 +69,33 @@ bool qlcg_atlas_init(AtlasRenderer *ar) {
     return true;
 }
 
+void qlcg_atlas_inspect_hover(AtlasRenderer *ar,const MacroWorld *w,int cx,int cz) {
+    if(!w || !qlcg_world_chunk_explored(w,cx,cz)) {
+        ar->hover_world=NULL;ar->hover_info=(ChunkInspectInfo){0};return;
+    }
+    if(ar->hover_world==w && ar->hover_cx==cx && ar->hover_cz==cz &&
+       ar->hover_delta==w->delta_version && ar->hover_surface==w->surface_revision &&
+       ar->hover_territory==w->territory_revision && ar->hover_cached_info.type_def) {
+        ar->hover_info=ar->hover_cached_info;return;
+    }
+    qlcg_world_inspect_chunk(w,cx,cz,&ar->hover_info);
+    ar->hover_cached_info=ar->hover_info;
+    ar->hover_world=w;ar->hover_cx=cx;ar->hover_cz=cz;
+    ar->hover_delta=w->delta_version;ar->hover_surface=w->surface_revision;
+    ar->hover_territory=w->territory_revision;
+}
+
 void qlcg_atlas_release_world(AtlasRenderer *ar) {
+    ar->hover_world=NULL;ar->hover_info=ar->hover_cached_info=(ChunkInspectInfo){0};
+    qlcg_atlas_rivers_release(ar);
+    qlcg_atlas_vegetation_release(ar);
     qlcg_atlas_tiles_destroy(ar->tiles);
     ar->tiles = NULL;
     qlcg_gl_delete_textures(1,&ar->eclipse_tex);ar->eclipse_tex=0;
     ar->eclipse_ready=false;ar->astronomy_overlay=false;
-    GLuint textures[] = {ar->data_tex0, ar->data_tex1, ar->sat_tex, ar->rain_tex};
-    qlcg_gl_delete_textures(4, textures);
-    ar->data_tex0 = ar->data_tex1 = ar->sat_tex = ar->rain_tex = 0;
+    GLuint textures[] = {ar->data_tex0, ar->data_tex1, ar->sat_tex, ar->rain_tex, ar->zone_tex};
+    qlcg_gl_delete_textures(5, textures);
+    ar->data_tex0 = ar->data_tex1 = ar->sat_tex = ar->rain_tex = ar->zone_tex = 0;
     ar->tex_w = ar->tex_h = ar->rain_tex_w = ar->rain_tex_h = 0;
     ar->world_upload_pending = false;
     ar->synced_delta_ver = ar->synced_terr_rev = 0;
@@ -89,6 +125,8 @@ static const MacroWorld *atlas_plane(const MacroWorld *w,double x,double z) {
 void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
     if (!w) return;
     if(ar->detail_world!=w) {
+        qlcg_atlas_rivers_release(ar);
+        qlcg_atlas_vegetation_release(ar);
         qlcg_atlas_tiles_destroy(ar->tiles);ar->tiles=NULL;
         ar->detail_world=w;ar->eclipse_ready=false;
     }
@@ -112,17 +150,20 @@ void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
     float *buf0 = (float *)malloc((size_t)tw * (size_t)th * 4 * sizeof(float));
     uint8_t *buf1 = (uint8_t *)malloc((size_t)tw * (size_t)th * 4);
     uint8_t *bufs = (uint8_t *)malloc((size_t)tw * (size_t)th * 4);
+    uint8_t *bufz = (uint8_t *)malloc((size_t)tw * (size_t)th);
 
-    if (!buf0 || !buf1 || !bufs) {
+    if (!buf0 || !buf1 || !bufs || !bufz) {
         free(buf0);
         free(buf1);
         free(bufs);
+        free(bufz);
         return;
     }
 
     double cached_x=INFINITY,cached_z=INFINITY;
     const MacroWorld *cached=NULL;
     for (int i = 0; i < tw*th; i++) {
+        bufz[i] = QLCG_ZONE_UNKNOWN;
         const MacroWorld *source=w;int cell=i;
         if(flat) {
             double x=floor(origin_x+(i%tw+.5)*span_x/tw),y=floor(origin_z+(i/tw+.5)*span_z/th);
@@ -165,6 +206,8 @@ void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
         if (ctype >= 300 && ctype < 400)  mask |= (1u << 5);   /* 温带 */
         if (ctype >= 400)                 mask |= (1u << 6);   /* 亚热带与热带 */
         buf1[i * 4 + 3] = mask;
+        bufz[i] = (source->climate_zone && cell >= 0 && cell < source->cell_count)
+                ? source->climate_zone[cell] : QLCG_ZONE_UNKNOWN;
 
         bufs[i * 4 + 0] = (uint8_t)qlcg_clampi((int)((float)source->sat_rgb[cell * 3 + 0] * sh), 0, 255);
         bufs[i * 4 + 1] = (uint8_t)qlcg_clampi((int)((float)source->sat_rgb[cell * 3 + 1] * sh), 0, 255);
@@ -202,9 +245,21 @@ void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
 
+    /* 气候区索引图，邻格不插值 */
+    if (!ar->zone_tex) glGenTextures(1, &ar->zone_tex);
+    glBindTexture(GL_TEXTURE_2D, ar->zone_tex);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, flat ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, tw, th, 0, GL_RED, GL_UNSIGNED_BYTE, bufz);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+
     free(buf0);
     free(buf1);
     free(bufs);
+    free(bufz);
     ar->tex_w = tw;
     ar->tex_h = th;
     ar->synced_delta_ver = w->delta_version;
@@ -251,6 +306,7 @@ const char *qlcg_atlas_layer_name(AtlasLayerId id) {
         case LAYER_TEMPERATURE: return tr("layer.temperature");
         case LAYER_ELEVATION:   return tr("layer.height");
         case LAYER_ICE:         return tr("layer.ice");
+        case LAYER_VEGETATION: return tr("layer.vegetation");
         case LAYER_DEPTH:       return tr("layer.depth");
         case LAYER_SOURCE_RIVERS: return tr("layer.sourceRivers");
         default:                return tr("layer.unknown");

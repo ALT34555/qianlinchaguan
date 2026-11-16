@@ -260,6 +260,7 @@ bool ui_pointer_blocked(const UiContext *ui) {
 
 void ui_pointer_consume(UiContext *ui) {
     ui->mouse_clicked = false;
+    ui->mouse_pressed = false;
     ui->mouse_dblclicked = false;
     ui->right_clicked = false;
     ui->wheel_delta = 0;

@@ -1,6 +1,7 @@
 #include "app/app_state.h"
 #include "app/frame_pacer.h"
 #include "core/dev_tools.h"
+#include "terrain3d/terrain_metrics.h"
 
 int main(int argc, char **argv) {
 #ifdef QLCG_DEV_TOOLS
@@ -25,9 +26,12 @@ int main(int argc, char **argv) {
         last_ms = now_ms;
         if (dt > 0.0001f) g_app.fps_smooth = g_app.fps_smooth * 0.92f + (1.0f / dt) * 0.08f;
         dt = qlcg_clampf(dt, 0.001f, 0.05f);
-        app_update(dt);
+        double update_begin=qlcg_time_ms();app_update(dt);
+        qlcg_metrics.simulation_ms=qlcg_time_ms()-update_begin;
         app_render_frame(dt);
-        qlcg_frame_pacer_wait(&pacer, start_ms, g_app.settings.frame_rate);
+        double wait_begin=qlcg_time_ms();qlcg_frame_pacer_wait(&pacer, start_ms, g_app.settings.frame_rate);
+        qlcg_metrics.wait_ms=qlcg_time_ms()-wait_begin;
+        qlcg_metrics_last.wait_ms=qlcg_metrics.wait_ms;
     }
     qlcg_frame_pacer_shutdown(&pacer);
     app_shutdown();

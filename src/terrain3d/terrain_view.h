@@ -43,6 +43,19 @@ static inline int qlcg_plant_batch_key(int species, int season, int form) {
 }
 
 typedef struct {
+    float min[3], max[3];
+} TerrainBounds;
+
+enum { QL_VIEW_MAIN, QL_VIEW_REFLECT_A, QL_VIEW_REFLECT_B, QL_VIEW_SHADOW, QL_VIEW_COUNT };
+typedef struct {
+    GLuint vao[3], buffer[3];
+    int cursor, count, capacity[3];
+    float matrix[16];
+    uint64_t version;
+    bool valid;
+} TerrainInstanceView;
+
+typedef struct {
     int    species;
     int    form;
     int    season;
@@ -51,6 +64,11 @@ typedef struct {
     int    idx_count;
     int    inst_count;
     int    inst_cap;
+    void *all_instances, *visible_instances;
+    int cpu_capacity, cached_count;
+    float radius, low_y, high_y, wind_pad, height;
+    uint64_t content_version;
+    TerrainInstanceView *views;
 } PlantBatch;
 
 /* 植物实例：位置/朝向/缩放/风速等级 */
@@ -85,6 +103,19 @@ struct TerrainRenderer;
 void qlcg_rock_batches_clear(struct TerrainRenderer *tr);
 void qlcg_plant_batch_instances(PlantBatch *b, const PlantInstGPU *inst, int count);
 typedef struct TerrainRenderer TerrainRenderer;
+enum {
+    WATER_MIRROR_SEA=1, WATER_MIRROR_STILL, WATER_MIRROR_RIVER, WATER_MIRROR_POOL,
+    WATER_MIRROR_TYPES=4
+};
+typedef struct {
+    float x,y,z,area;
+} WaterMirrorPatch;
+typedef struct {
+    GLuint framebuffer,texture,depth;
+    int width,height,valid,kind;
+    uint32_t seed;
+    float x,y,z,radius,score,matrix[16];
+} WaterReflection;
 void qlcg_plant_batches_clear(TerrainRenderer *tr);
 
 typedef struct {
@@ -92,6 +123,7 @@ typedef struct {
     GLuint cliff_vao, cliff_vbo;
     int cliff_vertex_count;
     float fall_emitters[4][4];
+    WaterMirrorPatch water_patches[WATER_MIRROR_TYPES];
     int    water_idx_count;
     GLuint ice_ebo;
     int    ice_idx_count;
@@ -99,6 +131,7 @@ typedef struct {
     uint32_t revision;
     uint32_t ice_rev;        /* 已上传的冰版本 */
     int    terrain_slot;
+    TerrainBounds bounds;
     bool   cliff_detail;
     bool   terrain_ready;    /* 地形顶点已写入共享缓冲 */
 } TerrainChunkGPU;
@@ -131,6 +164,7 @@ typedef struct {
     int    ice_tpl_idx[QLCG_ICE_FLOW_TEMPLATES];
     int    ice_tpl_vert[QLCG_ICE_FLOW_TEMPLATES];
     GLuint ice_inst_vbo;
+    float flow_buf[(QLCG_ICE_FLOW_NATURAL + QLCG_ICE_FLOW_FRAGMENT) * 8];
     IceFlowInst ice_pool[QLCG_ICE_FLOW_NATURAL + QLCG_ICE_FLOW_FRAGMENT];
     int    ice_flow_count[QLCG_ICE_FLOW_TEMPLATES];
     GLuint crack_prog;
@@ -161,6 +195,15 @@ typedef struct {
 } PlayerMotionDebug;
 
 struct TerrainRenderer {
+    struct TerrainVisual *visual;
+    double prepare_deadline, stream_ms, props_cpu_ms;
+    double mesh_cpu_ms, upload_cpu_ms, budget_overrun_ms;
+    bool preparing;
+    struct TerrainMeshJob *mesh_job;
+    struct PaintSurfaceCache *paint_surface_cache;
+    uint64_t mesh_version;
+    struct TerrainPropCache *prop_cache;
+    float props_x, props_z;
     /* 玩家相机与物理状态 */
     float x, y, z;
     float vx, vy, vz;
@@ -221,6 +264,10 @@ struct TerrainRenderer {
     GLuint far_bill_vao, far_bill_vbo, far_bill_ebo, far_bill_inst;
     int    far_bill_idx, far_bill_count, far_bill_cap;
     bool   msaa_active;       /* 离屏缓冲是否带 MSAA，决定贴图边缘方式 */
+    void *far_source[2], *far_visible[2];
+    int far_cpu_cap[2],far_cached_count[2];
+    uint64_t far_version[2];
+    TerrainInstanceView far_views[2][QL_VIEW_COUNT];
     PropFadeEnt *far_fade;    /* 实例淡入时间表 */
     int    far_fade_cap;
     unsigned int far_fade_gen;
@@ -243,6 +290,12 @@ struct TerrainRenderer {
     GLuint sky_vao, sky_vbo;
     GLuint weather_prog;
     GLuint spring_prog;
+    WaterReflection reflection_targets[2];
+    AstraFrame frame_astronomy;
+    SkyClimate frame_sky;
+    bool frame_has_astronomy;
+    int reflection_pass;
+    float reflection_plane;
     GLuint weather_vao, weather_vbo;
 
     /* 地面材质纹理：五个气候带各一张 256m 周期图 */
@@ -253,7 +306,17 @@ struct TerrainRenderer {
     /* 当前天气与准星检视 */
     WeatherSystem         weather_sys;
     const WeatherProfile *cur_weather;
+    WeatherVisual         weather_visual;
     AimProbeResult        aim;
+    struct {
+        const RegionData *region;
+        const MacroWorld *world;
+        float pose[5];
+        uint64_t stream,mesh,props;
+        uint32_t delta,surface,territory,region_revision;
+        int measurement,locale;
+        bool valid,inspecting;
+    } probe_cache;
 
     /* 3D 自由自然工程笔刷与样条河流改道 */
     EngToolType           eng_tool;
@@ -283,11 +346,14 @@ struct TerrainRenderer {
     PropInstance         *probe_plants;
     int                   probe_plant_count;
     uint64_t              props_revision;
+    uint64_t              props_mesh_version;
     double                props_ms;
     int                   props_distance;
     int                   props_form;
 };
 
+void qlcg_terrain_prepare_frame(TerrainRenderer *tr, RegionData *reg, const GameSettings *s);
+void qlcg_terrain_require_ground(RegionData *reg, float x, float z);
 void qlcg_terrain_gpu_release(TerrainRenderer *tr);
 bool qlcg_terrain_gpu_restore(TerrainRenderer *tr);
 bool qlcg_terrain_init(TerrainRenderer *tr);

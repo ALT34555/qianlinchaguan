@@ -11,6 +11,16 @@
 
 typedef enum { WORLD_MAP_PLANET, WORLD_MAP_INFINITE } WorldMapMode;
 
+typedef enum {
+    MONSOON_REALISTIC = 360,
+    MONSOON_REVERSED,
+    MONSOON_EASTERLY,
+    MONSOON_WESTERLY,
+    MONSOON_POLAR_CYCLONE,
+    MONSOON_EQUATOR_CYCLONE
+} MacroMonsoonMode;
+enum { MONSOON_MODE_COUNT = 6 };
+
 struct IceWorldState;
 struct IceChunkData;
 
@@ -57,7 +67,7 @@ typedef struct {
     float              natural_expansion;
     float              natural_evolution;
     bool               flag_independence;
-    int                monsoon_direction;   /* 季风方向 0..359，对齐 base */
+    int                monsoon_direction;   /* 旧角度或 MacroMonsoonMode */
     char               culture[32];
     float              axial_tilt_deg;      /* 黄赤交角 0..60 */
     bool               prograde;            /* true 顺行，false 逆行 */
@@ -208,7 +218,7 @@ typedef struct MacroWorld {
     float              *ridge_push_e;   /* 山根推力的东向分量 */
     float              *ridge_push_n;   /* 山根推力的北向分量 */
     float              *hydro_friction; /* 河谷摩擦系数 */
-    uint8_t            *biome;          /* 生物群系编号 */
+    uint8_t            *climate_zone;   /* 每格气候区编号 */
     float              *basin;          /* 大陆壳盆地权重 */
     MacroLake          *lakes;
     int                 lake_count;
@@ -297,6 +307,7 @@ typedef struct MacroWorld {
     SparseDeltaRecord   deltas[MAX_MACRO_DELTAS];
     int                 delta_count;
     uint32_t            delta_version;
+    struct SurfaceDeltaIndex *delta_index;
     uint32_t            surface_revision;
 
     const CalendarSnapshot *plant_calendar;
@@ -373,12 +384,14 @@ typedef enum {
 } SurfaceWaterKind;
 
 typedef struct {
-    uint8_t salt, spring;
+    uint8_t salt, spring, material, foam;
 } SourceWaterEffects;
 
 typedef struct {
     float x, z;
     uint32_t seed;
+    float pool_x,pool_z,pool_level,pool_radius,strength,mist;
+    uint8_t landscape;
 } SpringEmitter;
 
 /* 点级自然水状态，对齐 WaterSample */
@@ -481,6 +494,7 @@ typedef struct {
     float                   water_level;
     float                   temperature;
     float                   moisture;
+    uint8_t                 climate_zone;
     float                   lon_deg, lat_deg;
     float                   discharge;
     float                   river_width;
@@ -585,12 +599,12 @@ typedef struct {
     SaveSlotMeta slots[QLCG_SAVE_SLOT_COUNT];
 } SaveFileInfo;
 
-#define QLCG_SAVE_VERSION 13u
+#define QLCG_SAVE_VERSION 15u
 static inline bool qlcg_save_version_supported(uint32_t v) {
 #ifdef _WIN32
     if(v==11u || v==12u) return true;
 #endif
-    return v==QLCG_SAVE_VERSION;
+    return v==13u || v==14u || v==QLCG_SAVE_VERSION;
 }
 
 bool qlcg_saves_migrate_file(const char *path);
@@ -604,6 +618,7 @@ void                qlcg_sync_creator_dimensions(WorldCreatorOptions *opt);
 const char         *qlcg_world_preset_name(WorldPresetId p);
 const char         *qlcg_terrain_recipe_name(MacroTerrainRecipe r);
 const char         *qlcg_climate_rule_name(MacroClimateRule c);
+const char         *qlcg_monsoon_name(int mode);
 const char         *qlcg_macro_size_label(int idx);
 int                 qlcg_macro_scale_chunks(int idx);
 
@@ -614,6 +629,7 @@ int                 qlcg_world_cell_at_wxz(const MacroWorld *w, float wx, float 
 void                qlcg_world_cell_center(const MacroWorld *w, int cell, float *wx, float *wz);
 void                qlcg_world_inspect_chunk(const MacroWorld *w, int cx, int cz, ChunkInspectInfo *out);
 int                 qlcg_world_natural_chunk_material(const MacroWorld *w, int cx, int cz);
+int                 qlcg_world_base_chunk_material(const MacroWorld *w, int cx, int cz);
 enum { QLCG_SPAWN_REVEAL_RADIUS = 4 };
 bool                qlcg_world_reveal_chunk(MacroWorld *w, int cx, int cz);
 bool                qlcg_world_chunk_explored(const MacroWorld *w, int cx, int cz);

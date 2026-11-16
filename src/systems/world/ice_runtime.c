@@ -521,12 +521,12 @@ void qlcg_ice_chunk_attach(const MacroWorld *w, RegionData *reg) {
 bool qlcg_ice_chunk_refresh(MacroWorld *w, RegionData *reg) {
     if (!w || !reg || !reg->ice || !reg->ice_bottom || !reg->ice_coverage) return false;
     IceChunkData *c = reg->ice;
-    if (!c->revision) merge_edits(w, c, reg);   /* revision 0 表示首次 */
     double day = w->ice_time.climate_day;
-    /* 新破的洞可能落在当时未加载的邻块：按编辑版本补合并 */
-    if (w->ice_state && c->merged_edits != w->ice_state->edit_revision) {
+    uint32_t edits = w->ice_state ? w->ice_state->edit_revision : 0u;
+    /* 首次与版本变化共用一次编辑合并 */
+    if (!c->revision || c->merged_edits != edits) {
         merge_edits(w, c, reg);
-        c->merged_edits = w->ice_state->edit_revision;
+        c->merged_edits = edits;
     }
     int changed = (int)(c->revision == 0);
     float span = (float)(reg->width - 1) * reg->step;

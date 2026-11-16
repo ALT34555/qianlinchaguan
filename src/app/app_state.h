@@ -86,7 +86,7 @@ typedef struct {
     int                manual_slot;        /* 手存目标槽 1..3 */
     bool               manual_slot_user;   /* 是否玩家手选 */
     bool               manual_slots_open;
-    char               manual_slot_names[SAVE_SLOT_MANUAL_3][QLCG_SAVE_SLOT_NAME_BYTES];
+    char               manual_slot_names[SAVE_SLOT_MANUAL_3][QLCG_SAVE_SLOT_DISPLAY_NAME_BYTES];
     float              save_idle_s;        /* 距上次读档/存档的秒数 */
     float              auto_save_flash;    /* 自动存档图标剩余秒 */
     UiToastQueue       toasts;
@@ -112,8 +112,7 @@ typedef struct {
     bool               esc_paused;
     bool               world_menu_auto_pause;  /* 唤出菜单是否暂停世界，随存档保存 */
     bool               cheats_unlocked;        /* 生存模式解锁玄虚，运行时状态不持久化 */
-    char               save_name[256];         /* 总存档名称 */
-    char               loaded_slot_name[QLCG_SAVE_SLOT_DISPLAY_NAME_BYTES];
+    char               save_name[256];         /* 当前存档名 */
     bool               settings_back_to_game;  /* 设置页从游戏抽屉进入，可返回游戏 */
     bool               settings_in_drawer;     /* 游戏内设置以抽屉叠在场景上，对齐 base */
     bool               chat_open;
@@ -161,11 +160,12 @@ bool app_rename_manual_slot(int slot, const char *name);
 void app_quick_save(void);
 void app_save_tick(float dt);
 void app_refresh_saves(void);
-/* 当前文件的手动槽摘要，无档返回 NULL */
+/* 当前文件的槽摘要，无档返回 NULL */
 const SaveSlotMeta *app_current_save_slot(int slot);
+bool app_load_current_save_slot(int slot);
 int  app_manual_slot_default(void);
 void app_manual_slot_reset(void);
-/* 槽位显示名：快速/手动 N/自动 */
+/* 槽位显示名：快速/记忆 N/自动 */
 void app_slot_kind_label(int slot, char *buf, size_t cap);
 /* 读档：文件+槽，或已展开的槽头 */
 bool app_load_from_save_file(const SaveFileInfo *file, int slot);
@@ -192,6 +192,7 @@ void settings_confirm_cancel(void);
 void settings_confirm_begin(float safe_x, float safe_y, float text_scale, float ui_scale);
 void settings_layout_cancel(void);
 void render_screen_in_game(UiContext *ui);
+void game_debug_cache_clear(void);
 void render_debug_overlay_f12(UiContext *ui);
 
 /* 游戏内分层视图 */

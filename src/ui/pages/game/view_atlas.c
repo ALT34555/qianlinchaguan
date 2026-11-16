@@ -114,9 +114,7 @@ bool game_view_atlas(UiContext *ui) {
             MacroWorld *hover=qlcg_infinite_resolve(g_app.world,mwx,mwz,&local_x,&local_z);
             int hcx = hover?(int)floor(local_x / QLCG_CHUNK_SIZE_M):0;
             int hcz = hover?(int)floor(local_z / QLCG_CHUNK_SIZE_M):0;
-            g_app.atlas.hover_info=(ChunkInspectInfo){0};
-            if (hover && qlcg_world_chunk_explored(hover, hcx, hcz))
-                qlcg_world_inspect_chunk(hover, hcx, hcz, &g_app.atlas.hover_info);
+            qlcg_atlas_inspect_hover(&g_app.atlas,hover,hcx,hcz);
 
             if (!g_app.river_craft.active && (!survival || qlcg_world_flat(g_app.world)) && ui->mouse_dblclicked) {
                 if(app_atlas_airdrop(mwx,mwz)) {
@@ -159,8 +157,8 @@ bool game_view_atlas(UiContext *ui) {
     float sfx_blur = ui_status_feedback_blur(&g_app.status_feedback);
     if (sfx_blur > 0.0f) {
         ui_backdrop_blur_overlay(ui, sfx_blur);
-        ui_backdrop_capture(ui);
     }
+    ui_backdrop_capture(ui);
 
     /* ---- 工具条：通栏浅底，按钮组靠右 ---- */
     float tools_y = sy + bar_h;
@@ -187,7 +185,7 @@ bool game_view_atlas(UiContext *ui) {
     bool projection=!survival && !qlcg_world_flat(g_app.world);
     float total = projection ? sel_w : -gap;
     for (int i = 0; i < 6; i++) {
-        if (survival && (i == 0 || i == 4)) continue;
+        if (survival && i == 0) continue;
         bw[i]  = (float)ui_text_width_px(ui, UI_FACE_BODY, bf, false, lbl[i]) + 24.0f * z;
         total += gap + bw[i];
     }
@@ -204,7 +202,7 @@ bool game_view_atlas(UiContext *ui) {
     }
 
     for (int i = 0; i < 6; i++) {
-        if (survival && (i == 0 || i == 4)) continue;
+        if (survival && i == 0) continue;
         bool hit = ui_btn(ui, bx, btn_y, bw[i], btn_h, lbl[i], BTN_GHOST, false, bf, false);
         if (hit) {
             switch (act[i]) {
@@ -279,7 +277,7 @@ bool game_view_atlas(UiContext *ui) {
         atlas_tip_block(ui, sx + 12.0f * z, bottom, box_w, l1, l2);
     }
 
-    if (!survival) game_atlas_layer_panel(ui);
+    game_atlas_layer_panel(ui);
     app_river_craft_draw(ui,vp_x,vp_y,vp_w,vp_h);
     return false;
 }

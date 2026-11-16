@@ -160,7 +160,7 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
     tr->blocked_forward=false;
     if (!reg || !in) return;
     if (!qlcg_region_chunk_at(reg,tr->x,tr->z,NULL,NULL))
-        qlcg_terrain_stream_update(tr,reg,s);
+        qlcg_terrain_require_ground(reg,tr->x,tr->z);
     if (dt > 0.1f) dt = 0.1f;               /* 卡顿时别让玩家瞬移 */
     /* 脚下冰先刷新，身体占领的单元不允许封口 */
     if (w && w->ice_time_valid) {
@@ -397,13 +397,13 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
     eye_off = eye_offset_of(tr, body_h);
     tr->y = feet + eye_off;
 
-    qlcg_terrain_stream_update(tr, reg, s);
+    qlcg_terrain_require_ground(reg,tr->x,tr->z);
 
     /* ---- 天气与环境反馈（保持原逻辑） */
     int cx = reg->center_cx;
     int cz = reg->center_cz;
-    ChunkInspectInfo ci;
-    qlcg_world_inspect_chunk(w, cx, cz, &ci);
+    int feedback_cell = qlcg_world_cell_at_wxz(w, (cx + .5f) * CHUNK_SIZE, (cz + .5f) * CHUNK_SIZE);
+    float feedback_temp = w->temperature[feedback_cell];
     if (clk) tr->weather_unix_ms = clk->unix_ms;
     float wtemp = region_temp_at(reg, tr->x, tr->z);
     ChunkWeather cw = qlcg_sample_chunk_weather(&tr->weather_sys, clk ? clk->unix_ms : 0.0,
@@ -416,8 +416,8 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
 
     if (s->status_feedback) {
         if (tr->in_water) snprintf(tr->status_text, sizeof(tr->status_text), "%s", qlcg_t("status.wading"));
-        else if (ci.temperature < -6.0f) snprintf(tr->status_text, sizeof(tr->status_text), qlcg_t("status.cold"), ci.temperature);
-        else if (ci.temperature > 34.0f) snprintf(tr->status_text, sizeof(tr->status_text), qlcg_t("status.hot"), ci.temperature);
+        else if (feedback_temp < -6.0f) snprintf(tr->status_text, sizeof(tr->status_text), qlcg_t("status.cold"), feedback_temp);
+        else if (feedback_temp > 34.0f) snprintf(tr->status_text, sizeof(tr->status_text), qlcg_t("status.hot"), feedback_temp);
         else snprintf(tr->status_text, sizeof(tr->status_text), "%s", qlcg_t("status.fine"));
     } else {
         tr->status_text[0] = '\0';

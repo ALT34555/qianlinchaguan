@@ -1,11 +1,12 @@
+#include "hydrology_oxbow.h"
 /* planet_fields */
 #include "planet_macro.h"
 #include "world_internal.h"
-#include "surface_lakes.h"
-#include "surface_rivers.h"
+#include "hydrology_lakes.h"
+#include "hydrology_river.h"
 #include "faction_naming.h"
 #include "gen/gen_palette.h"
-#include "gen/gen_river.h"
+#include "gen/hydrology_dimensions.h"
 #include "../../core/math_util.h"
 #include "platform/platform.h"
 #include <stdlib.h>
@@ -89,6 +90,8 @@ void qlcg_world_rebuild_atlas_fields(MacroWorld *w) {
     float cell_w = w->circumference / (float)cols;
 
     for (int y = 0; y < rows; ++y) {
+        int yu=qlcg_clampi(y-1,0,rows-1),yd=qlcg_clampi(y+1,0,rows-1);
+        const float *heights[3]={w->height+yu*cols,w->height+y*cols,w->height+yd*cols};
         for (int x = 0; x < cols; ++x) {
             int i = y * cols + x;
             if(w->islands_ready&&!w->decor_ready) qlcg_oxbow_generate(w,i);
@@ -108,22 +111,18 @@ void qlcg_world_rebuild_atlas_fields(MacroWorld *w) {
             bool is_wat = (w->water[i] == 1) || is_lake || (wl > h + 0.5f) || (h <= 0.0f);
             bool is_riv = is_river_cell || (!is_wat && w->river_width[i] >= 7.0f);
 
-            int xl = wrap_col(x - 1, cols), xr = wrap_col(x + 1, cols);
-            int yu = qlcg_clampi(y - 1, 0, rows - 1), yd = qlcg_clampi(y + 1, 0, rows - 1);
-            float dx = (w->height[y * cols + xr] - w->height[y * cols + xl]) / (2.0f * cell_w);
-            float dz = (w->height[yd * cols + x] - w->height[yu * cols + x]) / (2.0f * cell_w);
+            int xs[3]={x?x-1:cols-1,x,x+1<cols?x+1:0};
+            float dx = (heights[1][xs[2]] - heights[1][xs[0]]) / (2.0f * cell_w);
+            float dz = (heights[2][x] - heights[0][x]) / (2.0f * cell_w);
             float slope = hypotf(dx, dz);
 
             /* 九点极差与相对高度，按 32m 区块尺度折算 */
             float hmin = 1e9f, hmax = -1e9f, hsum = 0.0f;
-            for (int oz = -1; oz <= 1; oz++) {
-                int yy = qlcg_clampi(y + oz, 0, rows - 1);
-                for (int ox = -1; ox <= 1; ox++) {
-                    float hv = w->height[yy * cols + wrap_col(x + ox, cols)];
-                    if (hv < hmin) hmin = hv;
-                    if (hv > hmax) hmax = hv;
-                    hsum += hv;
-                }
+            for (int oz=0;oz<3;oz++) for(int ox=0;ox<3;ox++) {
+                float hv=heights[oz][xs[ox]];
+                if(hv<hmin) hmin=hv;
+                if(hv>hmax) hmax=hv;
+                hsum+=hv;
             }
             float k32 = 32.0f / cell_w;
             float relief   = (hmax - hmin) * k32;
@@ -174,7 +173,6 @@ void qlcg_world_rebuild_atlas_fields(MacroWorld *w) {
                 w->sat_rgb[i * 3 + 1] = sat[1];
                 w->sat_rgb[i * 3 + 2] = sat[2];
             }
-
         }
     }
     /* 3. 河流段按 LOD 分级提取 */

@@ -311,6 +311,18 @@ const SaveSlotMeta *app_current_save_slot(int slot) {
     return &f->slots[slot];
 }
 
+/* 从当前文件进入所选槽 */
+bool app_load_current_save_slot(int slot) {
+    const SaveFileInfo *file = current_save_file();
+    if (!file || slot < 0 || slot >= QLCG_SAVE_SLOT_COUNT || !file->slots[slot].present)
+        return false;
+    SaveFileInfo snapshot = *file;
+    if (!app_load_from_save_file(&snapshot, slot)) return false;
+    app_text_focus_clear();
+    app_key_track_clear();
+    return true;
+}
+
 /* 槽位显示名 */
 void app_slot_kind_label(int slot, char *buf, size_t cap) {
     if (!buf || cap == 0) return;

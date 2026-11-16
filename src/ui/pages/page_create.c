@@ -58,11 +58,13 @@ void render_screen_world_creator(UiContext *ui) {
     bool need_regen = false;
     const uint32_t projection_select = 0x435213u;
     const uint32_t calendar_select = 0x435212u;
+    const uint32_t monsoon_select = 0x435211u;
     const uint32_t seed_input = 0x435214u;
     static const CalendarMode calendars[] = {
         CALENDAR_DEFAULT, CALENDAR_GREGORIAN, CALENDAR_LUNAR, CALENDAR_YUAN
     };
     bool calendar_visible = false;
+    bool monsoon_visible = false;
 
     /* 顶行：标题 + 返回按钮（自适应防撞） */
     char head[128];
@@ -356,12 +358,13 @@ void render_screen_world_creator(UiContext *ui) {
                 }
             }
             {
-                float md = (float)opt->monsoon_direction;
-                if (ui_layout_number_input(&L, 0x435211u, tr("creator.monsoon"),
-                                           &md, 0.0f, 359.0f, 1.0f, 0, "°")) {
-                    opt->monsoon_direction = qlcg_clampi((int)roundf(md), 0, 359);
-                    need_regen = true;
-                }
+                const char *winds[MONSOON_MODE_COUNT];
+                for (int i=0;i<MONSOON_MODE_COUNT;i++)
+                    winds[i]=qlcg_monsoon_name(MONSOON_REALISTIC+i);
+                int current=qlcg_clampi(opt->monsoon_direction-MONSOON_REALISTIC,0,MONSOON_MODE_COUNT-1);
+                float monsoon_y=L.cursor;
+                ui_layout_select(&L,monsoon_select,tr("creator.monsoon"),winds,MONSOON_MODE_COUNT,current);
+                monsoon_visible=L.cursor-L.row_gap>scroll_y && monsoon_y<scroll_y+scroll_h;
             }
 
             }
@@ -466,7 +469,7 @@ void render_screen_world_creator(UiContext *ui) {
                                            vp_x, vp_y, vp_w, vp_h, &mwx, &mwz)) {
                 int hcx = (int)floorf(mwx / (float)QLCG_CHUNK_SIZE_M);
                 int hcz = (int)floorf(mwz / (float)QLCG_CHUNK_SIZE_M);
-                qlcg_world_inspect_chunk(g_app.world, hcx, hcz, &g_app.atlas.hover_info);
+                qlcg_atlas_inspect_hover(&g_app.atlas,g_app.world,hcx,hcz);
             }
         }
 
@@ -531,6 +534,17 @@ void render_screen_world_creator(UiContext *ui) {
     } else if (ui->select_id == projection_select && leisure && g_app.world && !flat) {
         int picked = ui_select_popup(ui);
         if (picked >= 0) qlcg_atlas_set_projection(&g_app.atlas, g_app.world, (PlanetView)picked);
+    } else if (ui->select_id == monsoon_select) {
+        if (!monsoon_visible) {
+            ui->select_id = 0;
+        } else {
+            int picked = ui_select_popup(ui);
+            if (picked >= 0 && picked < MONSOON_MODE_COUNT &&
+                opt->monsoon_direction != MONSOON_REALISTIC + picked) {
+                opt->monsoon_direction = MONSOON_REALISTIC + picked;
+                app_rebuild_creator_world();
+            }
+        }
     } else if (ui->select_id == calendar_select) {
         if (!calendar_visible) {
             ui->select_id = 0;

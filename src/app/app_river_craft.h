@@ -1,6 +1,6 @@
 #ifndef QLCG_APP_RIVER_CRAFT_H
 #define QLCG_APP_RIVER_CRAFT_H
-#include "systems/world/river_edit.h"
+#include "systems/world/hydrology_edit.h"
 
 typedef struct {
     bool active,dirty,drawing;

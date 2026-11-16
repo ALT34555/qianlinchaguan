@@ -1,10 +1,11 @@
+#include "atlas/atlas_vegetation.h"
 /* 世界生命周期：生成 / 进入 / 载入 / 空降 */
 #include "app/app_state.h"
 #include "core/dev_tools.h"
 #include "ui/ui_input.h"
 #include "systems/world/ice_runtime.h"
 #include "systems/world/precip.h"
-#include "systems/world/river_archive.h"
+#include "systems/world/hydrology_archive.h"
 #include "systems/world/climate_season.h"
 #include "systems/world/world_infinite.h"
 #include <limits.h>
@@ -73,11 +74,13 @@ void app_toggle_world_view(void) {
                g_app.player_cz != g_app.region->center_cz) {
         app_airdrop_to_chunk(g_app.player_cx,g_app.player_cz,true);
     } else {
+        qlcg_atlas_vegetation_release(&g_app.atlas);
         g_app.view_mode = VIEW_MODE_TERRAIN;
     }
 }
 
 void app_release_world(void) {
+    game_debug_cache_clear();
     app_lowres_release();
     qlcg_terrain_release_scene(&g_app.terrain);
     qlcg_atlas_release_world(&g_app.atlas);
@@ -135,6 +138,7 @@ static bool airdrop_world(MacroWorld *target,int cx,int cz,bool switch_to_3d) {
     }
 
     if (switch_to_3d) {
+        qlcg_atlas_vegetation_release(&g_app.atlas);
         g_app.view_mode = VIEW_MODE_TERRAIN;
     }
     return true;
@@ -154,6 +158,8 @@ bool app_atlas_airdrop(double wx,double wz) {
 }
 
 static void app_replace_world(MacroWorld *world) {
+    game_debug_cache_clear();
+    qlcg_atlas_release_world(&g_app.atlas);
     g_app.atlas.astronomy_overlay=false;
     g_app.atlas.eclipse_ready=false;
     g_app.river_craft=(RiverCraft){0};
@@ -214,7 +220,6 @@ void app_enter_world_from_creator(void) {
     app_ice_sync(-1);
     g_app.world_menu_auto_pause = false;   /* 新建世界默认不自动暂停（同 base 默认玄虚） */
     snprintf(g_app.save_name, sizeof(g_app.save_name), "%s", g_app.world->opt.world_name);
-    g_app.loaded_slot_name[0] = '\0';
     app_airdrop_to_chunk(g_app.world->spawn_cx, g_app.world->spawn_cz, false);
     qlcg_atlas_reset_view(&g_app.atlas, g_app.world, true);
     g_app.view_mode  = VIEW_MODE_ATLAS;
@@ -244,6 +249,25 @@ bool app_load_from_save_slot(const SaveSlotInfo *slot, long offset, long size) {
         app_push_toast_k(UI_TOAST_ERROR, NULL, tr("world.load.failed"));
         return false;
     }
+    int upgraded=qlcg_world_upgrade_terrain(loaded);
+    if(upgraded<0) {
+        qlcg_world_free(loaded);
+        app_push_toast_k(UI_TOAST_ERROR,NULL,tr(upgraded==-2?"world.load.editedTerrain":"world.load.incompatibleTerrain"));
+        return false;
+    }
+    char converted_id[64]={0};
+    if(upgraded||slot->disk_version!=QLCG_SAVE_VERSION) {
+        CalendarClock converted_clock;
+        qlcg_calendar_init(&converted_clock,slot->calendar_mode,slot->year,slot->month,slot->day,slot->mystery_time_speed);
+        converted_clock.unix_ms=slot->unix_ms;
+        char name[256],message[256];int converted_slot;
+        snprintf(name,sizeof(name),"%.220s · C11-14",slot->world_name);
+        if(!qlcg_saves_write_slot_named(loaded,&converted_clock,&slot->atlas_display,slot->player_x,slot->player_y,slot->player_z,
+            slot->player_yaw,slot->player_pitch,slot->flying,slot->mystery_menu_auto_pause,"",name,SAVE_SLOT_MANUAL_1,
+            "C11-14",converted_id,sizeof(converted_id),&converted_slot,message,sizeof(message))) {
+            qlcg_world_free(loaded);app_push_toast_k(UI_TOAST_ERROR,NULL,message);return false;
+        }
+    }
     /* 冰编辑已在 restore 内读入；缺表时补建空编辑 */
     if (!loaded->ice_state) loaded->ice_state = qlcg_ice_world_create();
     app_replace_world(loaded);
@@ -264,6 +288,7 @@ bool app_load_from_save_slot(const SaveSlotInfo *slot, long offset, long size) {
     g_app.world_menu_auto_pause = slot->mystery_menu_auto_pause;
     snprintf(g_app.save_name, sizeof(g_app.save_name), "%s",
              slot->world_name[0] ? slot->world_name : slot->opt.world_name);
+    if(converted_id[0]) snprintf(g_app.save_name,sizeof(g_app.save_name),"%.220s · C11-14",slot->world_name);
     g_app.clock.unix_ms = slot->unix_ms;
     qlcg_calendar_advance(&g_app.clock, 0.0f);
     qlcg_calendar_snapshot(&g_app.clock, 0, &g_app.snap);
@@ -293,13 +318,14 @@ bool app_load_from_save_slot(const SaveSlotInfo *slot, long offset, long size) {
 
     g_app.screen     = SCREEN_IN_GAME;
     g_app.view_mode  = VIEW_MODE_TERRAIN;
-    g_app.loaded_slot_name[0] = '\0';
     g_app.esc_paused = false;
     g_app.save_idle_s = 0.0f;
     g_app.auto_save_flash = 0.0f;
+    ui_u8_copy(g_app.current_save_id,sizeof(g_app.current_save_id),converted_id[0]?converted_id:slot->id);
     char msg[128];
     snprintf(msg, sizeof(msg), tr("world.load.done"), slot->world_name);
     app_push_toast(msg);
+    if(converted_id[0]) app_push_toast(tr("world.load.convertedTerrain"));
     return true;
 }
 
@@ -317,9 +343,6 @@ bool app_load_from_save_file(const SaveFileInfo *file, int slot) {
         return false;
     }
     if (!app_load_from_save_slot(&info, offset, size)) return false;
-    ui_u8_copy(g_app.current_save_id, sizeof(g_app.current_save_id), file->id);
-    ui_u8_copy(g_app.loaded_slot_name, sizeof(g_app.loaded_slot_name),
-               qlcg_save_slot_display_name(&file->slots[slot]));
     app_manual_slot_reset();
     return true;
 }
