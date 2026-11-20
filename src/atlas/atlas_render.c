@@ -1,3 +1,4 @@
+#include "systems/world/world_lot.h"
 /* 舆图按存档顺序合成图层 */
 #include "atlas_view.h"
 #include "../systems/world/astronomy.h"
@@ -5,6 +6,7 @@
 #include "atlas_rain.h"
 #include "atlas_vegetation.h"
 #include "../systems/world/world_infinite.h"
+#include "../systems/world/world_claims.h"
 #include "../systems/world/climate_zone.h"
 #include "../ui/ui_widgets.h"
 #include "../ui/ui_sprite.h"
@@ -48,6 +50,79 @@ static bool proj_point(const AtlasRenderer *ar, const MacroWorld *w, double wx, 
     return true;
 }
 
+typedef struct {float x,y,w,h;} ClaimViewport;
+
+static void draw_claims(const AtlasRenderer *ar,const MacroWorld *w,UiContext *ui,
+                        ClaimViewport view,float opacity,int filter) {
+    size_t worlds=w->planes?w->planes->count:1;
+    float scale=calc_zoom_scale(ar,w,view.w);
+    float wrap=ar->planet_view!=PLANET_VIEW_GLOBE&&!qlcg_world_flat(w)?w->circumference*scale:0;
+    float margin=CHUNK_SIZE*scale;
+    if(ar->planet_view==PLANET_VIEW_GLOBE)
+        margin=CHUNK_SIZE*qlcg_atlas_globe_radius(ar,view.w,view.h)*6.2831853f/w->circumference;
+    float vertical=ar->planet_view==PLANET_VIEW_MERCATOR?margin*53:margin;
+    static const int corners[4][2]={{0,0},{1,0},{1,1},{0,1}};
+    for(size_t tile=0;tile<worlds;tile++) {
+        const MacroWorld *source=w->planes?w->planes->items[tile]:w;
+        if(!source->opt.artificial_enabled) continue;
+        double period=w->circumference+(double)w->circumference/w->columns;
+        double offset_x=((double)source->opt.plane_x-w->opt.plane_x)*period;
+        double offset_z=((double)source->opt.plane_z-w->opt.plane_z)*period;
+        size_t count;
+        const QlcgChunkClaim *claims=qlcg_claims_list(source,&count);
+        for(size_t i=0;i<count;i++) {
+            const QlcgChunkClaim *claim=claims+i;
+            const QlcgLot *lot=qlcg_lot_local(source,claim->cx,claim->cz);
+            if((!filter&&!claim->edges&&!lot)||(filter==FILTER_FLAG&&claim->type!=QLCG_FLAG_CHUNK)||
+               claim->faction>=source->faction_count) continue;
+            const TerritoryFaction *f=source->factions+claim->faction;
+            if(!f->active) continue;
+            double wx=(double)claim->cx*CHUNK_SIZE+offset_x,wz=(double)claim->cz*CHUNK_SIZE+offset_z;
+            float center_x,center_y;
+            if(!proj_point(ar,w,wx+.5*CHUNK_SIZE,wz+.5*CHUNK_SIZE,view.x,view.y,view.w,view.h,&center_x,&center_y)) continue;
+            if(center_x<view.x-margin-2||center_x>view.x+view.w+margin+2||
+               center_y<view.y-vertical-2||center_y>view.y+view.h+vertical+2) continue;
+            if(w->opt.play_mode==PLAY_MODE_SURVIVAL&&
+               !qlcg_world_chunk_explored(w,(int)floor(wx/CHUNK_SIZE+.5),(int)floor(wz/CHUNK_SIZE+.5))) continue;
+            float px[4],py[4];bool vis[4];int visible=0;
+            float left=INFINITY,right=-INFINITY,top=INFINITY,bottom=-INFINITY;
+            for(int k=0;k<4;k++) {
+                vis[k]=proj_point(ar,w,wx+corners[k][0]*CHUNK_SIZE,wz+corners[k][1]*CHUNK_SIZE,
+                                  view.x,view.y,view.w,view.h,px+k,py+k);
+                if(!vis[k]) continue;
+                if(wrap>0) px[k]=center_x+remainderf(px[k]-center_x,wrap);
+                left=fminf(left,px[k]);right=fmaxf(right,px[k]);
+                top=fminf(top,py[k]);bottom=fmaxf(bottom,py[k]);visible++;
+            }
+            if(!visible||right<view.x-2||left>view.x+view.w+2||bottom<view.y-2||top>view.y+view.h+2) continue;
+            uint32_t color=ui_rgb_hex(f->main_color,(uint8_t)(255*opacity));
+            if(!filter && lot && visible==4 && lot->type!=LOT_LAND) {
+                const ChunkTypeDef *def=qlcg_get_chunk_type(lot->type);
+                if(def) ui_draw_poly(ui,px,py,4,ui_rgb_hex(def->map_color>>8,116));
+            }
+            if(filter&&visible==4) ui_draw_poly(ui,px,py,4,ui_rgb_hex(f->main_color,120));
+            float width=fmaxf(1.4f,1.6f*ui->met.size);
+            for(int edge=0;edge<4;edge++) {
+                int next=(edge+1)%4;
+                if((filter!=FILTER_FLAG&&!(claim->edges&(1<<edge)))||!vis[edge]||!vis[next]) continue;
+                const QlcgChunkClaim *neighbor=qlcg_claims_at(source,claim->cx+qlcg_claim_directions[edge][0],
+                                                                      claim->cz+qlcg_claim_directions[edge][1]);
+                float shift_x=0,shift_y=0;
+                if(neighbor&&neighbor->faction!=claim->faction) {
+                    float dx=px[next]-px[edge],dy=py[next]-py[edge],length=hypotf(dx,dy);
+                    if(length>0) {
+                        float nx=-dy/length,ny=dx/length;
+                        float inward=(center_x-px[edge])*nx+(center_y-py[edge])*ny;
+                        float shift=copysignf(fminf(width*.5f,fabsf(inward)*.8f),inward);
+                        shift_x=nx*shift;shift_y=ny*shift;
+                    }
+                }
+                ui_draw_line(ui,px[edge]+shift_x,py[edge]+shift_y,px[next]+shift_x,py[next]+shift_y,width,color);
+            }
+        }
+    }
+}
+
 /* UI 提交后恢复舆图管线 */
 static void draw_map_pass(const AtlasRenderer *ar, int id, float opacity, const AtlasTileView *tv, bool *textures_dirty) {
     const GLuint textures[] = { ar->data_tex0, ar->data_tex1, ar->sat_tex, tv->tex };
@@ -75,6 +150,7 @@ static void draw_vector_layer(const AtlasRenderer *ar, const MacroWorld *w, UiCo
                               float vp_x, float vp_y, float vp_w, float vp_h) {
         /* 文明图层 */
         if (layer->id == LAYER_CIVILIZATION && w->opt.artificial_enabled) {
+            draw_claims(ar,w,ui,(ClaimViewport){vp_x,vp_y,vp_w,vp_h},layer->opacity,0);
             const SpriteDef *flag = ui_sprite_by_name("flag-pin");
             uint8_t alpha = (uint8_t)(layer->opacity * 235.0f);
             for (int f = 0; f < w->faction_count; f++) {
@@ -86,11 +162,15 @@ static void draw_vector_layer(const AtlasRenderer *ar, const MacroWorld *w, UiCo
                 float x = sx - size * 0.42f, y = sy - size * 0.87f;
                 if (x + size < vp_x || x > vp_x + vp_w || y + size < vp_y || y > vp_y + vp_h) continue;
 
-                uint32_t main_color = ui_rgba_hex(fc->main_color, 255);
-                uint32_t trim_color = ui_rgba_hex(fc->trim_color, 255);
+                uint32_t main_color = ui_rgb_hex(fc->main_color, 255);
+                uint32_t trim_color = ui_rgb_hex(fc->trim_color, 255);
                 float saved_alpha = ui->global_alpha;
                 ui->global_alpha *= layer->opacity;
                 ui_sprite_icon4(ui, flag, x, y, size, trim_color, main_color, trim_color);
+                float hut=6.0f*ui->met.size,hx=sx+size*.38f,hy=sy-hut;
+                ui_draw_rect(ui,hx-hut*.6f,hy,hut*1.2f,hut,trim_color);
+                ui_draw_line(ui,hx-hut,hy,hx,hy-hut,2.0f*ui->met.size,main_color);
+                ui_draw_line(ui,hx,hy-hut,hx+hut,hy,2.0f*ui->met.size,main_color);
                 ui->global_alpha = saved_alpha;
                 if (ar->zoom >= 4.0f) {
                     char flab[64];
@@ -191,13 +271,7 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
                                  (w->spawn_cz + 0.5) * QLCG_CHUNK_SIZE_M, true);
     }
 
-    if (ar->detail_world!=w || ar->world_upload_pending || ar->synced_delta_ver != w->delta_version ||
-        ar->synced_terr_rev != w->territory_revision ||
-        (!qlcg_world_flat(w) && (ar->tex_w != w->columns || ar->tex_h != w->rows)) ||
-        !ar->tex_w || !ar->tex_h ||
-        ar->synced_plane_count != (w->planes?w->planes->count:0)) {
-        qlcg_atlas_upload_world(ar, w);
-    }
+    qlcg_atlas_sync_world(ar,w);
     if (ar->world_upload_pending) return;
     if(qlcg_atlas_layer_opacity(&ar->display,LAYER_VEGETATION)<=0) qlcg_atlas_vegetation_release(ar);
 
@@ -365,7 +439,10 @@ static void render_viewport(AtlasRenderer *ar, const MacroWorld *w,
                 draw_map_pass(ar, layer->id, layer->opacity, &tile_view,&textures_dirty);
             }
         }
-        if (ar->quick_filter != FILTER_NONE) {
+        if (w->chunk_claims&&w->opt.artificial_enabled&&(ar->quick_filter==FILTER_FLAG||ar->quick_filter==FILTER_CLAIMED)) {
+            draw_claims(ar,w,ui,(ClaimViewport){vp_x,vp_y,vp_w,vp_h},1,ar->quick_filter);
+            textures_dirty=true;
+        } else if (ar->quick_filter != FILTER_NONE) {
             flush_map_ui(ui,&textures_dirty);
             draw_map_pass(ar, -2, 1.0f, &tile_view,&textures_dirty);
         }

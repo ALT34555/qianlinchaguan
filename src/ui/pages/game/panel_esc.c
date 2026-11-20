@@ -1,5 +1,6 @@
-/* 游戏内 ESC 菜单：右侧玻璃抽屉（对齐 base） */
+/* ESC 菜单：右侧玻璃抽屉 */
 #include "app/app_state.h"
+#include "app/app_doll_control.h"
 #include "hud_layout.h"
 #include "ui/ui_sprite.h"
 #include "ui/ui_scroll.h"
@@ -125,7 +126,7 @@ void game_esc_menu(UiContext *ui) {
     float ix  = dx + pad;
     float iw  = dw - pad * 2.0f;
     /* 内容起点：顶栏下 + 26px（对齐 base） */
-    float content_top = dy + game_top_bar_height(ui) + 26.0f * z;
+    float content_top = game_character_chat_top(ui) + 12.0f * z;
     float view_h = dh - (content_top - dy) - 24.0f * z;
     if (view_h < 120.0f) view_h = 120.0f;
     float sc_off = ui_scroll_begin(ui, 0x5A7A01u, dx, content_top, dw, view_h);
@@ -143,6 +144,32 @@ void game_esc_menu(UiContext *ui) {
     float btn_h  = btn_px * 1.62f + 20.0f * z + 2.0f * z;
     float gap    = 8.0f * z;
 
+    if (g_app.world) {
+        bool open_bag = ui_btn(ui, ix, y, iw, btn_h, tr("controls.openInventory"),
+                               BTN_GHOST, false, btn_px, false);
+        const SpriteDef *bag = ui_sprite_by_name("btn-inventory");
+        float icon = qlcg_minf(30*z, btn_h*.65f);
+        if (bag)
+            ui_sprite_icon4(ui, bag, ix+10*z, y+(btn_h-icon)*.5f, icon,
+                            tk_of(ui,QL_SURFACE), tk_of(ui,QL_PRIMARY_UI), tk_of(ui,QL_ACCENT_UI));
+        y += btn_h + gap;
+        if (open_bag) {
+            ui_pointer_consume(ui);
+            app_text_focus_clear();
+            g_app.manual_slots_open = false;
+            g_app.esc_paused = false;
+            game_inventory_toggle();
+            g_app.inventory_ui.from_menu = g_app.inventory_ui.open;
+        }
+    }
+    if (app_doll_controlled(NULL)) {
+        if (ui_btn(ui,ix,y,iw,btn_h,tr("doll.release"),BTN_GHOST,false,btn_px,false)) {
+            if (app_doll_release()) g_app.esc_paused=false;
+            else app_push_toast_k(UI_TOAST_WARNING,NULL,tr("doll.unavailable"));
+            ui_pointer_consume(ui);
+        }
+        y+=btn_h+gap;
+    }
     if (g_app.world && ui_btn(ui, ix, y, iw, btn_h, tr("game.pause.save"),
                               BTN_GHOST, false, btn_px, g_app.manual_slots_open)) {
         if (g_app.manual_slots_open) {

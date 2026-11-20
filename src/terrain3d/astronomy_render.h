@@ -8,6 +8,8 @@ typedef struct {
     AstraCatalog *catalog;
     GLuint texture, vao, vbo, moving_vao, moving_vbo, program;
     GLuint event_vao, event_vbo;
+    GLuint trail_vao, trail_vbo;
+    int trail_count;
     AstraVertex *event_vertices;
     bool observing;
 } AstraRenderer;
@@ -17,5 +19,5 @@ void qlcg_astra_uniforms(GLuint program,const AstraFrame *f);
 void qlcg_astra_draw_events(AstraRenderer *r,AstraEventState *state,const CalendarClock *clock,const AstraFrame *frame);
 void qlcg_astra_draw(AstraRenderer *r,const AstraFrame *f,const SkyClimate *sky,
     const float *forward,const float *right,const float *up,float aspect,float tan_fov,float time,
-    float cloud_cov,float rain_alpha);
+    float cloud_cov,float rain_alpha,bool catalog_sky,bool stargazing);
 #endif

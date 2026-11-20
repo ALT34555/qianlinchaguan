@@ -78,15 +78,25 @@ static bool app_text_key_edit(unsigned int vk) {
 bool app_want_mouse_lock(void) {
     return g_app.screen == SCREEN_IN_GAME
         && g_app.view_mode == VIEW_MODE_TERRAIN
+        && !g_app.inventory_ui.open && !game_doll_panel_open() && !game_build_open()
         && !g_app.esc_paused
         && !g_app.settings_in_drawer
         && !g_app.touch.enabled;
 }
 
 void app_input_key_down(unsigned key, bool repeat) {
+            if(game_build_open()) {game_build_key(key,repeat);return;}
+            if (settings_confirm_active()) {
+                if (key == QL_KEY_ESCAPE && !repeat) settings_confirm_cancel();
+                return;
+            }
             QLCG_DEV_INPUT_LOG("[in] kd vk %u screen %d input %u chat %d\n",
                        (unsigned)key, (int)g_app.screen,
                        g_app.ui.input_id, (int)g_app.chat_open);
+            if (g_app.screen == SCREEN_IN_GAME && g_app.inventory_ui.open) {
+                if (!repeat && (key == 'I' || key == QL_KEY_ESCAPE)) game_inventory_toggle();
+                return;
+            }
             /* 1) 回车：字段提交 / 聊天发送，绝不被吞 */
             if (key == QL_KEY_RETURN) {
                 if (g_app.ui.input_id != 0) {
@@ -98,6 +108,7 @@ void app_input_key_down(unsigned key, bool repeat) {
             }
             /* 2) Esc：先放掉文本键盘占用，再关当前叠层 */
             if (key == QL_KEY_ESCAPE) {
+                if (repeat) return;
                 if (app_text_input_active()) {
                     app_text_focus_clear();
                     if (g_app.settings_in_drawer) {
@@ -110,7 +121,6 @@ void app_input_key_down(unsigned key, bool repeat) {
                     return;
                 }
                 if (g_app.ui.select_id) g_app.ui.select_id = 0;
-                else if (settings_confirm_active()) settings_confirm_cancel();
                 else if (g_app.touch_layout_edit) settings_layout_cancel();
                 else if (g_app.settings_in_drawer) {
                     /* 逐级退回：先收起设置抽屉回到菜单，再按一次才关菜单 */
@@ -118,6 +128,7 @@ void app_input_key_down(unsigned key, bool repeat) {
                     g_app.settings_back_to_game = false;
                     g_app.esc_paused            = true;
                 }
+                else if (g_app.screen == SCREEN_IN_GAME && !g_app.esc_paused && game_doll_panel_back()) return;
                 else if (g_app.screen == SCREEN_IN_GAME) g_app.esc_paused = !g_app.esc_paused;
                 else g_app.screen = SCREEN_START_HOME;
                 return;
@@ -153,6 +164,18 @@ void app_input_key_down(unsigned key, bool repeat) {
                 return;
             }
             /* 6)玩法：仅未被文本消费的键进按键表 */
+            if (game_doll_panel_open()) return;
+            if (key=='E' && !repeat && !g_app.settings.touch_controls &&
+                !qlcg_platform_key_down(QL_KEY_CONTROL) && !qlcg_platform_key_down(QL_KEY_MENU) &&
+                (game_build_interact() || game_doll_panel_interact())) return;
+            if (key == 'I' && !repeat && g_app.screen == SCREEN_IN_GAME &&
+                !g_app.esc_paused && !g_app.settings_in_drawer && !g_app.touch_layout_edit &&
+                !qlcg_platform_key_down(QL_KEY_SHIFT) && !qlcg_platform_key_down(QL_KEY_CONTROL) &&
+                !qlcg_platform_key_down(QL_KEY_MENU)) {
+                g_app.ui.select_id = 0;
+                game_inventory_toggle();
+                return;
+            }
             app_key_track((unsigned int)key, true);
             if (app_action_match(ACT_DEBUG, key)) {
                 g_app.show_debug_f12 = !g_app.show_debug_f12;
@@ -190,7 +213,6 @@ void app_input_key_down(unsigned key, bool repeat) {
                     g_app.region->climate_season = season;
                     qlcg_terrain_set_season(&g_app.terrain, season);
                     qlcg_terrain_upload_region(&g_app.terrain, g_app.region, &g_app.settings);
-                    qlcg_world_rebuild_atlas_fields(g_app.world);
                     app_push_toast_k(UI_TOAST_SUCCESS, NULL, tr("eng.undo"));
                 }
                 return;

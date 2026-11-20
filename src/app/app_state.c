@@ -1,5 +1,6 @@
 /* 应用状态实例 */
 #include "app/app_state.h"
+#include "app/app_doll_control.h"
 #include "core/dev_tools.h"
 #include "ui/ui_input.h"
 #include "platform/android/bridge.h"
@@ -176,6 +177,7 @@ void app_sync_hud_daynight(void) {
 /* 存档列表重扫 */
 void app_refresh_saves(void) {
     g_app.save_count = qlcg_saves_scan(g_app.saves, MAX_SAVE_SLOTS);
+    memset(g_app.save_card_motion, 0, sizeof(g_app.save_card_motion));
 }
 
 /* 当前会话文件，无则 NULL */
@@ -235,14 +237,20 @@ static bool save_current(int slot_kind, const char *slot_name, bool notify) {
     if (!g_app.world) return false;
     float px = 0.0f, py = 0.0f, pz = 0.0f;
     app_save_position(&px, &py, &pz);
-    char msg[256];
+    float yaw=g_app.terrain.yaw,pitch=g_app.terrain.pitch;
+    bool flying=g_app.terrain.flying;
+    bool controlled=app_doll_controlled(NULL);
+    if (controlled && !app_doll_save_begin(&px,&py,&pz,&yaw,&pitch,&flying)) return false;
+    MacroWorld *world=controlled?app_doll_save_world():g_app.world;
+    char msg[256]={0};
     char id[64] = { 0 };
     int used = -1;
-    bool ok = qlcg_saves_write_slot_named(g_app.world, &g_app.clock, &g_app.atlas.display,
-                                          px, py, pz, g_app.terrain.yaw, g_app.terrain.pitch,
-                                          g_app.terrain.flying, g_app.world_menu_auto_pause,
+    bool ok = world && qlcg_saves_write_slot_named(world, &g_app.clock, &g_app.atlas.display,
+                                          px, py, pz, yaw, pitch,
+                                          flying, g_app.world_menu_auto_pause,
                                           g_app.current_save_id, g_app.save_name, slot_kind, slot_name,
                                           id, sizeof(id), &used, msg, sizeof(msg));
+    if (controlled) app_doll_save_end();
     if (ok) {
         ui_u8_copy(g_app.current_save_id, sizeof(g_app.current_save_id), id);
         g_app.save_idle_s = 0.0f;

@@ -1,6 +1,7 @@
 /* planet_civ */
 #include "planet_macro.h"
 #include "world_internal.h"
+#include "world_claims.h"
 #include "faction_naming.h"
 #include "../../core/math_util.h"
 #include "platform/platform.h"
@@ -8,8 +9,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <limits.h>
 
 void build_initial_civilizations(MacroWorld *w) {
+    w->last_civ_day = INT_MIN;
     int N = w->cell_count;
     for (int i = 0; i < N; ++i) {
         w->claim_faction[i] = -1;
@@ -46,7 +49,7 @@ void build_initial_civilizations(MacroWorld *w) {
         w->spawn_cz = (int)floorf(w->spawn_wz / (float)CHUNK_SIZE);
     }
 
-    if (!w->opt.artificial_enabled) return;
+    if (!qlcg_claims_reserve(w,0)||!w->opt.artificial_enabled) return;
 
     /* 1. 己方置旗地（9001） */
     if (w->opt.spawn_as_flag && (!qlcg_world_flat(w) || (!w->opt.plane_x && !w->opt.plane_z)) && w->faction_count < MAX_FACTIONS) {
@@ -60,31 +63,19 @@ void build_initial_civilizations(MacroWorld *w) {
         tf->cx = w->spawn_cx;
         tf->cz = w->spawn_cz;
         qlcg_faction_init_identity(tf, w->opt.seed, "ren", w->opt.faction_name);
-        tf->wx = w->spawn_wx;
-        tf->wz = w->spawn_wz;
+        tf->wx = (tf->cx+.5f)*CHUNK_SIZE;
+        tf->wz = (tf->cz+.5f)*CHUNK_SIZE;
         tf->level = 1;
         tf->claim_radius = 2;
         tf->born_year = 0;
-        w->claim_faction[best_spawn] = 0;
-        w->claim_type[best_spawn] = 2;
-        for (int k = 0; k < 8; ++k) {
-            int nb = w->neighbors[best_spawn * 8 + k];
-            if (!w->water[nb]) {
-                w->claim_faction[nb] = 0;
-                w->claim_type[nb] = 1;
-            }
+        if(qlcg_claims_seed(w,tf)) {
+            w->claim_faction[best_spawn]=0;
+            w->claim_type[best_spawn]=2;
+            w->faction_count++;
         }
-        w->faction_count++;
     }
 
     /* 自然文明置旗地 */
-    static const uint32_t CIV_COLORS[16] = {
-        0x3B7A57FFu, 0x4B6C8CFFu, 0x8A5A96FFu, 0xB87333FFu,
-        0x568203FFu, 0x9E4747FFu, 0x2E6F78FFu, 0xA67B3BFFu,
-        0x685286FFu, 0x3F704DFFu, 0x8C4A32FFu, 0x4A6B82FFu,
-        0x9B7643FFu, 0x5C7858FFu, 0x7A546EFFu, 0x3D647AFFu
-    };
-
     uint32_t rng = w->opt.seed ^ 0xA5A55A5Au;
     int target_civs = qlcg_clampi(w->opt.initial_civ_limit, 0, 48);
     int spawned_civs = 0;
@@ -105,31 +96,24 @@ void build_initial_civilizations(MacroWorld *w) {
         }
         if (too_close) continue;
 
-        int fid = w->faction_count++;
+        int fid = w->faction_count;
         TerritoryFaction *tf = &w->factions[fid];
         tf->active = true;
         tf->id = fid;
         tf->is_player = false;
-        tf->main_color = CIV_COLORS[spawned_civs % 16];
-        tf->trim_color = 0xE8D8B8FFu;
         tf->flag_cell  = cell;
-        tf->wx = wx;
-        tf->wz = wz;
         tf->cx = (int)floorf(wx / (float)CHUNK_SIZE);
         tf->cz = (int)floorf(wz / (float)CHUNK_SIZE);
+        tf->wx = (tf->cx+.5f)*CHUNK_SIZE;
+        tf->wz = (tf->cz+.5f)*CHUNK_SIZE;
         qlcg_faction_init_identity(tf, w->opt.seed, "initial", NULL);
         tf->level = 1 + (spawned_civs % 3);
         tf->claim_radius = 1;
         tf->born_year = 0;
-        w->claim_faction[cell] = (int16_t)fid;
-        w->claim_type[cell] = 2;
-        for (int k = 0; k < 4; ++k) {
-            int nb = w->neighbors[cell * 8 + k];
-            if (!w->water[nb] && w->claim_faction[nb] < 0) {
-                w->claim_faction[nb] = (int16_t)fid;
-                w->claim_type[nb] = 1;
-            }
-        }
+        if(!qlcg_claims_seed(w,tf)) continue;
+        w->claim_faction[cell]=(int16_t)fid;
+        w->claim_type[cell]=2;
+        w->faction_count++;
         spawned_civs++;
     }
 }

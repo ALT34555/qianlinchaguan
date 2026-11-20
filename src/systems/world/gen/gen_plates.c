@@ -6,7 +6,7 @@
 
 #define GEN_TAU 6.283185307179586f
 
-/* mulberry32：与 base random 等价 */
+/* mulberry32：与 random 等价 */
 static float rand01(uint32_t *s) {
     uint32_t t = (*s += 0x6D2B79F5u);
     t = (t ^ (t >> 15)) * (t | 1u);

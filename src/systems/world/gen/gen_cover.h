@@ -20,10 +20,10 @@ typedef struct {
 void qlcg_cover_weights(float temperature, float aridity, float uplift, float slope,
                         CoverWeights *out);
 
-/* 连续气候带位 0..4（0 冰封 1 寒 2 温 3 亚热 4 热） */
+/* 气候带 0..4（冰/寒/温/亚热/热） */
 float qlcg_cover_band_of_temp(float temperature);
 
-/* 湿润度 0..1（干 0 湿 1），供片元噪声选频率 */
+/* 湿润度 0..1，供片元噪声选频率 */
 float qlcg_cover_wet(float aridity);
 
 /* 球面点地表色；season、material 可空 */

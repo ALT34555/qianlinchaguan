@@ -76,7 +76,7 @@ static void build_adult(LpBuilder *b, const PdDef *def, int season) {
     double spread = qlcg_pa_pnum(def, "spread", height * 0.16) * shape->spread;
     double node_step = qlcg_pa_pnum(def, "nodeStep", height * 0.18);
     if (node_step < 0.35) node_step = 0.35;
-    int blades = qlcg_pa_js_round(qlcg_pa_pnum(def, "blades", 12.0) * density[season]);
+    int blades = qlcg_pa_js_round(qlcg_pa_pnum(def, "blades", 12.0) * (season == PD_SEASON_NONE ? 1.0 : density[season]));
     if (blades < 3) blades = 3;
     double leaf_len = qlcg_pa_pnum(def, "frondLength", height * 0.16);
     LpRgb stem = qlcg_lp_wind_color(qlcg_lp_hex(shape->culm, 78, 129, 76), LP_WIND_BARK);

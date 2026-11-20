@@ -47,6 +47,8 @@ bool ui_btn(UiContext *ui, float x, float y, float w, float h, const char *label
 bool ui_button(UiContext *ui, float x, float y, float w, float h, const char *label, bool primary, bool active);
 bool ui_pill(UiContext *ui, float x, float y, float w, float h, const char *label, bool active);
 bool ui_checkbox(UiContext *ui, float x, float y, const char *label, bool *val);
+bool ui_checkbox_row(UiContext *ui, float x, float y, float w, float h,
+                     const char *label, float font_px, bool *val);
 /* 标签+数值+轨道，轨道随标签行高下移 */
 bool ui_slider_float(UiContext *ui, float x, float y, float w, const char *label,
                      float *val, float vmin, float vmax, const char *fmt_val);
@@ -62,8 +64,9 @@ bool ui_slider_float_ex(UiContext *ui, float x, float y, float w, const char *la
 float ui_slider_height(UiContext *ui);
 bool ui_fold_header(UiContext *ui, float x, float y, float w, const char *title, bool *expanded);
 void ui_draw_crosshair(UiContext *ui, CrosshairStyle style);
+void ui_draw_crosshair_at(UiContext *ui,CrosshairStyle style,float cx,float cy);
 
-/* 下拉：ui_select 收起态，popup 画浮层 */
+/* 下拉：select 收起态，popup 浮层 */
 bool ui_select(UiContext *ui, uint32_t id, float x, float y, float w, float h,
                const char *const *items, int count, int current);
 /* 指定字号版：px 只作用于收起态标签 */
@@ -107,7 +110,7 @@ typedef enum {
 typedef struct {
     uint32_t    id;       /* 过渡状态指纹，同一按钮多次调用需稳定 */
     const char *label;
-    int         icon;     /* 0 房子 / 1 书 / 2 齿轮 / -1 无图标 */
+    int         icon;     /* 0 房 / 1 书 / 2 齿轮 / -1 无 */
 } UiTabItem;
 
 /* 选中态延后到框体之后绘制 */

@@ -13,7 +13,7 @@
 #define ATLAS_TILE_MAX_LEVEL 24
 /* 瓦片屏幕目标像素，对齐base TILE=128 */
 #define ATLAS_TILE_SCREEN_PX 128.0f
-/* 层级迟滞：相对目标尺寸的判定区间，取 √2 两侧防抖 */
+/* 层级迟滞：取目标尺寸 √2 两侧防抖 */
 #define ATLAS_TILE_HYST_HI   1.45f
 #define ATLAS_TILE_HYST_LO   0.69f
 

@@ -1,0 +1,60 @@
+{
+  "plants": [
+    {
+      "id": "yao.qiancao", "name": "茜草", "latin": "Rubia cordifolia",
+      "archetype": "bramble", "climate": "temperate", "seed": 901,
+      "tags": ["kaihua", "jieguo"],
+      "params": {"height": 0.61, "spread": 0.38, "bloomCount": 5, "fruitCount": 5},
+      "palette": {"foliage": "cropTeaLeaf", "foliageDark": "cropTeaShade", "barkLight": "tamariskBark", "bloom": "madderBloom", "fruit": "madderBerry"},
+      "states": ["normal", "seedling", "subadult", "flowering", "fruiting", "withered"]
+    },
+    {
+      "id": "yao.qian", "name": "芡实", "latin": "Euryale ferox",
+      "archetype": "succulent", "climate": "subtropical", "seed": 902,
+      "tags": ["kaihua", "jieguo", "guzhuo", "fushui"],
+      "params": {"height": 0.58, "spread": 0.64, "bloomCount": 2, "fruitCount": 2},
+      "palette": {"foliage": "canopy", "foliageDark": "jungleDark", "barkLight": "barkLight", "bloom": "euryaleBloom", "fruit": "euryaleFruit"},
+      "states": ["normal", "seedling", "subadult", "flowering", "fruiting", "withered"]
+    },
+    {
+      "id": "yao.huaishanyao", "name": "怀山药", "latin": "Dioscorea polystachya",
+      "archetype": "bramble", "climate": "temperate", "seed": 903,
+      "tags": ["kaihua"],
+      "params": {"height": 1.22, "spread": 0.29, "bloomCount": 5, "fruitCount": 4},
+      "palette": {"foliage": "yamLeaf", "foliageDark": "yamLeafDark", "barkLight": "tamariskBark", "bloom": "yamBloom", "fruit": "yamBulbil"},
+      "states": ["normal", "seedling", "subadult", "flowering", "fruiting", "withered"]
+    },
+    {
+      "id": "yao.gouqi", "name": "枸杞", "latin": "Lycium chinense",
+      "archetype": "shrub", "climate": "temperate", "seed": 904,
+      "tags": ["kaihua", "jieguo"],
+      "params": {"height": 1.04, "spread": 0.48, "bloomCount": 5, "fruitCount": 6},
+      "palette": {"foliage": "cropTeaLeaf", "foliageDark": "cropTeaShade", "barkLight": "barkPale", "bloom": "gojiBloom", "fruit": "gojiBerry"},
+      "states": ["normal", "seedling", "subadult", "flowering", "fruiting", "withered"]
+    },
+    {
+      "id": "yao.yuxingcao", "name": "鱼腥草", "latin": "Houttuynia cordata",
+      "archetype": "shrub", "climate": "subtropical", "seed": 905,
+      "tags": ["kaihua"],
+      "params": {"height": 0.44, "spread": 0.36, "bloomCount": 4, "fruitCount": 4},
+      "palette": {"foliage": "cropTeaLeaf", "foliageDark": "foliageDeep", "barkLight": "tamariskBark", "bloom": "houttuyniaBloom", "fruit": "houttuyniaFruit"},
+      "states": ["normal", "seedling", "subadult", "flowering", "fruiting", "withered"]
+    },
+    {
+      "id": "yao.zihua", "name": "紫花", "latin": "zihua",
+      "archetype": "shrub", "climate": "temperate", "seed": 906,
+      "tags": ["kaihua"],
+      "params": {"height": 0.71, "spread": 0.35, "bloomCount": 6, "seedCount": 4},
+      "palette": {"foliage": "cropTeaLeaf", "foliageDark": "cropTeaShade"},
+      "states": ["normal", "seedling", "subadult", "flowering", "fruiting", "withered"]
+    },
+    {
+      "id": "yao.lanhua", "name": "蓝花", "latin": "lanhua",
+      "archetype": "orchid", "climate": "subtropical", "seed": 907,
+      "tags": ["kaihua"],
+      "params": {"height": 0.73, "spread": 0.26, "bloomCount": 5, "seedCount": 3},
+      "palette": {"foliage": "foliageDark", "foliageDeep": "foliageDeep", "foliageDark": "foliageDeep"},
+      "states": ["normal", "seedling", "subadult", "flowering", "fruiting", "withered"]
+    }
+  ]
+}

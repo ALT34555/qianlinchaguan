@@ -1,4 +1,4 @@
-/* 植物几何：对齐 base PlantForms.ts */
+/* 植物几何：对齐 PlantForms.ts */
 #ifndef QLCG_PLANT_FORMS_H
 #define QLCG_PLANT_FORMS_H
 
@@ -8,6 +8,7 @@
 enum {
     PLANT_MODEL_VARIANT_1 = VEG_FORM_RICH + 1,
     PLANT_MODEL_VARIANT_2,
+    PLANT_HANGING_FORM = PLANT_MODEL_VARIANT_2 + 1,
     PLANT_VARIANT_COUNT = 3
 };
 
@@ -18,6 +19,14 @@ static inline int qlcg_plant_model_form(int setting, unsigned variant) {
     return VEG_FORM_NORMAL;
 }
 
+static inline int qlcg_plant_placed_form(int form, int hanging) {
+    return form + (hanging ? PLANT_HANGING_FORM : 0);
+}
+
+static inline int qlcg_plant_uses_sprite(int category) {
+    return category != PLANT_CAT_SHUI && category != PLANT_CAT_CAO;
+}
+
 static inline int qlcg_plant_model_variant(int form) {
     return form >= PLANT_MODEL_VARIANT_1 && form <= PLANT_MODEL_VARIANT_2
         ? form - VEG_FORM_RICH : 0;
@@ -26,10 +35,15 @@ static inline int qlcg_plant_model_variant(int form) {
 static inline int qlcg_plant_category_has_variants(int category) {
     return category == PLANT_CAT_CAO || category == PLANT_CAT_SHU ||
            category == PLANT_CAT_GUAN || category == PLANT_CAT_SHUI ||
-           category == PLANT_CAT_HUA || category == PLANT_CAT_NONG;
+           category == PLANT_CAT_HUA || category == PLANT_CAT_NONG ||
+           category == PLANT_CAT_YAO || category == PLANT_CAT_TENG || category == PLANT_CAT_JUN;
 }
 
 /* 返回1成功；out 由调用方释放 */
+int qlcg_plant_has_release(const char *id);
+int qlcg_plant_read_release(const char *id, int season, int form, LpGeometry *out);
+int qlcg_plant_build_source(const char *id, int season, int form, LpGeometry *out);
 int qlcg_plant_build(const char *id, int season, int form, LpGeometry *out);
+int qlcg_plant_build_growth(const char *id, int stage, int form, LpGeometry *out);
 
 #endif

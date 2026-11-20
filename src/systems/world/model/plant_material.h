@@ -13,7 +13,7 @@ int  qlcg_plant_species_count(void);
 /* 未知名返回 -1 */
 int  qlcg_plant_species_index(const char *id);
 const char *qlcg_plant_species_id(int index);
-/* 六类编码，未定返回 -1 */
+/* 分类编码，未定返回 -1 */
 int  qlcg_plant_species_category(int index);
 
 /* 取该物种该形态该季节的几何；调用方不得释放 */

@@ -22,6 +22,7 @@ static ShrubSeason seasonal_form(const PdDef *def, int season, const ShrubProfil
     double heat = tolerance(def, "naire", p->heat) / 4.0;
     double cold = tolerance(def, "naihan", p->cold) / 4.0;
     switch (season) {
+        case PD_SEASON_NONE: return (ShrubSeason){ 1, 1, 1, 0 };
         case PD_SEASON_SPRING:
             return (ShrubSeason){ .59, p->bloom_season == PD_SEASON_SPRING && p->winter_leaf == 0
                                   ? .24 : .66, .76, -.13 };

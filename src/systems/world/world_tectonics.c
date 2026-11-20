@@ -1,4 +1,4 @@
-/* 入口：实现见 gen/gen_tectonics.c */
+/* 入口：实现见 gen_tectonics.c */
 #include "planet_macro.h"
 #include "world_internal.h"
 #include "gen/gen_tectonics.h"

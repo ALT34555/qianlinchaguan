@@ -21,6 +21,7 @@ void qlcg_rock_builder_init(RockBuilder *b, LpRng *rand) {
     b->cap = 0;
     b->rand = rand;
     b->current_mat = ROCK_MAT_SOLID;
+    b->fungus_count = 0;
     b->min_y = 0.0;
     b->max_y = 0.0;
     b->max_r = 0.0;
@@ -384,7 +385,7 @@ void qlcg_rock_build(RockBuilder *b, RockGeometry *out) {
     out->triangle_count = index_count / 3;
 
     int v = 0, idx = 0;
-    double snow_points[ROCK_SOCKET_CAPACITY][3] = {0};
+    double snow_points[ROCK_SNOW_SITES][3] = {0};
     for (int mat = 0; mat < 4; mat++) {
         int start = idx;
         for (int fi = 0; fi < b->count; fi++) {
@@ -428,13 +429,15 @@ void qlcg_rock_build(RockBuilder *b, RockGeometry *out) {
     double total = (double)(index_count / 3);
     if (total <= 0.0) total = 1.0;
     for (int i = 0; i < 4; i++) out->cover_ratio[i] /= total;
-    for (int i = 0; i < ROCK_SOCKET_CAPACITY; i++) {
+    for (int i = 0; i < ROCK_SNOW_SITES; i++) {
         if (snow_points[i][1] <= 0.0) continue;
         LpSocket *s = &out->sockets[out->socket_count++];
         memcpy(s->translation, snow_points[i], sizeof(s->translation));
         s->kind = LP_SOCKET_SNOW_SURFACE;
     }
 
+    memcpy(out->sockets + out->socket_count, b->fungus, b->fungus_count * sizeof(LpSocket));
+    out->socket_count += b->fungus_count;
     out->radius = b->max_r > 1e-3 ? b->max_r : 1e-3;
     out->height = b->max_y > 1e-3 ? b->max_y : 1e-3;
     out->bottom = b->min_y < 0.0 ? b->min_y : 0.0;

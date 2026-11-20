@@ -43,7 +43,7 @@ static void layout_text_field(UiLayout *L, uint32_t id, const char *label,
     L->cursor += fh + L->row_gap;
 }
 
-void render_screen_world_creator(UiContext *ui) {
+static void draw_world_creator(UiContext *ui) {
     float z  = ui->met.size;
     float sc = ui->met.scale;
     UiRect page = draw_page_shell(ui);
@@ -162,11 +162,11 @@ void render_screen_world_creator(UiContext *ui) {
         }
 
         ui_layout_note(&L, tr("creator.preset.hint"), true);
-        ui_layout_gap(&L, 4.0f * z);
 
         } else ui_layout_note(&L,tr("creator.infinite.home"),true);
 
         /* 只读摘要 */
+        ui_layout_divider(&L);
         ui_layout_kv(&L, tr("creator.generationMode"), qlcg_terrain_recipe_name(opt->terrain_recipe));
         {
             char tiltbuf[48];
@@ -253,6 +253,7 @@ void render_screen_world_creator(UiContext *ui) {
         if (ui_layout_checkbox(&L, tr("player.flagSpawn"), &opt->spawn_as_flag)) need_regen = true;
 
         /* 地理折叠组 */
+        ui_layout_divider(&L);
         if (ui_layout_fold(&L, 0x435201u, tr("creator.fold.geoFull"), &g_app.fold_geo)) {
             if(!flat) {
             const char *snames[3] = {
@@ -382,10 +383,14 @@ void render_screen_world_creator(UiContext *ui) {
             bool changed = false;
             bool checked[QLCG_MAX_LOCALES];
             for (int i = 0; i < count; ++i) {
-                if (i == 2) ui_layout_note(&L, tr("creator.culture.mods"), true);
+                if (i == QLCG_BUILTIN_LOCALES) ui_layout_note(&L, tr("creator.culture.mods"), true);
                 const QlLocaleMeta *meta = qlcg_i18n_culture_meta(i);
-                const char *label = i == 0 ? tr("culture.zh-CN") :
-                                    i == 1 ? tr("culture.en") : meta->label;
+                const char *label = meta->label;
+                char culture_key[48];
+                if (!meta->is_mod) {
+                    snprintf(culture_key, sizeof(culture_key), "culture.%s", meta->code);
+                    label = tr(culture_key);
+                }
                 checked[i] = qlcg_culture_checked(opt, meta->code);
                 if (ui_layout_checkbox(&L, label, &checked[i])) changed = true;
             }
@@ -500,13 +505,12 @@ void render_screen_world_creator(UiContext *ui) {
         float tools_h = 2.0f * (bh + gap);
         if (scroll_h > tools_h) {
             UiRect layers = { page.x, scroll_y + tools_h, panel_w, scroll_h - tools_h };
-            atlas_layer_panel(ui, &g_app.atlas, layers);
+            atlas_layer_panel(ui, &g_app.atlas, layers, true);
         }
     }
 
     /* 底部操作条 */
     float fy = page.y + page.h - fbtn_h - 2.0f * z;
-    ui_draw_rect(ui, page.x, fy - 8.0f * z, page.w, 1.0f, tk_of(ui, QL_LINE_SOFT));
     const char *s_enter = tr("creator.enterWorldBtn");
     const char *s_bmap  = tr("creator.browseMapBtn");
     float enter_w = (float)ui_text_width_px(ui, UI_FACE_BODY, 15.0f * sc, false, s_enter) + 40.0f * z;
@@ -557,4 +561,11 @@ void render_screen_world_creator(UiContext *ui) {
         }
     }
     g_app.creator_tab = next_tab;
+}
+
+void render_screen_world_creator(UiContext *ui) {
+    bool saved_ripple = ui->suppress_button_ripple;
+    ui->suppress_button_ripple = true;
+    draw_world_creator(ui);
+    ui->suppress_button_ripple = saved_ripple;
 }

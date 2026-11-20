@@ -1,4 +1,4 @@
-/* 水量口径（对齐 water-balance.mjs） */
+/* 水量口径（对齐 water-balance） */
 #ifndef QLCG_HYDROLOGY_BALANCE_H
 #define QLCG_HYDROLOGY_BALANCE_H
 

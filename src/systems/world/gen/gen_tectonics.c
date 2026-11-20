@@ -1,4 +1,4 @@
-/* 构造：warp → 板块漂移 → 碰撞累积 → 高度合成 */
+/* 构造：warp→漂移→碰撞累积→高度合成 */
 #include "gen_tectonics.h"
 #include "gen_plates.h"
 #include "gen_crust.h"

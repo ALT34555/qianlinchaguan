@@ -46,6 +46,11 @@ void qlcg_plant_hua_shaoyao(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_hua_tao(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_hua_yueji(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_hua_zhu(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_jun_chashugu(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_jun_dumogu(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_jun_jinhuangegao(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_jun_koumo(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_jun_pinggu(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_nong_bailuobo(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_nong_cha(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_nong_chu(LpBuilder *, const PdDef *, int, int);
@@ -128,6 +133,20 @@ void qlcg_plant_shui_pucao(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_shui_redaishuilian(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_shui_redaitun(LpBuilder *, const PdDef *, int, int);
 void qlcg_plant_shui_wanglian(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_teng_ledujuan(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_teng_qianniuhua(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_teng_ziteng(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_fuling(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_gouqi(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_huaishanyao(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_jinyinhua(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_lanhua(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_lingzhi(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_qian(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_qiancao(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_yimi(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_yuxingcao(LpBuilder *, const PdDef *, int, int);
+void qlcg_plant_yao_zihua(LpBuilder *, const PdDef *, int, int);
 
 static const struct {
     const char *id;
@@ -177,6 +196,11 @@ static const struct {
     { "hua.tao", qlcg_plant_hua_tao },
     { "hua.yueji", qlcg_plant_hua_yueji },
     { "hua.zhu", qlcg_plant_hua_zhu },
+    { "jun.chashugu", qlcg_plant_jun_chashugu },
+    { "jun.dumogu", qlcg_plant_jun_dumogu },
+    { "jun.jinhuangegao", qlcg_plant_jun_jinhuangegao },
+    { "jun.koumo", qlcg_plant_jun_koumo },
+    { "jun.pinggu", qlcg_plant_jun_pinggu },
     { "nong.bailuobo", qlcg_plant_nong_bailuobo },
     { "nong.cha", qlcg_plant_nong_cha },
     { "nong.chu", qlcg_plant_nong_chu },
@@ -259,6 +283,20 @@ static const struct {
     { "shui.redaishuilian", qlcg_plant_shui_redaishuilian },
     { "shui.redaitun", qlcg_plant_shui_redaitun },
     { "shui.wanglian", qlcg_plant_shui_wanglian },
+    { "teng.ledujuan", qlcg_plant_teng_ledujuan },
+    { "teng.qianniuhua", qlcg_plant_teng_qianniuhua },
+    { "teng.ziteng", qlcg_plant_teng_ziteng },
+    { "yao.fuling", qlcg_plant_yao_fuling },
+    { "yao.gouqi", qlcg_plant_yao_gouqi },
+    { "yao.huaishanyao", qlcg_plant_yao_huaishanyao },
+    { "yao.jinyinhua", qlcg_plant_yao_jinyinhua },
+    { "yao.lanhua", qlcg_plant_yao_lanhua },
+    { "yao.lingzhi", qlcg_plant_yao_lingzhi },
+    { "yao.qian", qlcg_plant_yao_qian },
+    { "yao.qiancao", qlcg_plant_yao_qiancao },
+    { "yao.yimi", qlcg_plant_yao_yimi },
+    { "yao.yuxingcao", qlcg_plant_yao_yuxingcao },
+    { "yao.zihua", qlcg_plant_yao_zihua },
 };
 
 int qlcg_plant_species_build(const PdDef *def, int season, int form, LpBuilder *b) {

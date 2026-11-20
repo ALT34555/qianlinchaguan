@@ -1,0 +1,28 @@
+{
+  "plants": [
+    {"id":"shui.haidai","name":"海带","archetype":"waterweed","climate":"temperate","seed":1921,
+      "params":{"height":2.39,"spread":0.76,"flowerless":true,"fruitless":true},
+      "tags":["chenshui","guzhuo","haiyang","naiyan_0","naihan_0"],"states":["normal"]},
+    {"id":"shui.qundaicai","name":"裙带菜","archetype":"waterweed","climate":"temperate","seed":1922,
+      "params":{"height":1.71,"spread":0.44,"flowerless":true,"fruitless":true},
+      "tags":["chenshui","guzhuo","haiyang","naiyan_0","naihan_1"],"states":["normal"]},
+    {"id":"shui.maweizao","name":"马尾藻","archetype":"waterweed","climate":"subtropical","seed":1923,
+      "params":{"height":1.20,"spread":0.41,"flowerless":true,"fruitless":true},
+      "tags":["chenshui","guzhuo","haiyang","naiyan_0","naire_0"],"states":["normal"]},
+    {"id":"shui.shichun","name":"石莼","archetype":"waterweed","climate":"temperate","seed":1924,
+      "params":{"height":0.66,"spread":0.57,"flowerless":true,"fruitless":true},
+      "tags":["chenshui","guzhuo","haiyang","naiyan_0","naire_1"],"states":["normal"]},
+    {"id":"shui.shihuacai","name":"石花菜","archetype":"waterweed","climate":"subtropical","seed":1925,
+      "params":{"height":0.59,"spread":0.33,"flowerless":true,"fruitless":true},
+      "tags":["chenshui","guzhuo","haiyang","naiyan_0","naire_1"],"states":["normal"]},
+    {"id":"shui.jinyuzao","name":"金鱼藻","archetype":"waterweed","climate":"temperate","seed":1926,
+      "params":{"height":1.07,"spread":0.32,"flowerless":true,"fruitless":true},
+      "tags":["chenshui","danshui","naihan_0"],"states":["normal"]},
+    {"id":"shui.heizao","name":"黑藻","archetype":"waterweed","climate":"subtropical","seed":1927,
+      "params":{"height":1.28,"spread":0.35,"flowerless":true,"fruitless":true},
+      "tags":["chenshui","danshui","guzhuo","naire_0"],"states":["normal"]},
+    {"id":"shui.zhucao","name":"菹草","archetype":"waterweed","climate":"temperate","seed":1928,
+      "params":{"height":1.25,"spread":0.34,"flowerless":true,"fruitless":true},
+      "tags":["chenshui","danshui","guzhuo","naihan_0"],"states":["normal"]}
+  ]
+}

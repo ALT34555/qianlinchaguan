@@ -1,4 +1,4 @@
-/* 岩石数据层：对齐 Rocks.ts/types.ts */
+/* 岩石数据层：对齐 Rocks.ts */
 #ifndef QLCG_ROCK_DEF_H
 #define QLCG_ROCK_DEF_H
 
@@ -16,7 +16,7 @@ enum {
 enum { ROCK_SIZE_LEGACY = -1, ROCK_SIZE_SMALL, ROCK_SIZE_MEDIUM, ROCK_SIZE_LARGE,
        ROCK_SIZE_GIANT, ROCK_SIZE_MEGA, ROCK_SIZE_COUNT };
 enum { ROCKS_PER_SIZE = 16, ROCK_LEGACY_COUNT = 9, ROCK_MEGA_COUNT = 8,
-       ROCK_CATALOG_CAPACITY = ROCK_LEGACY_COUNT + ROCK_SIZE_MEGA * ROCKS_PER_SIZE + ROCK_MEGA_COUNT };
+       ROCK_CATALOG_CAPACITY = ROCK_LEGACY_COUNT + ROCK_SIZE_MEGA * ROCKS_PER_SIZE + ROCK_MEGA_COUNT + 3 };
 
 /* 运行时构建定义 */
 typedef struct {
@@ -47,7 +47,7 @@ const char *qlcg_rock_name(int index);
 int qlcg_rock_size_class(int index);
 int qlcg_rock_pick(int size_class, unsigned roll);
 
-/* form/season 0..3；chunk 类型号 */
+/* 形态/季节 0..3；chunk 类型号 */
 int  qlcg_rock_build_def(const char *id, int season, int form, int chunk, RockBuildDef *out);
 void qlcg_rock_free_def(RockBuildDef *d);
 

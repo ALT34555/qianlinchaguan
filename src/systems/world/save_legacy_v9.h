@@ -67,7 +67,7 @@ typedef struct {
     float               mystery_time_speed;
     bool                mystery_menu_auto_pause;
     int                 delta_count;
-    SparseDeltaRecord   deltas[64];
+    SparseDeltaRecord   deltas[QLCG_LEGACY_INLINE_DELTAS];
     uint32_t            save_version;
     uint32_t            disk_version;
 } SaveSlotInfoV9;

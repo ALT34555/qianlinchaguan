@@ -6,6 +6,8 @@
 #include "hydrology_sample.h"
 #include "hydrology_archive.h"
 #include "surface_detail.h"
+#include "world_delta.h"
+#include "event_state.h"
 #include "surface_coast.h"
 #include "hydrology_lakes.h"
 #include "surface_islands.h"
@@ -84,6 +86,13 @@ static void macro_sample(const MacroWorld *w, float wx, float wz, MacroSample *s
     s->uplift=(float)qlcg_read_macro(w,&c,w->uplift);
 }
 
+static float event_water_level(const MacroWorld *w,double wx,double wz,float level) {
+    if (!w->event_cells) return level;
+    int cell=qlcg_macro_cell_at(w,wx,wz);
+    if (w->event_cells[cell]&EVENT_CELL_FLOODED) return fmaxf(level,w->level[cell]);
+    return level;
+}
+
 float qlcg_sample_macro_height(const MacroWorld *w, float wx, float wz) {
     SurfaceMacroContext c=qlcg_macro_context(w,wx,wz);
     return (float)qlcg_read_macro(w,&c,w->height);
@@ -130,8 +139,10 @@ void qlcg_sample_surface_map(const MacroWorld *w, double wx, double wz,
         h=oxbow.height; wl=oxbow.level;
     }
     if (h > 0) temp += (fmaxf(0, base) - h) * .0065f;
+    wl=event_water_level(w,wx,wz,wl);
     float wet = 0, desert = 0, forest = 0;
     qlcg_surface_apply_deltas(w, wx, wz, &h, &wl, &wet, &desert, &forest);
+    qlcg_chd_sample(w,(float)wx,(float)wz,&h,&wl,&forest);
     if (wl <= h + .02f) wl = -1e9f;
     if (out_h) *out_h = h;
     if (out_wl) *out_wl = wl;
@@ -166,7 +177,7 @@ static float flow_speed(float grade, float discharge, float width) {
                  log1pf(discharge / fmaxf(1.0f, width)) * 0.14f);
 }
 
-/* 四态流量缩放对齐 base [1,.4,0,1.6] */
+/* 四态流量缩放对齐 [1,.4,0,1.6] */
 static float form_flow_scale(int form, int freeze) {
     static const float FORM[4] = { 1.0f, 0.4f, 0.0f, 1.6f };
     float fz = (freeze == 2) ? 0.0f : ((freeze == 1) ? 0.4f : 1.0f);
@@ -242,7 +253,7 @@ void qlcg_water_ice_state(const MacroWorld *w, float wz, int season, float bed, 
     ice_into_water(w, &site, season, out);
 }
 
-/* 填充点级水体属性：水位 → 原始流速 → 冰 → 兼容输出 */
+/* 填充水体属性：水位→流速→冰→兼容 */
 static float shore_depth_at(float h,float wl,float shore_level) {
     if(wl>h+.02f) return wl-h;
     return shore_level>-1e8f?fminf(0,shore_level-h):-1.0f;
@@ -356,9 +367,10 @@ static void surface_geometry(const MacroWorld *w,float wx,float wz,int source_mo
     *h=qlcg_lake_height(lf,(float)qlcg_natural_detail_coast(w,wx,wz,coast));
     qlcg_hydrology_sample(w,s->idx,wx,wz,*h,lf,nw,source_mode);
     *h-=nw->cut;
-    *wl=nw->level;
+    *wl=event_water_level(w,wx,wz,nw->level);
     *wet=fmaxf(s->moisture,nw->damp); *desert=s->desert; *forest=s->forest;
     qlcg_surface_apply_deltas(w,wx,wz,h,wl,wet,desert,forest);
+    qlcg_chd_sample(w,wx,wz,h,wl,forest);
     if (*wl <= *h+.02f) *wl=-1e9f;
 }
 

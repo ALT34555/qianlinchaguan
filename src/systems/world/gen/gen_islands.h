@@ -1,4 +1,4 @@
-/* 宏观取岛（对齐 macro-islands.mjs） */
+/* 宏观取岛（对齐 macro-islands） */
 #ifndef QLCG_GEN_ISLANDS_H
 #define QLCG_GEN_ISLANDS_H
 

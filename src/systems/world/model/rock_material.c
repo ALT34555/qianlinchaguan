@@ -2,6 +2,7 @@
 #include "rock_material.h"
 #include "rock_arch.h"
 #include "rock_def.h"
+#include "shore_models.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -42,6 +43,7 @@ int qlcg_rock_material_init(void) {
 }
 
 void qlcg_rock_material_shutdown(void) {
+    qlcg_coral_shutdown();
     for (int i = 0; i < g_count; i++) {
         for (int season = 0; season < 4; season++)
             qlcg_rock_geometry_free(&g_outcrop[i][season].geo);
@@ -98,6 +100,8 @@ static RockGeoSlot *rock_model(int index, int form, int season, int chunk) {
 }
 
 const RockGeometry *qlcg_rock_geometry(int index, int form, int season, int chunk) {
+    int coral = qlcg_coral_index(index);
+    if (coral >= 0) return qlcg_coral_geometry(coral, form, season);
     RockGeoSlot *s = rock_model(index, form, season, chunk);
     return s ? &s->geo : NULL;
 }

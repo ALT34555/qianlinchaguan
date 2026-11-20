@@ -1,5 +1,6 @@
 /* 远景贴图：四季图集与内容 UV */
 #include "prop_sprites.h"
+#include "../systems/world/model/plant_forms.h"
 #include "core/png_image.h"
 #include "core/math_util.h"
 #include "../systems/world/model/plant_material.h"
@@ -26,14 +27,12 @@ typedef struct PropSpriteCache {
 } PropSpriteCache;
 static PropSpriteCache *g_sprite_cache;
 
-static const char *k_cat_dirs[PLANT_CAT_COUNT] = { "cao", "guan", "hua", "nong", "shu", "shui" };
-
 static bool make_path(char *out, size_t cap, const char *root, bool rock,
                       int cat, const char *id) {
     if (!out || !root || !id) return false;
     if (rock) return snprintf(out, cap, "%s/rocks/%s.png", root, id) > 0;
-    if (cat < 0 || cat >= PLANT_CAT_COUNT) return false;
-    return snprintf(out, cap, "%s/plants/%s/%s.png", root, k_cat_dirs[cat], id) > 0;
+    const char *category = qlcg_pd_category_key(cat);
+    return category && snprintf(out, cap, "%s/plants/%s/%s.png", root, category, id) > 0;
 }
 
 static bool load_png_utf8(const char *path, uint8_t **px, int *w, int *h) {
@@ -61,7 +60,7 @@ static bool cell_bbox(const uint8_t *px, int w, int h, int season,
     return *x1 >= 0;
 }
 
-/* 预乘 alpha 写入图集：透明像素不贡献颜色，mip 平均不再发黑 */
+/* 预乘 alpha：透明像素不贡献，mip 不发黑 */
 static void copy_cell(uint8_t *atlas, const uint8_t *px, int w, int season,
                       int cx, int cy) {
     int top = season * QLCG_SPRITE_TILE;
@@ -119,7 +118,12 @@ bool qlcg_prop_sprites_init(PropSprites *ps, const char *root) {
     int plants = qlcg_plant_species_count();
     int rocks = qlcg_rock_material_count();
     if (plants <= 0 && rocks <= 0) return false;
-    int tiles = (plants + rocks) * PD_SEASON_COUNT;
+    int strips=rocks;
+    for(int i=0;i<plants;i++){
+        int cat=qlcg_plant_species_category(i);
+        if(qlcg_plant_uses_sprite(cat)) strips+=1+qlcg_pd_category_can_hang(cat);
+    }
+    int tiles = strips * PD_SEASON_COUNT;
     int cols = QLCG_SPRITE_ATLAS / QLCG_SPRITE_STRIDE;
     int rows = (tiles + cols - 1) / cols;
     int atlas_height = rows * QLCG_SPRITE_STRIDE;
@@ -132,7 +136,7 @@ bool qlcg_prop_sprites_init(PropSprites *ps, const char *root) {
     }
     size_t bytes = (size_t)QLCG_SPRITE_ATLAS * atlas_height * 4u;
     uint8_t *atlas = (uint8_t *)calloc(1, bytes);
-    ps->plant_uv = (PropUvRect *)calloc((size_t)plants * PD_SEASON_COUNT, sizeof(PropUvRect));
+    ps->plant_uv = (PropUvRect *)calloc((size_t)plants * 2 * PD_SEASON_COUNT, sizeof(PropUvRect));
     ps->rock_uv  = (PropUvRect *)calloc((size_t)rocks * PD_SEASON_COUNT, sizeof(PropUvRect));
     if (!atlas || !ps->plant_uv || !ps->rock_uv) {
         free(atlas); free(ps->plant_uv); free(ps->rock_uv);
@@ -141,25 +145,26 @@ bool qlcg_prop_sprites_init(PropSprites *ps, const char *root) {
     }
     int loaded = 0, missing = 0;
     double t0 = qlcg_time_ms();
-    for (int i = 0; i < plants; i++) {
-        const char *id = qlcg_plant_species_id(i);
-        int cat = qlcg_plant_species_category(i);
-        char path[512];
-        uint8_t *px = NULL;
-        int w = 0, h = 0;
-        if (!id || !make_path(path, sizeof(path), root, false, cat, id) ||
-            !load_png_utf8(path, &px, &w, &h) ||
-            w != QLCG_SPRITE_TILE || h != QLCG_SPRITE_TILE * PD_SEASON_COUNT) {
-            missing++;
+    int next_tile=0;
+    for (int i=0;i<plants;i++) {
+        int cat=qlcg_plant_species_category(i);
+        if (!qlcg_plant_uses_sprite(cat)) continue;
+        const char *id=qlcg_plant_species_id(i);
+        for(int mount=0;mount<=qlcg_pd_category_can_hang(cat);mount++) {
+            char stem[160],path[512];uint8_t *px=NULL;int w=0,h=0;
+            int first=next_tile;
+            next_tile+=PD_SEASON_COUNT;
+            snprintf(stem,sizeof(stem),"%s%s",id,mount?"@hanging":"");
+            if (!make_path(path,sizeof(path),root,false,cat,stem) || !load_png_utf8(path,&px,&w,&h) ||
+                w!=QLCG_SPRITE_TILE || h!=QLCG_SPRITE_TILE*PD_SEASON_COUNT) {
+                free(px);missing++;continue;
+            }
+            for(int season=0;season<PD_SEASON_COUNT;season++){
+                PropUvRect *uv=&ps->plant_uv[(i+mount*plants)*PD_SEASON_COUNT+season];
+                if(tile_source(px,w,season,first+season,uv,atlas,atlas_height))loaded++;
+            }
             free(px);
-            continue;
         }
-        for (int s = 0; s < PD_SEASON_COUNT; s++) {
-            int tile = i * PD_SEASON_COUNT + s;
-            if (tile_source(px, w, s, tile, &ps->plant_uv[i * PD_SEASON_COUNT + s], atlas, atlas_height))
-                loaded++;
-        }
-        free(px);
     }
     for (int i = 0; i < rocks; i++) {
         const char *id = qlcg_rock_id(i);
@@ -174,7 +179,7 @@ bool qlcg_prop_sprites_init(PropSprites *ps, const char *root) {
             continue;
         }
         for (int s = 0; s < PD_SEASON_COUNT; s++) {
-            int tile = (plants + i) * PD_SEASON_COUNT + s;
+            int tile = next_tile + i * PD_SEASON_COUNT + s;
             if (tile_source(px, w, s, tile, &ps->rock_uv[i * PD_SEASON_COUNT + s], atlas, atlas_height))
                 loaded++;
         }
@@ -240,13 +245,17 @@ void qlcg_prop_sprites_free(PropSprites *ps) {
     memset(ps, 0, sizeof(*ps));
 }
 
-bool qlcg_prop_sprites_plant_uv(const PropSprites *ps, int species, int season, PropUvRect *out) {
+bool qlcg_prop_sprites_plant_form_uv(const PropSprites *ps, int species, int season, bool hanging, PropUvRect *out) {
     if (!ps || !ps->ready || !out) return false;
     if (species < 0 || species >= ps->plant_count) return false;
     if (season < 0 || season >= PD_SEASON_COUNT) season = 1;
-    const PropUvRect *r = &ps->plant_uv[species * PD_SEASON_COUNT + season];
+    const PropUvRect *r = &ps->plant_uv[(species + (hanging ? ps->plant_count : 0)) * PD_SEASON_COUNT + season];
     *out = *r;
     return r->u1 > r->u0 && r->v1 > r->v0;
+}
+
+bool qlcg_prop_sprites_plant_uv(const PropSprites *ps, int species, int season, PropUvRect *out) {
+    return qlcg_prop_sprites_plant_form_uv(ps,species,season,false,out);
 }
 
 bool qlcg_prop_sprites_rock_uv(const PropSprites *ps, int archetype, int season, PropUvRect *out) {

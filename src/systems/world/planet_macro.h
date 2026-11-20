@@ -6,8 +6,10 @@
 #include "decoration_collision.h"
 #include "../../core/game_settings.h"
 #include "../calendar/calendar.h"
+#include "../inventory/inventory.h"
 #include "chunk_types.h"
 #include "ice_model.h"
+#include "world_surface_dirty.h"
 
 typedef enum { WORLD_MAP_PLANET, WORLD_MAP_INFINITE } WorldMapMode;
 
@@ -121,11 +123,13 @@ typedef struct {
     int      origin_type_id;
     char     culture[32];
     char     auto_name[96];
+    char     leader_name[96];
 } TerritoryFaction;
 
 /* 活跃自然灾害事件实体 */
 typedef struct {
     bool             active;
+    bool             automatic;
     NaturalEventType type;
     float            wx, wz;
     float            vx, vz;
@@ -146,6 +150,22 @@ typedef struct {
     float       width_m;
 } SparseDeltaRecord;
 
+typedef struct { int x0, z0, x1, z1; } MacroCellRect;
+enum { QLCG_ATLAS_CHANGE_HISTORY = 16 };
+typedef struct {
+    uint32_t revision;
+    int count;
+    MacroCellRect rects[4];
+} MacroAtlasChange;
+
+typedef enum {
+    ENG_NO_CHANGE,
+    ENG_APPLIED,
+    ENG_CAPACITY
+} EngResult;
+
+enum { QLCG_DELTA_LOCAL, QLCG_DELTA_MACRO, QLCG_DELTA_PROJECTED };
+
 /* 图层 ID 与列表位置独立 */
 typedef struct {
     AtlasLayerId id;
@@ -159,7 +179,7 @@ typedef struct {
     int contour_density;
 } AtlasDisplayState;
 
-/* 湖泊记录（对齐 hydrology 的 lakes） */
+/* 湖泊记录（对齐水文 lakes） */
 typedef struct {
     int   id;
     float level;
@@ -202,6 +222,7 @@ typedef struct {
 /* 宏观星球与人工世界全量状态 */
 typedef struct MacroWorld {
     WorldCreatorOptions opt;
+    Inventory           inventory;
     struct InfiniteWorld *planes;
     int                 columns;
     int                 rows;
@@ -219,6 +240,7 @@ typedef struct MacroWorld {
     float              *ridge_push_n;   /* 山根推力的北向分量 */
     float              *hydro_friction; /* 河谷摩擦系数 */
     uint8_t            *climate_zone;   /* 每格气候区编号 */
+    uint8_t            *climate_type;
     float              *basin;          /* 大陆壳盆地权重 */
     MacroLake          *lakes;
     int                 lake_count;
@@ -283,16 +305,26 @@ typedef struct MacroWorld {
     /* 人工世界：领地声明与探索迷雾 */
     int16_t            *claim_faction;
     uint8_t            *claim_type;
+    struct WorldClaims *chunk_claims;
     uint64_t           *explored_chunks;
     size_t              explored_count, explored_capacity;
     TerritoryFaction    factions[MAX_FACTIONS];
     int                 faction_count;
     int                 last_civ_day;
+    bool                last_civ_enabled;
     uint32_t            territory_revision;
+    struct CivGrowthCache *civ_growth;
+    struct CivEconomy *civ_economy;
+    struct QlcgLotEntry *lots;
+    struct QlcgDollLife *doll_life;
 
     RiverSegment       *rivers;
     int                 river_count;
     int                 river_cap;
+    int                 atlas_authored_river_count;
+    struct MacroRiverCandidates *atlas_rivers;
+    uint32_t            atlas_revision;
+    MacroAtlasChange    atlas_changes[QLCG_ATLAS_CHANGE_HISTORY];
 
     int                 spawn_cell;
     int                 spawn_cx, spawn_cz;
@@ -300,15 +332,20 @@ typedef struct MacroWorld {
 
     ActiveNaturalEvent  events[MAX_ACTIVE_EVENTS];
     bool                auto_events;
+    bool                event_day_set;
+    int                 last_event_day;
+    uint8_t            *event_cells;
     float               sim_time;
-    float               event_cooldown;
     char                last_event_msg[128];
 
     SparseDeltaRecord   deltas[MAX_MACRO_DELTAS];
+    uint8_t             delta_origin[MAX_MACRO_DELTAS];
     int                 delta_count;
     uint32_t            delta_version;
     struct SurfaceDeltaIndex *delta_index;
+    struct ChunkDeltaTable *chunk_deltas;
     uint32_t            surface_revision;
+    QlcgSurfaceJournal  surface_changes;
 
     const CalendarSnapshot *plant_calendar;
     bool                plant_season_forced;
@@ -347,6 +384,7 @@ static inline bool qlcg_world_border(const MacroWorld *w,int cell) {
 /* 3D 植物、岩石与领地旗帜实例 */
 typedef struct {
     float    x, y, z;
+    float    edit_x, edit_z;
     float    scale_x, scale_y, scale_z;
     float    rot_y;
     float    r, g, b;
@@ -358,6 +396,7 @@ typedef struct {
     int16_t  faction_id;
     uint8_t  visual_season;
     uint8_t  shape_variant;
+    uint8_t  hanging;      /* 以宿主挂点作为模型原点 */
     uint8_t  wind_level;   /* 天气风速等级，运行时 */
     char     label[40];
     DecorationShape collider;
@@ -371,6 +410,8 @@ typedef struct {
     float *desert;
     float *forest;
     int    delta_count_snap;
+    int    delta_count_end;
+    struct ChdLakeStroke *lake_stroke;
 } TerrainSnapshot;
 
 /* 水体种类（对齐 base WaterKind） */
@@ -421,6 +462,13 @@ typedef struct {
     SourceWaterEffects source_effects;
 } SurfaceWater;
 
+typedef struct {
+    float x, y, z, scale;
+    uint32_t seed;
+    uint8_t rank;
+    uint8_t water_kind;
+} GrassTuft;
+
 /* 山川流式世界与单块采样 */
 typedef struct RegionData {
 
@@ -437,6 +485,7 @@ typedef struct RegionData {
     int             site_cell;
     int             climate_season;   /* 采样时的本地气候季 */
     int             site_chunk_type;
+    int             site_natural_chunk_type;
     float           site_height;
 
     float          *heights;
@@ -466,6 +515,8 @@ typedef struct RegionData {
     PropInstance   *rocks;
     int             rock_count;
     int             rock_cap;
+    GrassTuft      *grass;
+    int             grass_count, grass_cap;
     SpringEmitter   springs[4];
     int             spring_count;
 
@@ -489,6 +540,7 @@ typedef struct {
     int                     macro_col, macro_row;
     int                     cell_id;
     int                     type_id;
+    int                     natural_type_id;
     const ChunkTypeDef     *type_def;
     float                   elevation;
     float                   water_level;
@@ -505,6 +557,8 @@ typedef struct {
 } ChunkInspectInfo;
 
 /* 本地存档元数据（对齐 LocalSave */
+enum { QLCG_LEGACY_INLINE_DELTAS = 64 };
+
 typedef struct {    bool                valid;
     char                id[64];
     char                file_path[260];
@@ -527,7 +581,7 @@ typedef struct {    bool                valid;
     float               mystery_time_speed;
     bool                mystery_menu_auto_pause;
     int                 delta_count;
-    SparseDeltaRecord   deltas[64];
+    SparseDeltaRecord   deltas[QLCG_LEGACY_INLINE_DELTAS];
     uint32_t            save_version;   /* 当前槽体版本 */
     uint32_t            disk_version;   /* 磁盘上的头布局版本 */
 } SaveSlotInfo;
@@ -546,7 +600,7 @@ enum {
 };
 
 #define QLCG_SAVE_PACK_MAGIC   "QLCG"
-#define QLCG_SAVE_PACK_VERSION 1u
+#define QLCG_SAVE_PACK_VERSION 2u
 
 /* 容器头：槽偏移表，槽块仍是单档字节 */
 typedef struct {
@@ -599,12 +653,12 @@ typedef struct {
     SaveSlotMeta slots[QLCG_SAVE_SLOT_COUNT];
 } SaveFileInfo;
 
-#define QLCG_SAVE_VERSION 15u
+#define QLCG_SAVE_VERSION 23u
 static inline bool qlcg_save_version_supported(uint32_t v) {
 #ifdef _WIN32
     if(v==11u || v==12u) return true;
 #endif
-    return v==13u || v==14u || v==QLCG_SAVE_VERSION;
+    return v>=13u && v<=QLCG_SAVE_VERSION;
 }
 
 bool qlcg_saves_migrate_file(const char *path);
@@ -624,6 +678,8 @@ int                 qlcg_macro_scale_chunks(int idx);
 
 MacroWorld         *qlcg_world_generate(const WorldCreatorOptions *opt);
 void                qlcg_world_rebuild_atlas_fields(MacroWorld *w);
+int                 qlcg_world_atlas_changes(const MacroWorld *w, uint32_t since,
+                                           MacroCellRect *out, int capacity);
 void                qlcg_world_free(MacroWorld *w);
 int                 qlcg_world_cell_at_wxz(const MacroWorld *w, float wx, float wz);
 void                qlcg_world_cell_center(const MacroWorld *w, int cell, float *wx, float *wz);
@@ -634,6 +690,7 @@ enum { QLCG_SPAWN_REVEAL_RADIUS = 4 };
 bool                qlcg_world_reveal_chunk(MacroWorld *w, int cx, int cz);
 bool                qlcg_world_chunk_explored(const MacroWorld *w, int cx, int cz);
 void                qlcg_world_update_artificial(MacroWorld *w, double unix_ms, int player_cx, int player_cz);
+void                qlcg_world_jump_artificial_date(MacroWorld *w,double unix_ms,int player_cx,int player_cz);
 
 /* 连续表面采样与 3D 山川区域生成 */
 void                qlcg_sample_surface_point(const MacroWorld *w, float wx, float wz,
@@ -677,19 +734,19 @@ void                qlcg_region_free(RegionData *reg);
 const char         *qlcg_nat_event_name(NaturalEventType t);
 const char         *qlcg_eng_tool_name(EngToolType t);
 const char         *qlcg_eng_tool_desc(EngToolType t);
-void                qlcg_trigger_macro_event(MacroWorld *w, NaturalEventType type, float wx, float wz);
-void                qlcg_apply_region_event(RegionData *reg, MacroWorld *w, NaturalEventType type,
+bool                qlcg_trigger_macro_event(MacroWorld *w, NaturalEventType type, float wx, float wz);
+bool                qlcg_apply_region_event(RegionData *reg, MacroWorld *w, NaturalEventType type,
                                             float lx, float lz, int season_idx, const GameSettings *s);
 bool                qlcg_tick_natural_events(MacroWorld *w, RegionData *reg, float dt,
                                              float *out_shake, float *out_wind, float *out_rain);
 
 void                qlcg_eng_push_undo(RegionData *reg, const MacroWorld *w);
 bool                qlcg_eng_undo(RegionData *reg, MacroWorld *w, int season_idx, const GameSettings *s);
-void                qlcg_eng_macro_brush(MacroWorld *w, EngToolType tool, float wx, float wz, float radius);
-void                qlcg_eng_macro_river(MacroWorld *w, float x0, float z0, float x1, float z1, float width_m);
-void                qlcg_eng_region_brush(RegionData *reg, MacroWorld *w, EngToolType tool,
+EngResult           qlcg_eng_macro_brush(MacroWorld *w, EngToolType tool, float wx, float wz, float radius);
+EngResult           qlcg_eng_macro_river(MacroWorld *w, float x0, float z0, float x1, float z1, float width_m);
+EngResult           qlcg_eng_region_brush(RegionData *reg, MacroWorld *w, EngToolType tool,
                                           float lx, float lz, float radius, int season_idx, const GameSettings *s);
-void                qlcg_eng_region_river(RegionData *reg, MacroWorld *w, const float *pts_x, const float *pts_z,
+EngResult           qlcg_eng_region_river(RegionData *reg, MacroWorld *w, const float *pts_x, const float *pts_z,
                                           int pt_count, float width_m, float depth_m, float meander,
                                           int season_idx, const GameSettings *s);
 

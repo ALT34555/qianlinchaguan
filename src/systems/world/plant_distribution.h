@@ -37,5 +37,6 @@ int qlcg_plant_pick_from(const PlantSite *site, uint32_t roll,
                          const int *pool, int pool_count);
 /* 全物种选种，失败返回 -1 */
 int qlcg_plant_pick(const PlantSite *site, uint32_t roll);
+int qlcg_plant_pick_shore(const PlantSite *site, uint32_t roll);
 
 #endif

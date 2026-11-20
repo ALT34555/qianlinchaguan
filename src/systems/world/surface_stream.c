@@ -1,5 +1,8 @@
 /* 连续世界：圆形视距与区块生命周期 */
 #include "surface_stream.h"
+#include "surface_internal.h"
+#include "surface_worker.h"
+#include "world_civ_economy.h"
 #include "../../core/math_util.h"
 #include <stdlib.h>
 #include <math.h>
@@ -11,24 +14,36 @@ int qlcg_stream_slot(int cx, int cz) {
     return z * QLCG_STREAM_SIDE + x;
 }
 
-static float load_forward[2],load_cos;
-static bool load_view;
-static int offset_tier(const int *p) {
-    int distance=p[0]*p[0]+p[1]*p[1];if(distance<=2||!load_view)return 0;
-    float facing=p[0]*load_forward[0]+p[1]*load_forward[1];
-    return facing+1.5f>=sqrtf((float)distance)*load_cos?1:2;
-}
 void qlcg_region_stream_view(RegionStream *st,float yaw,float half_fov) {
-    if(!st->view_ready||cosf(yaw-st->view_yaw)<.866f||fabsf(cosf(half_fov)-st->view_cos)>.05f) {
-        st->view_yaw=yaw;st->view_cos=cosf(half_fov);st->view_ready=true;st->priority_dirty=true;
+    float view_cos=cosf(half_fov);
+    if(!st->view_ready||cosf(yaw-st->view_yaw)<.60f||fabsf(view_cos-st->view_cos)>.08f) {
+        st->view_yaw=yaw;st->view_cos=view_cos;st->view_ready=true;st->priority_dirty=true;
     }
 }
 static int offset_cmp(const void *a, const void *b) {
-    const int *p = a, *q = b;
-    int tier=offset_tier(p)-offset_tier(q);if(tier)return tier;
-    int d = p[0]*p[0] + p[1]*p[1] - q[0]*q[0] - q[1]*q[1];
+    const RegionStreamOffset *p=a,*q=b;
+    int d=p->distance2-q->distance2;
     if (d) return d;
-    return p[1] != q[1] ? p[1] - q[1] : p[0] - q[0];
+    return p->z!=q->z?p->z-q->z:p->x-q->x;
+}
+
+static void prioritize_offsets(RegionStream *st) {
+    int front=0,back=st->offset_count;
+    float fx=sinf(st->view_yaw),fz=-cosf(st->view_yaw);
+    float cos2=st->view_cos*st->view_cos;
+    for(int i=0;i<st->offset_count;i++) {
+        RegionStreamOffset p=st->offsets[i];
+        float facing=p.x*fx+p.z*fz+1.5f;
+        bool visible=st->view_cos>=0 ? facing>=0&&facing*facing>=p.distance2*cos2 :
+            facing>=0||facing*facing<=p.distance2*cos2;
+        if(!st->view_ready||p.distance2<=2||visible) st->order[front++]=i;
+        else st->order[--back]=i;
+    }
+    for(int a=front,b=st->offset_count-1;a<b;a++,b--) {
+        int swap=st->order[a];st->order[a]=st->order[b];st->order[b]=swap;
+    }
+    st->cursor=0;
+    st->priority_dirty=false;
 }
 
 static void release_slot(RegionStream *st, int slot) {
@@ -36,6 +51,7 @@ static void release_slot(RegionStream *st, int slot) {
     if (!c->data) return;
     qlcg_region_free(c->data);
     c->data = NULL;
+    c->refresh_surface=c->refresh_appearance=false;
     int last = st->active[--st->count];
     st->active[c->active_index] = last;
     st->slots[last].active_index = c->active_index;
@@ -43,19 +59,67 @@ static void release_slot(RegionStream *st, int slot) {
     st->revision++;
 }
 
+static void install_chunk(RegionStream *st,int slot,RegionData *data) {
+    RegionChunkSlot *c=&st->slots[slot];
+    if(c->data&&c->data->center_cx==data->center_cx&&c->data->center_cz==data->center_cz) {
+        qlcg_region_free(c->data);
+    } else {
+        release_slot(st,slot);
+        c->active_index=st->count;
+        st->active[st->count++]=slot;
+        st->loaded_total++;
+    }
+    c->data=data;
+    c->serial=++st->next_serial;
+    c->appearance=qlcg_chunk_territory_appearance(data,st->world);
+    c->refresh_surface=c->refresh_appearance=false;
+    st->revision++;
+}
+
+static void refresh_chunk(RegionStream *st,RegionChunkSlot *slot) {
+    RegionData *chunk=slot->data;
+    if(slot->refresh_surface) qlcg_chunk_resample(chunk,st->world,st->season,&st->settings);
+    else {
+        qlcg_region_recolor(chunk,st->world,st->season);
+        qlcg_region_scatter_props(chunk,st->world,st->season,&st->settings);
+    }
+    chunk->climate_season=st->season;
+    slot->appearance=qlcg_chunk_territory_appearance(chunk,st->world);
+    slot->refresh_surface=slot->refresh_appearance=false;
+    st->revision++;
+}
+
+static RegionStreamTask *task_at(RegionStream *st,int x,int z) {
+    for(int i=0;i<QLCG_FRAME_LANES;i++) {
+        RegionStreamTask *task=&st->tasks[i];
+        if(task->job&&task->x==x&&task->z==z) return task;
+    }
+    return NULL;
+}
+
+static void cancel_task(RegionStreamTask *task) {
+    qlcg_chunk_build_cancel(task->job);task->job=NULL;
+}
+
 static bool ensure_chunk(RegionStream *st, int cx, int cz) {
     int slot = qlcg_stream_slot(cx, cz);
     RegionChunkSlot *c = &st->slots[slot];
-    if (c->data && c->data->center_cx == cx && c->data->center_cz == cz) return true;
-    if(st->job&&st->job_cx==cx&&st->job_cz==cz){qlcg_chunk_build_cancel(st->job);st->job=NULL;}
-    release_slot(st, slot);
-    c->data = qlcg_chunk_sample(st->world, cx, cz, st->season, &st->settings);
-    if (!c->data) return false;
-    c->serial = ++st->next_serial;
-    c->active_index = st->count;
-    st->active[st->count++] = slot;
-    st->loaded_total++;
-    st->revision++;
+    RegionStreamTask *task=task_at(st,cx,cz);
+    if (c->data && c->data->center_cx == cx && c->data->center_cz == cz) {
+        if(task) cancel_task(task);
+        if(c->refresh_surface||c->refresh_appearance) refresh_chunk(st,c);
+        return true;
+    }
+    RegionData *data=NULL;
+    if(task&&qlcg_chunk_build_valid(task->job,st->world,st->season,&st->settings)) {
+        while(!qlcg_chunk_build_step(task->job)) {}
+        data=qlcg_chunk_build_take(task->job);task->job=NULL;task->serial=false;
+    } else {
+        if(task) cancel_task(task);
+        data=qlcg_chunk_sample(st->world,cx,cz,st->season,&st->settings);
+    }
+    if (!data) return false;
+    install_chunk(st,slot,data);
     return true;
 }
 
@@ -74,23 +138,149 @@ RegionData *qlcg_region_chunk_at(const RegionData *reg, float lx, float lz,
     return chunk;
 }
 
-void qlcg_region_stream_refresh(RegionData *reg, float wx0, float wz0,
-                                float wx1, float wz1, int season, const GameSettings *s) {
-    if (!reg || !reg->stream) return;
-    RegionStream *st = reg->stream;
-    st->season = season;
-    st->settings = *s;
-    for (int i = 0; i < st->count; i++) {
-        RegionData *c = st->slots[st->active[i]].data;
-        float half = (c->width - 1) * c->step * 0.5f;
-        if (c->center_x + half < wx0 || c->center_x - half > wx1 ||
-            c->center_z + half < wz0 || c->center_z - half > wz1) continue;
-        qlcg_chunk_resample(c, st->world, season, s);
+static bool affects_chunk(const MacroWorld *w,const QlcgSurfaceBounds *bounds,const RegionData *c) {
+    double half_x=(c->width-1)*c->step*.5,half_z=(c->height-1)*c->step*.5;
+    return qlcg_surface_bounds_overlap(w,bounds,c->center_x-half_x,c->center_z-half_z,
+        c->center_x+half_x,c->center_z+half_z);
+}
+
+static void collect_changes(RegionStream *st,int season,const GameSettings *s) {
+    const MacroWorld *w=st->world;
+    if(st->delta_revision!=w->delta_version) qlcg_surface_deltas_prepare((MacroWorld *)w);
+    QlcgSurfaceBounds changes[QLCG_SURFACE_DIRTY_CAP];
+    int count=qlcg_world_surface_changes(w,st->delta_revision,st->surface_revision,changes);
+    uint32_t farms=qlcg_civ_farms_revision(w);
+    bool territory=st->territory_revision!=w->territory_revision||st->farm_revision!=farms||
+        st->artificial_enabled!=w->opt.artificial_enabled;
+    for(int i=0;i<count;i++) territory|=changes[i].appearance_only;
+    bool appearance=season!=st->season||s->dense_vegetation!=st->settings.dense_vegetation||
+        s->vegetation_form!=st->settings.vegetation_form;
+    if(count||territory||appearance) st->cursor=0;
+    for(int i=0;(count||territory||appearance)&&i<st->count;i++) {
+        RegionChunkSlot *slot=&st->slots[st->active[i]];
+        slot->refresh_surface|=count<0;
+        for(int j=0;j<count&&!slot->refresh_surface;j++)
+            slot->refresh_surface=affects_chunk(w,&changes[j],slot->data);
+        slot->refresh_appearance|=appearance;
+        if(territory&&!slot->refresh_surface&&!slot->refresh_appearance)
+            slot->refresh_appearance=slot->appearance!=qlcg_chunk_territory_appearance(slot->data,w);
     }
-    st->delta_revision = st->world->delta_version;
-    st->surface_revision = st->world->surface_revision;
-    st->territory_revision = st->world->territory_revision;
-    st->revision++;
+    st->settings=*s;st->season=season;
+    st->artificial_enabled=w->opt.artificial_enabled;
+    st->delta_revision=w->delta_version;st->surface_revision=w->surface_revision;
+    st->territory_revision=w->territory_revision;st->farm_revision=farms;
+}
+
+static bool slot_needs_update(const RegionChunkSlot *slot,int x,int z) {
+    return !slot->data||slot->data->center_cx!=x||slot->data->center_cz!=z||
+        slot->refresh_surface||slot->refresh_appearance;
+}
+
+static void advance_cursor(RegionStream *st) {
+    while(st->cursor<st->offset_count) {
+        RegionStreamOffset p=st->offsets[st->order[st->cursor]];
+        int x=st->center_cx+p.x,z=st->center_cz+p.z;
+        if(slot_needs_update(&st->slots[qlcg_stream_slot(x,z)],x,z)) break;
+        st->cursor++;
+    }
+}
+
+typedef struct {
+    RegionStream *stream;
+    RegionStreamTask *tasks[QLCG_FRAME_LANES];
+    double deadline;
+} SurfaceBatch;
+
+static void build_parallel(void *context,int lane) {
+    SurfaceBatch *batch=context;
+    RegionStreamTask *task=batch->tasks[lane];
+    const MacroWorld *w=qlcg_surface_worker_begin(&task->sampler,batch->stream->world);
+    if(w) {
+        qlcg_chunk_build_surface(task->job,w,batch->deadline);
+        if(qlcg_surface_worker_end(&task->sampler)) return;
+    }
+    cancel_task(task);
+    task->serial=true;
+}
+
+static void enqueue_tasks(RegionStream *st,double deadline) {
+    int cursor=st->cursor;
+    for(int i=0;i<QLCG_FRAME_LANES;i++) {
+        RegionStreamTask *task=&st->tasks[i];
+        while(!task->job&&cursor<st->offset_count) {
+            RegionStreamOffset p=st->offsets[st->order[cursor++]];
+            int x=st->center_cx+p.x,z=st->center_cz+p.z;
+            RegionChunkSlot *slot=&st->slots[qlcg_stream_slot(x,z)];
+            if(!slot_needs_update(slot,x,z)||task_at(st,x,z)) continue;
+            if(qlcg_time_ms()>=deadline) return;
+            if(slot->data&&slot->data->center_cx==x&&slot->data->center_cz==z&&!slot->refresh_surface) {
+                refresh_chunk(st,slot);
+                continue;
+            }
+            task->serial=(task->serial&&task->x==x&&task->z==z)||(qlcg_world_flat(st->world)&&st->world->planes);
+            task->x=x;task->z=z;
+            task->job=qlcg_chunk_build_begin(st->world,x,z,st->season,&st->settings);
+            if(!task->job) return;
+        }
+    }
+}
+
+static int step_tasks(RegionStream *st,double deadline) {
+    SurfaceBatch batch={.stream=st,.deadline=deadline};
+    int lanes=0,built=0;
+    for(int i=0;i<QLCG_FRAME_LANES;i++) {
+        RegionStreamTask *task=&st->tasks[i];
+        if(!task->job) continue;
+        if(!task->serial&&qlcg_chunk_build_needs_surface(task->job)) {
+            batch.tasks[lanes++]=task;
+            continue;
+        }
+        double now=qlcg_time_ms();
+        double share=fmin(deadline,now+.35);
+        while(now<share) {
+            if(qlcg_chunk_build_step(task->job)) {
+                RegionData *data=qlcg_chunk_build_take(task->job);
+                task->job=NULL;task->serial=false;
+                install_chunk(st,qlcg_stream_slot(task->x,task->z),data);
+                built++;
+                break;
+            }
+            now=qlcg_time_ms();
+        }
+    }
+    if(lanes&&qlcg_time_ms()<deadline) {
+        if(!st->workers&&lanes>1) st->workers=qlcg_frame_workers_create();
+        qlcg_frame_workers_run(st->workers,build_parallel,&batch,lanes);
+    }
+    return built;
+}
+
+void qlcg_region_stream_refresh(RegionData *reg,float wx0,float wz0,float wx1,float wz1,
+                                int season,const GameSettings *s) {
+    if(!reg||!reg->stream) return;
+    RegionStream *st=reg->stream;
+    collect_changes(st,season,s);
+    QlcgSurfaceBounds bounds={wx0,wz0,wx1,wz1,false};
+    for (int i = 0; i < st->count; i++) {
+        RegionChunkSlot *slot=&st->slots[st->active[i]];
+        if(!affects_chunk(st->world,&bounds,slot->data)) continue;
+        slot->refresh_surface=true;
+    }
+    st->cursor=0;
+    qlcg_region_stream_sync_changed(reg,season,s);
+}
+
+void qlcg_region_stream_sync_changed(RegionData *reg,int season,const GameSettings *s) {
+    if(!reg||!reg->stream) return;
+    RegionStream *st=reg->stream;
+    collect_changes(st,season,s);
+    for(int i=0,refreshed=0;i<st->offset_count&&refreshed<9;i++) {
+        RegionStreamOffset p=st->offsets[i];
+        int x=st->center_cx+p.x,z=st->center_cz+p.z;
+        RegionChunkSlot *slot=&st->slots[qlcg_stream_slot(x,z)];
+        if(!slot->data||slot->data->center_cx!=x||slot->data->center_cz!=z) continue;
+        if(slot->refresh_surface||slot->refresh_appearance) { refresh_chunk(st,slot);refreshed++; }
+    }
 }
 
 void qlcg_region_stream_update(RegionData *reg, float lx, float lz,
@@ -103,26 +293,16 @@ void qlcg_region_stream_update(RegionData *reg, float lx, float lz,
     int rd = qlcg_clampi(s->render_distance, MIN_RENDER_DISTANCE, MAX_RENDER_DISTANCE);
     bool radius_changed = rd != st->radius;
     bool moved = cx != st->center_cx || cz != st->center_cz;
-    bool appearance_changed = season != st->season ||
-        s->dense_vegetation != st->settings.dense_vegetation ||
-        s->vegetation_form != st->settings.vegetation_form;
     if (radius_changed) {
         st->radius = rd;
         st->offset_count = 0;
         for (int z = -rd; z <= rd; z++) for (int x = -rd; x <= rd; x++) {
             if (x*x + z*z > (rd + 0.5f)*(rd + 0.5f)) continue;
-            st->offsets[st->offset_count][0] = x;
-            st->offsets[st->offset_count++][1] = z;
+            st->offsets[st->offset_count++]=(RegionStreamOffset){x,z,x*x+z*z};
         }
-
-    }
-    if(radius_changed||moved||st->priority_dirty) {
-        load_view=st->view_ready;load_forward[0]=sinf(st->view_yaw);load_forward[1]=-cosf(st->view_yaw);load_cos=st->view_cos;
         qsort(st->offsets,st->offset_count,sizeof(st->offsets[0]),offset_cmp);
-        st->cursor=0;qlcg_chunk_build_cancel(st->job);st->job=NULL;st->priority_dirty=false;
     }
-    st->season = season;
-    st->settings = *s;
+    if(radius_changed||st->priority_dirty) prioritize_offsets(st);
     if (radius_changed || moved) {
         st->center_cx = cx;
         st->center_cz = cz;
@@ -135,37 +315,24 @@ void qlcg_region_stream_update(RegionData *reg, float lx, float lz,
         }
         st->revision++;
     }
-    if (st->delta_revision != st->world->delta_version || st->surface_revision != st->world->surface_revision) {
-        qlcg_region_stream_refresh(reg, -FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX, season, s);
-    } else if (appearance_changed || st->territory_revision != st->world->territory_revision) {
-        qlcg_region_recolor(reg, st->world, season);
-        qlcg_region_scatter_props(reg, st->world, season, s);
-        st->territory_revision = st->world->territory_revision;
-    }
-    /* 脚下与相邻区块优先保证 */
-    for (int z = -1; z <= 1; z++) for (int x = -1; x <= 1; x++) ensure_chunk(st, cx+x, cz+z);
-    if(st->job&&(!qlcg_chunk_build_valid(st->job,st->world,season,s)||moved||radius_changed)) {
-        qlcg_chunk_build_cancel(st->job);st->job=NULL;
+    collect_changes(st,season,s);
+    ensure_chunk(st,cx,cz);
+    for(int i=0;i<QLCG_FRAME_LANES;i++) {
+        RegionStreamTask *task=&st->tasks[i];
+        if(!task->job) continue;
+        double dx=(double)task->x-cx,dz=(double)task->z-cz;
+        if(!qlcg_chunk_build_valid(task->job,st->world,season,s)||dx*dx+dz*dz>(rd+.5)*(rd+.5)) {
+            cancel_task(task);task->serial=false;
+        }
     }
     int built = 0;
-    while (st->cursor < st->offset_count) {
-        int x = cx + st->offsets[st->cursor][0], z = cz + st->offsets[st->cursor][1];
-        RegionData *c = st->slots[qlcg_stream_slot(x, z)].data;
-        if (c && c->center_cx == x && c->center_cz == z) { st->cursor++; continue; }
-        if (built >= 8 || qlcg_time_ms()-t0>=budget_ms) break;
-        if(!st->job){st->job=qlcg_chunk_build_begin(st->world,x,z,season,s);st->job_cx=x;st->job_cz=z;}
-        if(!st->job)break;
-        double operation=qlcg_time_ms();
-        bool complete=qlcg_chunk_build_step(st->job);
-        st->overrun_ms=fmax(st->overrun_ms,fmax(0,qlcg_time_ms()-t0-budget_ms));
-        (void)operation;
-        if(complete) {
-            RegionData *data=qlcg_chunk_build_take(st->job);st->job=NULL;
-            int slot=qlcg_stream_slot(x,z);release_slot(st,slot);
-            RegionChunkSlot *target=&st->slots[slot];target->data=data;target->serial=++st->next_serial;
-            target->active_index=st->count;st->active[st->count++]=slot;
-            st->loaded_total++;st->revision++;built++;st->cursor++;
-        }
+    double now=qlcg_time_ms(),deadline=t0+budget_ms;
+    advance_cursor(st);
+    while(st->cursor<st->offset_count&&built<8&&now<deadline) {
+        enqueue_tasks(st,deadline);
+        built+=step_tasks(st,deadline);
+        advance_cursor(st);
+        now=qlcg_time_ms();
     }
     RegionData *here = st->slots[qlcg_stream_slot(cx, cz)].data;
     if (here) {
@@ -173,8 +340,10 @@ void qlcg_region_stream_update(RegionData *reg, float lx, float lz,
         reg->water_freeze = here->water_freeze;
         reg->site_cell = here->site_cell;
         reg->site_chunk_type = here->site_chunk_type;
+        reg->site_natural_chunk_type = here->site_natural_chunk_type;
         reg->site_height = here->site_height;
     }
+    if(budget_ms>0) st->overrun_ms=fmax(st->overrun_ms,fmax(0,now-deadline));
     st->update_ms = qlcg_time_ms() - t0;
 }
 
@@ -193,6 +362,9 @@ RegionData *qlcg_region_sample(const MacroWorld *w, int cx, int cz,
     st->delta_revision = w->delta_version;
     st->surface_revision = w->surface_revision;
     st->territory_revision = w->territory_revision;
+    st->farm_revision = qlcg_civ_farms_revision(w);
+    st->artificial_enabled=w->opt.artificial_enabled;
+    qlcg_surface_deltas_prepare((MacroWorld *)w);
     qlcg_region_stream_update(reg, 0, 0, season, s, 2.0);
     if (!qlcg_region_chunk_at(reg, 0, 0, NULL, NULL)) { qlcg_region_free(reg); return NULL; }
     reg->sample_ms = st->update_ms;
@@ -201,7 +373,11 @@ RegionData *qlcg_region_sample(const MacroWorld *w, int cx, int cz,
 
 void qlcg_region_stream_free(RegionStream *st) {
     if (!st) return;
-    qlcg_chunk_build_cancel(st->job);st->job=NULL;
+    qlcg_frame_workers_free(st->workers);
+    for(int i=0;i<QLCG_FRAME_LANES;i++) {
+        cancel_task(&st->tasks[i]);
+        qlcg_surface_worker_free(st->tasks[i].sampler);
+    }
     while (st->count > 0) release_slot(st, st->active[st->count-1]);
     free(st);
 }
@@ -210,5 +386,7 @@ void qlcg_region_stream_require(RegionData *reg,float x,float z) {
     if(!reg||!reg->stream)return;
     int cx=reg->center_cx+(int)floorf((x+CHUNK_SIZE*.5f)/CHUNK_SIZE);
     int cz=reg->center_cz+(int)floorf((z+CHUNK_SIZE*.5f)/CHUNK_SIZE);
-    for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++)ensure_chunk(reg->stream,cx+dx,cz+dz);
+    RegionStream *st=reg->stream;
+    collect_changes(st,st->season,&st->settings);
+    ensure_chunk(st,cx,cz);
 }

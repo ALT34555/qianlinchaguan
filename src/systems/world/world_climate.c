@@ -37,7 +37,7 @@ void calibrate_sea_level(MacroWorld *w) {
     }
     float sea_h = min_h + ((float)sea_bin / 4095.0f) * span;
     for (int i = 0; i < N; ++i) {
-        /* base 抬高海平面后夹到 [-3000,3800] */
+        /* 抬高海平面后夹到 [-3000,3800] */
         w->height[i] = qlcg_clampf(w->height[i] - sea_h, -3000.0f, 3800.0f);
         w->water[i] = (w->height[i] <= 0.0f) ? 1 : 0;
     }

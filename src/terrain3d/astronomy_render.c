@@ -45,10 +45,43 @@ static void buffer(GLuint *vao,GLuint *vbo,size_t bytes,const void *data,GLenum 
     glEnableVertexAttribArray(1); glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(AstraVertex),(void *)offsetof(AstraVertex,color));
     glEnableVertexAttribArray(2); glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE,sizeof(AstraVertex),(void *)offsetof(AstraVertex,size));
 }
+static void prepare_trails(AstraRenderer *r) {
+    if(r->trail_vao) return;
+    enum { TRAIL_STEPS=10 };
+    const AstraCatalog *c=r->catalog;
+    int count=(c->star_count-c->constellation_star_start)*TRAIL_STEPS*2;
+    if(count<=0) return;
+    AstraVertex *vertices=malloc((size_t)count*sizeof(*vertices));
+    if(!vertices) return;
+    float cosine[TRAIL_STEPS+1],sine[TRAIL_STEPS+1];
+    for(int j=0;j<=TRAIL_STEPS;j++) {
+        float angle=.28f*j/TRAIL_STEPS;
+        cosine[j]=cosf(angle);
+        sine[j]=sinf(angle);
+    }
+    int next=0;
+    for(int i=c->constellation_star_start;i<c->star_count;i++) {
+        const AstraVertex *v=c->stars+i;
+        for(int j=0;j<TRAIL_STEPS*2;j++) {
+            int step=(j+1)/2;
+            float fade=0.34f*(1.0f-(float)step/TRAIL_STEPS);
+            AstraVertex *out=vertices+next++;
+            out->p[0]=v->p[0]*cosine[step]-v->p[1]*sine[step];
+            out->p[1]=v->p[0]*sine[step]+v->p[1]*cosine[step];
+            out->p[2]=v->p[2];
+            for(int k=0;k<3;k++) out->color[k]=v->color[k]*fade;
+            out->size=1.0f;
+        }
+    }
+    buffer(&r->trail_vao,&r->trail_vbo,(size_t)count*sizeof(*vertices),vertices,GL_STATIC_DRAW);
+    r->trail_count=count;
+    free(vertices);
+}
 void qlcg_astra_release(AstraRenderer *r) {
     free(r->event_vertices);qlcg_gl_delete_vertex_arrays(1,&r->event_vao);qlcg_gl_delete_buffers(1,&r->event_vbo);
     free(r->catalog); qlcg_gl_delete_textures(1,&r->texture); qlcg_gl_delete_vertex_arrays(1,&r->vao);
     qlcg_gl_delete_vertex_arrays(1,&r->moving_vao); qlcg_gl_delete_buffers(1,&r->vbo); qlcg_gl_delete_buffers(1,&r->moving_vbo);
+    qlcg_gl_delete_vertex_arrays(1,&r->trail_vao); qlcg_gl_delete_buffers(1,&r->trail_vbo);
     if(r->program) qlcg_gl_delete_program(r->program); memset(r,0,sizeof(*r));
 }
 bool qlcg_astra_upload(AstraRenderer *r,const WorldCreatorOptions *opt) {
@@ -75,7 +108,7 @@ bool qlcg_astra_upload(AstraRenderer *r,const WorldCreatorOptions *opt) {
 }
 void qlcg_astra_draw(AstraRenderer *r,const AstraFrame *f,const SkyClimate *sky,
     const float *forward,const float *right,const float *up,float aspect,float tan_fov,float time,
-    float cloud_cov,float rain_alpha) {
+    float cloud_cov,float rain_alpha,bool catalog_sky,bool stargazing) {
     if(!r->catalog) return;
     GLuint p=r->program; glUseProgram(p); qlcg_astra_uniforms(p,f);
     glUniform1i(qlcg_gl_uniform(p,"foreground"),0);
@@ -91,11 +124,27 @@ void qlcg_astra_draw(AstraRenderer *r,const AstraFrame *f,const SkyClimate *sky,
     glUniform1f(qlcg_gl_uniform(p,"uRainAlpha"),rain_alpha); glUniform1f(qlcg_gl_uniform(p,"uSimTime"),time);
     glEnable(GL_BLEND); glBlendFunc(GL_ONE,GL_ONE); qlcg_gl_program_point_size(true);
     glBindVertexArray(r->vao); glUniform1i(qlcg_gl_uniform(p,"points"),1);
-    glDrawArrays(GL_POINTS,0,r->catalog->star_count);
-    if(r->observing) { glUniform1i(qlcg_gl_uniform(p,"points"),0); glDrawArrays(GL_LINES,ASTRA_STARS,r->catalog->line_count); }
-    glBindVertexArray(r->moving_vao); glBindBuffer(GL_ARRAY_BUFFER,r->moving_vbo);
-    glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(f->bodies),f->bodies); glUniform1i(qlcg_gl_uniform(p,"points"),1);
-    glDrawArrays(GL_POINTS,0,ASTRA_BODIES); qlcg_gl_program_point_size(false); glDisable(GL_BLEND);
+    int star_start=catalog_sky ? 0 : r->catalog->constellation_star_start;
+    glDrawArrays(GL_POINTS,star_start,r->catalog->star_count-star_start);
+    bool observing=catalog_sky && r->observing;
+    if(observing || stargazing) {
+        int line_count=observing ? r->catalog->line_count : r->catalog->constellation_line_count;
+        glUniform1i(qlcg_gl_uniform(p,"points"),0);
+        glDrawArrays(GL_LINES,ASTRA_STARS,line_count);
+    }
+    if(stargazing && sky->star>.01f) {
+        prepare_trails(r);
+        if(r->trail_count) {
+            glBindVertexArray(r->trail_vao);
+            glDrawArrays(GL_LINES,0,r->trail_count);
+        }
+    }
+    if(catalog_sky) {
+        glBindVertexArray(r->moving_vao); glBindBuffer(GL_ARRAY_BUFFER,r->moving_vbo);
+        glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(f->bodies),f->bodies); glUniform1i(qlcg_gl_uniform(p,"points"),1);
+        glDrawArrays(GL_POINTS,0,ASTRA_BODIES);
+    }
+    qlcg_gl_program_point_size(false); glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 }
 

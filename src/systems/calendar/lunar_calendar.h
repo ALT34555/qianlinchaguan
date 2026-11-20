@@ -1,4 +1,4 @@
-/* 农历编历，对齐 ChineseCalendar.ts */
+/* 农历编历，对齐 ChineseCalendar */
 #ifndef QLCG_LUNAR_CALENDAR_H
 #define QLCG_LUNAR_CALENDAR_H
 

@@ -12,6 +12,15 @@ typedef struct {
     uint32_t trim_color;
 } PlayerProfile;
 
+enum { QLCG_MOVE_LAYOUT_COUNT = 4, QLCG_ACTION_LAYOUT_COUNT = 3 };
+#define QLCG_TOUCH_LAYOUT(s, i) ((int)(i) < QLCG_MOVE_LAYOUT_COUNT ? \
+    (s)->touch_layout[(int)(i)] : (s)->touch_action_layout[(int)(i) - QLCG_MOVE_LAYOUT_COUNT])
+
+typedef enum { CAMERA_FIRST_PERSON, CAMERA_SHOULDER, CAMERA_THIRD_PERSON } CameraView;
+typedef enum { CHAR_STATUS_DETAILED, CHAR_STATUS_COMPACT, CHAR_STATUS_HIDDEN } CharacterStatusMode;
+typedef enum { WINDOW_DECORATED, WINDOW_BORDERLESS, WINDOW_FULLSCREEN } WindowMode;
+typedef enum { GPU_DEFAULT, GPU_DISCRETE, GPU_INTEGRATED } RenderDevice;
+
 /* 全局游戏设置（对齐 GameSettin */
 typedef struct {
     PlayerProfile     profile;
@@ -65,18 +74,18 @@ typedef struct {
     /* 追加项；旧存档读不到则取默认 */
     bool              mirror_reflections;
     char              resolution[16];      /* "auto" 或 "1280x720" */
-    char              locale[32];          /* 界面语言代码，如 "zh-CN" / "en" / "ja" */
+    char              locale[32];          /* 界面语言代码，如 "zh-CN" / "en" */
 
     /* 触屏与虚拟按键 */
     bool              touch_controls;      /* 游戏内显示摇杆与动作键 */
     int               joystick_style;      /* 摇杆形态 0 = jxqy（暂只实现这一种） */
     float             touch_opacity;       /* 虚拟按键透明度 0.1 ~ 1.0 */
 
-    /* 高分辨率屏适配：把窗口整体放大的倍率，1 / 2 / 4 */
+    /* 高分屏适配：窗口整体放大倍率 1/2/4 */
     float             hidpi_scale;   /* 新基准倍率，实际缩放为两倍 */
 
     /* 虚拟按键落位：4项×(x%,y%,尺寸) */
-    float             touch_layout[4][3];
+    float             touch_layout[QLCG_MOVE_LAYOUT_COUNT][3];
 
     /* 视角反转：鼠标与手柄共用，追加在最末以兼容旧档案 */
     bool              invert_look_x;
@@ -88,10 +97,17 @@ typedef struct {
     float             scroll_line_width;
     bool              enhanced_lighting;
     bool              scroll_style;
+    WindowMode        window_mode;
+    RenderDevice      render_device;  /* Windows 按程序路径保存 */
+    float             touch_action_layout[QLCG_ACTION_LAYOUT_COUNT][3];
+    CameraView          camera_view;
+    CharacterStatusMode character_status;
 } GameSettings;
 
 #define QLCG_BINDS_MAGIC 0xB1AD0001u
-#define QLCG_SETTINGS_MAGIC    "QLCGSTG8"
+#define QLCG_SETTINGS_MAGIC    "QLCGST10"
+#define QLCG_SETTINGS_MAGIC_V9 "QLCGSTG9"
+#define QLCG_SETTINGS_MAGIC_V8 "QLCGSTG8"
 #define QLCG_SETTINGS_MAGIC_V7 "QLCGSTG7"
 #define QLCG_SETTINGS_MAGIC_V6 "QLCGSTG6"
 #define QLCG_SETTINGS_MAGIC_V5 "QLCGSTG5"
@@ -111,9 +127,9 @@ void         qlcg_reset_settings_keep_locale(GameSettings *s);
 void         qlcg_apply_graphics_preset(GameSettings *s, GraphicsPreset preset);
 void         qlcg_load_settings_disk(GameSettings *s);
 bool         qlcg_settings_write(const char *path, const GameSettings *s);
-void         qlcg_save_settings_disk(const GameSettings *s);
-/* 对齐 base defaultTouchLayout */
-void         qlcg_touch_layout_default(float out[4][3]);
+bool         qlcg_save_settings_disk(const GameSettings *s);
+/* 对齐 base 默认触屏布局 */
+void         qlcg_touch_layout_default(GameSettings *s);
 const char  *qlcg_graphics_preset_name(GraphicsPreset p);
 const char  *qlcg_veg_form_name(VegetationForm f);
 const char  *qlcg_crosshair_name(CrosshairStyle c);

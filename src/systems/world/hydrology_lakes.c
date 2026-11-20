@@ -393,27 +393,16 @@ static double shore_wobble(const MacroWorld *w, double wx, double wz, double spa
     return (n1 * 0.65 + n2 * 0.35) * amp;
 }
 
-LakeShoreField qlcg_lake_field(const MacroWorld *w, double wx, double wz) {
+static LakeShoreField lake_field_at(const MacroWorld *w, int cell, int bucket,
+                                   double wx, double wz, double gx, double gz) {
     LakeShoreField out={0,-1e9f,1,0,0};
     struct LakeTemplateCache *c=w->lake_templates;
-    if (!c) {
-        int cell=qlcg_macro_cell_at(w,wx,wz);
+    if (!c || (w->water[cell]==2 && (!w->lake_id || w->lake_id[cell]<0))) {
         if (w->water[cell]==2) out=(LakeShoreField){1,w->level[cell],-1,w->height[cell]-w->level[cell],4};
         return out;
     }
+    if (w->water[cell]==1 || c->buckets[bucket]<0) return out;
     double C=w->circumference;
-    if(!qlcg_world_flat(w)) {
-    wz=fmod(fmod(wz+C/2,C)+C,C)-C/2;
-    if (wz>C/4) { wz=C/2-wz; wx+=C/2; }
-    if (wz<-C/4) { wz=-C/2-wz; wx+=C/2; }
-    }
-    double gx=(wx/C+.5)*w->columns;
-    gx-=floor(gx/w->columns)*w->columns;
-    double gz=(wz/C+qlcg_world_z_offset(w))*w->columns;
-    int cell=qlcg_macro_cell_at(w,wx,wz);
-    if (w->water[cell]==1) return out;
-    int by=(int)floor(gz/4); if (by>=c->rows) by=c->rows-1;
-    int bucket=by*c->columns+(int)floor(gx/4);
     double best=-.85;
     for (int k=c->buckets[bucket];k>=0;k=c->refs[k].next) {
         const LakePart *p=&c->parts[c->refs[k].part];
@@ -428,7 +417,7 @@ LakeShoreField qlcg_lake_field(const MacroWorld *w, double wx, double wz) {
         int activity=w->opt.tectonic_activity;
         activity=activity<0?0:activity>9?9:activity;
         double span=(double)C/w->columns;
-        /* eq_chunks=0 走 base 逐位 parity */
+        /* eq_chunks=0 走逐位 parity */
         int detail=(w->opt.equator_chunks>0);
         uint32_t lake_seed=hash((uint32_t)(p->lake+1)*31u^w->opt.seed);
         uint32_t variant=hash(lake_seed^0x9e3779b9u);
@@ -480,6 +469,37 @@ LakeShoreField qlcg_lake_field(const MacroWorld *w, double wx, double wz) {
             (float)(wob*w->height_scale)};
     }
     return out;
+}
+
+LakeShoreField qlcg_lake_field(const MacroWorld *w, double wx, double wz) {
+    struct LakeTemplateCache *c=w->lake_templates;
+    double C=w->circumference;
+    if(!c) return lake_field_at(w,qlcg_macro_cell_at(w,wx,wz),0,0,0,0,0);
+    if(!qlcg_world_flat(w)) {
+        wz=fmod(fmod(wz+C/2,C)+C,C)-C/2;
+        if (wz>C/4) { wz=C/2-wz; wx+=C/2; }
+        if (wz<-C/4) { wz=-C/2-wz; wx+=C/2; }
+    }
+    double gx=(wx/C+.5)*w->columns;
+    gx-=floor(gx/w->columns)*w->columns;
+    double gz=(wz/C+qlcg_world_z_offset(w))*w->columns;
+    int by=(int)floor(gz/4); if (by>=c->rows) by=c->rows-1;
+    int bucket=by*c->columns+(int)floor(gx/4);
+    return lake_field_at(w,qlcg_macro_cell_at(w,wx,wz),bucket,wx,wz,gx,gz);
+}
+
+LakeShoreField qlcg_lake_field_cell(const MacroWorld *w, int cell) {
+    const struct LakeTemplateCache *c=w->lake_templates;
+    int x=cell%w->columns,z=cell/w->columns;
+    if (!c) return lake_field_at(w,cell,0,0,0,0,0);
+    int bucket=(z/4)*c->columns+x/4;
+    if (c->buckets[bucket]<0 || w->water[cell]==1)
+        return lake_field_at(w,cell,bucket,0,0,0,0);
+    float wx,wz;
+    qlcg_world_cell_center(w,cell,&wx,&wz);
+    double C=w->circumference;
+    return lake_field_at(w,cell,bucket,wx,wz,(wx/C+.5)*w->columns,
+                         (wz/C+qlcg_world_z_offset(w))*w->columns);
 }
 /* 调试与回归：该湖首座岛的世界坐标 */
 int qlcg_lake_island_at(const MacroWorld *w, int lake, double *ox, double *oz) {

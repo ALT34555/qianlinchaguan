@@ -50,7 +50,7 @@ UiRow ui_row(UiLayout *L, float want_h);
 UiRow ui_row_auto(UiLayout *L, const char *label, bool dim, float min_ctl_w, float want_ctl_h);
 void  ui_row_label(const UiLayout *L, const UiRow *r, const char *text, bool dim);
 
-/* flex-wrap 分段按钮与胶囊组，返回索引或 -1 */
+/* 分段按钮与胶囊组，返回索引或 -1 */
 int   ui_flex_segments(UiContext *ui, float x, float *io_y, float w, float base_h, float gap,
                        const char *const *labels, int count, int active_idx, float font_px);
 int   ui_flex_pills(UiContext *ui, float x, float *io_y, float w, float base_h, float gap,

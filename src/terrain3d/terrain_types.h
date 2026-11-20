@@ -8,6 +8,7 @@ typedef struct {
     float nx, ny, nz;
     float r, g, b;
     uint8_t paint[4];   /* 草、沙、岩、盐权重 */
+    uint8_t farm[4];    /* 耕地掩码与土色 */
 } TerrainVert;
 
 typedef struct {

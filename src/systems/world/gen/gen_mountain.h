@@ -4,7 +4,7 @@
 
 #include "../planet_macro.h"
 
-/* 在山脊抬升之前调用：修改 height，返回抬升峰值 */
+/* 山脊抬升前调用：修 height 返峰值 */
 float qlcg_build_mountain_ridges(MacroWorld *w);
 
 #endif

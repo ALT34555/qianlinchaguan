@@ -18,7 +18,7 @@ typedef struct {
 
 /* 黄赤交角倍率；0° 返回 0 */
 float qlcg_climate_amp_scale(float tilt_deg);
-/* 太阳视黄经折算 0..4；不读 CalendarSnapshot.season_* */
+/* 视黄经折算 0..4，不读快照季 */
 float qlcg_climate_orbit_phase(const CalendarSnapshot *date);
 /* 求单格本地气候季；date 为空时回退常驻夏 */
 void  qlcg_climate_season_at(const MacroWorld *w, int cell,

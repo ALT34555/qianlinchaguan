@@ -34,6 +34,12 @@ void qlcg_pa_bloom_cluster(LpBuilder *b, const PdDef *def, const double center[3
 void qlcg_pa_leaf_spray(LpBuilder *b, const PdDef *def, const double center[3],
                         double r, int count, LpRng *rand, double width,
                         double pitch_in, double spread_y, int dry, double len_scale);
+void qlcg_pa_stem_between(LpBuilder *b, const double from[3], const double to[3],
+                      double radius, double taper, LpRgb color);
+void qlcg_pa_heart_leaf(LpBuilder *b, const double at[3], double a, double length,
+                       double width, double rise, LpRgb leaf, const LpRgb *underside);
+void qlcg_pa_folded_petal(LpBuilder *b, const double at[3], double a, double length,
+                       double width, double pitch, LpRgb color, int mat);
 void qlcg_pa_bent_leaf(LpBuilder *b, const double start[3], double bearing,
                        double len, double wid, double rise, double drop,
                        LpRgb col, LpRng *rand, int mat);

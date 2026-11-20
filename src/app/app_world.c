@@ -1,6 +1,7 @@
 #include "atlas/atlas_vegetation.h"
 /* 世界生命周期：生成 / 进入 / 载入 / 空降 */
 #include "app/app_state.h"
+#include "app/app_doll_control.h"
 #include "core/dev_tools.h"
 #include "ui/ui_input.h"
 #include "systems/world/ice_runtime.h"
@@ -80,6 +81,10 @@ void app_toggle_world_view(void) {
 }
 
 void app_release_world(void) {
+    game_build_close();
+    game_doll_panel_close();
+    app_doll_control_reset();
+    g_app.inventory_ui = (InventoryUi){0};
     game_debug_cache_clear();
     app_lowres_release();
     qlcg_terrain_release_scene(&g_app.terrain);
@@ -119,6 +124,7 @@ static bool airdrop_world(MacroWorld *target,int cx,int cz,bool switch_to_3d) {
     qlcg_terrain_clear_chunks(&g_app.terrain);
     qlcg_region_free(g_app.region);
     g_app.region = region;
+    if(target!=old) target->inventory=old->inventory;
     g_app.world=target;
     g_app.player_cx = cx;
     g_app.player_cz = cz;
@@ -148,6 +154,10 @@ void app_airdrop_to_chunk(int cx,int cz,bool switch_to_3d) {
     airdrop_world(g_app.world,cx,cz,switch_to_3d);
 }
 
+bool app_doll_restore_chunk(MacroWorld *world,int cx,int cz) {
+    return airdrop_world(world,cx,cz,false);
+}
+
 bool app_atlas_airdrop(double wx,double wz) {
     double lx,lz;MacroWorld *w=qlcg_infinite_resolve(g_app.world,wx,wz,&lx,&lz);
     if(!w)return false;
@@ -158,6 +168,10 @@ bool app_atlas_airdrop(double wx,double wz) {
 }
 
 static void app_replace_world(MacroWorld *world) {
+    game_build_close();
+    game_doll_panel_close();
+    app_doll_control_reset();
+    g_app.inventory_ui = (InventoryUi){0};
     game_debug_cache_clear();
     qlcg_atlas_release_world(&g_app.atlas);
     g_app.atlas.astronomy_overlay=false;
@@ -268,7 +282,7 @@ bool app_load_from_save_slot(const SaveSlotInfo *slot, long offset, long size) {
             qlcg_world_free(loaded);app_push_toast_k(UI_TOAST_ERROR,NULL,message);return false;
         }
     }
-    /* 冰编辑已在 restore 内读入；缺表时补建空编辑 */
+    /* 冰编辑已读入；缺表时补建空编辑 */
     if (!loaded->ice_state) loaded->ice_state = qlcg_ice_world_create();
     app_replace_world(loaded);
     qlcg_world_rebuild_atlas_fields(g_app.world);

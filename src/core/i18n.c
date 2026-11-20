@@ -1,4 +1,4 @@
-/* 多语言核心：内置中/英+外置 mod 语言包 */
+/* 内置词条与外置语言包 */
 #include "platform/platform.h"
 #include "i18n.h"
 #include "math_util.h"
@@ -15,8 +15,256 @@ typedef struct {
     const char *en;
 } BuiltinPair;
 
-/* 内置双语词条表（基准回退为 zh） */
+/* 简体基准词条与英文译文 */
 static const BuiltinPair k_builtin[] = {
+    { "civ.block.ready", "可发展", "Ready" },
+    { "civ.block.noFlag", "置旗地失效", "Inactive claim" },
+    { "civ.block.food", "粮食不足", "Not enough food" },
+    { "civ.block.wood", "木材不足", "Not enough wood" },
+    { "civ.block.fiber", "纤维不足", "Not enough fiber" },
+    { "civ.block.population", "人口不足或饥荒", "Too few residents or famine" },
+    { "civ.block.expansion", "拓地承载已满", "Expansion limit reached" },
+    { "civ.block.maximum", "等级已满", "Maximum level" },
+    { "civ.block.unknown", "无法发展", "Cannot develop" },
+    { "civ.settlement", "%s · %d级聚落", "%s · Level %d settlement" },
+    { "civ.population", "人口 %d/%d · 耕地 %d块", "Population %d/%d · Farm plots %d" },
+    { "civ.stock", "粮食 %d · 木材 %d · 纤维 %d", "Food %d · Wood %d · Fiber %d" },
+    { "civ.land", "领地 %d 块 · 拓地 %d/%d 块 · %s", "Territory %d plots · Expansion %d/%d plots · %s" },
+    { "civ.expansionCost", "每块需 粮%d / 木%d / 纤%d · 保粮%d", "Per plot: food %d / wood %d / fiber %d · Food reserve %d" },
+    { "civ.upgrade", "升级：%s", "Upgrade: %s" },
+    { "civ.maximumLevel", "已达到本阶段等级上限", "Maximum level reached for this stage" },
+    { "civ.upgradeCost", "需%d人 · 粮%d / 木%d / 纤%d", "Requires %d residents · Food %d / wood %d / fiber %d" },
+    { "build.editTerritory", "领地编辑", "Edit territory" },
+    { "build.editTerritoryKey", "[E] 领地编辑", "[E] Edit territory" },
+    { "export.fileDone", "文件已导出", "File exported" },
+    { "doll.inspect", "互动", "Interact" },
+    { "doll.inspectClick", "按 E 互动", "Press E to interact" },
+    { "settings.interactKey", "E / 互动按钮", "E / Interact button" },
+    { "doll.give", "给予物品", "Give item" },
+    { "doll.possess", "切换", "Switch" },
+    { "doll.viewStatus", "查看状态", "View status" },
+    { "doll.switchPrompt", "是否切换到此角色？", "Switch to this character?" },
+    { "doll.no", "否", "No" },
+    { "doll.release", "结束附身", "Return to my character" },
+    { "doll.unavailable", "当前无法与此人偶互动", "This character is unavailable" },
+    { "doll.named", "已保存名字", "Name saved" },
+    { "doll.unnamed", "无名", "Unnamed" },
+    { "doll.nameHint", "输入名字，让这位居民随存档保留", "Name this resident to save them" },
+    { "doll.name", "命名", "Set name" },
+    { "doll.chooseGift", "选择一件要送出的物品", "Choose one item to give" },
+    { "doll.given", "已送出%s", "Gave %s" },
+    { "doll.giveFailed", "未能送出，请检查距离和对方的口袋空间", "Check your distance and the recipient’s pocket space" },
+    { "doll.noItems", "没有可以送出的物品", "No items available to give" },
+    { "doll.back", "返回", "Back" },
+    { "camera.view", "视角", "Camera view" },
+    { "camera.first", "第一人称", "First person" },
+    { "camera.shoulder", "越肩", "Over the shoulder" },
+    { "camera.third", "第三人称", "Third person" },
+    { "character.display", "状态显示", "Character status" },
+    { "character.detailed", "详细", "Detailed" },
+    { "character.compact", "精简", "Compact" },
+    { "character.hidden", "隐藏", "Hidden" },
+    { "character.map", "查看舆图", "Viewing map" },
+    { "character.swim", "水中", "In water" },
+    { "character.air", "空中", "Airborne" },
+    { "character.crouch", "蹲下", "Crouching" },
+    { "character.walk", "移动中", "Moving" },
+    { "character.stand", "站立", "Standing" },
+    { "character.empty", "空手", "Empty" },
+    { "civ.leader", "首领 · %s", "Leader · %s" },
+    { "character.player", "玩家", "Player" },
+    { "character.hands", "主手 %s  ·  副手 %s", "Main %s  ·  Off-hand %s" },
+    { "character.needs", "饱腹 %d%%  ·  精力 %d%%  ·  社交 %d%%", "Food %d%%  ·  Energy %d%%  ·  Social %d%%" },
+    { "character.chunk", "区块  %d, %d", "Chunk  %d, %d" },
+    { "doll.resident", "村民", "Resident" },
+    { "doll.close", "关闭", "Close" },
+    { "doll.esc", "Esc 关闭", "Esc to close" },
+    { "doll.doing", "正在  %s", "Doing  %s" },
+    { "doll.reason", "动机  %s", "Motivation  %s" },
+    { "doll.target", "地点  %s", "Location  %s" },
+    { "doll.going", "前往  %s", "Going to  %s" },
+    { "doll.seated", "已就座  %s", "Seated at  %s" },
+    { "doll.satiety", "饱食", "Satiety" },
+    { "doll.energy", "精力", "Energy" },
+    { "doll.social", "社交", "Social" },
+    { "doll.partner", "茶伴 %08X · 亲近 %d%%", "Tea partner %08X · Bond %d%%" },
+    { "doll.noPartner", "暂无茶伴", "No tea partner yet" },
+    { "doll.position", "坐标  %.1f / %.1f / %.1f m", "Position  %.1f / %.1f / %.1f m" },
+    { "doll.positionGround", "X %.1f · Z %.1f m", "X %.1f · Z %.1f m" },
+    { "doll.resume", "随后  %s", "Next  %s" },
+    { "doll.task.routine", "日常作息", "Daily routine" },
+    { "doll.task.rest", "补觉", "Resting" },
+    { "doll.task.meal", "用餐", "Eating" },
+    { "doll.task.tea", "饮茶交谈", "Tea and conversation" },
+    { "doll.task.harvest", "收成入库", "Storing the harvest" },
+    { "doll.task.shift", "替班", "Covering a shift" },
+    { "doll.reason.schedule", "按时辰作息", "Following the daily schedule" },
+    { "doll.reason.tired", "精力不足，需要休息", "Low energy" },
+    { "doll.reason.hungry", "饱食不足，需要进食", "Hungry" },
+    { "doll.reason.lonely", "想与人说说话", "Looking for company" },
+    { "doll.reason.crop", "收成可以入库了", "The harvest is ready" },
+    { "doll.reason.cover", "同伴缺觉，需要顶班", "Covering for a tired resident" },
+    { "doll.target.none", "无固定地点", "No fixed location" },
+    { "doll.target.home", "住处", "Home" },
+    { "doll.target.hearth", "灶台", "Hearth" },
+    { "doll.target.chair", "茶席", "Tea chair" },
+    { "doll.target.field", "田地", "Field" },
+    { "doll.target.watch", "岗哨", "Watch post" },
+    { "doll.target.table", "茶桌", "Tea table" },
+    { "doll.target.granary", "粮仓", "Granary" },
+    { "doll.state.walk", "走动", "Walking" },
+    { "doll.state.work", "劳作", "Working" },
+    { "doll.state.fire", "围炉休息", "Resting by the fire" },
+    { "doll.state.sleep", "屋内睡眠", "Sleeping indoors" },
+    { "doll.state.watch", "守夜", "Keeping watch" },
+    { "doll.state.approach", "迎查", "Checking the approach" },
+    { "doll.state.return", "回岗", "Returning to the post" },
+    { "doll.state.protect", "护田", "Protecting the crops" },
+    { "doll.state.patrol", "巡逻", "Patrolling" },
+    { "inv.item.small_pack.name", "小型背包", "Small backpack" },
+    { "inv.item.small_pack.help", "额外提供 10 × 16 格。", "Adds a 10 × 16 storage grid." },
+    { "inv.item.medium_pack.name", "中型背包", "Medium backpack" },
+    { "inv.item.medium_pack.help", "额外提供 15 × 20 格。", "Adds a 15 × 20 storage grid." },
+    { "inv.item.large_pack.name", "大型背包", "Large backpack" },
+    { "inv.item.large_pack.help", "额外提供 18 × 28 格。", "Adds an 18 × 28 storage grid." },
+    { "inv.item.headlamp.name", "简易探照灯", "Headlamp" },
+    { "inv.item.headlamp.help", "夜间照亮前方约 3 米。", "Lights about 3 meters ahead at night." },
+    { "inv.item.life_vest.name", "救生衣", "Life vest" },
+    { "inv.item.life_vest.help", "入水后提供浮力，附 1 个工具挂点。", "Provides buoyancy and one tool hook." },
+    { "inv.item.withering_gloves.name", "枯萎手套", "Withering gloves" },
+    { "inv.item.withering_gloves.help", "用空手触碰活植株，使其枯萎。", "Touch a living plant with an empty hand to wither it." },
+    { "inv.item.speed_pants.name", "快速裤子", "Swift trousers" },
+    { "inv.item.speed_pants.help", "加快陆上移动，附 1 个工具挂点。", "Increases land speed and adds one tool hook." },
+    { "inv.item.tool_belt.name", "蹀躞带", "Tool belt" },
+    { "inv.item.tool_belt.help", "提供 1 个腰部工具挂点。", "Adds one tool hook at the waist." },
+    { "inv.item.spring_shoes.name", "弹簧鞋", "Spring shoes" },
+    { "inv.item.spring_shoes.help", "提高跳跃高度，落地后回弹。", "Jump higher and bounce on landing." },
+    { "inv.item.wings.name", "翅膀", "Wings" },
+    { "inv.item.wings.help", "在空中减缓下落。", "Slows your fall while airborne." },
+    { "inv.item.stargazing_glasses.name", "观星眼镜", "Stargazing glasses" },
+    { "inv.item.stargazing_glasses.help", "观测星空与星座。", "Reveals stars and constellations." },
+    { "inv.item.night_vision_glasses.name", "夜视眼镜", "Night-vision goggles" },
+    { "inv.item.night_vision_glasses.help", "提高夜间景物的可见度。", "Improves visibility at night." },
+    { "inv.item.aquatic_ring.name", "水生物之戒", "Water ring" },
+    { "inv.item.aquatic_ring.help", "入水后看得更清楚。", "Improves underwater visibility." },
+    { "inv.item.hoe.name", "锄头", "Hoe" },
+    { "inv.item.hoe.help", "翻松表土并略微压低地面。", "Loosens topsoil and slightly lowers the ground." },
+    { "inv.item.shovel.name", "铲子", "Shovel" },
+    { "inv.item.shovel.help", "挖低地面并取得土块。", "Lowers the ground and collects soil." },
+    { "inv.item.axe.name", "斧头", "Axe" },
+    { "inv.item.axe.help", "砍伐树木和木本灌木，取得木材。", "Cuts trees and woody shrubs for wood." },
+    { "inv.item.pickaxe.name", "镐子", "Pickaxe" },
+    { "inv.item.pickaxe.help", "开采地表岩石，取得石料。", "Mines exposed rocks for stone." },
+    { "inv.item.sickle.name", "镰刀", "Sickle" },
+    { "inv.item.sickle.help", "收割草丛与作物，取得纤维。", "Harvests grass and crops for fiber." },
+    { "inv.item.longsword.name", "长剑", "Longsword" },
+    { "inv.item.longsword.help", "斩除稍远处的灌木和藤蔓。", "Clears shrubs and vines at longer reach." },
+    { "inv.item.shortsword.name", "短剑", "Shortsword" },
+    { "inv.item.shortsword.help", "清理近处的草木。", "Clears nearby vegetation." },
+    { "inv.item.knife.name", "小刀", "Knife" },
+    { "inv.item.knife.help", "采割草本和藤蔓，取得纤维并留下根茬。", "Cuts herbs and vines for fiber, leaving the roots." },
+    { "inv.item.soil.name", "土块", "Soil" },
+    { "inv.item.soil.help", "用铲子挖得，可拿在手里回填。", "Dig with a shovel, then equip to place the soil." },
+    { "inv.item.wood.name", "木材", "Wood" },
+    { "inv.item.wood.help", "用斧头砍得，可拿在手里放置工作台。", "Gather with an axe, then equip to place a workbench." },
+    { "inv.item.stone.name", "石料", "Stone" },
+    { "inv.item.stone.help", "用镐子开采地表岩石所得。", "Mined from exposed rocks with a pickaxe." },
+    { "inv.item.fiber.name", "纤维", "Fiber" },
+    { "inv.item.fiber.help", "用镰刀或小刀采割植物所得。", "Harvested from plants with a sickle or knife." },
+    { "inv.item.sapling.name", "槐树苗", "Pagoda tree sapling" },
+    { "inv.item.sapling.help", "拿在任一手中，种到干燥地面。", "Hold in either hand and plant on dry ground." },
+    { "inv.category.packs", "背包", "Packs" },
+    { "inv.category.clothing", "穿戴", "Wearables" },
+    { "inv.category.accessories", "饰品", "Trinkets" },
+    { "inv.category.tools", "工具", "Tools" },
+    { "inv.category.materials", "材料", "Materials" },
+    { "inv.heading.head", "头部装备", "Headgear" },
+    { "inv.heading.body", "上身装备", "Torso" },
+    { "inv.heading.legs", "下身装备", "Legwear" },
+    { "inv.heading.body_hooks", "上身挂点", "Torso hooks" },
+    { "inv.heading.leg_hooks", "下身挂点", "Waist hooks" },
+    { "inv.heading.accessories", "饰品栏", "Accessories" },
+    { "inv.heading.main_hand", "主手槽", "Main hand" },
+    { "inv.heading.off_hand", "副手槽", "Off hand" },
+    { "inv.heading.hands", "手部", "Hands" },
+    { "inv.heading.feet", "足部", "Feet" },
+    { "inv.heading.pack", "背包扩容", "Pack storage" },
+    { "inv.pack.unlock", "装备背包后解锁", "Equip a backpack to unlock" },
+    { "inv.pack.deposit", "放入扩容口袋", "Store in backpack" },
+    { "inv.pack.open", "查看扩容口袋", "Open backpack" },
+    { "inv.pack.empty", "未装备背包", "No backpack equipped" },
+    { "inv.pack.extra", "扩容口袋", "Backpack" },
+    { "inv.pack.base", "默认口袋", "Pockets" },
+    { "inv.pack.disabled", "背包未装备", "No backpack equipped" },
+    { "inv.grid.overview", "全览", "Fit" },
+    { "inv.grid.zoom", "放大", "Zoom" },
+    { "inv.grid.used", "已用格数", "Slots used" },
+    { "inv.heading.categories", "分类", "Categories" },
+    { "inv.catalog.capacity", "随身行囊提供基础 5 × 8 格，背包另加容量。", "Pockets have 5 × 8 slots. Backpacks add storage." },
+    { "inv.catalog.pick", "点击物品卡即可领取。", "Select an item to take it." },
+    { "controls.openInventory", "打开背包", "Open backpack" },
+    { "settings.handControls", "山川操作", "Terrain controls" },
+    { "settings.mouse.primary", "鼠标左键", "Left mouse button" },
+    { "settings.mouse.secondary", "鼠标右键", "Right mouse button" },
+    { "settings.backpack.input", "菜单 / I 键", "Menu / I key" },
+    { "settings.handUse.hint", "工具执行相应操作，普通物品随手挥动。树苗可种植，土块可回填，木材可放置工作台。", "Tools perform their action. Other items swing in hand. Saplings can be planted, soil placed, and wood used to place a workbench." },
+    { "settings.touchMainHandSize", "主手键尺寸", "Main hand button size" },
+    { "settings.touchOffHandSize", "副手键尺寸", "Off hand button size" },
+    { "settings.touchInventorySize", "背包键尺寸", "Backpack button size" },
+    { "inv.hook.takeOnly", "旧挂点仅可取出，请移到空槽或空格。", "Move this item from its retired hook to an empty slot or space." },
+    { "inv.open.shortcut", "I  物品栏", "I  Inventory" },
+    { "inv.open", "物品栏", "Inventory" },
+    { "inv.catalog.title", "所有物品", "All items" },
+    { "inv.title", "角色物资", "Inventory" },
+    { "inv.close", "关闭", "Close" },
+    { "inv.catalog.back", "返回物资", "Back" },
+    { "inv.tab.storage", "储物口袋", "Storage" },
+    { "inv.tab.equipment", "随身装备", "Equipment" },
+    { "inv.discard.confirm", "确认丢弃", "Discard now" },
+    { "inv.discard", "丢弃", "Discard" },
+    { "inv.cancel", "取消", "Cancel" },
+    { "inv.sort", "整理口袋", "Sort" },
+    { "inv.catalog.hint", "选择物品即可领取", "Select an item to take it." },
+    { "inv.move.hint", "点击或拖动，可在装备、挂点和口袋间移动物品", "Click or drag to move items between equipment, hooks, and pockets." },
+    { "inv.move.invalid", "无法放置，请检查物品尺寸或槽位类型", "Does not fit this space or slot." },
+    { "inv.move.pack", "无法换包，请先移走超出新容量的物品", "Move excess items before switching backpacks." },
+    { "inv.move.hooks", "无法放置，请检查装备位置和已占用的挂点", "Check the equipment slot and occupied hooks." },
+    { "inv.storage.full", "口袋空间不足", "Not enough storage space." },
+    { "inv.storage.added", "物品已收入储物格", "Item stored." },
+    { "inv.sort.pack", "已整理背包扩容口袋", "Backpack sorted." },
+    { "inv.sort.pockets", "已整理默认口袋", "Pockets sorted." },
+    { "inv.sort.failed", "当前排列空间不足，已保留原位", "Not enough space to rearrange items." },
+    { "inv.use.unreachable", "准星未对准可及目标", "Aim at a target within reach." },
+    { "inv.use.gone", "目标已经移除", "The target has already been removed." },
+    { "inv.use.sapling.target", "请对准干燥地面种植", "Aim at dry land to plant." },
+    { "inv.use.sapling.failed", "树苗暂时无法种植", "The sapling could not be planted." },
+    { "inv.use.sapling.done", "种下了一棵槐树苗", "Planted a pagoda tree sapling." },
+    { "inv.use.glove.target", "枯萎手套需要接触活植株", "Touch a living plant to wither it." },
+    { "inv.use.glove.done", "植株已经枯萎", "The plant has withered." },
+    { "inv.use.hoe.target", "请对准地面锄土", "Aim at the ground to hoe." },
+    { "inv.use.hoe.done", "表土已翻松", "Topsoil loosened." },
+    { "inv.use.shovel.target", "请对准地面挖土", "Aim at the ground to dig." },
+    { "inv.use.shovel.done", "挖得土块", "Collected soil." },
+    { "inv.use.fill.target", "请对准需要回填的地面", "Aim at the ground to add soil." },
+    { "inv.use.fill.done", "已回填土块", "Placed soil." },
+    { "inv.use.workbench.target", "请在干燥、平整且无阻挡的地面放置工作台", "Choose clear, dry, level ground for the workbench." },
+    { "inv.use.workbench.done", "已用木料安放工作台", "Placed a wooden workbench." },
+    { "inv.use.axe.target", "请对准树木或木本灌木", "Aim at a tree or woody shrub." },
+    { "inv.use.axe.done", "砍得木材", "Collected wood." },
+    { "inv.use.pickaxe.target", "请对准露出地面的岩石", "Aim at an exposed rock." },
+    { "inv.use.pickaxe.done", "采得石料", "Collected stone." },
+    { "inv.use.sickle.target", "请对准草丛或作物", "Aim at grass or crops." },
+    { "inv.use.sickle.done", "割得纤维", "Collected fiber." },
+    { "inv.use.longsword.target", "长剑可斩除灌木和藤蔓", "Aim at shrubs or vines." },
+    { "inv.use.longsword.done", "长剑斩开了枝蔓", "Cleared the brush." },
+    { "inv.use.shortsword.target", "短剑可清除近处的草木", "Aim at nearby vegetation." },
+    { "inv.use.shortsword.done", "短剑清出了落脚处", "Cleared a place to stand." },
+    { "inv.use.knife.target", "小刀可采割活的草本或藤蔓", "Aim at living herbs or vines." },
+    { "inv.use.knife.done", "割取纤维，留下根茬", "Collected fiber and left the roots." },
+    { "inv.use.inventory.full", "行囊空间不足", "Not enough storage space." },
+    { "inv.use.blocked", "这里无法改动", "This spot cannot be changed." },
+    { "inv.use.main", "使用主手", "Main hand" },
+    { "inv.use.off", "使用副手", "Off hand" },
     { "settings.astronomyBroadcast", "天文事件播报", "Astronomical event announcements" },
     { "astra.category.meteor", "流星", "Meteors" },
     { "astra.category.shower", "流星雨", "Meteor showers" },
@@ -267,7 +515,7 @@ static const BuiltinPair k_builtin[] = {
     { "settings.theme.light",           "日间",                         "Day" },
     { "settings.theme.dark",            "夜间",                         "Night" },
     { "settings.theme.auto",            "跟随系统",                     "System" },
-    { "settings.showTopBar",            "显示顶部信息栏",               "Show top bar" },
+    { "settings.showTopBar",            "顶部信息栏常驻",               "Always show the top bar" },
     { "settings.reduceMotion",          "简化UI",                       "Simplify UI" },
     { "debug.title",                  "调试",                     "Debug" },
     { "debug.currentChunk",           "当前区块",                 "Current chunk" },
@@ -294,8 +542,16 @@ static const BuiltinPair k_builtin[] = {
     { "settings.hidpi.v2",            "2x",                       "2x" },
     { "settings.hidpi.v3",            "3x",                       "3x" },
     { "settings.hidpi.v4",            "4x",                       "4x" },
-    { "settings.hidpi.hint",          "按显示设备调整界面倍率。",
-                                                   "Enlarges the window for high-DPI screens; layout proportions are unchanged." },
+    { "settings.device",                "渲染设备",                     "Rendering device" },
+    { "settings.device.default",        "默认",                         "Default" },
+    { "settings.device.discrete",       "独立显卡",                     "Discrete GPU" },
+    { "settings.device.integrated",     "集成显卡",                     "Integrated GPU" },
+    { "settings.device.restart",        "渲染设备将在重启游戏后生效。", "Restart the game to use the selected GPU." },
+    { "settings.device.homeOnly",       "请从首页进入设置以更改渲染设备。", "Open Settings from the home screen to change the GPU." },
+    { "settings.window",                "窗口",                         "Window" },
+    { "settings.window.decorated",      "窗口化",                       "Windowed" },
+    { "settings.window.borderless",     "无边框窗口",                   "Borderless window" },
+    { "settings.window.fullscreen",     "全屏",                         "Fullscreen" },
     { "settings.crosshair",             "准星样式",                     "Crosshair" },
     { "settings.invertLookX",           "反转水平视角（X 轴）",         "Invert horizontal look (X axis)" },
     { "settings.invertLookY",           "反转垂直视角（Y 轴）",         "Invert vertical look (Y axis)" },
@@ -303,8 +559,7 @@ static const BuiltinPair k_builtin[] = {
                                         "Applies to mouse drag, touch drag and gamepad right stick; movement direction is unaffected." },
     { "settings.touch",                 "触屏与虚拟按键",               "Touch controls" },
     { "settings.touchOpacity",          "触控透明度",                   "Touch opacity" },
-    { "settings.touch.hint",            "左下摇杆、右下冲刺 / 跳跃 / 下蹲；空白处拖动可转视角。仅山川视图显示。",
-                                        "Left stick and right action buttons. Drag empty space to look around. Terrain view only." },
+    { "settings.touch.hint", "开启后，山川画面会显示移动、主手、副手和背包等虚拟键。轻点对应键执行操作，拖动空白处转动视角。", "Enable virtual buttons to move, use either hand, or open the backpack in Terrain. Tap a button to act and drag empty space to look around." },
     { "settings.crosshair.none",        "无",                           "None" },
     { "settings.crosshair.dot",         "圆点",                         "Dot" },
     { "settings.crosshair.cross",       "十字",                         "Cross" },
@@ -334,8 +589,6 @@ static const BuiltinPair k_builtin[] = {
     { "settings.graphicsPreset.smooth", "流畅",                         "Smooth" },
     { "settings.graphicsPreset.low",    "低配",                         "Low" },
     { "settings.graphicsPreset.minimal","极其",                         "Utterly" },
-    { "settings.graphicsPreset.hint",   "低配面向4GB内存和集成显卡；流畅以60fps为目标。极其：320×240、24fps、视觉效果全关。可继续手动调整。",
-                                        "Low targets 4GB memory and integrated graphics; Smooth targets 60fps. Utterly: 320×240, 24fps, all visual effects off. Settings remain adjustable." },
     { "settings.antialias",             "抗锯齿",                       "Anti-aliasing" },
     { "common.enable",                  "启用",                         "Enable" },
     { "common.show",                    "显示",                         "Show" },
@@ -345,7 +598,6 @@ static const BuiltinPair k_builtin[] = {
     { "settings.chunksUnit",            "%d 区块",                      "%d chunks" },
     { "settings.renderBudgetFmt",       "半径 %d 米 · 视距 %d 区块，植被渲染上限跟随视距。",
                                         "Radius %d m · %d chunks render distance; vegetation distance is capped by render distance." },
-    { "settings.topBarLabel",           "顶部信息栏",                   "Top info bar" },
     { "settings.advancedVisuals",       "高级视觉效果",                 "Advanced visual effects" },
     { "settings.enhancedLighting",     "增强光影",                     "Enhanced lighting" },
     { "settings.scrollStyle",          "画卷风格",                     "Painted scroll style" },
@@ -381,9 +633,6 @@ static const BuiltinPair k_builtin[] = {
                                         "Caps: 24 / 30 / 60 / 90 / 120 / 180 fps; Unlimited removes the frame rate cap." },
     { "settings.keys.reset",            "恢复默认键位",                 "Reset key bindings" },
     { "settings.pressKey",              "请按新键…（Esc 取消）",        "Press a key… (Esc to cancel)" },
-    { "settings.intro",                 "界面、画面与控制设置保存在本机。", "Interface, graphics and control settings are saved on this device." },
-    { "settings.intro.world",           "界面、画面与控制设置保存在本机；玄虚设置随当前世界存档保存。",
-                                        "Interface, graphics and controls are saved on this device; the arcane settings travel with the current world save." },
     { "settings.mystery",               "玄虚",                         "Arcane" },
     { "settings.speed.hint",            "游戏秒 / 现实秒 · 0 暂停，72 为 20 分钟一天",
                                         "Game seconds per real second - 0 pauses, 72 makes a 20-minute day" },
@@ -394,6 +643,9 @@ static const BuiltinPair k_builtin[] = {
     { "settings.apply",                 "应用设置",                     "Apply" },
     { "settings.confirm.title",         "是否确认保留更改",             "Keep these changes?" },
     { "settings.confirm.yes",           "是",                           "Yes" },
+    { "settings.confirm.restart",       "请在 %d 秒内确认。渲染设备将在重启游戏后生效。",
+                                        "Confirm within %d seconds. The selected GPU takes effect after restarting the game." },
+    { "settings.applyFailed",           "设置应用失败，已保留原设置。", "Could not apply the settings. Your previous settings were kept." },
     { "settings.confirm.no",            "否，恢复原设置",               "No, restore settings" },
     { "settings.confirm.countdown",     "请在 %d 秒内点击“是”，否则自动恢复原设置。",
                                         "Click Yes within %d seconds, or the previous settings will be restored." },
@@ -570,6 +822,9 @@ static const BuiltinPair k_builtin[] = {
     { "event.macro.burst",
       "【自然事件】%s 在 (%.0f, %.0f) 爆发",
       "[Event] %s broke out at (%.0f, %.0f)" },
+    { "event.macro.full",
+      "【自然事件】当前事件已满，请等待现有事件结束。",
+      "[Event] All slots are occupied. Wait for an active event to end." },
     { "weather.reset",
       "已解除天气调控，恢复自然天气。",
       "Weather control released; natural weather resumed." },
@@ -652,6 +907,8 @@ static const BuiltinPair k_builtin[] = {
     { "terrain.river.src",
       "已定 3D 河道起点，请点选下游终点",
       "3D river source set. Now pick the downstream end." },
+    { "engineering.capacity", "工程记录容量不足，本次未施工。", "Engineering capacity is full. The edit was rejected." },
+    { "engineering.river.noChange", "请选择不同的河道终点。", "Choose a different downstream end." },
     { "key.unset",
       "未设置",
       "Unset" },
@@ -1103,6 +1360,7 @@ static const BuiltinPair k_builtin[] = {
     { "creator.culture.builtin", "内置语言", "Built-in languages" },
     { "creator.culture.mods", "Mod 附加语言", "Mod languages" },
     { "culture.zh-CN", "中文", "Chinese" },
+    { "culture.zh-Hant", "繁体中文", "Traditional Chinese" },
     { "culture.en", "英文", "English" },
     { "creator.culture.hint", "可勾选多种语言。未勾选时，按当前界面语言自动命名。", "Select one or more languages. With none selected, names use the current interface language." },
 
@@ -1236,14 +1494,94 @@ static const BuiltinPair k_builtin[] = {
 };
 
 #define BUILTIN_COUNT ((int)(sizeof(k_builtin) / sizeof(k_builtin[0])))
+static const QlLocaleMeta k_builtin_locales[] = {
+    [QLCG_LOCALE_ZH_CN] = { "zh-CN", "简体中文" },
+    [QLCG_LOCALE_EN] = { "en", "English" },
+    [QLCG_LOCALE_ZH_HANT] = { "zh-Hant", "繁體中文" }
+};
+_Static_assert(sizeof(k_builtin_locales) / sizeof(*k_builtin_locales) == QLCG_BUILTIN_LOCALES,
+               "Built-in locale count mismatch");
 static QlLocaleMeta g_locales[QLCG_MAX_LOCALES];
 static int g_locale_count;
 static int g_cur_idx;
-static QlLocalePack g_mod_packs[QLCG_MAX_LOCALES - 2];
+static QlLocalePack g_mod_packs[QLCG_MAX_LOCALES - QLCG_BUILTIN_LOCALES];
 static int g_mod_count;
+
+static char locale_char(char ch) {
+    return ch == '_' ? '-' : (char)tolower((unsigned char)ch);
+}
+
+static bool locale_prefix(const char *code, const char *prefix) {
+    while (*prefix) {
+        if (locale_char(*code++) != locale_char(*prefix++)) return false;
+    }
+    return !*code || locale_char(*code) == '-';
+}
+
+static bool locale_equal(const char *a, const char *b) {
+    return strlen(a) == strlen(b) && locale_prefix(a, b);
+}
 
 static int pack_compare(const void *a, const void *b) {
     return qlcg_stricmp(((const QlLocalePack *)a)->meta.code, ((const QlLocalePack *)b)->meta.code);
+}
+
+static int next_format_arg(const char **text) {
+    const char *p = *text;
+    while ((p = strchr(p, '%')) != NULL) {
+        ++p;
+        if (*p == '%') { ++p; continue; }
+        bool numeric_flags = false, alternate = false;
+        while (*p && strchr("-+#0 ", *p)) {
+            numeric_flags |= *p != '-';
+            alternate |= *p == '#';
+            ++p;
+        }
+        const char *width = p;
+        while (*p >= '0' && *p <= '9') ++p;
+        if (p - width > 3) return -1;
+        if (*p == '.') {
+            const char *precision = ++p;
+            while (*p >= '0' && *p <= '9') ++p;
+            if (p - precision > 3) return -1;
+        }
+        if (!*p || !strchr("diuoxXfFeEgGaAs", *p) || (*p == 's' && numeric_flags) ||
+            (alternate && strchr("diu", *p))) return -1;
+        *text = p + 1;
+        switch (*p) {
+            case 'i': return 'd';
+            case 'o': case 'x': case 'X': return 'u';
+            case 'F': case 'e': case 'E': case 'g': case 'G': case 'a': case 'A': return 'f';
+            default: return *p;
+        }
+    }
+    return 0;
+}
+
+static bool same_format_args(const char *source, const char *translation, int arg) {
+    do {
+        if (next_format_arg(&translation) != arg) return false;
+        arg = next_format_arg(&source);
+    } while (arg > 0);
+    return arg == 0 && next_format_arg(&translation) == 0;
+}
+
+/* 扫描时剔除参数不匹配的译文 */
+static void validate_pack_ui(JsVal *ui) {
+    for (int i = 0; i < BUILTIN_COUNT; ++i) {
+        const char *source = k_builtin[i].zh;
+        int arg = next_format_arg(&source);
+        if (arg <= 0) continue;
+        for (int j = 0; j < ui->count; ++j) {
+            if (strcmp(qlcg_js_key(ui, j), k_builtin[i].key) != 0) continue;
+            const char *translation = qlcg_js_str(ui->items[j], NULL);
+            if (translation && !same_format_args(source, translation, arg)) {
+                qlcg_js_free(ui->items[j]);
+                ui->items[j] = NULL;
+            }
+            break;
+        }
+    }
 }
 
 int qlcg_i18n_rescan(const wchar_t *mod_dir) {
@@ -1251,13 +1589,10 @@ int qlcg_i18n_rescan(const wchar_t *mod_dir) {
     snprintf(saved_code, sizeof(saved_code), "%s", qlcg_i18n_get_locale());
     for (int i = 0; i < g_mod_count; ++i) qlcg_locale_pack_free(&g_mod_packs[i]);
     memset(g_locales, 0, sizeof(g_locales));
-    g_locale_count = 2;
+    memcpy(g_locales, k_builtin_locales, sizeof(k_builtin_locales));
+    g_locale_count = QLCG_BUILTIN_LOCALES;
     g_cur_idx = 0;
     g_mod_count = 0;
-    snprintf(g_locales[0].code, sizeof(g_locales[0].code), "zh-CN");
-    snprintf(g_locales[0].label, sizeof(g_locales[0].label), "简体中文");
-    snprintf(g_locales[1].code, sizeof(g_locales[1].code), "en");
-    snprintf(g_locales[1].label, sizeof(g_locales[1].label), "English");
     const wchar_t *roots[]={mod_dir,L"content/locales"};
     for(int root_index=0;root_index<2;root_index++) {
         const wchar_t *pack_dir=roots[root_index];
@@ -1267,15 +1602,18 @@ int qlcg_i18n_rescan(const wchar_t *mod_dir) {
         QlDirectoryEntry e;
         while (qlcg_platform_dir_next(dir, &e)) {
             if (!e.directory || e.name[0] == '.') continue;
-            if (g_mod_count >= QLCG_MAX_LOCALES - 2) break;
+            if (g_mod_count >= QLCG_MAX_LOCALES - QLCG_BUILTIN_LOCALES) break;
             wchar_t folder[1024];
             if (!qlcg_utf8_to_wide(e.name, folder, 1024)) continue;
             QlLocalePack *pack = &g_mod_packs[g_mod_count];
             if (!qlcg_locale_pack_load(pack_dir, folder, pack)) continue;
-            bool duplicate = qlcg_stricmp(pack->meta.code, "zh-CN") == 0 || qlcg_stricmp(pack->meta.code, "en") == 0;
+            bool duplicate = false;
+            for (int i = 0; i < QLCG_BUILTIN_LOCALES; ++i)
+                if (locale_equal(k_builtin_locales[i].code, pack->meta.code)) duplicate = true;
             for (int i = 0; i < g_mod_count; ++i)
-                if (!qlcg_stricmp(g_mod_packs[i].meta.code, pack->meta.code)) duplicate = true;
+                if (locale_equal(g_mod_packs[i].meta.code, pack->meta.code)) duplicate = true;
             if (duplicate) { qlcg_locale_pack_free(pack); continue; }
+            if (pack->ui) validate_pack_ui(pack->ui);
             QlLocalTime local;
             if (qlcg_platform_date(e.modified, &local))
                 snprintf(pack->meta.modified_date, sizeof(pack->meta.modified_date), "%04u-%02u-%02u",
@@ -1295,33 +1633,43 @@ void qlcg_i18n_init(const wchar_t *mod_dir) {
 }
 
 int qlcg_i18n_count(void) {
-    return g_locale_count > 0 ? g_locale_count : 2;
+    return g_locale_count > 0 ? g_locale_count : QLCG_BUILTIN_LOCALES;
 }
 
 const QlLocaleMeta *qlcg_i18n_meta(int idx) {
+    if (!g_locale_count)
+        return &k_builtin_locales[idx >= 0 && idx < QLCG_BUILTIN_LOCALES ? idx : 0];
     if (idx < 0 || idx >= g_locale_count) return &g_locales[0];
     return &g_locales[idx];
 }
 
+/* 使用最长的已注册前缀 */
+static int resolve_locale(const char *code) {
+    if (!code || !*code) return -1;
+    int best = -1;
+    size_t best_length = 0;
+    for (int i = 0; i < qlcg_i18n_count(); ++i) {
+        const char *candidate = qlcg_i18n_meta(i)->code;
+        size_t length = strlen(candidate);
+        if (length > best_length && locale_prefix(code, candidate)) {
+            best = i;
+            best_length = length;
+        }
+    }
+    if (best_length <= 2 && locale_prefix(code, "zh") && code[2]) {
+        const char *subtag = code + 3;
+        if (locale_prefix(subtag, "Hant") || locale_prefix(subtag, "TW") ||
+            locale_prefix(subtag, "HK") || locale_prefix(subtag, "MO")) {
+            return QLCG_LOCALE_ZH_HANT;
+        }
+    }
+    return best;
+}
+
 void qlcg_i18n_set_locale(const char *code) {
     if (g_locale_count <= 0) qlcg_i18n_rescan(QLCG_L10N_DIR);
-    if (!code || !code[0]) { g_cur_idx = 0; return; }
-    for (int i = 0; i < g_locale_count; i++) {
-        if (qlcg_stricmp(g_locales[i].code, code) == 0) {
-            g_cur_idx = i;
-            return;
-        }
-    }
-    /* 前缀匹配：en-US 回退到 en */
-    for (int i = 0; i < g_locale_count; i++) {
-        size_t len = strlen(g_locales[i].code);
-        if (qlcg_strnicmp(g_locales[i].code, code, len) == 0 &&
-            (code[len] == '-' || code[len] == '_' || code[len] == '\0')) {
-            g_cur_idx = i;
-            return;
-        }
-    }
-    g_cur_idx = 0;
+    int index = resolve_locale(code);
+    g_cur_idx = index >= 0 ? index : QLCG_LOCALE_ZH_CN;
 }
 
 const char *qlcg_i18n_get_locale(void) {
@@ -1333,43 +1681,66 @@ int qlcg_i18n_get_index(void) {
     return g_cur_idx;
 }
 
+typedef struct {
+    const char *simplified;
+    const char *traditional;
+} ZhSpelling;
+
+/* 按简体原文的 UTF-8 字节排序 */
+static const ZhSpelling k_zh_hant[] = {
+#include "zh_hant.inc"
+};
+
+static int compare_spelling(const void *key, const void *entry) {
+    return strcmp(key, ((const ZhSpelling *)entry)->simplified);
+}
+
+static const char *traditional_spelling(const char *text) {
+    if (!text || !*text) return text;
+    const ZhSpelling *match = bsearch(text, k_zh_hant, sizeof(k_zh_hant) / sizeof(*k_zh_hant),
+                                      sizeof(*k_zh_hant), compare_spelling);
+    return match ? match->traditional : text;
+}
+
+const char *qlcg_i18n_content_text(const char *text) {
+    return g_cur_idx == QLCG_LOCALE_ZH_HANT ? traditional_spelling(text) : text;
+}
+
 const char *qlcg_t(const char *key) {
     if (!key || !key[0]) return "";
-    if (g_cur_idx >= 2 && g_cur_idx - 2 < g_mod_count) {
-        const char *value = qlcg_locale_pack_text(&g_mod_packs[g_cur_idx - 2], "ui", key);
+    if (g_cur_idx >= QLCG_BUILTIN_LOCALES && g_cur_idx - QLCG_BUILTIN_LOCALES < g_mod_count) {
+        const char *value = qlcg_locale_pack_text(&g_mod_packs[g_cur_idx - QLCG_BUILTIN_LOCALES], "ui", key);
         if (value) return value;
     }
-    /* 查内置表（en 或回退 zh-CN） */
+    /* 外置语言缺词时取简体原文 */
     for (int i = 0; i < BUILTIN_COUNT; i++) {
         if (strcmp(k_builtin[i].key, key) == 0) {
-            if (g_cur_idx == 1 && k_builtin[i].en && k_builtin[i].en[0]) {
+            if (g_cur_idx == QLCG_LOCALE_EN && k_builtin[i].en && k_builtin[i].en[0]) {
                 return k_builtin[i].en;
             }
-            return k_builtin[i].zh;
+            return qlcg_i18n_content_text(k_builtin[i].zh);
         }
     }
     return key;
 }
 
 const char *qlcg_i18n_name_text(const char *culture, const char *domain, const char *key) {
-    const char *fallback = "en";
-    if (!culture || !*culture) culture = qlcg_i18n_get_locale();
-    for (int i = 0; i < g_mod_count; ++i) {
-        const QlLocalePack *pack = &g_mod_packs[i];
-        if (qlcg_stricmp(pack->meta.code, culture) != 0) continue;
+    int index = culture && *culture ? resolve_locale(culture) : g_cur_idx;
+    if (index >= QLCG_BUILTIN_LOCALES) {
+        const QlLocalePack *pack = &g_mod_packs[index - QLCG_BUILTIN_LOCALES];
         const char *value = qlcg_locale_pack_text(pack, domain, key);
         if (value) return value;
-        fallback = pack->name_fallback;
-        break;
+        index = resolve_locale(pack->name_fallback);
     }
-    if (qlcg_stricmp(culture, "zh-CN") == 0) fallback = "zh-CN";
-    if (strcmp(domain, "flags") == 0) return qlcg_builtin_flag_text(fallback, key);
-    return NULL;
+    if (strcmp(domain, "flags") != 0) return NULL;
+    if (index == QLCG_LOCALE_ZH_HANT)
+        return traditional_spelling(qlcg_builtin_flag_text("zh-CN", key));
+    return qlcg_builtin_flag_text(index == QLCG_LOCALE_ZH_CN ? "zh-CN" : "en", key);
 }
 
 int qlcg_i18n_culture_count(void) {
     if (!g_locale_count) qlcg_i18n_init(QLCG_L10N_DIR);
-    int count = 2;
+    int count = QLCG_BUILTIN_LOCALES;
     for (int i = 0; i < g_mod_count; ++i)
         if (qlcg_js_count(g_mod_packs[i].flags) > 0) ++count;
     return count;
@@ -1378,11 +1749,11 @@ int qlcg_i18n_culture_count(void) {
 const QlLocaleMeta *qlcg_i18n_culture_meta(int idx) {
     if (!g_locale_count) qlcg_i18n_init(QLCG_L10N_DIR);
     if (idx < 0) return &g_locales[0];
-    if (idx < 2) return &g_locales[idx];
-    idx -= 2;
+    if (idx < QLCG_BUILTIN_LOCALES) return &g_locales[idx];
+    idx -= QLCG_BUILTIN_LOCALES;
     for (int i = 0; i < g_mod_count; ++i) {
         if (qlcg_js_count(g_mod_packs[i].flags) == 0) continue;
-        if (idx-- == 0) return &g_locales[i + 2];
+        if (idx-- == 0) return &g_locales[i + QLCG_BUILTIN_LOCALES];
     }
     return &g_locales[0];
 }

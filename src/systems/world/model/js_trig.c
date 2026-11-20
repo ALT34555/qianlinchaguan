@@ -1,4 +1,4 @@
-/* fdlibm 内核，同 V8 base/ieee754 */
+/* fdlibm 内核，同 V8 ieee754 */
 #include "js_trig.h"
 
 #include <stdint.h>

@@ -18,7 +18,7 @@ typedef struct {
     uint32_t seed_basin, seed_crust, seed_coast;
 } CrustField;
 
-/* 大陆核与参考分位；angle 取 drift.span */
+/* 大陆核与分位；angle取 drift.span */
 void  qlcg_crust_build(CrustField *cf, const MacroWorld *w, const TectonicPlate *plates,
                        int plate_count, const WorldCreatorOptions *opt, float angle);
 

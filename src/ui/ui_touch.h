@@ -3,8 +3,7 @@
 
 #include "ui_core.h"
 
-/* 虚拟动作键数量：冲刺 / 跳跃 / 下蹲 */
-#define UI_TOUCH_BTN_COUNT 3
+#include "../core/game_settings.h"
 
 /* 鼠标与触点使用独立编号 */
 #define UI_TOUCH_MOUSE_POINTER (-2)
@@ -15,8 +14,13 @@ typedef enum {
     UI_TOUCH_ITEM_SPRINT,
     UI_TOUCH_ITEM_JUMP,
     UI_TOUCH_ITEM_CROUCH,
+    UI_TOUCH_ITEM_MAIN_HAND,
+    UI_TOUCH_ITEM_OFF_HAND,
+    UI_TOUCH_ITEM_INVENTORY,
     UI_TOUCH_ITEM_COUNT
 } UiTouchItem;
+
+enum { UI_TOUCH_BTN_COUNT = UI_TOUCH_ITEM_COUNT - 1 };
 
 typedef struct {
     bool  enabled;
@@ -34,7 +38,8 @@ typedef struct {
     /* 动作键 */
     float btn_cx[UI_TOUCH_BTN_COUNT];
     float btn_cy[UI_TOUCH_BTN_COUNT];
-    float btn_r;
+    float btn_r[UI_TOUCH_BTN_COUNT];
+    unsigned pressed_actions;
     int   btn_pointer[UI_TOUCH_BTN_COUNT];
     bool  btn_down[UI_TOUCH_BTN_COUNT];
 
@@ -49,11 +54,13 @@ void ui_touch_reset(UiTouch *t);
 float ui_touch_item_base(const UiContext *ui, int item);
 /* 每帧重算位置可见性；lay 见 settings */
 void ui_touch_begin(UiTouch *t, UiContext *ui, bool enabled, float opacity,
-                    const float lay[4][3]);
-/* 按下：返回 true 表示控件接住，app 别再处理 */
+                    const GameSettings *settings);
+/* 按下：返回 true 表示接住，app 略 */
 bool ui_touch_down(UiTouch *t, UiContext *ui, int pointer, float x, float y);
 void ui_touch_move(UiTouch *t, UiContext *ui, int pointer, float x, float y);
 void ui_touch_up(UiTouch *t, UiContext *ui, int pointer);
 void ui_touch_draw(UiTouch *t, UiContext *ui);
+void ui_touch_draw_button(UiContext *ui, UiTouchItem item, int style, float cx, float cy, float size);
+bool ui_touch_take_press(UiTouch *t, UiTouchItem item);
 
 #endif

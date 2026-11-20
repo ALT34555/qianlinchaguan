@@ -1,5 +1,6 @@
 /* 岩石原型解释器实现 */
 #include "rock_arch.h"
+#include "plant_def.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -1025,7 +1026,10 @@ static void arch_stone_forest(RockBuilder *b, const RockBuildDef *def) {
     build_mass(b, &mass, &tones);
 }
 
+#include "deadwood.inc"
+
 static const struct { const char *name; RockArchFn fn; } ARCH_TABLE[] = {
+    { "deadwood", arch_deadwood },
     { "boulder", arch_boulder },
     { "block", arch_block },
     { "rubble", arch_rubble },

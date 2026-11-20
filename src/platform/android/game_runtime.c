@@ -54,6 +54,7 @@ static void clear_input(void) {
     app_key_track_clear();ui_touch_reset(&g_app.touch);
     g_app.ui.mouse_down=g_app.ui.right_down=g_app.ui.touch_active=false;
     g_app.ui.mouse_pressed=false;
+    game_inventory_pointer_cancel();
     g_app.atlas.dragging=false;mouse_pointer=-1;pinch=scroll_remainder=0;
     g_app.river_craft.drawing=false;
     memset(&gesture,0,sizeof(gesture));pan_canvas=horizontal_drag=false;
@@ -161,6 +162,17 @@ static void motion(const GameActivityMotionEvent *event) {
     int index=(event->action&AMOTION_EVENT_ACTION_POINTER_INDEX_MASK)>>AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
     float density=fmaxf(1,ui->device_density);
     if(action==AMOTION_EVENT_ACTION_CANCEL) { clear_input();return; }
+    static float build_angle;
+    if(event->pointerCount>=2 && game_build_open()) {
+        float dx=pointer_x(&event->pointers[1])-pointer_x(&event->pointers[0]);
+        float dy=pointer_y(&event->pointers[1])-pointer_y(&event->pointers[0]);
+        float len=hypotf(dx,dy),angle=atan2f(dy,dx);
+        if(pinch>0 && len>1) game_build_gesture(pinch/len,remainderf(angle-build_angle,6.2831853f));
+        pinch=len;build_angle=angle;ui_gesture_cancel(&gesture);
+        ui->mouse_down=ui->mouse_clicked=ui->mouse_pressed=false;
+        if(action==AMOTION_EVENT_ACTION_POINTER_UP) {pinch=0;mouse_pointer=-1;}
+        return;
+    }
     if(event->pointerCount>=2 && pan_canvas && g_app.view_mode==VIEW_MODE_ATLAS && !g_app.esc_paused && g_app.world) {
         float x0=pointer_x(&event->pointers[0]),y0=pointer_y(&event->pointers[0]);
         float x1=pointer_x(&event->pointers[1]),y1=pointer_y(&event->pointers[1]);
@@ -177,14 +189,17 @@ static void motion(const GameActivityMotionEvent *event) {
         bool down=(action==AMOTION_EVENT_ACTION_DOWN || action==AMOTION_EVENT_ACTION_POINTER_DOWN) && (int)i==index;
         bool up=(action==AMOTION_EVENT_ACTION_UP || action==AMOTION_EVENT_ACTION_POINTER_UP) && (int)i==index;
         if(down) {
+            int previous_x=ui->mouse_x,previous_y=ui->mouse_y;
+            bool previous_toast=ui->toast_blocked;
             ui->mouse_x=(int)x;ui->mouse_y=(int)y;
-            bool taken=false;
-            if(!game_scene_over_ui(ui))taken=ui_touch_down(&g_app.touch,ui,id,x,y);
-            if(taken && id==g_app.touch.look_pointer && g_app.terrain.eng_tool!=ENG_TOOL_NONE) {
-                ui_touch_up(&g_app.touch,ui,id);taken=false;
-            }
-            if(!taken && mouse_pointer<0) {
+            ui->toast_blocked=ui_toast_over_ui(ui,&g_app.toasts);
+            bool taken=!game_scene_over_ui(ui) && ui_touch_down(&g_app.touch,ui,id,x,y);
+            if(taken || mouse_pointer>=0) {
+                ui->mouse_x=previous_x;ui->mouse_y=previous_y;
+                ui->toast_blocked=previous_toast;
+            } else {
                 mouse_pointer=id;ui->mouse_down=true;ui->mouse_pressed=true;ui->mouse_clicked=false;
+                game_inventory_pointer_down(ui);
                 ui_gesture_down(&gesture,x,y,qlcg_time_ms());
                 horizontal_drag=false;ui->touch_drag_horizontal=false;scroll_remainder=0;
                 pan_canvas=g_app.screen==SCREEN_IN_GAME && g_app.view_mode==VIEW_MODE_ATLAS &&
@@ -203,8 +218,8 @@ static void motion(const GameActivityMotionEvent *event) {
                     if(pan_canvas) {
                         g_app.atlas.dragging=true;
                         qlcg_atlas_drag(&g_app.atlas,g_app.world,x,y,dx,dy);
-                    } else if(g_app.screen!=SCREEN_IN_GAME || game_scene_over_ui(ui) ||
-                              (g_app.view_mode==VIEW_MODE_ATLAS && game_atlas_over_ui(ui))) {
+                    } else if(!game_build_open() && (g_app.screen!=SCREEN_IN_GAME || game_scene_over_ui(ui) ||
+                              (g_app.view_mode==VIEW_MODE_ATLAS && game_atlas_over_ui(ui)))) {
                         if(!was_dragged)horizontal_drag=fabsf(x-gesture.start_x)>fabsf(y-gesture.start_y)*1.2f;
                         ui->touch_drag_horizontal=horizontal_drag;
                         if(!horizontal_drag) {

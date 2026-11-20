@@ -146,6 +146,8 @@ typedef struct UiContext {
     GLuint     prog;
     GLuint     vao, vbo;
     GLuint     atlas_tex;
+    GLuint     inventory_tex;
+    bool       inventory_tex_tried;
     GLuint     cur_sprite_tex;  /* 本批 sprite 所用纹理，0 表示尚无 */
 
     /* 背景磨砂：降采样后可分离高斯两趟 */
@@ -189,6 +191,7 @@ typedef struct UiContext {
     float      safe_x_px;       /* 每帧换算出的像素值 */
     float      safe_y_px;
     bool       reduce_motion;   /* 关闭过渡与水波 */
+    bool       suppress_button_ripple;
     int        capture_action;  /* >=0 表示正在等待按键绑定 */
 
     /* 下拉选择器：展开态跨帧保持，浮层在页面末尾绘制 */
@@ -260,7 +263,7 @@ bool ui_gpu_restore(UiContext *ui);
 bool ui_init(UiContext *ui, int w, int h);
 void ui_shutdown(UiContext *ui);
 void ui_apply_theme(UiContext *ui, ThemeMode mode);
-/* 昼夜覆盖：仅 THEME_AUTO 生效，-1 系统 */
+/* 昼夜覆盖：仅 AUTO 生效，-1 系统 */
 void ui_set_night_override(UiContext *ui, int v);
 void ui_set_palette(UiContext *ui, uint32_t primary_hex, uint32_t accent_hex);
 void ui_begin_frame(UiContext *ui, int w, int h);
@@ -313,7 +316,7 @@ void ui_backdrop_release(UiContext *ui);
 /* 磨砂玻璃矩形；无模糊结果时退化为半透明 */
 void ui_draw_rect_glass(UiContext *ui, float x, float y, float w, float h, uint32_t tint);
 
-/* 切换字体族并重建烘焙缓存；传 NULL 的项保持不动 */
+/* 切字体族并重建缓存；NULL 项不动 */
 void ui_set_font_family(UiContext *ui, const wchar_t *display,
                         const wchar_t *body, const wchar_t *mono);
 
@@ -323,7 +326,7 @@ int ui_measure_text_wrapped(UiContext *ui, UiFaceKind face, float px, bool bold,
 int ui_draw_text_wrapped(UiContext *ui, UiFaceKind face, float px, bool bold,
                          float x, float y, float max_w, float line_h,
                          const char *text, uint32_t color);
-/* 超宽单行文本自动省略号（align: 0左 1中 2右） */
+/* 单行文本超宽自动省略（0左 1中 2右） */
 void ui_draw_text_ellipsis(UiContext *ui, UiFaceKind face, float px, bool bold,
                            float x, float y, float max_w, int align,
                            const char *text, uint32_t color);
@@ -343,7 +346,7 @@ void ui_draw_text_px_center(UiContext *ui, UiFaceKind face, float px, bool bold,
 void ui_draw_text_px_right(UiContext *ui, UiFaceKind face, float px, bool bold, float rx, float y, const char *text, uint32_t color);
 float ui_line_height(UiFaceKind face, float px);
 
-/* 按钮形态；对齐 base btn--primary 等 */
+/* 按钮形态；对齐 btn--primary 等 */
 typedef enum {
     BTN_PRIMARY = 0,
     BTN_GHOST,
@@ -358,6 +361,7 @@ float ui_ease_out(float t);
 float ui_ease(float t);
 float ui_ease_spring(float t);
 UiMotion *ui_motion(UiContext *ui, uint32_t id);
+void ui_motion_update(UiContext *ui, UiMotion *m, bool hovered, bool pressed, bool toggled);
 UiMotion *ui_motion_step(UiContext *ui, uint32_t id, bool hovered, bool pressed, bool toggled);
 void ui_ripple_push(UiContext *ui, float x, float y, float radius);
 void ui_ripple_draw(UiContext *ui, uint32_t color);

@@ -103,7 +103,7 @@ static HerbSeason season_of(const PdDef *def, int season, const HerbProfile *p) 
         s.droop = 0.18 + 0.30 * win;
         s.plump = 0.92 - 0.15 * win;
         s.dry = 0.30 + 0.45 * win;
-    } else {
+    } else if (season == PD_SEASON_WINTER) {
         double keep_w = keep * (1.0 - 0.35 * win);
         s.evergreen = keep_w >= 0.55;
         s.height = 0.78 - 0.30 * win;
@@ -904,7 +904,8 @@ static void build_cushion(LpBuilder *b, const HerbCtx *c, int form) {
     int simple = form == VEG_FORM_SIMPLE;
     int young = c->def->state == PD_STATE_SEEDLING;
     int dead = c->def->state == PD_STATE_WITHERED;
-    int sectors = simple ? 12 : young ? 24 : SECTORS[c->season];
+    int sectors = simple ? 12 : young ? 24 :
+                  c->season == PD_SEASON_NONE ? MAX_SECTORS : SECTORS[c->season];
     int bands = simple ? 2 : BANDS;
     double spread = c->sp * (young ? 0.42 : dead ? 0.68 : 1.0);
     double depth = spread * (dead ? 0.060 : 0.12) * c->p->plump;

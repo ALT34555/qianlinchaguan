@@ -7,7 +7,7 @@
 /* 动态配色：对齐 base theme.ts */
 typedef struct { float r, g, b, a; } QlColor;
 
-/* 颜色令牌（顺序与 base tokens.csv 一致） */
+/* 颜色令牌（顺序对齐 tokens.csv） */
 typedef enum {
     QL_BG = 0,
     QL_BG_DEEP,
@@ -60,7 +60,7 @@ typedef struct {
     QlColor accent;
 } QlTokens;
 
-/* 尺寸令牌：对齐 base 的 --q-size 与间距 */
+/* 尺寸令牌：对齐 --q-size 与间距 */
 typedef struct {
     float scale;
     float size;

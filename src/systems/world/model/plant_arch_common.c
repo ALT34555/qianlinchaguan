@@ -200,6 +200,57 @@ void qlcg_pa_leaf_spray(LpBuilder *b, const PdDef *def, const double center[3],
     }
 }
 
+void qlcg_pa_stem_between(LpBuilder *b, const double from[3], const double to[3],
+                      double radius, double taper, LpRgb color) {
+    double dir[3] = {to[0] - from[0], to[1] - from[1], to[2] - from[2]};
+    double len = js_hypot3(dir[0], dir[1], dir[2]);
+    if (len < 1e-6) return;
+    for (int i = 0; i < 3; i++) dir[i] /= len;
+    LpOpts o = qlcg_lp_opts();
+    o.sides = 4;
+    o.tip_ratio = taper;
+    qlcg_lp_limb(b, from, dir, len, radius, color, &o);
+}
+
+void qlcg_pa_heart_leaf(LpBuilder *b, const double at[3], double a, double length,
+                       double width, double rise, LpRgb leaf, const LpRgb *underside) {
+    static const double edge[][3] = {
+        {0, 0, 0}, {-.14, .29, .07}, {.15, .50, .20}, {.50, .37, .52},
+        {1, 0, 1}, {.50, -.37, .52}, {.15, -.50, .20}, {-.14, -.29, .07}
+    };
+    double x = cos(a), z = sin(a), points[8][3];
+    double lower[8][3];
+    double thickness = width * .018;
+    double center[3] = {at[0] + x * length * .31, at[1] + rise * .47 + width * .13,
+                        at[2] + z * length * .31};
+    double below[3] = {center[0], center[1] - thickness, center[2]};
+    for (int i = 0; i < 8; i++) {
+        points[i][0] = at[0] + x * edge[i][0] * length - z * edge[i][1] * width;
+        points[i][1] = at[1] + rise * edge[i][2];
+        points[i][2] = at[2] + z * edge[i][0] * length + x * edge[i][1] * width;
+        lower[i][0] = points[i][0];
+        lower[i][1] = points[i][1] - thickness;
+        lower[i][2] = points[i][2];
+    }
+    for (int i = 0; i < 8; i++) {
+        int next = (i + 1) % 8;
+        LpRgb face = i < 4 ? leaf : qlcg_lp_deepen(leaf, .10);
+        qlcg_lp_triangle(b, center, points[i], points[next], face, LP_MAT_SOLID);
+        if (underside) qlcg_lp_triangle(b, below, lower[next], lower[i], *underside, LP_MAT_SOLID);
+    }
+}
+
+void qlcg_pa_folded_petal(LpBuilder *b, const double at[3], double a, double length,
+                       double width, double pitch, LpRgb color, int mat) {
+    double x = cos(a), z = sin(a);
+    double rise = sin(pitch) * length;
+    double tip[3] = {at[0] + x * length, at[1] + rise, at[2] + z * length};
+    double mid[3] = {at[0] + x * length * .48, at[1] + rise * .42, at[2] + z * length * .48};
+    double left[3] = {mid[0] + z * width * .5, mid[1], mid[2] - x * width * .5};
+    double right[3] = {mid[0] - z * width * .5, mid[1] - width * .14, mid[2] + x * width * .5};
+    qlcg_lp_quad(b, at, right, tip, left, color, mat);
+}
+
 void qlcg_pa_bent_leaf(LpBuilder *b, const double start[3], double bearing, double len, double wid,
                       double rise, double drop, LpRgb col, LpRng *rand, int mat) {
     double dx = cos(bearing), dz = sin(bearing);

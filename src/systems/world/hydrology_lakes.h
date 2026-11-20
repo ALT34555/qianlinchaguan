@@ -18,6 +18,7 @@ int qlcg_lake_connection(const MacroWorld *w,int cell,int outlet,double *wx,doub
 int qlcg_lake_river_candidates(const MacroWorld *w,int cell,int *edges,int capacity);
 int qlcg_lake_channel_target(const MacroWorld *w,int cell,double from_x,double from_z,double *wx,double *wz);
 LakeShoreField qlcg_lake_field(const MacroWorld *w, double wx, double wz);
+LakeShoreField qlcg_lake_field_cell(const MacroWorld *w, int cell);
 int qlcg_lake_island_at(const MacroWorld *w, int lake, double *ox, double *oz);
 float qlcg_lake_height(const LakeShoreField *f, float natural);
 #endif

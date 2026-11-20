@@ -1,7 +1,7 @@
 /* HUD玻璃：取 SURFACE_GLASS 令牌 */
 #include "hud_glass.h"
 
-/* 顶栏通栏：外投影 + 玻璃底 + 白高光 + 顶亮线 + 底分隔 */
+/* 顶栏：外投影+玻璃底+高光+分隔 */
 void hud_glass_strip(UiContext *ui, float x, float y, float w, float h) {
     float z = ui->met.size;
     ui_shadow_soft(ui, x, y, w, h, 28.0f * z, 10.0f * z,

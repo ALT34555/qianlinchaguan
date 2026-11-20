@@ -5,7 +5,7 @@
 static float g_cursor[HUD_SLOT_COUNT];
 static bool  g_ready = false;
 
-/* HUD 内边距：18 纵向 / 20 横向，再叠加安全区 */
+/* HUD 内边距：18 纵/20 横+安全区 */
 static void hud_origin(UiContext *ui, float *pad_x, float *pad_y) {
     float z = ui->met.size;
     *pad_x = 20.0f * z + ui->safe_x_px;

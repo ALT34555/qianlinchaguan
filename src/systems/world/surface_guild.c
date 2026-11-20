@@ -2,6 +2,11 @@
 #include "surface_guild.h"
 #include "surface_internal.h"
 #include "plant_distribution.h"
+#include "model/rock_material.h"
+#include "model/rock_def.h"
+#include "world_prop_edit.h"
+#include "world_delta.h"
+#include "hydrology_headwater.h"
 #include "climate_zone.h"
 #include "model/plant_guild.h"
 #include "model/plant_material.h"
@@ -12,6 +17,7 @@
 #include "../../core/math_util.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* 环位：单位圆半径比例 */
@@ -28,6 +34,14 @@ static float unit_of(uint32_t h) {
 
 /* 径向轮廓：随角度起伏的闭合曲线 */
 static float shape_radius(const QlcgGuildShape *s, float theta) {
+    if (s->ambient) {
+        const float tau = 2.0f * QLCG_PI;
+        float turn = tau * unit_of(s->seed);
+        float lobes = tau * unit_of(s->seed >> 16);
+        return s->r * (0.71f + 0.14f * cosf(2.0f * theta + turn)
+            + 0.09f * cosf(3.0f * theta + lobes)
+            + 0.05f * sinf(5.0f * theta + turn + lobes));
+    }
     float cs = cosf(theta), sn = sinf(theta);
     double n = qlcg_base_noise_d(cs * 1.35 + s->cx * 0.013, 0.0,
                                  sn * 1.35 + s->cz * 0.011, s->seed);
@@ -73,10 +87,15 @@ static void polar_point(uint32_t state, int ring, float *ox, float *oz) {
 }
 
 /* 单株落地：水陆、几何与三角预算 */
+static bool chunk_owns(float x, float z) {
+    const float half = CHUNK_SIZE * 0.5f;
+    return x >= -half && x < half && z >= -half && z < half;
+}
+
 static int try_place(RegionData *reg, const QlcgClimateSeason *cs,
                      const GameSettings *settings, int species,
                      float wx, float wz, uint32_t roll,
-                     float scale_lo, float scale_hi, int *plants, int *tris) {
+                     float scale_lo, float scale_hi, bool owned, int *plants, int *tris) {
     if (*plants >= QLCG_GUILD_PLANTS_MAX) return 0;
     const PdSpecies *sp = qlcg_pd_species(species);
     if (!sp) return 0;
@@ -84,6 +103,7 @@ static int try_place(RegionData *reg, const QlcgClimateSeason *cs,
     float half = span * 0.5f;
     float lx = wx - reg->center_x;
     float lz = wz - reg->center_z;
+    if (owned && !chunk_owns(lx, lz)) return 0;
     if (lx < -half || lz < -half || lx >= half || lz >= half) return 0;
 
     float bed = qlcg_region_height_at(reg, lx, lz);
@@ -130,15 +150,16 @@ static int try_place(RegionData *reg, const QlcgClimateSeason *cs,
     return 1;
 }
 
-/* 混生丛：单乔木主种 + 共生灌木 */
+/* 混生丛成员布局 */
 static int layout_members(RegionData *reg, const QlcgClimateSeason *cs,
                           const GameSettings *settings, const QlcgGuildDef *def,
                           const QlcgGuildShape *shape, uint32_t seed,
                           int *plants, int *tris) {
     int placed = 0;
+    bool ambient = def->grass_tufts != 0;
     for (int m = 0; m < def->member_count; m++) {
         const QlcgGuildMember *mem = &def->members[m];
-        if (mem->species < 0) continue;
+        if (mem->species < 0 || mem->attachment != GUILD_GROUND) continue;
         const PdSpecies *sp = qlcg_pd_species(mem->species);
         if (!sp) continue;
         int span = (int)mem->n_max - (int)mem->n_min + 1;
@@ -146,6 +167,11 @@ static int layout_members(RegionData *reg, const QlcgClimateSeason *cs,
         uint32_t hm = qlcg_hash_u32(seed ^ ((uint32_t)(m + 1) * 0x9E3779B9u));
         int n = (int)mem->n_min + (int)(hm % (uint32_t)span);
         if (n <= 0) continue;
+        if (ambient && (sp->category == PLANT_CAT_SHU || sp->category == PLANT_CAT_TENG) && n == 1) {
+            placed += try_place(reg, cs, settings, mem->species, shape->cx, shape->cz, hm,
+                                def->scale_lo, def->scale_hi, true, plants, tris);
+            continue;
+        }
         int clusters = mem->clump && n > 1 ? (n + 5) / 6 : 1;
         if (clusters < 1) clusters = 1;
         if (clusters > 4) clusters = 4;
@@ -168,7 +194,8 @@ static int layout_members(RegionData *reg, const QlcgClimateSeason *cs,
                 if (!edge_keep(d, hp)) continue;
                 placed += try_place(reg, cs, settings, mem->species,
                                     shape->cx + px, shape->cz + pz, hp,
-                                    1.0f, 1.35f, plants, tris);
+                                    ambient ? def->scale_lo : 1.0f,
+                                    ambient ? def->scale_hi : 1.35f, ambient, plants, tris);
             }
         }
     }
@@ -208,7 +235,7 @@ static int layout_mono(RegionData *reg, const QlcgClimateSeason *cs,
                 if (d >= 1.0f || !edge_keep(d, hp)) continue;
                 placed += try_place(reg, cs, settings, def->species,
                                     shape->cx + x, shape->cz + z, hp, lo, hi,
-                                    plants, tris);
+                                    false, plants, tris);
             }
         }
     } else {
@@ -236,20 +263,239 @@ static int layout_mono(RegionData *reg, const QlcgClimateSeason *cs,
             used++;
             placed += try_place(reg, cs, settings, def->species,
                                 shape->cx + x, shape->cz + z, hp, lo, hi,
-                                plants, tris);
+                                false, plants, tris);
         }
     }
     return placed;
+}
+
+int qlcg_aquatic_guild_site(const RegionData *reg, float x, float z, int kind,
+                           float *bed, float *depth) {
+    if (!chunk_owns(x, z) || !reg->water_kind ||
+        (kind != WATER_KIND_SEA && kind != WATER_KIND_LAKE &&
+         kind != WATER_KIND_RIVER && kind != WATER_KIND_STATIC)) return -1;
+    float half = (reg->width - 1) * reg->step * 0.5f;
+    int ix = qlcg_clampi((int)roundf((x + half) / reg->step), 0, reg->width - 1);
+    int iz = qlcg_clampi((int)roundf((z + half) / reg->step), 0, reg->height - 1);
+    int i = iz * reg->width + ix;
+    if (reg->water_kind[i] != kind) return -1;
+    *bed = qlcg_region_height_at(reg, x, z);
+    *depth = qlcg_region_water_at(reg, x, z) - *bed;
+    float limit = kind == WATER_KIND_SEA ? 9.0f : 2.6f;
+    if (!isfinite(*depth) || *depth < 0.46f || *depth > limit ||
+        qlcg_region_slope_at(reg, x, z) > 1.05f) return -1;
+    return i;
+}
+
+static float aquatic_grass_scale(float depth, int kind, uint32_t seed) {
+    uint32_t lengths = qlcg_hash_u32(seed ^ 0x6c656166u);
+    float group = unit_of(lengths);
+    float v = unit_of(lengths >> 16);
+    float wave = kind == WATER_KIND_SEA || kind == WATER_KIND_RIVER ? 0.32f : 0.20f;
+    float clearance = 0.035f + wave * fminf(1.0f, depth / 1.8f);
+    float span = depth - clearance;
+    float height;
+    if (group < 0.12f)
+        height = fminf(qlcg_lerpf(0.36f, 1.18f, v), span * qlcg_lerpf(0.34f, 0.57f, v));
+    else if (group < 0.31f)
+        height = fminf(qlcg_lerpf(1.18f, 2.75f, v), span * qlcg_lerpf(0.65f, 0.84f, v));
+    else if (group < 0.73f)
+        height = fminf(qlcg_lerpf(2.65f, 5.70f, v), span * qlcg_lerpf(0.84f, 0.97f, v));
+    else
+        height = span * qlcg_lerpf(0.96f, 0.998f, v);
+    return height / 0.86f;
+}
+
+static bool place_grass(RegionData *reg, float x, float z, float scale,
+                        uint32_t seed, uint8_t rank, int kind) {
+    if (!chunk_owns(x, z)) return true;
+    float bed, depth;
+    if (kind != WATER_KIND_DRY) {
+        if (qlcg_aquatic_guild_site(reg, x, z, kind, &bed, &depth) < 0) return true;
+        scale *= aquatic_grass_scale(depth, kind, seed);
+    } else {
+        bed = qlcg_region_height_at(reg, x, z);
+        if (!isfinite(bed) || bed <= qlcg_region_water_at(reg, x, z) + 0.05f ||
+            qlcg_region_slope_at(reg, x, z) > 1.1f) return true;
+    }
+    if (reg->grass_count == reg->grass_cap) {
+        int cap = reg->grass_cap ? reg->grass_cap * 2 : 64;
+        GrassTuft *grass = realloc(reg->grass, (size_t)cap * sizeof(*grass));
+        if (!grass) return false;
+        reg->grass = grass;
+        reg->grass_cap = cap;
+    }
+    reg->grass[reg->grass_count++] = (GrassTuft){x, bed, z, scale, seed, rank, (uint8_t)kind};
+    return true;
+}
+
+static void layout_grass(RegionData *reg, const QlcgGuildShape *shape,
+                         int tufts, float grass_scale, float clearance, int kind) {
+    float lx = shape->cx - reg->center_x, lz = shape->cz - reg->center_z;
+    for (int i = 0; i < tufts; i += 7) {
+        uint32_t patch = qlcg_hash_u32(shape->seed ^ (uint32_t)i * 0x85EBCA6Bu ^ 0x67726173u);
+        float angle = unit_of(patch) * (2.0f * QLCG_PI);
+        float radius = shape_radius(shape, angle);
+        float inner = fmaxf(radius * 0.16f, clearance);
+        float outer = radius * 0.96f;
+        if (inner >= outer) continue;
+        float distance = sqrtf(qlcg_lerpf(inner * inner, outer * outer, unit_of(patch >> 16)));
+        float cx = cosf(angle) * distance, cz = sinf(angle) * distance;
+        uint32_t site_rank = qlcg_hash_u32(patch ^ 0x72616e6bu) % 255u;
+        for (int member = 0; member < 7 && i + member < tufts; member++) {
+            uint32_t h = qlcg_hash_u32(patch ^ (uint32_t)(member + 1) * 0x9E3779B9u);
+            float a = unit_of(h) * (2.0f * QLCG_PI);
+            float spread = unit_of(h >> 16) * radius * 0.31f;
+            float dx = cx + cosf(a) * spread, dz = cz + sinf(a) * spread;
+            float dist2 = dx * dx + dz * dz;
+            if (dist2 > shape->r * shape->r || dist2 < clearance * clearance) continue;
+            float radial = sqrtf(dist2) / shape_radius(shape, atan2f(dz, dx));
+            float fade = qlcg_smoothf(0.70f, 1.0f, radial);
+            if (radial >= 1.0f || (member != 0 && unit_of(qlcg_hash_u32(h ^ 0x65646765u)) < fade))
+                continue;
+            float scale = kind == WATER_KIND_DRY ? grass_scale * (0.68f + 0.62f * unit_of(h >> 8)) : 1.0f;
+            if (kind == WATER_KIND_SEA && clearance >= 0.50f)
+                scale *= qlcg_lerpf(0.55f, 1.0f,
+                    qlcg_smoothf(clearance, clearance + 0.85f, sqrtf(dist2)));
+            bool permanent = i % 14 == 0 && member == 0;
+            uint8_t rank = permanent ? 0 : (uint8_t)(1 + (site_rank + (h % 53u)) % 255u);
+            if (!place_grass(reg, lx + dx, lz + dz, scale, h, rank, kind)) return;
+        }
+    }
+}
+
+int qlcg_aquatic_guild_grass(RegionData *reg, float x, float z, int kind, int zone,
+                            float clearance, uint32_t seed) {
+    QlcgGuildShape shape = {
+        .cx = reg->center_x + x, .cz = reg->center_z + z,
+        .r = qlcg_lerpf(2.30f, 3.05f, unit_of(seed >> 16)), .seed = seed, .ambient = 1
+    };
+    bool sea = kind == WATER_KIND_SEA;
+    float density = 1.0f;
+    const QlcgClimateZoneInfo *climate = qlcg_climate_zone_info(zone);
+    if (climate) {
+        static const float heat_density[] = {1.20f, 1.12f, 1.00f, 0.67f, 0.40f};
+        density = heat_density[climate->heat];
+        if (!sea) density *= 0.89f + 0.0375f * climate->wet;
+    }
+    int tufts = (int)roundf(((sea ? 112 : 91) + (int)(seed % 4u) * 7) * density);
+    int first = reg->grass_count;
+    layout_grass(reg, &shape, tufts, 1.0f, clearance, kind);
+    return reg->grass_count - first;
+}
+
+static bool guild_rock_ground(const RegionData *reg, const MacroWorld *w,
+                              float x, float z, float *bed) {
+    float wx = reg->center_x + x, wz = reg->center_z + z;
+    if (qlcg_headwater_excludes(w, wx, wz, 4)) return false;
+    float half = (reg->width - 1) * reg->step * 0.5f;
+    if (fabsf(x) <= half && fabsf(z) <= half) {
+        *bed = qlcg_region_height_at(reg, x, z);
+        return isfinite(*bed) && *bed > qlcg_region_water_at(reg, x, z) + 0.2f &&
+            qlcg_region_slope_at(reg, x, z) <= 1.1f;
+    }
+    SurfaceMapPoint point;
+    qlcg_sample_surface_detail_map(w, wx, wz, &point);
+    *bed = point.h;
+    return isfinite(*bed) && *bed > point.wl + 0.2f;
+}
+
+float qlcg_guild_radius(const QlcgGuildDef *def, uint32_t roll) {
+    float lo, hi;
+    tier_range(def->tier, &lo, &hi);
+    float t = unit_of(roll);
+    float size = lo + (hi - lo) * (def->mono ? (0.55f + 0.45f * t) : t);
+    return floorf(size * 2.0f + 0.5f) * 0.25f;
+}
+
+/* 群系占宿主：先复制宿主再追加子项 */
+static void attach_members(RegionData *reg,const MacroWorld *world,const QlcgGuildDef *def,
+                           const GameSettings *settings,const PropInstance *wood,int first,int season,
+                           uint32_t seed,int *plants,int *tris) {
+    const int last=reg->tree_count;
+    int plant_cursor=0,wood_cursor=0;
+    for(int m=0;m<def->member_count;m++) {
+        const QlcgGuildMember *member=def->members+m;
+        if (!member->attachment) continue;
+        const bool log=member->attachment==GUILD_ON_WOOD;
+        const uint32_t roll=qlcg_hash_u32(seed^(uint32_t)(m+1)*0x9e3779b9u);
+        int wanted=member->n_min+roll%(member->n_max-member->n_min+1);
+        int *cursor=log?&wood_cursor:&plant_cursor, ordinal=0;
+        for(int h=log?0:first; h<(log?(wood!=NULL):last) && wanted>0;h++) {
+            PropInstance host=log?*wood:reg->trees[h];
+            const LpSocket *sockets; int n;
+            float scale;
+            int visual=log?season:host.visual_season;
+            int setting=settings?settings->vegetation_form:VEG_FORM_NORMAL;
+            if (log) {
+                const RockGeometry *g=qlcg_rock_geometry(host.archetype,ROCK_FORM_OUTCROP,visual,1);
+                if (!g) continue;
+                sockets=g->sockets;n=g->socket_count;scale=qlcg_rock_instance_scale(host.scale_x,g->radius);
+            } else {
+                if (host.category!=PLANT_CAT_SHU && host.category!=PLANT_CAT_GUAN) continue;
+                const LpGeometry *g=qlcg_plant_geometry(host.species,qlcg_plant_model_form(setting,host.shape_variant),visual);
+                if (!g) continue;
+                sockets=g->sockets;n=g->socket_count;scale=qlcg_plant_instance_scale(host.scale_y,g->height);
+            }
+            int host_kind=log?CHD_PROP_ROCK_BASE+host.archetype:CHD_PROP_PLANT_BASE+host.species;
+            if(world && world->chunk_deltas && qlcg_chd_prop_state(world,reg->center_x+host.x,reg->center_z+host.z,host_kind)==CHD_PROP_REMOVED) continue;
+            float c=cosf(host.rot_y),s=sinf(host.rot_y);
+            for(int j=0;j<n && wanted>0;j++){
+                const LpSocket *site=sockets+(j+seed%n)%n;
+                if (site->kind!=(log?LP_SOCKET_FUNGUS:LP_SOCKET_CLING) || ordinal++ < *cursor) continue;
+                *cursor=ordinal;
+                uint32_t pose=qlcg_hash_u32(roll^(uint32_t)ordinal);
+                unsigned variant=setting==VEG_FORM_RICH?pose%3u:0;
+                int form=qlcg_plant_placed_form(qlcg_plant_model_form(setting,variant),1);
+                const LpGeometry *g=qlcg_plant_geometry(member->species,form,visual);
+                if (!g || *plants>=QLCG_GUILD_PLANTS_MAX || *tris+g->triangle_count>QLCG_GUILD_TRIS_MAX) continue;
+                float dx=site->translation[0], dz=site->translation[2];
+                float x=host.x+(c*dx-s*dz)*scale,z=host.z+(s*dx+c*dz)*scale;
+                float y=host.y+site->translation[1]*scale;
+                float yaw=host.rot_y+atan2f(dz,log?0:dx);
+                float size=.85f+.30f*unit_of(pose>>8);
+                PropInstance *child=qlcg_region_add_plant(reg,member->species,qlcg_plant_species_category(member->species),
+                    0,x,z,y,yaw,2*g->radius*size,g->height*size,visual,variant,pose);
+                if (!child) return;
+                child->hanging=1;(*plants)++;*tris+=g->triangle_count;wanted--;
+            }
+        }
+    }
+}
+
+bool qlcg_guild_place(RegionData *reg, const MacroWorld *w, const GameSettings *settings,
+                      const QlcgClimateSeason *cs, const QlcgGuildDef *def,
+                      const QlcgGuildShape *shape, int season, int *plants, int *tris) {
+    int first=reg->tree_count;
+    PropInstance *wood=NULL;
+    if (def->rock >= 0) {
+        float x = shape->cx - reg->center_x, z = shape->cz - reg->center_z, bed;
+        if (!guild_rock_ground(reg, w, x, z, &bed)) return false;
+        if (chunk_owns(x,z)) {
+            wood=qlcg_region_add_rock(reg,def->rock,x,z,bed,shape->seed,season);
+            if (!wood) return false;
+        }
+        layout_grass(reg, shape, def->grass_tufts, def->grass_scale, shape->r * 0.38f, WATER_KIND_DRY);
+    } else {
+        if (def->mono) layout_mono(reg, cs, settings, def, shape, shape->seed, plants, tris);
+        else layout_members(reg, cs, settings, def, shape, shape->seed, plants, tris);
+        if (def->grass_tufts)
+            layout_grass(reg, shape, def->grass_tufts, def->grass_scale, 0.0f, WATER_KIND_DRY);
+    }
+    attach_members(reg,w,def,settings,wood,first,season,shape->seed,plants,tris);
+    return true;
 }
 
 int qlcg_guild_query(const MacroWorld *w, int cx, int cz, QlcgGuildShape *out) {
     if (!w || !out) return -1;
     float ccx = ((float)cx + 0.5f) * QLCG_GUILD_CELL;
     float ccz = ((float)cz + 0.5f) * QLCG_GUILD_CELL;
+    float rate_roll = unit_of(cell_seed(w, cx, cz, 0x11u));
+    if (rate_roll >= QLCG_GUILD_RATE) return -1;
     if (guild_noise(ccx, ccz, w->opt.seed) < QLCG_GUILD_NOISE) return -1;
-    if (unit_of(cell_seed(w, cx, cz, 0x11u)) >= QLCG_GUILD_RATE) return -1;
     int zone = qlcg_climate_zone_at(w, ccx, ccz);
     if (zone < 0 || zone >= QLCG_ZONE_COUNT) return -1;
+    if (zone == QLCG_ZONE_ICE_CAP && rate_roll >= 0.30f) return -1;
 
     int mono_pick = qlcg_pg_pick(zone, 1, cell_seed(w, cx, cz, 0x21u));
     int mixed_pick = qlcg_pg_pick(zone, 0, cell_seed(w, cx, cz, 0x22u));
@@ -262,13 +508,6 @@ int qlcg_guild_query(const MacroWorld *w, int cx, int cz, QlcgGuildShape *out) {
     const QlcgGuildDef *def = qlcg_pg_guild(idx);
     if (!def) return -1;
 
-    float lo, hi;
-    tier_range(def->tier, &lo, &hi);
-    float t = unit_of(cell_seed(w, cx, cz, 0x31u));
-    float size = lo + (hi - lo) * (def->mono ? (0.55f + 0.45f * t) : t);
-    size = floorf(size * 2.0f + 0.5f) * 0.5f;
-    float radius = size * 0.5f;
-
     uint32_t hpos = cell_seed(w, cx, cz, 0x32u);
     float gx = (float)cx * QLCG_GUILD_CELL + 0.5f
              + unit_of(hpos) * (QLCG_GUILD_CELL - 1.0f);
@@ -276,10 +515,11 @@ int qlcg_guild_query(const MacroWorld *w, int cx, int cz, QlcgGuildShape *out) {
              + unit_of(hpos >> 16) * (QLCG_GUILD_CELL - 1.0f);
     out->cx = gx;
     out->cz = gz;
-    out->r = radius;
+    out->r = qlcg_guild_radius(def, cell_seed(w, cx, cz, 0x31u));
     out->seed = cell_seed(w, cx, cz, 0x33u);
     out->species = def->species;
     out->mono = def->mono;
+    out->ambient = def->grass_tufts != 0;
 
     return idx;
 }
@@ -288,7 +528,7 @@ int qlcg_guild_scatter(RegionData *reg, const MacroWorld *w,
                        int season_idx, const GameSettings *settings,
                        const QlcgClimateSeason *cs,
                        QlcgGuildShape *shapes, int shape_cap) {
-    if (!reg || !w || !cs) return 0;
+    if (!reg || !w) return 0;
     if (qlcg_plant_species_count() <= 0 || qlcg_pg_count() <= 0) return 0;
 
     float span = (float)(reg->width - 1) * reg->step;
@@ -298,30 +538,28 @@ int qlcg_guild_scatter(RegionData *reg, const MacroWorld *w,
     int cx1 = (int)floorf((x1 - 0.001f) / QLCG_GUILD_CELL);
     int cz0 = (int)floorf(z0 / QLCG_GUILD_CELL);
     int cz1 = (int)floorf((z1 - 0.001f) / QLCG_GUILD_CELL);
+    const float margin = 8.0f;
+    int first_x = (int)floorf((x0 - margin) / QLCG_GUILD_CELL);
+    int last_x = (int)floorf((x1 + margin) / QLCG_GUILD_CELL);
+    int first_z = (int)floorf((z0 - margin) / QLCG_GUILD_CELL);
+    int last_z = (int)floorf((z1 + margin) / QLCG_GUILD_CELL);
 
     int used = 0;
     int plants = 0, tris = 0;
-    for (int cz = cz0; cz <= cz1; cz++) {
-        for (int cx = cx0; cx <= cx1; cx++) {
+    for (int cz = first_z; cz <= last_z; cz++) {
+        for (int cx = first_x; cx <= last_x; cx++) {
             QlcgGuildShape shape;
             int idx = qlcg_guild_query(w,cx,cz,&shape);
             const QlcgGuildDef *def = qlcg_pg_guild(idx);
             if (!def) continue;
+            if (!def->grass_tufts && (cx < cx0 || cx > cx1 || cz < cz0 || cz > cz1)) continue;
             if (shape.cx + shape.r < x0 || shape.cx - shape.r > x1) continue;
             if (shape.cz + shape.r < z0 || shape.cz - shape.r > z1) continue;
 
+            if (cs && !qlcg_guild_place(reg, w, settings, cs, def, &shape,
+                                        season_idx, &plants, &tris)) continue;
             if (shapes && used < shape_cap) shapes[used] = shape;
             if (used < shape_cap) used++;
-
-            uint32_t hseed = shape.seed;
-            if (def->mono)
-                layout_mono(reg, cs, settings, def, &shape, hseed, &plants, &tris);
-            else
-                layout_members(reg, cs, settings, def, &shape, hseed, &plants, &tris);
-
-            (void)season_idx;
-            if (plants >= QLCG_GUILD_PLANTS_MAX || tris >= QLCG_GUILD_TRIS_MAX)
-                return used;
         }
     }
     return used;

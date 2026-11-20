@@ -153,7 +153,49 @@
         "shui.micao",
         "shui.redaishuilian",
         "shui.redaitun",
-        "shui.wanglian"
+        "shui.wanglian",
+        "shui.haidai",
+        "shui.qundaicai",
+        "shui.maweizao",
+        "shui.shichun",
+        "shui.shihuacai",
+        "shui.jinyuzao",
+        "shui.heizao",
+        "shui.zhucao"
+      ]
+    },
+    {
+      "id": "yao",
+      "species": [
+        "yao.qiancao",
+        "yao.qian",
+        "yao.huaishanyao",
+        "yao.gouqi",
+        "yao.yuxingcao",
+        "yao.zihua",
+        "yao.lanhua",
+        "yao.yimi",
+        "yao.fuling",
+        "yao.jinyinhua",
+        "yao.lingzhi"
+      ]
+    },
+    {
+      "id": "teng",
+      "species": [
+        "teng.qianniuhua",
+        "teng.ziteng",
+        "teng.ledujuan"
+      ]
+    },
+    {
+      "id": "jun",
+      "species": [
+        "jun.pinggu",
+        "jun.koumo",
+        "jun.chashugu",
+        "jun.jinhuangegao",
+        "jun.dumogu"
       ]
     }
   ]

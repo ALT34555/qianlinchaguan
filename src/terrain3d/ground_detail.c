@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-/* 材质基色：冰封 / 寒带 / 温带 / 亚热 / 热带 */
+/* 材质基色：冰封/寒带/温带/亚热/热带 */
 static const float BAND_GRASS[QLCG_GROUND_BAND_N][3] = {
     { 138, 146, 126 }, { 130, 144, 118 }, { 122, 138, 92 }, { 122, 140, 86 }, { 140, 152, 88 }
 };
@@ -47,7 +47,7 @@ void qlcg_ground_tex_at(float wx, float wz, uint32_t seed, int band, float out[3
     const float *gr = BAND_GRASS[band];
     const float *so = BAND_SOIL[band];
     const float *gv = BAND_GRAVEL[band];
-    /* 32/8/2/0.5m 四层，256m 内均为整数格 */
+    /* 32/8/2/0.5m 四层，内为整数格 */
     float n32 = pnoise(wx / 32.0f, wz / 32.0f, 8, seed ^ 0x11u);
     float n8  = pnoise(wx / 8.0f,  wz / 8.0f,  32, seed ^ 0x22u);
     float n2  = pnoise(wx / 2.0f,  wz / 2.0f, 128, seed ^ 0x33u);

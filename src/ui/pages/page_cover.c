@@ -135,13 +135,13 @@ void render_rail_language_popup(UiContext *ui) {
                         (float)ui->win_w - left * 2.0f);
     float x = qlcg_clampf(ui->select_x - w * 0.5f, left, (float)ui->win_w - left - w);
     float row_h = ui_ctl_height(28.0f * z, 12.0f * ui->met.scale);
-    float builtin_h = 2.0f * row_h;
+    float builtin_h = QLCG_BUILTIN_LOCALES * row_h;
     float gap = 5.0f * z;
     bool compact = cover_compact(ui);
     float edge = ui->select_y + (compact ? 19.0f : -19.0f) * z;
     float space = compact ? bottom - edge : edge - top;
     int count = qlcg_i18n_count();
-    float mod_h = qlcg_minf((float)(count - 2), 5.0f) * row_h;
+    float mod_h = qlcg_minf((float)(count - QLCG_BUILTIN_LOCALES), 5.0f) * row_h;
     mod_h = qlcg_minf(mod_h, qlcg_maxf(row_h, space - builtin_h - gap));
     float h = builtin_h + (mod_h > 0.0f ? gap + mod_h : 0.0f);
     float y = qlcg_clampf(compact ? edge : edge - h, top, qlcg_maxf(top, bottom - h));
@@ -157,7 +157,7 @@ void render_rail_language_popup(UiContext *ui) {
     int picked = -1;
     ui_panel(ui, x, y, w, builtin_h, 5.0f * z, tk_of(ui, QL_SURFACE_HI),
              tk_of(ui, QL_LINE_SOFT), tk_of(ui, QL_SHADOW_SM));
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < QLCG_BUILTIN_LOCALES; ++i) {
         if (draw_language_row(ui, i, x + 1.0f, y + (float)i * row_h, w - 2.0f, row_h))
             picked = i;
     }
@@ -167,12 +167,12 @@ void render_rail_language_popup(UiContext *ui) {
         ui_panel(ui, x, mod_y, w, mod_h, 5.0f * z, tk_of(ui, QL_SURFACE_HI),
                  tk_of(ui, QL_LINE_SOFT), tk_of(ui, QL_SHADOW_SM));
         float off = ui_scroll_begin(ui, RAIL_LANGUAGE_SCROLL, x + 1.0f, mod_y, w - 2.0f, mod_h);
-        for (int i = 2; i < count; ++i) {
-            float ry = mod_y + (float)(i - 2) * row_h - off;
+        for (int i = QLCG_BUILTIN_LOCALES; i < count; ++i) {
+            float ry = mod_y + (float)(i - QLCG_BUILTIN_LOCALES) * row_h - off;
             if (draw_language_row(ui, i, x + 1.0f, ry, w - 7.0f * z, row_h))
                 picked = i;
         }
-        ui_scroll_end(ui, RAIL_LANGUAGE_SCROLL, (float)(count - 2) * row_h);
+        ui_scroll_end(ui, RAIL_LANGUAGE_SCROLL, (float)(count - QLCG_BUILTIN_LOCALES) * row_h);
     }
     if (picked >= 0) {
         const char *code = qlcg_i18n_meta(picked)->code;
@@ -267,7 +267,7 @@ static void draw_tea_rail(UiContext *ui) {
                 g_app.rail_tab = (RailTabKey)i;
                 g_app.screen   = target[i];
                 if (target[i] == SCREEN_MEMORIES_LOAD) {
-                    g_app.save_count = qlcg_saves_scan(g_app.saves, MAX_SAVE_SLOTS);
+                    app_refresh_saves();
                 }
             }
         }
@@ -335,7 +335,7 @@ static float draw_tea_rail_top(UiContext *ui) {
         } else if (hot) {
             ui_draw_rect(ui, tx, ty, tab_w, tab_h, with_alpha(tk_of(ui, QL_PRIMARY), 0.05f));
         }
-        /* 图标 + 文字作为一组左对齐，tab 宽度已含两侧留白 */
+        /* 图标文字左对齐，tab 宽已含留白 */
         float ix = tx + 12.0f * z;
         float iy = ty + (tab_h - icon_sz) * 0.5f;
         const SpriteDef *ic = ui_sprite_by_name(ICON[i]);
@@ -355,7 +355,7 @@ static float draw_tea_rail_top(UiContext *ui) {
             g_app.rail_tab = (RailTabKey)i;
             g_app.screen   = target[i];
             if (target[i] == SCREEN_MEMORIES_LOAD) {
-                g_app.save_count = qlcg_saves_scan(g_app.saves, MAX_SAVE_SLOTS);
+                app_refresh_saves();
             }
         }
         tx += tab_w + 6.0f * z;
@@ -474,7 +474,7 @@ void render_screen_home(UiContext *ui, float dt) {
     if (ui_btn(ui, cx0, by, btn_w, btn_h, tr("menu.read"), BTN_GHOST, true, bfont, false)) {
         g_app.rail_tab   = RAIL_IDX_SAVES;
         g_app.screen     = SCREEN_MEMORIES_LOAD;
-        g_app.save_count = qlcg_saves_scan(g_app.saves, MAX_SAVE_SLOTS);
+        app_refresh_saves();
     }
     by += btn_h + btn_gap;
     if (ui_btn(ui, cx0, by, btn_w, btn_h, tr("menu.settings"), BTN_QUIET, true, bfont, false)) {
@@ -568,7 +568,7 @@ void render_screen_home(UiContext *ui, float dt) {
                BTN_QUIET, false, 11.5f * sc, false)) {
         g_app.rail_tab   = RAIL_IDX_SAVES;
         g_app.screen     = SCREEN_MEMORIES_LOAD;
-        g_app.save_count = qlcg_saves_scan(g_app.saves, MAX_SAVE_SLOTS);
+        app_refresh_saves();
     }
     ui_draw_rect(ui, cx0, head_y + qlcg_maxf(h2_lh, all_h) + 4.0f * z, cw, 1.0f, tk_of(ui, QL_LINE_SOFT));
 

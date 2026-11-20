@@ -3,6 +3,7 @@
 #define QLCG_CLIMATE_ZONE_H
 
 #include "planet_macro.h"
+#include "../civilization/civ_content.h"
 
 #define QLCG_ZONE_UNKNOWN 0xFFu
 
@@ -58,5 +59,8 @@ int  qlcg_climate_zone_at(const MacroWorld *w, float wx, float wz);
 int  qlcg_climate_zone_chunk(const MacroWorld *w, int cx, int cz);
 int  qlcg_climate_zone_world(const MacroWorld *w, double wx, double wz);
 void qlcg_climate_zone_row(const MacroWorld *w, int row, uint8_t *out);
+int qlcg_climate_type_index_cell(const MacroWorld *w,int cell);
+const QlcgClimateType *qlcg_climate_type_cell(const MacroWorld *w,int cell);
+const QlcgClimateType *qlcg_climate_type_world(const MacroWorld *w,double wx,double wz);
 
 #endif /* QLCG_CLIMATE_ZONE_H */

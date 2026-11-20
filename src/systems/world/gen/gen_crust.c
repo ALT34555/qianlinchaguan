@@ -128,7 +128,7 @@ void qlcg_crust_build(CrustField *cf, const MacroWorld *w, const TectonicPlate *
         sphere_point((float)k * golden + phase, 1.0f - 2.0f * ((float)k + 0.5f) / (float)NS, p);
         samples[k] = qlcg_crust_score(cf, p[0], p[1], p[2], NULL, NULL);
     }
-    /* 插入排序改 qsort，避免 2048 元素平方复杂度 */
+    /* 改 qsort 避免 2048 元素平方复杂度 */
     qsort(samples, (size_t)NS, sizeof(float), cmp_float);
     float lr = qlcg_clampf(opt->land_ratio, 0.0f, 1.0f);
     if (lr <= 0.0f) cf->reference = 2.0f;

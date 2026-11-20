@@ -39,17 +39,17 @@
 /* 世界竖直边界，对齐base config.ts */
 #define QLCG_WORLD_MIN_Y       (-4096)
 #define QLCG_WORLD_MAX_Y       20480
-/* HUD 昼夜判据：区块本地时刻落在 [起, 止) 为日间 */
+/* HUD 昼夜：区块时刻在 [起, 止) 为日间 */
 #define QLCG_DAY_HOUR_START    6
 #define QLCG_DAY_HOUR_END      18
 
 #define MAX_PLATES             36
 #define MAX_RIVERS             24576
 #define MAX_FACTIONS           128
-#define MAX_ACTIVE_EVENTS      16
+#define MAX_ACTIVE_EVENTS       8
 #define MAX_MACRO_DELTAS       2048
-#define MAX_CHUNK_DELTAS       2048
-#define MAX_UNDO_STEPS         16
+#define MAX_CHUNK_DELTAS       65536
+#define MAX_UNDO_STEPS         32
 #define MAX_SAVES              64
 #define MAX_SAVE_SLOTS         64
 #define MAX_CHAT_MSGS          32
@@ -296,7 +296,7 @@ typedef enum {
     WATER_FREEZE_FULL    = 2
 } WaterFreezeState;
 
-/* 植物六类，顺序同 base */
+/* 植物分类，沿用既有编码 */
 typedef enum {
     PLANT_CAT_CAO = 0,
     PLANT_CAT_GUAN,
@@ -304,6 +304,9 @@ typedef enum {
     PLANT_CAT_NONG,
     PLANT_CAT_SHU,
     PLANT_CAT_SHUI,
+    PLANT_CAT_YAO,
+    PLANT_CAT_TENG,
+    PLANT_CAT_JUN,
     PLANT_CAT_COUNT
 } PlantCategory;
 _Static_assert(PLANT_CAT_SHUI == 5, "plant category order");
@@ -315,7 +318,8 @@ typedef enum {
     PLANT_STATE_FLOWERING = 3,
     PLANT_STATE_FRUITING  = 4,
     PLANT_STATE_WITHERED  = 5,
-    PLANT_STATE_PLANTED   = 6
+    PLANT_STATE_PLANTED   = 6,
+    PLANT_STATE_PLANTED_WITHERED = 7
 } PlantModelState;
 
 /* 特殊特征地貌枚举 */

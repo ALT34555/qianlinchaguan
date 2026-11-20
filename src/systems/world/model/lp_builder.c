@@ -5,6 +5,7 @@
 #include "lp_builder.h"
 
 #include <math.h>
+#include <float.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -28,16 +29,18 @@ void qlcg_lp_init(LpBuilder *b) {
     b->count = 0;
     b->cap = 0;
     b->socket_count = 0;
+    b->cling_height = 0;
 }
 
 void qlcg_lp_clear(LpBuilder *b) {
     for (int i = 0; i < b->count; i++) free(b->faces[i].pos);
     b->count = 0;
     b->socket_count = 0;
+    b->cling_height = 0;
 }
 
 void qlcg_lp_socket(LpBuilder *b, const double translation[3], int kind) {
-    if (b->socket_count >= LP_SOCKET_CAPACITY) return;
+    if (b->socket_count >= LP_SOCKET_AUTHORED_CAPACITY) return;
     LpSocket *socket = &b->sockets[b->socket_count++];
     memcpy(socket->translation, translation, sizeof(socket->translation));
     socket->kind = kind;
@@ -183,7 +186,7 @@ void qlcg_lp_cone(LpBuilder *b, const double base[3], double rx, double rz,
     free(ring);
 }
 
-/* dome 的逐圈取点，消耗随机数的方式与 base 一致 */
+/* dome 逐圈取点，消耗随机数对齐 base */
 static void dome_ring(double *out, int n, double rot, double jit, LpRng *rand,
                       double cx, double cz, double rx, double rz, double rScale, double y) {
     for (int i = 0; i < n; i++) {
@@ -230,10 +233,17 @@ void qlcg_lp_dome(LpBuilder *b, const double center[3], double rx, double ry, do
         qlcg_lp_triangle(b, &prev[i * 3], apex, &prev[j * 3], color, mat);
     }
     if (!(o && !isnan(o->floor_on) && o->floor_on == 0.0)) {
-        double belly[3] = { cx, cy - ry * LP_O(o, squash, 1.0), cz };
-        for (int i = 0; i < n; i++) {
-            int j = (i + 1) % n;
-            qlcg_lp_triangle(b, &eq[i * 3], &eq[j * 3], belly, color, mat);
+        double squash = LP_O(o, squash, 1.0);
+        /* 地面平底不参与攀附选点 */
+        if (squash == 0.0 && jit <= 0.0 && cy <= 0.0) {
+            for (int i = 1; i < n - 1; i++)
+                qlcg_lp_triangle(b, eq, &eq[i * 3], &eq[(i + 1) * 3], color, mat);
+        } else {
+            double belly[3] = { cx, cy - ry * squash, cz };
+            for (int i = 0; i < n; i++) {
+                int j = (i + 1) % n;
+                qlcg_lp_triangle(b, &eq[i * 3], &eq[j * 3], belly, color, mat);
+            }
         }
     }
     free(eq); free(prev); free(cur);
@@ -421,6 +431,29 @@ void qlcg_lp_limb(LpBuilder *b, const double start[3], const double dir[3], doub
     free(r1);
 }
 
+typedef struct {
+    double position[3], score;
+    int wood;
+} ClingSite;
+
+/* 两侧各取枝干表面一点 */
+static void consider_cling_face(ClingSite sites[LP_CLING_SIDES], const LpFace *face, double height) {
+    double p[3];
+    for (int i = 0; i < 3; i++)
+        p[i] = (face->pos[i] + face->pos[i+3] + face->pos[i+6]) / 3.0;
+    if (p[1] <= 0) return;
+    double reach = p[0] + .43 * p[2];
+    int side = reach < 0;
+    int wood = face->wind == LP_WIND_BARK;
+    ClingSite *site = &sites[side];
+    double target_y = height * (side ? .38 : .63);
+    double score = fabs(reach) - 1.4 * fabs(p[1] - target_y);
+    if (wood < site->wood || (wood == site->wood && score <= site->score)) return;
+    memcpy(site->position, p, sizeof(p));
+    site->wood = wood;
+    site->score = score;
+}
+
 void qlcg_lp_build(LpBuilder *b, LpGeometry *out) {
     memset(out, 0, sizeof(*out));
     int vertex_count = 0;
@@ -448,12 +481,15 @@ void qlcg_lp_build(LpBuilder *b, LpGeometry *out) {
 
     int v = 0, idx = 0;
     double max_r = 0.0, max_y = 0.0;
+    ClingSite sites[LP_CLING_SIDES] = {{{0}, -DBL_MAX, 0}, {{0}, -DBL_MAX, 0}};
     /* 按材质槽顺序输出 */
     for (int mat = 0; mat < LP_MAT_COUNT; mat++) {
         int start = idx;
         for (int fi = 0; fi < b->count; fi++) {
             LpFace *f = &b->faces[fi];
             if (f->mat != mat) continue;
+            if (b->cling_height > 0 && mat == LP_MAT_SOLID)
+                consider_cling_face(sites, f, b->cling_height);
             int n = f->n;
             for (int i = 0; i < n * 3; i++) out->positions[v * 3 + i] = (float)f->pos[i];
             for (int i = 0; i < n; i++) out->wind_parts[v + i] = (unsigned char)f->wind;
@@ -478,6 +514,7 @@ void qlcg_lp_build(LpBuilder *b, LpGeometry *out) {
                 double x = f->pos[i * 3], y = f->pos[i * 3 + 1], z = f->pos[i * 3 + 2];
                 double r = js_hypot2(x, z);
                 if (r > max_r) max_r = r;
+                if (y < out->min_y) out->min_y = y;
                 if (y > max_y) max_y = y;
             }
             v += n;
@@ -488,6 +525,12 @@ void qlcg_lp_build(LpBuilder *b, LpGeometry *out) {
             out->groups[out->group_count].count = idx - start;
             out->group_count++;
         }
+    }
+    for (int i = 0; i < LP_CLING_SIDES; i++) {
+        if (sites[i].score == -DBL_MAX) continue;
+        LpSocket *socket = &out->sockets[out->socket_count++];
+        memcpy(socket->translation, sites[i].position, sizeof(socket->translation));
+        socket->kind = LP_SOCKET_CLING;
     }
     out->radius = max_r;
     out->height = max_y;
@@ -510,4 +553,5 @@ void qlcg_lp_geometry_scale(LpGeometry *g, double scale) {
         for (int axis = 0; axis < 3; axis++) g->sockets[i].translation[axis] *= scale;
     g->radius *= scale;
     g->height *= scale;
+    g->min_y *= scale;
 }

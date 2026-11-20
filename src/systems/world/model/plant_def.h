@@ -6,11 +6,11 @@
 
 enum {
     PD_STATE_PLANTED = 0, PD_STATE_NORMAL, PD_STATE_SEEDLING, PD_STATE_SUBADULT,
-    PD_STATE_FLOWERING, PD_STATE_FRUITING, PD_STATE_WITHERED, PD_STATE_COUNT
+    PD_STATE_FLOWERING, PD_STATE_FRUITING, PD_STATE_WITHERED, PD_STATE_HANGING, PD_STATE_COUNT
 };
 
 enum {
-    PD_SEASON_SPRING = 0, PD_SEASON_SUMMER, PD_SEASON_AUTUMN, PD_SEASON_WINTER, PD_SEASON_COUNT
+    PD_SEASON_NONE = -1, PD_SEASON_SPRING = 0, PD_SEASON_SUMMER, PD_SEASON_AUTUMN, PD_SEASON_WINTER, PD_SEASON_COUNT
 };
 
 typedef struct {
@@ -37,7 +37,7 @@ typedef struct {
     int       state_count;
     char     *declared[PD_STATE_COUNT];
     int       declared_count;
-    int       category;   /* 六类编码，-1 未定 */
+    int       category;   /* 分类编码，-1 未定 */
 } PdSpecies;
 
 typedef struct {
@@ -68,8 +68,11 @@ void qlcg_pd_unload(void);
 int  qlcg_pd_species_count(void);
 const PdSpecies *qlcg_pd_species(int i);
 const PdSpecies *qlcg_pd_species_by_id(const char *id);
-/* 六类 id → 编码，未知返回 -1 */
+/* 分类 ID 与编码互查 */
 int  qlcg_pd_category_code(const char *key);
+const char *qlcg_pd_category_key(int code);
+int  qlcg_pd_category_from_id(const char *id);
+int  qlcg_pd_category_can_hang(int category);
 /* 精确 tag；有返回 1 */
 int  qlcg_pd_has_tag(const PdSpecies *sp, const char *tag);
 /* 抗性 tag 等级 0..3，缺失返回 -1 */

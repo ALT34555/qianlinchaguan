@@ -26,12 +26,14 @@ enum {
     QLCG_GUILD_RING_ANY
 };
 
+enum { GUILD_GROUND, GUILD_ON_PLANT, GUILD_ON_WOOD };
+
 /* 混生丛成员 */
 typedef struct {
     int      species;   /* 物种号，-1 无效 */
     uint16_t n_min, n_max;
     uint8_t  ring;
-    uint8_t  clump;
+    uint8_t  clump, attachment;
 } QlcgGuildMember;
 
 /* 一个丛的定义 */
@@ -40,13 +42,15 @@ typedef struct {
     const char      *name;
     uint32_t         zone_mask;      /* bit i = 气候区 i */
     int16_t          species;        /* 优势丛主物种；混生丛 -1 */
+    int16_t          rock;
     int16_t          member_count;
     int16_t          n_min, n_max;   /* 优势丛散点株数 */
     uint8_t          tier;
     uint8_t          mono;
     uint8_t          layout;
+    uint8_t          grass_tufts;
     float            spacing, jitter, row_gap, plant_gap, min_gap;
-    float            scale_lo, scale_hi, weight;
+    float            scale_lo, scale_hi, weight, grass_scale;
     const QlcgGuildMember *members;
 } QlcgGuildDef;
 

@@ -1,7 +1,13 @@
+#include "world_lot.h"
 #include "hydrology_oxbow.h"
 /* planet */
 #include "core/dev_tools.h"
 #include "planet_macro.h"
+#include "world_delta.h"
+#include "../dolls/doll_life.h"
+#include "world_civ_growth.h"
+#include "world_claims.h"
+#include "world_civ_economy.h"
 #include "hydrology_lakes.h"
 #include "surface_islands.h"
 #include "world_internal.h"
@@ -39,6 +45,7 @@ MacroWorld *qlcg_world_generate_with_rivers(const WorldCreatorOptions *opt,struc
     w->river_archive=archive;
     w->river_archive_preloaded=archive!=NULL;
     w->opt = *opt;
+    if (w->opt.play_mode == PLAY_MODE_SURVIVAL) inventory_seed_survival(&w->inventory);
     qlcg_infinite_options(&w->opt);
     if (!isfinite(w->opt.axial_tilt_deg)) w->opt.axial_tilt_deg = 23.5f;
     w->opt.axial_tilt_deg = qlcg_clampf(w->opt.axial_tilt_deg, 0.0f, 60.0f);
@@ -106,7 +113,7 @@ MacroWorld *qlcg_world_generate_with_rivers(const WorldCreatorOptions *opt,struc
     w->claim_faction  = (int16_t *)calloc((size_t)N, sizeof(int16_t));
     w->claim_type     = (uint8_t *)calloc((size_t)N, sizeof(uint8_t));
 
-    w->river_cap      = MAX_RIVERS;
+    w->river_cap      = MAX_RIVERS + MAX_MACRO_DELTAS;
     w->rivers         = (RiverSegment *)calloc((size_t)w->river_cap, sizeof(RiverSegment));
 
     build_sphere_grid(w);
@@ -187,7 +194,6 @@ MacroWorld *qlcg_world_generate_with_rivers(const WorldCreatorOptions *opt,struc
     }
 
     w->auto_events = true;
-    w->event_cooldown = 18.0f;
     if(w->spawn_cell<0)
         snprintf(w->last_event_msg,sizeof(w->last_event_msg),tr("world.infinite.ready"),w->opt.plane_x,w->opt.plane_z);
     else snprintf(w->last_event_msg, sizeof(w->last_event_msg),
@@ -207,10 +213,14 @@ MacroWorld *qlcg_world_generate_with_rivers(const WorldCreatorOptions *opt,struc
 
 void qlcg_world_free(MacroWorld *w) {
     if (!w) return;
+    qlcg_doll_life_free(w);
+    qlcg_civ_growth_free(w);
+    qlcg_civ_economy_free(w);
     qlcg_infinite_free_others(w);
     qlcg_precip_free(w->precip);
     w->precip = NULL;
     free(w->astra_events);
+    free(w->event_cells);
     qlcg_ice_world_free(w->ice_state);
     w->ice_state = NULL;
     qlcg_lakes_free(w);
@@ -220,9 +230,12 @@ void qlcg_world_free(MacroWorld *w) {
     qlcg_river_surface_free(w);
     qlcg_river_archive_free(w);
     qlcg_terrain_detail_free(w);
+    qlcg_lot_free(w);
+    qlcg_chd_free(w);
     qlcg_surface_deltas_free(w);
+    qlcg_world_atlas_rivers_free(w);
     free(w->plate_id); free(w->ridge_push_e); free(w->ridge_push_n);
-    free(w->hydro_friction); free(w->climate_zone); free(w->basin); free(w->boundary); free(w->points); free(w->areas);
+    free(w->hydro_friction); free(w->climate_zone); free(w->climate_type); free(w->basin); free(w->boundary); free(w->points); free(w->areas);
     free(w->neighbors); free(w->lengths); free(w->uplift); free(w->rift);
     free(w->shear); free(w->height); free(w->spill); free(w->level);
     free(w->flow); free(w->catchment); free(w->lake_id); free(w->river_width);
@@ -234,6 +247,7 @@ void qlcg_world_free(MacroWorld *w) {
     free(w->water); free(w->saline); free(w->waterfall_flag); free(w->wetland_flag);
     free(w->landform); free(w->chunk_type); free(w->base_rgb); free(w->sat_rgb);
     free(w->shade); free(w->claim_faction); free(w->claim_type); free(w->explored_chunks);
+    qlcg_claims_free(w);
     free(w->rivers); free(w->lakes); free(w->macro_islands);
     free(w);
 }
@@ -257,6 +271,11 @@ void qlcg_world_inspect_sampled_chunk(const MacroWorld *w,int cx,int cz,const fl
     out->cz = cz;
     float wx = ((float)cx + 0.5f) * (float)CHUNK_SIZE;
     float wz = ((float)cz + 0.5f) * (float)CHUNK_SIZE;
+    const MacroWorld *root=w;
+    if (qlcg_world_flat(w)) {
+        double lx=wx,lz=wz;const MacroWorld *owner=qlcg_infinite_resolve(w,wx,wz,&lx,&lz);
+        if (owner) {w=owner;wx=(float)lx;wz=(float)lz;}
+    }
     int cell = qlcg_world_cell_at_wxz(w, wx, wz);
     out->cell_id   = cell;
     out->macro_col = cell % w->columns;
@@ -274,11 +293,15 @@ void qlcg_world_inspect_sampled_chunk(const MacroWorld *w,int cx,int cz,const fl
     bool is_riv = water.kind == WATER_KIND_RIVER || water.kind == WATER_KIND_FALL;
     bool is_wat = water.kind == WATER_KIND_SEA || water.kind == WATER_KIND_LAKE || water.kind == WATER_KIND_STATIC;
 
-    out->type_id   = qlcg_classify_chunk(is_wat, is_riv, is_fall,
+    out->natural_type_id = qlcg_classify_chunk(is_wat, is_riv, is_fall,
                                          w->wetland_flag[cell] != 0 && water.source_effects.salt != 255,
                                          water.source_effects.salt == 255 || (!water.fresh && w->saline[cell] != 0),
                                          center_h, temp, aridity, relief, slope, relative,
-                                         w->claim_type[cell]);
+                                         0);
+    int local_cx=(int)floorf(wx/CHUNK_SIZE),local_cz=(int)floorf(wz/CHUNK_SIZE);
+    out->type_id=root->opt.artificial_enabled?
+        qlcg_civ_chunk_type(w,local_cx,local_cz,out->natural_type_id,
+            water.form!=WATER_FORM_CUTOFF && water.level>center_h+.02f?0:-1):out->natural_type_id;
     out->type_def  = qlcg_get_chunk_type(out->type_id);
     out->elevation = center_h;
     out->water_level = water.level;
@@ -299,8 +322,9 @@ void qlcg_world_inspect_sampled_chunk(const MacroWorld *w,int cx,int cz,const fl
         out->flow_dir_name = "无流动 (静水或高地)";
     }
 
-    int fid = w->claim_faction[cell];
-    if (fid >= 0 && fid < w->faction_count && w->factions[fid].active) {
+    const QlcgChunkClaim *claim=qlcg_claims_at(w,local_cx,local_cz);
+    int fid=claim?claim->faction:(!w->chunk_claims&&w->claim_faction?w->claim_faction[cell]:-1);
+    if (root->opt.artificial_enabled && w->opt.artificial_enabled && fid >= 0 && fid < w->faction_count && w->factions[fid].active) {
         out->territory = &w->factions[fid];
     }
 }

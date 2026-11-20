@@ -1,4 +1,4 @@
-/* OKLab 混合配色，对齐 base theme.ts */
+/* OKLab 混合配色，对齐 theme.ts */
 #include "ui_theme.h"
 #include "../core/math_util.h"
 #include <math.h>
@@ -221,7 +221,7 @@ void ql_tokens_build(QlTokens *t, bool dark, QlColor primary, QlColor accent) {
     t->c[QL_INK_3] = ink3;
     t->c[QL_INK_INV] = ql_rgb(dark ? 0x241D1E : 0xFFF6EE);
 
-    /* 描边由 accent_ui 派生，暗色提亮，不另设线色 */
+    /* 描边由 accent_ui 派生提亮 */
     QlColor primary_ui = dark ? ql_mix(primary, 0.84f, white, 0.16f) : primary;
     QlColor accent_ui  = dark ? ql_mix(accent, 0.58f, ql_rgb(0xFBECDE), 0.42f) : accent;
 
@@ -268,7 +268,7 @@ void ql_tokens_build(QlTokens *t, bool dark, QlColor primary, QlColor accent) {
 
     t->c[QL_NEU_LIGHT] = dark ? ql_mix(surface, 0.86f, white, 0.14f) : ql_mix(surface, 0.44f, white, 0.56f);
     t->c[QL_NEU_DARK]  = dark ? ql_mix(surface, 0.52f, black, 0.48f) : ql_mix(surface, 0.78f, accent, 0.22f);
-    /* aero-tint 为固定纸色，非 surface 派生 */
+    /* aero-tint 为固定纸色，非派生 */
     t->c[QL_AERO_TINT] = dark ? ql_rgba_f(0x2A2829, 0.58f) : ql_rgba_f(0xFDF4EC, 0.62f);
     t->c[QL_AERO_LINE] = ql_alpha(white, dark ? 0.26f : 0.78f);
 
@@ -290,7 +290,7 @@ void ql_metrics_build(QlMetrics *m, int win_w, int win_h, float user_scale, floa
     {
         float hd = (hidpi > 0.0f) ? hidpi : 1.0f;
         float us = (user_size  > 0.0f) ? user_size  : 1.0f;
-        /* ut 先还原成用户原始文字倍率，避免 hidpi 被平方 */
+        /* ut 还原原始文字倍率，防 hidpi 平方 */
         float ut = ((user_scale > 0.0f) ? user_scale : 1.0f) / hd;
         m->size = us * (0.75f + 0.25f * ut);
     }

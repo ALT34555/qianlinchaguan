@@ -37,7 +37,7 @@ static int draw_chat_line(UiContext *ui, float x, float y, const char *line, flo
         if (nlen > 0 && nlen < 191) {
             char name[196];
             memcpy(name, line + 3, (size_t)nlen);
-            /* 补 UTF-8 全角冒号 EF BC 9A，避开中文字面量 */
+            /* 补全角冒号 EF BC 9A，避开中文 */
             name[nlen]     = (char)0xEF;
             name[nlen + 1] = (char)0xBC;
             name[nlen + 2] = (char)0x9A;
@@ -152,12 +152,12 @@ static float chat_composer(UiContext *ui, float x, float y, float w, float h, fl
 bool game_chat_over_ui(UiContext *ui) {
     bool sidebar = g_app.esc_paused || g_app.settings_in_drawer;
     if (!sidebar) return false;   /* 气泡态只读，不吃指针 */
-    float z = ui->met.size, sx = ui->safe_x_px, sy = ui->safe_y_px;
-    float bar = game_top_bar_height(ui);
+    float z = ui->met.size, sx = ui->safe_x_px;
+    float top = game_character_chat_top(ui);
     float avail = (float)ui->win_w - (ui->safe_edges[0]+ui->safe_edges[2]);
     float w = qlcg_minf(330 * z, qlcg_maxf(0, avail - game_esc_drawer_width(ui)));
-    float h = qlcg_maxf((float)ui->win_h - (ui->safe_edges[1]+ui->safe_edges[3]) - bar, 120 * z);
-    return ui_pointer_in_rect(ui, sx, sy + bar, w, h);
+    float h = fmaxf(0,ui->win_h-ui->safe_edges[3]-top);
+    return ui_pointer_in_rect(ui,sx,top,w,h);
 }
 
 void game_chat_panel(UiContext *ui) {
@@ -171,7 +171,7 @@ void game_chat_panel(UiContext *ui) {
     float sy = ui->safe_y_px;
     float bar_h = game_top_bar_height(ui);
 
-    float chat_top = sy + bar_h;
+    float chat_top = game_character_chat_top(ui);
     float avail    = (float)ui->win_w - (ui->safe_edges[0]+ui->safe_edges[2]);
     float cw       = qlcg_minf(330.0f * z, avail);
     float px       = 12.0f * sc * 1.3f;   /* base 12px × text-scale */
@@ -186,7 +186,7 @@ void game_chat_panel(UiContext *ui) {
         if (fade <= 0.0f) return;
 
         bool atlas = g_app.view_mode == VIEW_MODE_ATLAS;
-        if (atlas) chat_top += game_atlas_tools_height(ui);
+        if (atlas) chat_top = fmaxf(chat_top,sy+bar_h+game_atlas_tools_height(ui));
         float bottom = (float)ui->win_h - sy - (atlas ? game_atlas_detail_height(ui) : 0.0f);
         float hist_h = (bottom - chat_top) * 0.5f;
         if (hist_h <= 0.0f || cw <= 0.0f) return;
@@ -223,8 +223,8 @@ void game_chat_panel(UiContext *ui) {
     float dw     = game_esc_drawer_width(ui);
     float avail2 = qlcg_maxf(0.0f, avail - dw);
     cw = qlcg_minf(330.0f * z, avail2);
-    float ph = (float)ui->win_h - sy - chat_top;
-    if (ph < 120.0f * z) ph = 120.0f * z;
+    float ph = (float)ui->win_h-ui->safe_edges[3]-chat_top;
+    if (ph<1 || cw<1) return;
 
     /* 同料纸玻璃：含顶右细线与外投影 */
     hud_glass_panel(ui, sx, chat_top, cw, ph);

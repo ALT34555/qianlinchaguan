@@ -1,6 +1,8 @@
 /* 植物丛表装载与按区查询 */
 #include "plant_guild.h"
 #include "plant_def.h"
+#include "rock_def.h"
+#include "rock_material.h"
 #include "model_json.h"
 #include "../climate_zone.h"
 #include "../../../core/config.h"
@@ -10,7 +12,6 @@
 #include <string.h>
 
 #define PG_MAX_POOL  128
-#define PG_MAX_GUILD 48
 #define PG_MAX_ZONE  32
 
 static QlcgGuildDef *g_def = NULL;
@@ -24,7 +25,7 @@ static int g_scatter_n = 0;
 /* 按区预计算，查询 O(1) */
 static int g_zone_pool[QLCG_ZONE_COUNT][PG_MAX_POOL];
 static int g_zone_pool_n[QLCG_ZONE_COUNT];
-static int g_zone_guild[QLCG_ZONE_COUNT][PG_MAX_GUILD];
+static int *g_zone_guild;
 static int g_zone_guild_n[QLCG_ZONE_COUNT];
 
 static char *dup_str(const char *s) {
@@ -41,6 +42,15 @@ static int species_of(const char *id) {
     for (int i = 0; i < n; i++) {
         const PdSpecies *sp = qlcg_pd_species(i);
         if (sp && sp->base.id && strcmp(sp->base.id, id) == 0) return i;
+    }
+    return -1;
+}
+
+static int rock_of(const char *id) {
+    if (!id) return -1;
+    for (int i = 0; i < qlcg_rock_count(); i++) {
+        const char *candidate = qlcg_rock_id(i);
+        if (candidate && strcmp(candidate, id) == 0) return i;
     }
     return -1;
 }
@@ -100,8 +110,16 @@ static int parse_members(const JsVal *entry, QlcgGuildDef *def) {
             continue;
         }
         const PdSpecies *msp = qlcg_pd_species(sp);
-        if (!msp || (msp->category != PLANT_CAT_SHU && msp->category != PLANT_CAT_GUAN)) {
-            fprintf(stderr, "[guild] 非木本成员 %s\n", spid ? spid : "?");
+        const char *on = qlcg_js_str(qlcg_js_get(e,"on"),NULL);
+        int attachment = !on ? GUILD_GROUND : !strcmp(on,"wood") ? GUILD_ON_WOOD
+                         : !strcmp(on,"plant") ? GUILD_ON_PLANT : -1;
+        if (!msp || attachment < 0 ||
+            (attachment == GUILD_ON_WOOD && (def->rock < 0 || msp->category != PLANT_CAT_JUN)) ||
+            (attachment == GUILD_ON_PLANT && !qlcg_pd_category_can_hang(msp->category)) ||
+            (msp->category != PLANT_CAT_SHU && msp->category != PLANT_CAT_GUAN &&
+                     msp->category != PLANT_CAT_TENG && msp->category != PLANT_CAT_JUN &&
+                     !(def->grass_tufts && msp->category == PLANT_CAT_CAO))) {
+            fprintf(stderr, "[guild] 不支持的成员 %s\n", spid ? spid : "?");
             continue;
         }
         const JsVal *nv = qlcg_js_get(e, "n");
@@ -111,6 +129,7 @@ static int parse_members(const JsVal *entry, QlcgGuildDef *def) {
         if (hi < lo) hi = lo;
         if (lo > 4096) lo = 4096;
         if (hi > 4096) hi = 4096;
+        m[k].attachment = (uint8_t)attachment;
         m[k].species = sp;
         m[k].n_min = (uint16_t)lo;
         m[k].n_max = (uint16_t)hi;
@@ -123,7 +142,7 @@ static int parse_members(const JsVal *entry, QlcgGuildDef *def) {
     return k;
 }
 
-/* 散生层：草本与水生；采集丛后续加入 */
+/* 散生层的草本和水生植物 */
 static void collect_scatter(void) {
     int n = qlcg_pd_species_count();
     g_scatter_n = 0;
@@ -148,7 +167,7 @@ static int push_def(const QlcgGuildDef *def) {
     return 1;
 }
 
-static int parse_defs(const JsVal *arr, const JsVal *weights, int mono) {
+static int parse_defs(const JsVal *arr, const JsVal *weights, int mono, int ambient) {
     int n = qlcg_js_count(arr);
     int added = 0;
     for (int i = 0; i < n; i++) {
@@ -165,7 +184,10 @@ static int parse_defs(const JsVal *arr, const JsVal *weights, int mono) {
         def.tier = (uint8_t)tier_of(qlcg_js_str(qlcg_js_get(e, "tier"), NULL));
         def.mono = (uint8_t)(mono ? 1 : 0);
         def.species = -1;
-        def.weight = weight_of(weights, id);
+        def.rock = -1;
+        def.weight = ambient ? (float)qlcg_js_num(qlcg_js_get(e, "weight"), 1.0)
+                             : weight_of(weights, id);
+        if (def.weight < 0.0f) def.weight = 0.0f;
         def.scale_lo = 0.9f;
         def.scale_hi = 1.15f;
         const JsVal *sc = qlcg_js_get(e, "scale");
@@ -173,7 +195,29 @@ static int parse_defs(const JsVal *arr, const JsVal *weights, int mono) {
             def.scale_lo = (float)qlcg_js_num(qlcg_js_at(sc, 0), 0.9);
             def.scale_hi = (float)qlcg_js_num(qlcg_js_at(sc, 1), 1.15);
         }
-        if (mono) {
+        if (ambient) {
+            const JsVal *grass = qlcg_js_get(e, "grass");
+            double tufts = qlcg_js_num(qlcg_js_get(grass, "tufts"), 0.0);
+            double scale = qlcg_js_num(qlcg_js_get(grass, "scale"), 0.0);
+            const char *rock = qlcg_js_str(qlcg_js_get(e, "rock"), NULL);
+            int members = qlcg_js_count(qlcg_js_get(e, "members"));
+            def.rock = (int16_t)rock_of(rock);
+            if ((grass || ambient == 1) && (tufts < 1 || tufts > 192 || scale < 0.1 || scale > 2.0) ||
+                (rock ? def.rock < 0 || (ambient == 1 && members > 0) : members <= 0)) {
+                fprintf(stderr, "[guild] 氛围草配置无效 %s\n", id);
+                free((void *)def.id);
+                free((void *)def.name);
+                continue;
+            }
+            def.grass_tufts = (uint8_t)tufts;
+            def.grass_scale = (float)scale;
+            if (members && parse_members(e, &def) != members) {
+                free((void *)def.id);
+                free((void *)def.name);
+                free((void *)def.members);
+                continue;
+            }
+        } else if (mono) {
             const char *spid = qlcg_js_str(qlcg_js_get(e, "sp"), NULL);
             def.species = (int16_t)species_of(spid);
             if (def.species < 0) {
@@ -206,7 +250,7 @@ static int parse_defs(const JsVal *arr, const JsVal *weights, int mono) {
             free((void *)def.name);
             continue;
         }
-        if (!mono) {
+        if (!mono && !ambient) {
             const JsVal *vars = qlcg_js_get(e, "variants");
             int vn = qlcg_js_count(vars);
             for (int v = 0; v < vn; v++) {
@@ -265,12 +309,15 @@ static int parse_defs(const JsVal *arr, const JsVal *weights, int mono) {
 /* 池内追加并去重 */
 static void pool_add(int *pool, int *n, int species) {
     if (species < 0 || *n >= PG_MAX_POOL) return;
-    if (!qlcg_pd_species(species)) return;
+    const PdSpecies *sp=qlcg_pd_species(species);
+    if (!sp || qlcg_pd_category_can_hang(sp->category)) return;
     for (int i = 0; i < *n; i++) if (pool[i] == species) return;
     pool[(*n)++] = species;
 }
 
-static void build_zone_tables(void) {
+static int build_zone_tables(void) {
+    g_zone_guild = malloc((size_t)QLCG_ZONE_COUNT * g_count * sizeof(*g_zone_guild));
+    if (!g_zone_guild) return 0;
     for (int z = 0; z < QLCG_ZONE_COUNT; z++) {
         g_zone_pool_n[z] = 0;
         g_zone_guild_n[z] = 0;
@@ -278,8 +325,8 @@ static void build_zone_tables(void) {
         for (int i = 0; i < g_count; i++) {
             const QlcgGuildDef *d = &g_def[i];
             if (!(d->zone_mask & bit)) continue;
-            if (g_zone_guild_n[z] < PG_MAX_GUILD)
-                g_zone_guild[z][g_zone_guild_n[z]++] = i;
+            g_zone_guild[z * g_count + g_zone_guild_n[z]++] = i;
+            if (d->grass_tufts) continue;
             if (d->mono) {
                 pool_add(g_zone_pool[z], &g_zone_pool_n[z], d->species);
             } else {
@@ -293,6 +340,7 @@ static void build_zone_tables(void) {
         for (int i = 0; i < g_scatter_n; i++)
             pool_add(g_zone_pool[z], &g_zone_pool_n[z], g_scatter[i]);
     }
+    return 1;
 }
 
 int qlcg_pg_load(const char *dir) {
@@ -309,11 +357,21 @@ int qlcg_pg_load(const char *dir) {
     }
     collect_scatter();
     const JsVal *weights = qlcg_js_get(root, "weights");
-    int n = parse_defs(qlcg_js_get(root, "mixed"), weights, 0);
-    n += parse_defs(qlcg_js_get(root, "mono"), weights, 1);
+    int n = parse_defs(qlcg_js_get(root, "mixed"), weights, 0, 0);
+    n += parse_defs(qlcg_js_get(root, "mono"), weights, 1, 0);
+    const JsVal *ambient = qlcg_js_get(root, "ambient");
+    const JsVal *habitats=qlcg_js_get(root,"habitats");
+    if (qlcg_js_count(ambient) > 0 || qlcg_js_count(habitats) > 0) {
+        qlcg_rock_material_init();
+        n += parse_defs(ambient, NULL, 0, 1);
+        n += parse_defs(habitats, NULL, 0, 2);
+    }
     qlcg_js_free(root);
     if (n <= 0) return -1;
-    build_zone_tables();
+    if (!build_zone_tables()) {
+        qlcg_pg_unload();
+        return -1;
+    }
     return g_count;
 }
 
@@ -327,10 +385,14 @@ void qlcg_pg_unload(void) {
         if (!shared) free((void *)g_def[i].name);
     }
     free(g_def);
+    free(g_zone_guild);
     g_def = NULL;
+    g_zone_guild = NULL;
     g_count = 0;
     g_cap = 0;
     g_scatter_n = 0;
+    memset(g_zone_guild_n, 0, sizeof(g_zone_guild_n));
+    memset(g_zone_pool_n, 0, sizeof(g_zone_pool_n));
 }
 
 int qlcg_pg_count(void) { return g_count; }
@@ -344,7 +406,7 @@ int qlcg_pg_zone_guilds(int zone, int mono, int *out, int cap) {
     if (zone < 0 || zone >= QLCG_ZONE_COUNT || !out || cap <= 0) return 0;
     int n = 0;
     for (int i = 0; i < g_zone_guild_n[zone] && n < cap; i++) {
-        int idx = g_zone_guild[zone][i];
+        int idx = g_zone_guild[zone * g_count + i];
         if (mono >= 0 && g_def[idx].mono != (uint8_t)mono) continue;
         out[n++] = idx;
     }
@@ -363,14 +425,14 @@ int qlcg_pg_pick(int zone, int mono, uint32_t roll) {
     if (zone < 0 || zone >= QLCG_ZONE_COUNT) return -1;
     float total = 0.0f;
     for (int i = 0; i < g_zone_guild_n[zone]; i++) {
-        const QlcgGuildDef *d = &g_def[g_zone_guild[zone][i]];
+        const QlcgGuildDef *d = &g_def[g_zone_guild[zone * g_count + i]];
         if (mono >= 0 && d->mono != (uint8_t)mono) continue;
         total += d->weight;
     }
     if (total <= 0.0f) return -1;
     float target = total * (((float)(roll & 0xFFFFu) + 0.5f) / 65536.0f);
     for (int i = 0; i < g_zone_guild_n[zone]; i++) {
-        int idx = g_zone_guild[zone][i];
+        int idx = g_zone_guild[zone * g_count + i];
         const QlcgGuildDef *d = &g_def[idx];
         if (mono >= 0 && d->mono != (uint8_t)mono) continue;
         target -= d->weight;

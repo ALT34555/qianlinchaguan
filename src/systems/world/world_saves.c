@@ -1,8 +1,12 @@
+#include "world_lot.h"
 #include "save_portable.h"
 /* 五槽容器与版本检查 */
 #include "planet_macro.h"
 #include "world_internal.h"
+#include "surface_internal.h"
 #include "world_faction_save.h"
+#include "world_delta.h"
+#include "../dolls/doll_life.h"
 #include "world_ice_save.h"
 #include "world_precip_save.h"
 #include "hydrology_archive.h"
@@ -32,6 +36,19 @@ _Static_assert(offsetof(SaveSlotInfo, world_name) == offsetof(SaveSlotInfoV8, wo
                "v8/v9 slot name offset");
 _Static_assert(sizeof(AtlasDisplayStateV8) == 148, "legacy atlas layout");
 
+static int inline_delta_count(int count) {
+    return qlcg_clampi(count,0,QLCG_LEGACY_INLINE_DELTAS);
+}
+
+static size_t legacy_delta_tail_bytes(int count) {
+    return (size_t)(count-inline_delta_count(count))*sizeof(SparseDeltaRecord);
+}
+
+static void restore_legacy_delta_origins(MacroWorld *w) {
+    for (int i=0;i<w->delta_count;i++) w->delta_origin[i]=qlcg_eng_legacy_delta_origin(w->deltas+i);
+    qlcg_eng_restore_macro_deltas(w);
+}
+
 /* UTF-8 路径转宽字符后走 _wfopen */
 static FILE *fopen_u8(const char *path, const char *mode) { return qlcg_platform_fopen(path, mode); }
 
@@ -57,7 +74,7 @@ static void sanitize_id_part(char *s) {
     }
 }
 
-/* save_{名}_{尾}，世界名按 UTF-8 截断 */
+/* save_{名}_{尾}，世界名截断 */
 static void build_save_id(char *id, size_t cap, const char *name, const char *tail) {
     size_t fixed = 5 + 1 + strlen(tail);
     size_t room = cap > fixed + 1 ? cap - fixed - 1 : 0;
@@ -232,7 +249,7 @@ static bool read_plane(FILE *fp,MacroWorld *owner,long limit) {
         qlcg_ice_read_optional_lim(fp,v,end) && qlcg_astra_events_read(fp,v,end) &&
         qlcg_river_archive_read(fp,NULL,end) && qlcg_precip_read_optional_lim(fp,v,end) && ftell(fp)==end;
     v->river_archive_preloaded=false; v->delta_count=(int)n; v->delta_version++;
-    if(ok) { qlcg_world_rebuild_atlas_fields(v); ok=qlcg_infinite_attach(owner,v); }
+    if(ok) { restore_legacy_delta_origins(v); ok=qlcg_infinite_attach(owner,v); }
     if(!ok) qlcg_world_free(v);
     return ok;
 }
@@ -256,8 +273,7 @@ static bool save_tail_valid(FILE *file, const SaveSlotInfo *slot, long base, lon
             qlcg_portable_body_read_ver(file,NULL,&slot->opt,slot->delta_count,end,slot->disk_version);
     }
     if (slot->delta_count < 0 || slot->delta_count > MAX_MACRO_DELTAS) return false;
-    int extra = slot->delta_count > 64 ? slot->delta_count - 64 : 0;
-    long payload = save_header_size(slot) + (long)((size_t)extra * sizeof(SparseDeltaRecord));
+    long payload = save_header_size(slot) + (long)legacy_delta_tail_bytes(slot->delta_count);
     long limit = end > 0 ? end : io_end(file, 0);
     if (limit < 0 || base < 0 || limit < base + payload) return false;
     if (fseek(file, base + payload, SEEK_SET) != 0) return false;
@@ -312,11 +328,13 @@ static bool container_read_header(FILE *fp, SaveContainerHeader *h) {
     memset(h,0,sizeof(*h));
     if(!memcmp(tag,"PACK",4)) {
         if(!qlcg_section_open(fp,"PACK",qlcg_file_size(fp),&end) || end!=PORTABLE_DIRECTORY_BYTES || !container_fields(fp,h,true)) return false;
-        return !memcmp(h->magic,"QLCG",4) && h->version==2 && h->slot_count==5 && h->header_bytes==PORTABLE_DIRECTORY_BYTES;
+        return !memcmp(h->magic, QLCG_SAVE_PACK_MAGIC, 4) && h->version == QLCG_SAVE_PACK_VERSION &&
+               h->slot_count == QLCG_SAVE_SLOT_COUNT && h->header_bytes == PORTABLE_DIRECTORY_BYTES;
     }
 #ifdef _WIN32
     if(fread(h,sizeof(*h),1,fp)!=1) return false;
-    return !memcmp(h->magic,"QLCG",4) && h->version==1 && h->slot_count==5 && h->header_bytes==112;
+    return !memcmp(h->magic, QLCG_SAVE_PACK_MAGIC, 4) && h->version == 1 &&
+           h->slot_count == QLCG_SAVE_SLOT_COUNT && h->header_bytes == 112;
 #else
     return false;
 #endif
@@ -347,7 +365,7 @@ typedef char ManualSlotNames[SAVE_SLOT_MANUAL_3][QLCG_SAVE_SLOT_NAME_BYTES];
 
 static bool container_read_names(FILE *fp, const SaveContainerHeader *h, long bytes,
                                  ManualSlotNames names) {
-    if(h->version==2) {
+    if (h->version == QLCG_SAVE_PACK_VERSION) {
         if(fseek(fp,24+112,SEEK_SET)) return false;
         QlCodec io=qlcg_codec(fp,true,3*242);
         for(int i=0;i<3;i++) qlcg_io_string(&io,names[i],240);
@@ -365,7 +383,7 @@ static bool container_read_names(FILE *fp, const SaveContainerHeader *h, long by
 static bool container_write_start(FILE *fp, SaveContainerHeader *h, const SaveSlotMeta *slots) {
     memset(h, 0, sizeof(*h));
     memcpy(h->magic, QLCG_SAVE_PACK_MAGIC, 4);
-    h->version = 2;
+    h->version = QLCG_SAVE_PACK_VERSION;
     h->slot_count = QLCG_SAVE_SLOT_COUNT;
     h->header_bytes = PORTABLE_DIRECTORY_BYTES;
 
@@ -719,8 +737,7 @@ static void fill_slot_info(SaveSlotInfo *slot, const MacroWorld *w, const Calend
         slot->mystery_time_speed     = clk ? clk->time_speed : w->opt.creation_time_speed;
         slot->mystery_menu_auto_pause = menu_auto_pause;
     }
-    slot->delta_count = qlcg_clampi(w->delta_count, 0, MAX_MACRO_DELTAS);
-    for (int i = 0; i < slot->delta_count && i < 64; ++i) slot->deltas[i] = w->deltas[i];
+    slot->delta_count = w->delta_count;
 }
 
 /* 保存到指定槽；file_id 空则新建文件 */
@@ -861,15 +878,18 @@ bool qlcg_saves_restore_deltas(MacroWorld *w, const SaveSlotInfo *slot, long off
         fclose(fp); return ok;
     }
     int count = qlcg_clampi(slot->delta_count, 0, MAX_MACRO_DELTAS);
-    if (slot->save_version == 2u) count = qlcg_clampi(count, 0, 64);
-    w->delta_count = 0;
-    if (count > 64 || slot_disk_version(slot) >= 6u) {
+    if (slot->save_version == 2u) count = inline_delta_count(count);
+    int inlined=inline_delta_count(count);
+    SparseDeltaRecord *records=count?malloc((size_t)count*sizeof(*records)):NULL;
+    if (count && !records) return false;
+    if (inlined) memcpy(records,slot->deltas,(size_t)inlined*sizeof(*records));
+    if (count > inlined || slot_disk_version(slot) >= 6u) {
         FILE *fp = fopen_u8(slot->file_path, "rb");
-        if (!fp) return false;
+        if (!fp) { free(records); return false; }
         long end = size > 0 ? offset + size : 0;
-        size_t extra = count > 64 ? (size_t)(count - 64) : 0;
+        size_t extra = (size_t)(count-inlined);
         bool ok = fseek(fp, offset + save_header_size(slot), SEEK_SET) == 0;
-        if (ok && extra) ok = fread(w->deltas + 64, sizeof(SparseDeltaRecord), extra, fp) == extra;
+        if (ok && extra) ok = fread(records+inlined,sizeof(*records),extra,fp)==extra;
         if (ok && slot_disk_version(slot) >= 6u) ok = qlcg_factions_read_lim(fp, w, end);
         if (ok && slot_disk_version(slot) >= 6u) ok = read_exploration(fp, &w->opt, w, end);
         /* 可选 ICE1 */
@@ -884,12 +904,19 @@ bool qlcg_saves_restore_deltas(MacroWorld *w, const SaveSlotInfo *slot, long off
         if(ok) ok=qlcg_infinite_read(fp,w,end);
         if (ok && slot_disk_version(slot) >= 6u) ok = qlcg_precip_read_optional_lim(fp, w, end);
         fclose(fp);
-        if (!ok) return false;
+        if (!ok) { free(records); return false; }
     }
-    memcpy(w->deltas, slot->deltas, (size_t)(count < 64 ? count : 64) * sizeof(SparseDeltaRecord));
-    w->delta_count = count;
-    w->delta_version++;
-    return true;
+    uint8_t origins[MAX_MACRO_DELTAS];
+    for (int i=0;i<count;i++) origins[i]=qlcg_eng_legacy_delta_origin(records+i);
+    bool ok=qlcg_eng_install_saved_deltas(w,records,origins,count);
+    free(records);
+    if (ok) {
+        qlcg_lot_free(w);
+        qlcg_chd_clear(w);
+        qlcg_doll_life_free(w);
+        qlcg_eng_restore_macro_deltas(w);
+    }
+    return ok;
 }
 
 /* 先读河线，再生成基础世界 */
@@ -904,8 +931,7 @@ bool qlcg_saves_read_rivers(MacroWorld *w,const SaveSlotInfo *slot,long offset,l
     if(ver<6u) {
         fclose(fp); return true;
     }
-    int extra=slot->delta_count>64?slot->delta_count-64:0;
-    long at=offset+save_header_size(slot)+(long)((size_t)extra*sizeof(SparseDeltaRecord));
+    long at=offset+save_header_size(slot)+(long)legacy_delta_tail_bytes(slot->delta_count);
     bool ok=at>=offset&&at<=end&&fseek(fp,at,SEEK_SET)==0;
     long faction_end=ok?qlcg_factions_tail_end_lim(fp,end):-1;
     ok=ok&&faction_end>=0&&fseek(fp,faction_end,SEEK_SET)==0&&read_exploration(fp,&w->opt,NULL,end);

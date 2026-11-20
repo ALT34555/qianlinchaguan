@@ -1,0 +1,32 @@
+{
+  "plants": [
+    {
+      "id": "yao.yimi", "name": "薏米", "latin": "yimi",
+      "archetype": "grassClump", "climate": "subtropical", "seed": 908,
+      "tags": ["kaihua", "jieguo"],
+      "params": {"height": 1.04, "spread": 0.31, "bloomCount": 4, "fruitCount": 4},
+      "palette": {"foliage": "riceGreen", "foliageDark": "cropTeaShade", "bloom": "grainPale", "fruit": "coixGrain"},
+      "states": ["normal", "seedling", "subadult", "flowering", "fruiting", "withered"]
+    },
+    {
+      "id": "yao.fuling", "name": "茯苓", "latin": "fuling",
+      "archetype": "mushroom", "climate": "temperate", "seed": 909,
+      "params": {"height": 0.17, "spread": 0.15},
+      "states": ["normal", "seedling", "subadult", "withered"]
+    },
+    {
+      "id": "yao.jinyinhua", "name": "金银花", "latin": "jinyinhua",
+      "archetype": "bramble", "climate": "temperate", "seed": 910,
+      "tags": ["kaihua", "jieguo"],
+      "params": {"height": 0.79, "spread": 0.53, "bloomCount": 4, "fruitCount": 4},
+      "palette": {"foliage": "cropTeaLeaf", "foliageDark": "cropTeaShade", "barkLight": "barkPale", "bloom": "honeysuckleBloom", "fruit": "honeysuckleBerry"},
+      "states": ["normal", "seedling", "subadult", "flowering", "fruiting", "withered"]
+    },
+    {
+      "id": "yao.lingzhi", "name": "灵芝", "latin": "lingzhi",
+      "archetype": "mushroom", "climate": "subtropical", "seed": 911,
+      "params": {"height": 0.31, "spread": 0.18},
+      "states": ["normal", "seedling", "subadult", "withered"]
+    }
+  ]
+}

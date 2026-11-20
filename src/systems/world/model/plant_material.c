@@ -22,6 +22,7 @@ typedef struct {
 static int          g_loaded = 0;
 static int          g_species = 0;
 static PlantGeoSlot *g_geo;
+static PlantGeoSlot **g_hanging;
 
 int qlcg_plant_material_init(void) {
     if (g_loaded) return g_species;
@@ -33,7 +34,9 @@ int qlcg_plant_material_init(void) {
         return 0;
     }
     g_geo = calloc((size_t)n * PLANT_FORM_COUNT * PD_SEASON_COUNT, sizeof(*g_geo));
-    if (!g_geo) {
+    g_hanging = calloc((size_t)n, sizeof(*g_hanging));
+    if (!g_geo || !g_hanging) {
+        free(g_geo); g_geo = NULL; free(g_hanging); g_hanging = NULL;
         qlcg_pd_unload();
         return 0;
     }
@@ -47,6 +50,12 @@ void qlcg_plant_material_shutdown(void) {
     for (size_t i = 0; i < (size_t)g_species * PLANT_FORM_COUNT * PD_SEASON_COUNT; i++) {
         if (g_geo[i].ready) qlcg_lp_geometry_free(&g_geo[i].geo);
     }
+    for (int i=0; i<g_species; i++) if (g_hanging[i]) {
+        for(int j=0;j<PLANT_FORM_COUNT*PD_SEASON_COUNT;j++)
+            qlcg_lp_geometry_free(&g_hanging[i][j].geo);
+        free(g_hanging[i]);
+    }
+    free(g_hanging);g_hanging=NULL;
     free(g_geo);
     g_geo = NULL;
     qlcg_pg_unload();
@@ -83,21 +92,33 @@ int qlcg_plant_species_category(int index) {
 static PlantGeoSlot *plant_slot(int species, int form, int season) {
     if (species < 0 || species >= g_species) return NULL;
     if (season < 0 || season >= PD_SEASON_COUNT) season = PD_SEASON_SUMMER;
+    int hanging = form >= PLANT_HANGING_FORM;
+    if (hanging) form -= PLANT_HANGING_FORM;
     int variant = qlcg_plant_model_variant(form);
     if (variant && !qlcg_plant_category_has_variants(qlcg_plant_species_category(species))) variant = 0;
     int slot_form = form == VEG_FORM_SIMPLE ? 0 : 1 + variant;
 
-    PlantGeoSlot *s = &g_geo[((size_t)species * PLANT_FORM_COUNT + slot_form) * PD_SEASON_COUNT + season];
+    PlantGeoSlot *slots = g_geo + species * PLANT_FORM_COUNT * PD_SEASON_COUNT;
+    if (hanging) {
+        if (!qlcg_pd_category_can_hang(qlcg_plant_species_category(species))) return NULL;
+        if (!g_hanging[species]) g_hanging[species] = calloc(PLANT_FORM_COUNT * PD_SEASON_COUNT, sizeof(*slots));
+        slots = g_hanging[species];
+        if (!slots) return NULL;
+    }
+    PlantGeoSlot *s = &slots[slot_form * PD_SEASON_COUNT + season];
     if (s->ready || s->failed) return s->ready ? s : NULL;
 
     const PdSpecies *sp = qlcg_pd_species(species);
     if (!sp || !sp->base.id) { s->failed = 1; return NULL; }
 
     /* 成株条目；季节决定花色与积雪 */
-    if (!qlcg_plant_build(sp->base.id, season, form, &s->geo)) {
+    char key[144];
+    snprintf(key,sizeof(key),"%s%s",sp->base.id,hanging?"@hanging":"");
+    if (!qlcg_plant_build(key, season, form, &s->geo)) {
         s->failed = 1;
         return NULL;
     }
+    if (hanging) { s->ready=1; return s; }
     qlcg_collision_bounds(&s->shape,s->geo.positions,s->geo.vertex_count);
     PdDef def;
     if (qlcg_pd_build_def_ex(sp->base.id,season,1,&def)) {

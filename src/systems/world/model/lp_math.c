@@ -97,7 +97,7 @@ static int str_starts(const char *s, const char *lit) {
     return s && strncmp(s, lit, strlen(lit)) == 0;
 }
 
-/* 同 base paletteWindPart 判定顺序 */
+/* 同 paletteWindPart 判定顺序 */
 int qlcg_lp_palette_wind(const char *key) {
     if (!key) return LP_WIND_SOLID;
     if (str_has(key, "bark")) return LP_WIND_BARK;
@@ -230,7 +230,7 @@ uint32_t qlcg_lp_hash_string(const char *s) {
         else                            { cp = p[0];        len = 1; }
         for (int i = 1; i < len; i++) cp = (cp << 6) | (uint32_t)(p[i] & 0x3F);
         p += len;
-        /* 非 BMP 拆成代理对，贴合 JS charCodeAt */
+        /* 非 BMP 拆代理对，贴合 charCodeAt */
         if (cp >= 0x10000u) {
             uint32_t v = cp - 0x10000u;
             uint32_t hi = 0xD800u + (v >> 10);

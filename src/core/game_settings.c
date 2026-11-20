@@ -28,8 +28,10 @@ GameSettings qlcg_default_settings(void) {
     strncpy(s.ren_ming, "赤", sizeof(s.ren_ming) - 1);
     s.measurement_system    = MEAS_METRIC;
     s.theme                 = THEME_AUTO;
-    s.show_top_bar          = true;
+    s.show_top_bar          = false;
     s.crosshair             = CROSSHAIR_DOT;
+    s.camera_view           = CAMERA_FIRST_PERSON;
+    s.character_status      = CHAR_STATUS_DETAILED;
     s.profile_palette_to_ui = true;
     s.ui_scale              = 1.0f;
 
@@ -49,7 +51,7 @@ GameSettings qlcg_default_settings(void) {
     s.touch_controls = false;
     s.joystick_style = 0;
     s.touch_opacity  = 1.0f;
-    qlcg_touch_layout_default(s.touch_layout);
+    qlcg_touch_layout_default(&s);
     s.invert_look_x = false;
     s.invert_look_y = false;
 
@@ -147,15 +149,21 @@ void qlcg_apply_graphics_preset(GameSettings *s, GraphicsPreset preset) {
     }
 }
 
-void qlcg_touch_layout_default(float out[4][3]) {
-    static const float kDefault[4][3] = {
+void qlcg_touch_layout_default(GameSettings *s) {
+    static const float kDefault[QLCG_MOVE_LAYOUT_COUNT][3] = {
         { 0.0400f, 0.7400f, 1.0f },   /* 摇杆 */
         { 0.8768f, 0.8103f, 1.0f },   /* 冲刺 */
         { 0.9672f, 0.6775f, 1.0f },   /* 跳跃 */
         { 0.8933f, 0.9512f, 1.0f }    /* 下蹲 */
     };
-    if (!out) return;
-    memcpy(out, kDefault, sizeof(kDefault));
+    static const float actions[QLCG_ACTION_LAYOUT_COUNT][3] = {
+        { 0.9672f, 0.4050f, 1.0f },
+        { 0.8300f, 0.5450f, 1.0f },
+        { 0.9672f, 0.5450f, 1.0f }
+    };
+    if (!s) return;
+    memcpy(s->touch_layout, kDefault, sizeof(kDefault));
+    memcpy(s->touch_action_layout, actions, sizeof(actions));
 }
 
 static unsigned char s_settings_raw[sizeof(GameSettings)];
@@ -192,8 +200,10 @@ void qlcg_load_settings_disk(GameSettings *s) {
         fclose(fp);
         return;
     }
-    bool old_scale=memcmp(magic,QLCG_SETTINGS_MAGIC,8)!=0&&memcmp(magic,QLCG_SETTINGS_MAGIC_V7,8)!=0;
-    if (!memcmp(magic,QLCG_SETTINGS_MAGIC,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V7,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V6,8)) {
+    bool recent=!memcmp(magic,QLCG_SETTINGS_MAGIC,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V9,8) ||
+                !memcmp(magic,QLCG_SETTINGS_MAGIC_V8,8) || !memcmp(magic,QLCG_SETTINGS_MAGIC_V7,8);
+    bool old_scale=!recent;
+    if (recent || !memcmp(magic,QLCG_SETTINGS_MAGIC_V6,8)) {
         long end,size=qlcg_file_size(fp);
         bool ok=size>8 && size<65536 && qlcg_section_open(fp,"SETT",size,&end) && end==size;
         QlCodec io=qlcg_codec(fp,true,ok?(uint64_t)(end-ftell(fp)):0);
@@ -204,7 +214,7 @@ void qlcg_load_settings_disk(GameSettings *s) {
 #ifdef _WIN32
         size_t n=fread(s_settings_raw,1,sizeof(s_settings_raw),fp); fclose(fp);
         if(!memcmp(magic,QLCG_SETTINGS_MAGIC_V4,8)) settings_migrate_v4(&tmp,n);
-        else if(!memcmp(magic,QLCG_SETTINGS_MAGIC_V5,8)) { if(n) memcpy(&tmp,s_settings_raw,n); }
+        else if(!memcmp(magic,QLCG_SETTINGS_MAGIC_V5,8)) { if(n) memcpy(&tmp,s_settings_raw,n < offsetof(GameSettings,touch_action_layout) ? n : offsetof(GameSettings,touch_action_layout)); }
         else return;
         tmp.profile.name[sizeof(tmp.profile.name)-1]=0; tmp.ren_ming[sizeof(tmp.ren_ming)-1]=0;
         tmp.font_id[sizeof(tmp.font_id)-1]=0; tmp.locale[sizeof(tmp.locale)-1]=0;
@@ -225,11 +235,12 @@ void qlcg_load_settings_disk(GameSettings *s) {
     if(old_scale) tmp.hidpi_scale*=0.5f;
     tmp.hidpi_scale = qlcg_clampf(tmp.hidpi_scale, 0.5f, 4.0f);
     tmp.touch_opacity = qlcg_clampf(tmp.touch_opacity, 0.1f, 1.0f);
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < QLCG_MOVE_LAYOUT_COUNT + QLCG_ACTION_LAYOUT_COUNT; i++) {
+        float *layout = QLCG_TOUCH_LAYOUT(&tmp,i);
         for (int k = 0; k < 3; k++) {
-            float v = tmp.touch_layout[i][k];
+            float v = layout[k];
             if (v != v) v = 0.0f;                       /* NaN 保护 */
-            tmp.touch_layout[i][k] = (k < 2) ? qlcg_clampf(v, 0.0f, 1.0f)
+            layout[k] = (k < 2) ? qlcg_clampf(v, 0.0f, 1.0f)
                                              : qlcg_clampf(v, 0.5f, 2.0f);
         }
     }
@@ -313,9 +324,9 @@ bool qlcg_settings_write(const char *path, const GameSettings *s) {
     if(!ok) qlcg_platform_remove(temporary);
     return ok;
 }
-void qlcg_save_settings_disk(const GameSettings *s) {
+bool qlcg_save_settings_disk(const GameSettings *s) {
     qlcg_platform_mkdir("userdata");
-    qlcg_settings_write("userdata/settings.bin",s);
+    return qlcg_settings_write("userdata/settings.bin",s);
 }
 
 const char *qlcg_graphics_preset_name(GraphicsPreset p) {

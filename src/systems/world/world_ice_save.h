@@ -9,7 +9,7 @@
 #define ICE_SAVE_VERSION        1u
 #define ICE_SAVE_MODEL_VERSION  1u
 
-/* 固定字节长度：头 40，编辑记录 40，过渡记录 40 */
+/* 固定长度：头40，编辑40，过渡40 */
 #define ICE_SAVE_HEADER_BYTES   40u
 #define ICE_SAVE_EDIT_BYTES     40u
 #define ICE_SAVE_TRANS_BYTES    40u

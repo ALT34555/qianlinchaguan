@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-/* 同 base hash()，逐位一致，返回 -1..1 */
+/* 同 base hash()，返 -1..1 */
 float qlcg_base_hash(int x, int y, int z, uint32_t seed);
 
 /* 同 base noise()，三次平滑插值 */

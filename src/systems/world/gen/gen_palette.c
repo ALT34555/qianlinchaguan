@@ -1,4 +1,4 @@
-/* 色带：同 base ramp()，线性插值 256 级 */
+/* 色带：同 ramp()，线性插值 256 级 */
 #include "gen_palette.h"
 #include "../../../core/math_util.h"
 #include <math.h>

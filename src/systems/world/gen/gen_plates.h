@@ -1,4 +1,4 @@
-/* 板块布局与漂移（base plate-layout） */
+/* 板块布局与漂移（plate-layout） */
 #ifndef QLCG_GEN_PLATES_H
 #define QLCG_GEN_PLATES_H
 

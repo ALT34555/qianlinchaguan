@@ -1,5 +1,6 @@
 #ifdef _WIN32
 #include "platform/win32/native.h"
+#include "platform/win32/display_settings.h"
 #include "platform/keys.h"
 #include "platform/paths.h"
 /* Win32 窗口与 OpenGL 上下文 */
@@ -17,6 +18,9 @@ static inline float ui_scale_x(void) {
 static inline float ui_scale_y(void) {
     return (g_app.win_h > 0) ? (float)g_app.ui.win_h / (float)g_app.win_h : 1.0f;
 }
+
+static bool s_primary_touch_consumed;
+static bool s_virtual_mouse_down;
 
 /* 触屏兼容鼠标消息只交给普通界面 */
 static bool mouse_from_touch(void) {
@@ -81,7 +85,7 @@ void app_set_mouse_lock(bool on) {
         ClientToScreen(g_app.hwnd, &c);
         SetCursorPos(c.x, c.y);
         if (!s_cursor_hidden) { ShowCursor(FALSE); s_cursor_hidden = true; }
-        SetCapture(g_app.hwnd);
+        qlcg_platform_capture();
     } else {
         if (s_cursor_hidden) { ShowCursor(TRUE); s_cursor_hidden = false; }
         if (GetCapture() == g_app.hwnd) ReleaseCapture();   /* 别抢舆图拖拽的捕获 */
@@ -134,13 +138,17 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                     }
                     if (ti[i].dwFlags & TOUCHEVENTF_DOWN) {
                         int saved_x = g_app.ui.mouse_x, saved_y = g_app.ui.mouse_y;
+                        bool saved_toast = g_app.ui.toast_blocked;
                         g_app.ui.mouse_x = (int)ux;
                         g_app.ui.mouse_y = (int)uy;
                         g_app.ui.toast_blocked = ui_toast_over_ui(&g_app.ui, &g_app.toasts);
-                        if (!game_scene_over_ui(&g_app.ui))
+                        bool taken = !game_scene_over_ui(&g_app.ui) &&
                             ui_touch_down(&g_app.touch, &g_app.ui, id, ux, uy);
+                        if (ti[i].dwFlags & TOUCHEVENTF_PRIMARY)
+                            s_primary_touch_consumed = taken;
                         g_app.ui.mouse_x = saved_x;
                         g_app.ui.mouse_y = saved_y;
+                        g_app.ui.toast_blocked = saved_toast;
                     }
                     else if (ti[i].dwFlags & TOUCHEVENTF_UP) {
                         if (id == g_app.touch.look_pointer)
@@ -155,6 +163,7 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             break;
         }
         case WM_MOUSEMOVE: {
+            if (mouse_from_touch() && s_primary_touch_consumed) return 0;
             int mx = GET_X_LPARAM(lparam);
             int my = GET_Y_LPARAM(lparam);
             int dx = mx - g_app.ui.mouse_x;
@@ -162,7 +171,8 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             g_app.ui.mouse_x = mx;
             g_app.ui.mouse_y = my;
             g_app.ui.toast_blocked = ui_toast_over_ui(&g_app.ui, &g_app.toasts);
-            app_river_craft_pointer(false,g_app.ui.mouse_down);
+            if (!s_virtual_mouse_down)
+                app_river_craft_pointer(false,g_app.ui.mouse_down);
 
             if (g_app.touch.enabled && !mouse_from_touch()) {
                 ui_touch_move(&g_app.touch, &g_app.ui, UI_TOUCH_MOUSE_POINTER,
@@ -194,6 +204,10 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             return 0;
         }
         case WM_LBUTTONDOWN: {
+            bool touch_mouse = mouse_from_touch();
+            if (touch_mouse && s_primary_touch_consumed) return 0;
+            int saved_x = g_app.ui.mouse_x, saved_y = g_app.ui.mouse_y;
+            bool saved_toast = g_app.ui.toast_blocked;
             g_app.ui.mouse_x = GET_X_LPARAM(lparam);
             g_app.ui.mouse_y = GET_Y_LPARAM(lparam);
             QLCG_DEV_INPUT_LOG("[in] down %d,%d screen %d,%d\n",
@@ -201,7 +215,6 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                        (int)g_app.win_w, (int)g_app.win_h);
             g_app.ui.toast_blocked = ui_toast_over_ui(&g_app.ui, &g_app.toasts);
             /* 兼容鼠标只探测命中，不更新触点 */
-            bool touch_mouse = mouse_from_touch();
             bool touch_taken = false;
             if (g_app.touch.enabled && !game_scene_over_ui(&g_app.ui)) {
                 POINT pt;
@@ -216,22 +229,46 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                 touch_taken = ui_touch_down(target, &g_app.ui, UI_TOUCH_MOUSE_POINTER,
                                             (float)pt.x * ui_scale_x(), (float)pt.y * ui_scale_y());
             }
+            if (touch_taken) {
+                g_app.ui.mouse_x = saved_x;
+                g_app.ui.mouse_y = saved_y;
+                g_app.ui.toast_blocked = saved_toast;
+                if (touch_mouse) s_primary_touch_consumed = true;
+                else {
+                    s_virtual_mouse_down = true;
+                    qlcg_platform_capture();
+                }
+                return 0;
+            }
             g_app.ui.mouse_down    = true;
-            g_app.ui.mouse_pressed = !touch_taken;
-            g_app.ui.mouse_clicked = !touch_taken;
-            if(!touch_taken) app_river_craft_pointer(true,true);
-            if(g_app.river_craft.drawing) SetCapture(hwnd);
-            if (touch_taken && !touch_mouse) SetCapture(hwnd);
-            if (!touch_taken && g_app.screen == SCREEN_IN_GAME && g_app.view_mode == VIEW_MODE_ATLAS &&
+            g_app.ui.mouse_pressed = true;
+            g_app.ui.mouse_clicked = true;
+            if (g_app.inventory_ui.open) {
+                game_inventory_pointer_down(&g_app.ui);
+                qlcg_platform_capture();
+            }
+            app_river_craft_pointer(true,true);
+            if(g_app.river_craft.drawing) qlcg_platform_capture();
+            if (g_app.screen == SCREEN_IN_GAME && g_app.view_mode == VIEW_MODE_ATLAS &&
                 (!g_app.river_craft.active||g_app.river_craft.tool==0) &&
                 g_app.atlas.eng_tool == ENG_TOOL_NONE && !game_atlas_over_ui(&g_app.ui)) {
                 g_app.atlas.dragging = true;
             }
             if (g_app.atlas.dragging || (g_app.screen == SCREEN_IN_GAME &&
-                g_app.view_mode == VIEW_MODE_ATLAS && g_app.atlas.layer_panel_open)) SetCapture(hwnd);
+                g_app.view_mode == VIEW_MODE_ATLAS && g_app.atlas.layer_panel_open)) qlcg_platform_capture();
             return 0;
         }
         case WM_LBUTTONUP:
+            if (mouse_from_touch() && s_primary_touch_consumed) {
+                s_primary_touch_consumed = false;
+                return 0;
+            }
+            if (!mouse_from_touch() && s_virtual_mouse_down) {
+                s_virtual_mouse_down = false;
+                ui_touch_up(&g_app.touch, &g_app.ui, UI_TOUCH_MOUSE_POINTER);
+                if (!g_app.terrain.mouse_captured && GetCapture() == hwnd) ReleaseCapture();
+                return 0;
+            }
             g_app.ui.mouse_x = GET_X_LPARAM(lparam);
             g_app.ui.mouse_y = GET_Y_LPARAM(lparam);
             app_river_craft_pointer(false,false);
@@ -244,8 +281,9 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             if (!g_app.terrain.mouse_captured && GetCapture() == hwnd) ReleaseCapture();
             return 0;
         case WM_CAPTURECHANGED:
-            if (!g_app.ui.mouse_down) return 0;
+            if (!g_app.ui.mouse_down && !s_virtual_mouse_down) return 0;
         case WM_KILLFOCUS:
+            s_primary_touch_consumed = s_virtual_mouse_down = false;
             app_key_track_clear();   /* 丢焦点时别把按键卡住 */
             ui_touch_reset(&g_app.touch);
             for (int act = 0; act < ACT_COUNT; act++) app_action_set_virtual(act, false);
@@ -253,6 +291,10 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             g_app.atlas.layer_dragging = false;
             g_app.ui.mouse_down = false;
             g_app.ui.mouse_pressed = false;
+            g_app.ui.mouse_clicked = false;
+            g_app.ui.right_down = false;
+            g_app.ui.right_clicked = false;
+            game_inventory_pointer_cancel();
             g_app.river_craft.drawing = false;
             g_app.ui.drag_slider_id = -1;
             return 0;
@@ -260,7 +302,7 @@ LRESULT CALLBACK app_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             g_app.ui.mouse_x = GET_X_LPARAM(lparam);
             g_app.ui.mouse_y = GET_Y_LPARAM(lparam);
             g_app.ui.toast_blocked = ui_toast_over_ui(&g_app.ui, &g_app.toasts);
-            g_app.ui.right_down    = !game_scene_over_ui(&g_app.ui);
+            g_app.ui.right_down    = game_build_open() || !game_scene_over_ui(&g_app.ui);
             g_app.ui.right_clicked = true;
             return 0;
         case WM_RBUTTONUP:
@@ -307,6 +349,13 @@ void app_apply_hidpi_scale(void) {
     app_sync_layout_axes();
 }
 
+static const wchar_t *window_title(bool traditional) {
+    return traditional ? L"茜林茶館 (Qianlin Chaguan - C11 Base)" :
+                         L"茜林茶馆 (Qianlin Chaguan - C11 Base)";
+}
+
+static bool s_traditional_title;
+
 /* 创建窗口和 GL 上下文 */
 bool init_win32_gl(HINSTANCE hinst, int w, int h) {
     WNDCLASSEXW wc;
@@ -325,7 +374,8 @@ bool init_win32_gl(HINSTANCE hinst, int w, int h) {
 
     RECT rc = {0, 0, w, h};
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-    g_app.hwnd = CreateWindowExW(0, wc.lpszClassName, L"茜林茶馆 (Qianlin Chaguan - C11 Base)",
+    s_traditional_title = qlcg_i18n_get_index() == QLCG_LOCALE_ZH_HANT;
+    g_app.hwnd = CreateWindowExW(0, wc.lpszClassName, window_title(s_traditional_title),
                                  WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                  CW_USEDEFAULT, CW_USEDEFAULT,
                                  rc.right - rc.left, rc.bottom - rc.top,
@@ -378,8 +428,8 @@ bool init_win32_gl(HINSTANCE hinst, int w, int h) {
     return true;
 }
 
-__declspec(dllexport) DWORD NvOptimusEnablement = 0;
-__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 0;
+__declspec(dllexport) DWORD NvOptimusEnablement = 1;
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 void qlcg_platform_prepare(void) {
     SetProcessDPIAware();
@@ -401,14 +451,39 @@ void qlcg_platform_prepare(void) {
     }
 }
 bool qlcg_platform_window_open(int w, int h) {
-    if (init_win32_gl(GetModuleHandleW(NULL), w, h)) return true;
+    if (init_win32_gl(GetModuleHandleW(NULL), w, h)) {
+        g_app.settings.render_device = win32_read_render_device();
+        if (!win32_set_window_mode(g_app.settings.window_mode))
+            g_app.settings.window_mode = WINDOW_DECORATED;
+        return true;
+    }
     qlcg_platform_window_close();
     return false;
 }
 void qlcg_platform_present(void) { SwapBuffers(g_app.hdc); }
-void qlcg_platform_capture(void) { SetCapture(g_app.hwnd); }
+void qlcg_platform_capture(void) {
+    if (GetCapture() != g_app.hwnd) SetCapture(g_app.hwnd);
+}
+
+static HIMC s_game_ime;
+static bool s_game_ime_detached;
+
+static void sync_game_ime(bool detach) {
+    if (!g_app.hwnd || detach == s_game_ime_detached) return;
+    if (detach) s_game_ime = ImmAssociateContext(g_app.hwnd, NULL);
+    else ImmAssociateContext(g_app.hwnd, s_game_ime);
+    s_game_ime_detached = detach;
+}
+
 void qlcg_platform_poll(void) {
     MSG msg;
+    bool traditional = qlcg_i18n_get_index() == QLCG_LOCALE_ZH_HANT;
+    if (traditional != s_traditional_title) {
+        SetWindowTextW(g_app.hwnd, window_title(traditional));
+        s_traditional_title = traditional;
+    }
+    sync_game_ime(g_app.screen == SCREEN_IN_GAME && !g_app.esc_paused &&
+                  !g_app.chat_open && !g_app.settings_in_drawer && !app_text_input_active());
     while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
         if (msg.message == WM_QUIT) g_app.running = false;
         TranslateMessage(&msg);
@@ -416,6 +491,8 @@ void qlcg_platform_poll(void) {
     }
 }
 void qlcg_platform_window_close(void) {
+    sync_game_ime(false);
+    win32_release_window_mode();
     qlcg_gl_context_reset();
     wglMakeCurrent(NULL, NULL);
     if (g_app.hglrc) wglDeleteContext(g_app.hglrc);

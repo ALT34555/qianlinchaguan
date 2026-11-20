@@ -60,6 +60,21 @@
     }
   },
   "greenery": {
+    "coixGrain": {"default": "#A6A290", "summer": "#B4B695", "autumn": "#AAA08A"},
+    "honeysuckleBloom": {"default": "#F2CB70"},
+    "honeysuckleBerry": {"default": "#42354A"},
+    "madderBloom": {"default": "#DEC874"},
+    "madderBerry": {"default": "#432D37"},
+    "euryaleBloom": {"default": "#A150B6"},
+    "euryaleFruit": {"default": "#64324B"},
+    "yamBloom": {"default": "#DEDAA6"},
+    "yamLeaf": {"default": "#638C46", "spring": "#7EA654", "autumn": "#9EA35B"},
+    "yamLeafDark": {"default": "#3E6638", "spring": "#517B43", "autumn": "#657544"},
+    "yamBulbil": {"default": "#896543"},
+    "gojiBloom": {"default": "#B787D0"},
+    "gojiBerry": {"default": "#E44A30"},
+    "houttuyniaBloom": {"default": "#FFF3DB"},
+    "houttuyniaFruit": {"default": "#A89955"},
     "cropBast": {
       "default": "#DAC492"
     },
@@ -449,6 +464,9 @@
       "autumn": "#e6a825",
       "winter": "#7a6838"
     },
+    "morningGloryBlue": { "default": "#7273df" },
+    "wisteriaLilac": { "default": "#ad83cf" },
+    "bougainvilleaRose": { "default": "#e84983" },
     "berryDark": {
       "default": "#2d233b",
       "summer": "#423157",

@@ -35,7 +35,7 @@ void     ui_u8_copy(char *dst, size_t cap, const char *src);
 /* 就地去掉末尾残缺序列 */
 void     ui_u8_trim(char *s);
 
-/* -- 剪贴板钩子 app_clipboard.c -- */
+/* 剪贴板钩子 app_clipboard.c */
 bool ui_clip_get_utf8(char *dst, size_t cap);
 bool ui_clip_set_utf8(const char *utf8);
 

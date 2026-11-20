@@ -82,7 +82,7 @@ ShuiSeason qlcg_pa_shui_season(const PdDef *def, int season, const ShuiProfile *
         s.droop = 0.22 + 0.16 * win;
         s.dry = 0.35 + 0.35 * win;
         s.stress = 0.35 + 0.25 * win;
-    } else {
+    } else if (season == PD_SEASON_WINTER) {
         double keep_w = keep * (1.0 - 0.35 * win);
         s.height = 0.80 - 0.38 * win;
         s.blade = 0.76 - 0.40 * win;

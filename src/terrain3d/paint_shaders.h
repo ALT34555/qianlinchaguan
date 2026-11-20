@@ -1,6 +1,8 @@
+#include "lot_grid_shader.h"
 /* 原生画卷渲染 */
 #ifndef QLCG_PAINT_SHADERS_H
 #define QLCG_PAINT_SHADERS_H
+#include "equipment_shaders.h"
 #include "cloud_shaders.h"
 
 static const char *GB_LIB_A =
@@ -67,6 +69,7 @@ static const char *GB_LIB_A =
     "uniform vec3 uWaterFog;\n";
 
 static const char *GB_LIB_B =
+    QLCG_EQUIPMENT_VISION
     "vec3 gb_sky_mood(vec3 paper){return uPaintSky;}\n"
     "float gb_patch_fade(vec2 posXZ){return 0.0;}\n"
     "vec3 gb_snow_color(){return uPaintSnow;}\n"
@@ -107,7 +110,8 @@ static const char *GB_LIB_B =
     "    res = mix(res, dustC, dustF);\n"
     "  }\n"
     "  res = mix(res, skyPaper, edgeFade);\n"
-    "  if(uUnderwater!=0) res=mix(res,uWaterFog,clamp((dist-1.0)/35.0,0.0,1.0));\n"
+    "  res = qlcgEquipmentLight(res, wPos - eyePos, dist);\n"
+    "  if(uUnderwater!=0) res=mix(res,uWaterFog,qlcgWaterFog(dist));\n"
     "  return clamp(res, 0.0, 1.0);\n"
     "}\n";
 
@@ -208,6 +212,7 @@ static const char *GB_PAPER_FS_BODY =
     "}\n";
 
 static const char *GB_SURFACE_FS_BODY =
+    QLCG_LOT_GRID_SHADER
     "in vec3 vPos,vCol,vNorm;\n"
     "uniform sampler2D uBoundary;\n"
     "uniform vec2 uBoundaryOrigin;\n"
@@ -247,7 +252,7 @@ static const char *GB_SURFACE_FS_BODY =
     "    }\n"
     "  }\n"
     "  float weight=0.45*(1.0-snowMask*0.65)*(1.0-air*0.92);\n"
-    "  frag=vec4(col,air>0.94?1.0:1.0-weight);\n"
+    "  frag=vec4(lotGroundGrid(col,vPos.xz),air>0.94?1.0:1.0-weight);\n"
     "}\n";
 
 static const char *GB_WATER_FS_BODY =
@@ -490,6 +495,7 @@ static const char *PAINT_TERR_VS =
     "layout(location=1) in vec3 aNorm;\n"
     "layout(location=2) in vec3 aCol;\n"
     "layout(location=3) in vec4 aPaint;\n"
+    "layout(location=4) in vec4 aFarm;\n"
     "uniform mat4 uMVP;\n"
     "uniform vec3 uCamPos;\n"
     "uniform int uPalette;\n"
@@ -505,6 +511,9 @@ static const char *PAINT_TERR_VS =
     "    soil=vec3(0.94,0.93,0.90);grass=vec3(0.91,0.92,0.90);sand=vec3(0.98,0.96,0.92);stone=vec3(1.0,0.99,0.97);salt=vec3(0.99,0.98,0.95);\n"
     "  }\n"
     "  vCol=soil*max(0.0,1.0-dot(aPaint,vec4(1)))+grass*aPaint.x+sand*aPaint.y+stone*aPaint.z+salt*aPaint.w;\n"
+    "  vec3 farmColor=aFarm.yzw;\n"
+    "  if(uPalette==2){float gray=0.35+0.65*dot(farmColor,vec3(0.299,0.587,0.114));farmColor=vec3(0.96,0.95,0.92)*gray;}\n"
+    "  vCol=mix(vCol,farmColor,aFarm.x);\n"
     "  float low=min(aCol.r,min(aCol.g,aCol.b)),high=max(aCol.r,max(aCol.g,aCol.b));\n"
     "  vSnow=smoothstep(0.62,0.84,low)*(1.0-smoothstep(0.08,0.22,high-low));\n"
     "  vPos=aPos;\n"
@@ -566,6 +575,7 @@ static const char *PAINT_PLANT_VS =
     "    vec3 rp = rotated + iPos;\n"
     "    vPos = rp;\n"
     "    vCol=clamp(aCol/unbake_lp_shade(normalize(aNorm)),0.0,1.0);\n"
+    "    if(level<0.0) vCol=mix(vCol,vec3(.31,.175,.075),.68);\n"
     "    vPart=aPart; vH=aH;\n"
     "    gl_Position = uMVP * vec4(rotated + (iPos - uCamPos), 1.0);\n"
     "}\n";

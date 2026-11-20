@@ -1,4 +1,4 @@
-/* 天空气候调色板，对齐 base daylightAt */
+/* 天空气候调色板，对齐 daylightAt */
 #include "sky_climate.h"
 #include "core/dev_tools.h"
 #include "../core/math_util.h"
@@ -81,7 +81,7 @@ void qlcg_weather_visual_update(WeatherVisual *visual, const WeatherProfile *tar
     visual->precipitation = qlcg_lerpf(visual->precipitation, precipitation, blend);
 }
 
-/* 天气压暗天色（base WorldLighting） */
+/* 天气压暗天色（WorldLighting） */
 static void apply_weather(const WeatherProfile *wp, bool atmosphere, float daylight,
                           float precip, float *horizon, float *zenith) {
     if (!atmosphere || !wp) return;
@@ -109,7 +109,7 @@ void qlcg_sky_climate_astra(const CalendarClock *clk, int utc_offset_min, int se
     memset(out, 0, sizeof(*out));
     int wid = wp ? wp->id : 0;
 
-    /* 民用时间→太阳高度（base daylightAt） */
+    /* 民用时间→太阳高度（daylightAt） */
     float hour = clk ? qlcg_local_sun_hours(clk->unix_ms, utc_offset_min) : 10.5f;
     hour = qlcg_dev_hour(hour);
     float day_ratio = hour / 24.0f;

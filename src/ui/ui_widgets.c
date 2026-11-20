@@ -124,8 +124,8 @@ static bool has_active_ripple(const UiContext *ui) {
     return false;
 }
 
-/* 按钮：主 / 次 / 文字 / 危险，含悬停位移与水波 */
-/* 标签逐字推进 0.1em，对齐 base button */
+/* 按钮：主/次/字/险，含悬停与水波 */
+/* 标签逐字推进 0.1em，对齐 button */
 static int wgt_utf8_step(const char *p) {
     unsigned char c = (unsigned char)*p;
     if ((c & 0xE0) == 0xC0) return 2;
@@ -175,7 +175,7 @@ bool ui_btn(UiContext *ui, float x, float y, float w, float h, const char *label
     UiMotion *m = ui_motion_step(ui, id, hov, down, false);
     bool clicked = hov && ui->mouse_clicked;
 
-    if (clicked) {
+    if (clicked && !ui->suppress_button_ripple) {
         ui_ripple_push(ui, (float)ui->mouse_x, (float)ui->mouse_y, qlcg_maxf(w, h) * 1.15f);
     }
 
@@ -233,7 +233,7 @@ bool ui_btn(UiContext *ui, float x, float y, float w, float h, const char *label
             break;
     }
 
-    if (has_active_ripple(ui)) {
+    if (!ui->suppress_button_ripple && has_active_ripple(ui)) {
         if (kind == BTN_PRIMARY || kind == BTN_GHOST || kind == BTN_DANGER) {
             ui_clip_push(ui, x, y + dy, w, h);
             ui_ripple_draw(ui, with_alpha(tk_of(ui, QL_ON_PRIMARY), 0.28f));
@@ -272,15 +272,17 @@ bool ui_pointer_in_rect(const UiContext *ui, float x, float y, float w, float h)
            (float)ui->mouse_y >= y && (float)ui->mouse_y < y + h;
 }
 
-bool ui_hit(const UiContext *ui, float x, float y, float w, float h) {
+static bool hit_point(const UiContext *ui, float px, float py, float x, float y, float w, float h) {
     if (ui_pointer_blocked(ui)) return false;
-    float mx = (float)ui->mouse_x, my = (float)ui->mouse_y;
     if (ui->clip_depth > 0) {
         const float *r = ui->clip_stack[ui->clip_depth - 1];
-        if (mx < r[0] || mx >= r[0] + r[2] ||
-            my < r[1] || my >= r[1] + r[3]) return false;
+        if (px < r[0] || px >= r[0] + r[2] || py < r[1] || py >= r[1] + r[3]) return false;
     }
-    return ui_pointer_in_rect(ui, x, y, w, h);
+    return px >= x && px < x + w && py >= y && py < y + h;
+}
+
+bool ui_hit(const UiContext *ui, float x, float y, float w, float h) {
+    return hit_point(ui, (float)ui->mouse_x, (float)ui->mouse_y, x, y, w, h);
 }
 
 bool ui_button(UiContext *ui, float x, float y, float w, float h, const char *label, bool primary, bool active) {
@@ -354,23 +356,21 @@ static void cb_draw_tick(UiContext *ui, float x, float y, float box, float prog,
     ui_draw_line(ui, bx, by, bx + (cx - bx) * t, by + (cy - by) * t, 2.2f * ui->met.size, color);
 }
 
-bool ui_checkbox(UiContext *ui, float x, float y, const char *label, bool *val) {
-    float z  = ui->met.size;
-    float sc = ui->met.scale;
-    float box = 20.0f * z;          /* base .q-checkbox-art 为 20×20 */
-    float label_px = 13.0f * sc;
-    float row_h = ui_checkbox_height(ui);
-    float by = y + (row_h - box) * 0.5f;
-    int tw = ui_text_width_px(ui, UI_FACE_BODY, label_px, false, label);
-    bool hov = ui_hit(ui, x, y, box + 10.0f * z + (float)tw, row_h);
+static bool checkbox_box(UiContext *ui, float x, float by, bool hovered, bool clicked, bool *val) {
+    float z = ui->met.size;
+    float box = 20.0f * z;
 
-    /* 进度：勾选 1.6s、取消 0.6s，简化时直接到终态 */
+    /* 勾选 800ms，取消 300ms */
     float p = -1.0f;
-    int   slot = cb_anim_slot(x, y);
+    int slot = cb_anim_slot(x, by);
     if (slot >= 0) {
-        float dur = s_cb[slot].to ? 1.6f : 0.6f;
+        float dur = s_cb[slot].to ? 0.8f : 0.3f;
         p = (ui->time - s_cb[slot].t0) / dur;
-        if (p >= 1.0f || ui->reduce_motion) { s_cb[slot].t0 = 0.0f; p = -1.0f; }
+        if (p >= 1.0f || s_cb[slot].to != *val || ui->reduce_motion) {
+            s_cb[slot].t0 = 0.0f;
+            slot = -1;
+            p = -1.0f;
+        }
     }
     bool  checked = *val;
     float fill_a  = checked ? 1.0f : 0.0f;      /* 填充透明度 */
@@ -391,7 +391,7 @@ bool ui_checkbox(UiContext *ui, float x, float y, const char *label, bool *val) 
     if (fill_a > 0.01f)
         ui_draw_rect(ui, x, by, box, box, with_alpha(tk_of(ui, QL_PRIMARY_UI), fill_a));
 
-    uint32_t edge_idle = with_alpha(tk_of(ui, QL_INK), hov ? 0.55f : 0.36f);
+    uint32_t edge_idle = with_alpha(tk_of(ui, QL_INK), hovered ? 0.55f : 0.36f);
     uint32_t edge = edge_idle;
     if (box_mix > 0.01f) {
         QlColor a = ql_rgba_f(edge_idle & 0x00FFFFFFu, (float)((edge_idle >> 24) & 0xFF) / 255.0f);
@@ -403,17 +403,54 @@ bool ui_checkbox(UiContext *ui, float x, float y, const char *label, bool *val) 
     if (tick_p > 0.01f)
         cb_draw_tick(ui, x, by, box, tick_p, tk_of(ui, QL_ON_PRIMARY));
 
+    if (!clicked) return false;
+    *val = !*val;
+    if (!ui->reduce_motion) {
+        if (slot < 0) slot = s_cb_next++ % CB_ANIM_SLOTS;
+        s_cb[slot] = (CbAnim){ x, by, ui->time, *val };
+    }
+    return true;
+}
+
+bool ui_checkbox(UiContext *ui, float x, float y, const char *label, bool *val) {
+    float z = ui->met.size;
+    float box = 20.0f * z;
+    float row_h = ui_checkbox_height(ui);
+    float label_px = 13.0f * ui->met.scale;
+    int tw = ui_text_width_px(ui, UI_FACE_BODY, label_px, false, label);
+    bool hov = ui_hit(ui, x, y, box + 10.0f * z + (float)tw, row_h);
+    bool changed = checkbox_box(ui, x, y + (row_h - box) * 0.5f, hov, hov && ui->mouse_clicked, val);
     if (label[0]) {
         ui_draw_text_px(ui, UI_FACE_BODY, label_px, false, x + box + 10.0f * z,
                         y + (row_h - label_px * 1.30f) * 0.5f, label, tk_of(ui, QL_INK));
     }
-    if (hov && ui->mouse_clicked) {
-        *val = !(*val);
-        int s = s_cb_next++ % CB_ANIM_SLOTS;
-        s_cb[s].x = x; s_cb[s].y = y; s_cb[s].t0 = ui->time; s_cb[s].to = *val;
-        return true;
+    return changed;
+}
+
+bool ui_checkbox_row(UiContext *ui, float x, float y, float w, float h,
+                     const char *label, float font_px, bool *val) {
+    float z = ui->met.size;
+    float box = 20.0f * z;
+    if (w < box) return false;
+    float bx = x + w - box;
+    float cy = y + h * 0.5f;
+    bool mouse_hit = ui_hit(ui, x, y, w, h);
+    bool hovered = ui->touch_active ? hit_point(ui, ui->touch_x, ui->touch_y, x, y, w, h)
+                   : mouse_hit && (!ui->pointer_touch || ui->mouse_down || ui->mouse_clicked);
+    bool changed = checkbox_box(ui, bx, cy - box * 0.5f, hovered, mouse_hit && ui->mouse_clicked, val);
+
+    float gap = 8.0f * z;
+    float label_w = qlcg_maxf(0.0f, bx - x - gap * 3.0f);
+    float text_w = (float)ui_text_width_px(ui, UI_FACE_BODY, font_px, false, label);
+    ui_draw_text_ellipsis(ui, UI_FACE_BODY, font_px, false, x, cy - font_px * 0.65f,
+                          label_w, 0, label, tk_of(ui, QL_INK));
+    float line_x = x + qlcg_minf(text_w, label_w) + gap;
+    if ((hovered || *val) && bx - gap > line_x) {
+        float stroke = qlcg_maxf(1.0f, z);
+        ui_draw_rect(ui, line_x, roundf(cy - stroke * 0.5f), bx - gap - line_x, stroke,
+                     tk_of(ui, QL_PRIMARY_UI));
     }
-    return false;
+    return changed;
 }
 
 /* 滑条：细轨道 + 主色进度 + 圆滑钮 */
@@ -458,7 +495,7 @@ bool ui_slider_at_ex(UiContext *ui, float x, float ty, float w, float *val,
         }
     }
     float ratio = (vmax > vmin) ? qlcg_clampf((*val - vmin) / (vmax - vmin), 0.0f, 1.0f) : 0.0f;
-    /* base：左 6px 主色实心条，右 1px line 细线 */
+    /* 左 6px 主色条，右 1px line 细线 */
     float mid_y = ty + th * 0.5f;
     if (w * (1.0f - ratio) > 0.0f)
         ui_draw_rect(ui, x + w * ratio, mid_y - 0.5f * z, w * (1.0f - ratio), 1.0f * z,
@@ -503,7 +540,7 @@ bool ui_slider_at(UiContext *ui, float x, float ty, float w, float *val, float v
     return ui_slider_at_ex(ui, x, ty, w, val, vmin, vmax, 0, vmin, NULL);
 }
 
-/* 完整滑块高度：标签行 + 间距 + 轨道 + 下留白 */
+/* 完整滑块高：标签行+间距+轨+留白 */
 float ui_slider_height(UiContext *ui) {
     float z  = ui->met.size;
     float sc = ui->met.scale;
@@ -576,15 +613,17 @@ void ui_crosshair_glyph(UiContext *ui, float cx, float cy, float size, int kind,
 }
 
 void ui_draw_crosshair(UiContext *ui, CrosshairStyle style) {
+    ui_draw_crosshair_at(ui,style,ui->win_w*.5f,ui->win_h*.5f);
+}
+
+void ui_draw_crosshair_at(UiContext *ui,CrosshairStyle style,float cx,float cy) {
     if (style == CROSSHAIR_NONE) return;
-    float cx = (float)ui->win_w * 0.5f;
-    float cy = (float)ui->win_h * 0.5f;
     if (style == CROSSHAIR_DOT) {
-        /* base：5px 米白圆 +1px 深棕外圈，先外后内 */
+        /* 5px 米白圆 + 1px 深棕外圈 */
         ui_draw_circle(ui, cx, cy, 3.5f, with_alpha(tk_of(ui, QL_INK), 0.60f));
         ui_draw_circle(ui, cx, cy, 2.5f, ui_rgba(251, 244, 227, 235));
     } else if (style == CROSSHAIR_CROSS) {
-        /* base：2px 白十字臂 22px，外 1px 深描边 */
+        /* 2px 白十字臂 22px，外 1px 深描边 */
         uint32_t edge = tk_of(ui, QL_INK);
         uint32_t body = tk_of(ui, QL_INK_INV);
         ui_draw_rect(ui, cx - 2.0f, cy - 12.0f, 4.0f, 24.0f, edge);
@@ -596,7 +635,7 @@ void ui_draw_crosshair(UiContext *ui, CrosshairStyle style) {
     }
 }
 
-/* 书签：纸面+垂绳玉珠，viewBox 200×180 */
+/* 书签：纸面+玉珠，200×180 */
 void ui_bookmark(UiContext *ui, float x, float y, float w, float h,
                  uint32_t wood, uint32_t wood_deep, uint32_t paper, uint32_t accent) {
     (void)wood; (void)wood_deep;
@@ -740,7 +779,7 @@ bool ui_select_sized(UiContext *ui, uint32_t id, float x, float y, float w, floa
     return false;
 }
 
-/* 表单默认字号同 base .input：12.5px */
+/* 表单默认字号同 .input：12.5px */
 bool ui_select(UiContext *ui, uint32_t id, float x, float y, float w, float h,
                const char *const *items, int count, int current) {
     return ui_select_sized(ui, id, x, y, w, h, items, count, current,
@@ -1043,7 +1082,7 @@ bool ui_text_input(UiContext *ui, uint32_t id, float x, float y, float w, float 
         }
     }
 
-    /* .input：inset 内凹 + surface 底 */
+    /* .input：内凹 + surface 底 */
     ui_draw_rect(ui, x, y, w, h, tk_of(ui, focused ? QL_SURFACE_HI : QL_SURFACE));
     ui_neu_in(ui, x, y, w, h, 4.0f * z, tk_of(ui, QL_NEU_DARK), tk_of(ui, QL_NEU_LIGHT));
     ui_draw_border(ui, x, y, w, h, 1.0f,

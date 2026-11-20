@@ -138,6 +138,8 @@ void qlcg_climate_zone_build(MacroWorld *w) {
         w->climate_zone = (uint8_t *)malloc(n);
         if (!w->climate_zone) return;
     }
+    qlcg_civ_content_ready();
+    if(!w->climate_type)w->climate_type=malloc(n);
     for (int i = 0; i < w->cell_count; i++) {
         w->climate_zone[i] = (uint8_t)qlcg_climate_zone_of(
             w->temperature ? w->temperature[i] : 15.0f,
@@ -145,12 +147,17 @@ void qlcg_climate_zone_build(MacroWorld *w) {
             w->moisture ? w->moisture[i] : 0.5f,
             w->rainfall ? w->rainfall[i] : 800.0f,
             w->monsoon_amp ? w->monsoon_amp[i] : 0.0f);
+        if(w->climate_type)w->climate_type[i]=(uint8_t)qlcg_climate_type_match(
+            w->temperature?w->temperature[i]:15,w->season_amp?fabsf(w->season_amp[i]):0,
+            w->moisture?w->moisture[i]:.5f,w->rainfall?w->rainfall[i]:800,
+            w->monsoon_amp?w->monsoon_amp[i]:0,w->climate_zone[i]);
     }
 }
 
 void qlcg_climate_zone_release(MacroWorld *w) {
-    if (!w || !w->climate_zone) return;
+    if (!w) return;
     free(w->climate_zone);
+    free(w->climate_type);w->climate_type=NULL;
     w->climate_zone = NULL;
 }
 
@@ -195,4 +202,18 @@ void qlcg_climate_zone_row(const MacroWorld *w, int row, uint8_t *out) {
         return;
     }
     memcpy(out, w->climate_zone + (size_t)row * (size_t)w->columns, (size_t)w->columns);
+}
+
+int qlcg_climate_type_index_cell(const MacroWorld *w,int cell) {
+    if(!w||cell<0||cell>=w->cell_count)return QLCG_ZONE_UNKNOWN;
+    zone_ensure(w);
+    return w->climate_type?w->climate_type[cell]:qlcg_climate_zone_cell(w,cell);
+}
+const QlcgClimateType *qlcg_climate_type_cell(const MacroWorld *w,int cell) {
+    return qlcg_climate_type_at(qlcg_climate_type_index_cell(w,cell));
+}
+const QlcgClimateType *qlcg_climate_type_world(const MacroWorld *w,double wx,double wz) {
+    if(!w||!isfinite(wx)||!isfinite(wz))return NULL;
+    double lx=wx,lz=wz;const MacroWorld *owner=qlcg_infinite_resolve(w,wx,wz,&lx,&lz);
+    return owner?qlcg_climate_type_cell(owner,qlcg_world_cell_at_wxz(owner,(float)lx,(float)lz)):NULL;
 }

@@ -11,6 +11,7 @@
 
 #include "core/config.h"
 #include "core/math_util.h"
+#include "ui/pages/game/panel_build.h"
 #include "core/measurements.h"
 #include "core/game_settings.h"
 #include "core/i18n.h"
@@ -37,6 +38,7 @@
 #define QLCG_SAVE_FLASH_SECONDS 2.6f
 #include "terrain3d/terrain_view.h"
 #include "app_river_craft.h"
+#include "ui/pages/game/panel_inventory.h"
 
 typedef enum {
     SET_TAB_PROFILE = 0,
@@ -77,6 +79,7 @@ typedef struct {
     int                save_count;
     int                save_filter_mode;
     int                save_page;          /* 存档页当前页码，筛选或刷新后归零 */
+    UiMotion           save_card_motion[MAX_SAVE_SLOTS];
     /* 改名编辑态：id 为空表示未进入 */
     char               save_edit_id[64];
     char               save_edit_buf[240];
@@ -106,6 +109,12 @@ typedef struct {
     AtlasRenderer      atlas;
     TerrainRenderer    terrain;
     RiverCraft         river_craft;
+    InventoryUi        inventory_ui;
+    struct {
+        TerrainDollRef resident;
+        const MacroWorld *world;
+        const RegionData *region;
+    } doll_panel;
 
     /* F12 调试面板、ESC 暂停与聊天指令面板 */
     bool               show_debug_f12;
@@ -152,7 +161,7 @@ void app_infinite_step(void);
 bool app_rebuild_creator_world(void);
 void app_refresh_creator_clock(void);
 void app_enter_world_from_creator(void);
-/* 统一保存入口：槽号见 SAVE_SLOT_*，成功会清零自动存档计时 */
+/* 统一保存入口：成功清零自动存盘计时 */
 bool app_save_current(int slot_kind, bool notify);
 bool app_save_manual_slot(int slot, const char *name);
 bool app_rename_manual_slot(int slot, const char *name);
@@ -189,6 +198,8 @@ void render_screen_memories(UiContext *ui);
 void render_screen_settings(UiContext *ui);
 bool settings_confirm_active(void);
 void settings_confirm_cancel(void);
+void settings_confirm_expire(void);
+void settings_leave(void);
 void settings_confirm_begin(float safe_x, float safe_y, float text_scale, float ui_scale);
 void settings_layout_cancel(void);
 void render_screen_in_game(UiContext *ui);
@@ -198,14 +209,20 @@ void render_debug_overlay_f12(UiContext *ui);
 /* 游戏内分层视图 */
 bool game_view_atlas(UiContext *ui);
 void game_view_terrain(UiContext *ui);
+void game_terrain_use_hand(bool off_hand);
+bool game_doll_panel_over_ui(UiContext *ui);
+bool game_doll_panel_open(void);
+bool game_doll_panel_interact(void);
+bool game_doll_panel_close(void);
+bool game_doll_panel_back(void);
+void game_doll_panel_input(UiContext *ui);
+void game_doll_panel_draw(UiContext *ui);
 void game_top_bar(UiContext *ui);
 void game_save_indicator(UiContext *ui);
 void game_chat_panel(UiContext *ui);
 bool game_chat_over_ui(UiContext *ui);
 bool game_debug_over_ui(UiContext *ui);
 bool game_scene_over_ui(UiContext *ui);
-/* 占领/景气 HUD 已归档 003backup */
-/* 常驻小地图已归档，改由 F12 的 5x5 图承担 */
 void game_esc_menu(UiContext *ui);
 
 /* 应用骨架 */
@@ -216,7 +233,7 @@ void app_update(float dt);
 void app_shutdown(void);
 void app_toggle_world_view(void);
 void app_apply_font(void);
-/* 文本输入通路：追加一个 UTF-16 码元到当前聚焦框 */
+/* 文本输入：追加 UTF-16 码元到聚焦框 */
 void app_input_push_utf16(UiContext *ui, uint32_t unit);
 UiEditField *app_text_target(void);
 void app_input_key_down(unsigned key, bool repeat);
@@ -255,7 +272,7 @@ void app_sync_hud_daynight(void);
 bool app_action_match(int act, unsigned int vk);
 /* 视角增量：套用反转设置并钳制俯仰，正值 limit */
 void app_look_apply(float d_yaw, float d_pitch, float limit);
-/* 指针锁定开关，由 want_mouse_lock 定 */
+/* 指针锁定，由 want_mouse_lock 决定 */
 void app_set_mouse_lock(bool on);
 /* 该锁鼠标的状态：山川、未暂停、无抽屉、非触屏 */
 bool app_want_mouse_lock(void);

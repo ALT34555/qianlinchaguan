@@ -7,17 +7,17 @@
 #include <stdio.h>
 #include <string.h>
 
-/* 三套配色：白、黑、红，与 base COLORS 一致 */
+/* 三套配色：白、黑、红，对齐 base */
 static const uint32_t k_colors[3] = { 0xF4F3F2u, 0x1A1A1Au, 0xAB372Fu };
 static const char *k_ids[SFX_COUNT] = { "001", "002", "003", "101", "102", "103", "501" };
 
-/* smoothstep：fade_s 内 from→to */
+/* smoothstep：fade_s 内插值 */
 static float sfx_strength(const StatusFade *f, float now, float fade_s) {
     float p = qlcg_clampf((now - f->changed_at) / fade_s, 0.0f, 1.0f);
     return f->from + (f->to - f->from) * p * p * (3.0f - 2.0f * p);
 }
 
-/* 呼吸系数：2.4 秒一个周期，depth 为最大衰减 */
+/* 呼吸系数：2.4 秒周期，depth 衰减 */
 static float sfx_breath(const StatusFade *f, float now, float period, float depth) {
     float phase = (now - f->started_at) * QLCG_TAU / period;
     return 1.0f - (1.0f - cosf(phase)) * 0.5f * depth;

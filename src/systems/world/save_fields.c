@@ -59,7 +59,7 @@ void qlcg_fields_settings(QlCodec *io, GameSettings *s) {
     s->joystick_style=(int)qlcg_io_i32(io,(int32_t)s->joystick_style);
     s->touch_opacity=qlcg_io_f32(io,s->touch_opacity);
     s->hidpi_scale=qlcg_io_f32(io,s->hidpi_scale);
-    for (int i=0;i<4;i++) {
+    for (int i=0;i<QLCG_MOVE_LAYOUT_COUNT;i++) {
         for (int j=0;j<3;j++) {
             s->touch_layout[i][j]=qlcg_io_f32(io,s->touch_layout[i][j]);
         }
@@ -75,6 +75,21 @@ void qlcg_fields_settings(QlCodec *io, GameSettings *s) {
         s->scroll_pigment=qlcg_io_f32(io,s->scroll_pigment);
         s->scroll_ink=qlcg_io_f32(io,s->scroll_ink);
         s->scroll_line_width=qlcg_io_f32(io,s->scroll_line_width);
+    }
+    if (!io->reading || io->bytes < io->limit) {
+        int mode = qlcg_io_i32(io, s->window_mode);
+        s->window_mode = mode >= WINDOW_DECORATED && mode <= WINDOW_FULLSCREEN
+                       ? (WindowMode)mode : WINDOW_DECORATED;
+    }
+    if (!io->reading || io->bytes < io->limit) {
+        for (int i=0;i<QLCG_ACTION_LAYOUT_COUNT;i++)
+            for (int j=0;j<3;j++)
+                s->touch_action_layout[i][j]=qlcg_io_f32(io,s->touch_action_layout[i][j]);
+    }
+    if (!io->reading || io->bytes < io->limit) {
+        int camera=qlcg_io_i32(io,s->camera_view), status=qlcg_io_i32(io,s->character_status);
+        s->camera_view=camera>=CAMERA_FIRST_PERSON && camera<=CAMERA_THIRD_PERSON ? (CameraView)camera : CAMERA_FIRST_PERSON;
+        s->character_status=status>=CHAR_STATUS_DETAILED && status<=CHAR_STATUS_HIDDEN ? (CharacterStatusMode)status : CHAR_STATUS_DETAILED;
     }
 }
 
@@ -200,9 +215,8 @@ void qlcg_fields_slot_ver(QlCodec *io, SaveSlotInfo *s, uint32_t version) {
     s->mystery_time_speed=qlcg_io_f32(io,s->mystery_time_speed);
     s->mystery_menu_auto_pause=qlcg_io_bool(io,s->mystery_menu_auto_pause);
     s->delta_count=(int)qlcg_io_i32(io,(int32_t)s->delta_count);
-    for (int i=0;i<64;i++) {
-        qlcg_fields_delta(io,&s->deltas[i]);
-    }
+    if (version<20u)
+        for (int i=0;i<QLCG_LEGACY_INLINE_DELTAS;i++) qlcg_fields_delta(io,&s->deltas[i]);
 }
 
 void qlcg_fields_slot(QlCodec *io, SaveSlotInfo *s) {

@@ -24,7 +24,7 @@ float qlcg_atlas_globe_radius(const AtlasRenderer *ar, float vp_w, float vp_h) {
     return qlcg_minf(vp_w, vp_h) * 0.43f * qlcg_clampf(f, 1.0f, 8.0f);
 }
 
-/* 河流 LOD 层级：绕行一圈像素 / 128 的二进制阶 */
+/* 河流 LOD：绕行像素/128 二进制阶 */
 int qlcg_atlas_river_level(const AtlasRenderer *ar, const MacroWorld *w,
                            float vp_w, float vp_h) {
     (void)vp_h;

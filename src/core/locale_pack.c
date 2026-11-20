@@ -1,6 +1,7 @@
 /* 按语言目录装载独立内容域 */
 #include "platform/platform.h"
 #include "locale_pack.h"
+#include "binary.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +21,8 @@ static JsVal *load_domain(const wchar_t *directory, const wchar_t *file) {
     }
     char *bytes = malloc((size_t)length + 1);
     if (!bytes) { fclose(fp); return NULL; }
-    bool ok = fread(bytes, 1, (size_t)length, fp) == (size_t)length;
+    bool ok = fread(bytes, 1, (size_t)length, fp) == (size_t)length &&
+              qlcg_utf8_valid(bytes, (size_t)length);
     fclose(fp);
     bytes[length] = '\0';
     const char *text = bytes;
@@ -59,8 +61,8 @@ bool qlcg_locale_pack_load(const wchar_t *root, const wchar_t *folder, QlLocaleP
     pack->meta.is_mod = true;
     qlcg_js_free(manifest);
     pack->ui = load_domain(directory, L"ui.json");
-    pack->flags = load_domain(directory, L"names\\flags.json");
-    pack->people = load_domain(directory, L"names\\people.json");
+    pack->flags = load_domain(directory, L"names/flags.json");
+    pack->people = load_domain(directory, L"names/people.json");
     if (!pack->ui && !pack->flags) { qlcg_locale_pack_free(pack); return false; }
     return true;
 }

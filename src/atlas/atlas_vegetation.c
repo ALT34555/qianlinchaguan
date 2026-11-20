@@ -55,7 +55,7 @@ struct AtlasVegetation {
 
 int qlcg_atlas_guild_species(const QlcgGuildDef *guild) {
     if(!guild) return -1;
-    if(guild->mono) return guild->species;
+    if(guild->mono) return qlcg_plant_species_category(guild->species)==PLANT_CAT_SHU?guild->species:-1;
     for(int i=0;i<guild->member_count;i++) {
         int species=guild->members[i].species;
         if(qlcg_plant_species_category(species)==PLANT_CAT_SHU) return species;

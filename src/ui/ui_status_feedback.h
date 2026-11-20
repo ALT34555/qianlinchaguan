@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include "ui_core.h"
 
-/* 七种特效：0xx 顶部渐变，1xx 晕影，501 模糊 */
+/* 七种特效：0xx 渐变，1xx 晕影，501 模糊 */
 #define SFX_COUNT 7
 
 typedef enum {
@@ -23,7 +23,7 @@ typedef struct {
     int   seq;
 } StatusFade;
 
-/* 状态反馈状态机：强制优先，自动 001 受设置开关约束 */
+/* 状态反馈：强制优先，001 受开关约束 */
 typedef struct {
     StatusFade fades[SFX_COUNT];
     int        current;
@@ -37,7 +37,7 @@ typedef struct {
 void  ui_status_feedback_reset(StatusFeedback *sf);
 void  ui_status_feedback_update(StatusFeedback *sf, int automatic, bool enabled, float now);
 float ui_status_feedback_blur(const StatusFeedback *sf);
-/* 单层强度：501 为模糊半径，其余为含呼吸的不透明度 */
+/* 单层强度：501 模糊半径，其余不透明度 */
 float ui_status_feedback_layer(const StatusFeedback *sf, int id);
 bool  ui_status_feedback_command(StatusFeedback *sf, const char *arg, char *reply, size_t cap);
 void  ui_status_feedback_draw(UiContext *ui, const StatusFeedback *sf);

@@ -1,4 +1,4 @@
-/* 低模几何构建器，同 base geometry.ts */
+/* 低模几何构建器，同 geometry.ts */
 #ifndef QLCG_LP_BUILDER_H
 #define QLCG_LP_BUILDER_H
 
@@ -16,7 +16,9 @@ typedef struct {
 
 enum { LP_SOCKET_SNOW_CANOPY, LP_SOCKET_SNOW_GROUND, LP_SOCKET_FRUIT,
        LP_SOCKET_SNOW_SURFACE, LP_SOCKET_SEED, LP_SOCKET_FRUIT_FIBER,
-       LP_SOCKET_FRUIT_CROP, LP_SOCKET_KIND_COUNT, LP_SOCKET_CAPACITY = 32 };
+       LP_SOCKET_FRUIT_CROP, LP_SOCKET_CLING, LP_SOCKET_FUNGUS, LP_SOCKET_KIND_COUNT,
+       LP_SOCKET_AUTHORED_CAPACITY = 32, LP_CLING_SIDES = 2,
+       LP_SOCKET_CAPACITY = LP_SOCKET_AUTHORED_CAPACITY + LP_CLING_SIDES };
 
 typedef struct {
     double translation[3];
@@ -27,8 +29,9 @@ typedef struct {
     LpFace *faces;
     int     count;
     int     cap;
-    LpSocket sockets[LP_SOCKET_CAPACITY];
+    LpSocket sockets[LP_SOCKET_AUTHORED_CAPACITY];
     int socket_count;
+    double cling_height;
 } LpBuilder;
 
 typedef struct {
@@ -48,13 +51,14 @@ typedef struct {
     int    index_count;
     double radius;
     double height;
+    double min_y;
     LpGroup groups[4];
     int     group_count;
     LpSocket sockets[LP_SOCKET_CAPACITY];
     int socket_count;
 } LpGeometry;
 
-/* 形状选项：NAN 表示未设置，mat 用 -1 表示未设 */
+/* 形状选项：NAN 未设，mat 用 -1 */
 typedef struct {
     double rot_y, jitter, cap, floor_on, rings, squash;
     double radius_ratio, bend, both, pitch, cup, sides, tip_ratio;

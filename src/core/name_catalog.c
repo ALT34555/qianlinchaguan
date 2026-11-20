@@ -42,6 +42,8 @@ const char *qlcg_builtin_flag_text(const char *culture, const char *key) {
     const FlagNameTable *table = strcmp(culture, "zh-CN") == 0 ? &ZH : &EN;
     int a, b;
     char extra;
+    if (strcmp(key, "leader.format") == 0) return table == &ZH ? "{place}之主" : "Lord of {place}";
+    if (strcmp(key, "leader.strip") == 0) return table == &ZH ? "之地" : "";
     if (strcmp(key, "format") == 0) return table->pattern;
     if (sscanf(key, "climate.%d%c", &a, &extra) == 1 && a >= 1 && a <= 5)
         return table->climates[a - 1];

@@ -1,0 +1,227 @@
+{
+  "schema": 1,
+  "farmland_types": [
+    {
+      "id": "qlcg.dry_field",
+      "chunk_type": 9010,
+      "name": "旱田",
+      "soil_rgb": "#705135",
+      "width": 30,
+      "depth": 30,
+      "ridge_period": 4,
+      "ridge_strength": 0.25
+    },
+    {
+      "id": "qlcg.paddy_field",
+      "chunk_type": 9011,
+      "name": "水田",
+      "soil_rgb": "#514A35",
+      "width": 30,
+      "depth": 30,
+      "ridge_period": 4,
+      "ridge_strength": 0.1
+    },
+    {
+      "id": "qlcg.terrace_field",
+      "chunk_type": 9012,
+      "name": "梯田",
+      "soil_rgb": "#796044",
+      "width": 30,
+      "depth": 30,
+      "ridge_period": 4,
+      "ridge_strength": 0.3
+    },
+    {
+      "id": "qlcg.garden_field",
+      "chunk_type": 9013,
+      "name": "园圃",
+      "soil_rgb": "#61452F",
+      "width": 30,
+      "depth": 30,
+      "ridge_period": 4,
+      "ridge_strength": 0.2
+    }
+  ],
+  "crop_types": [
+    {
+      "id": "nong.dao",
+      "name": "水稻",
+      "plant_id": "nong.dao",
+      "farmland_id": "qlcg.paddy_field",
+      "role": "food",
+      "annual_food": 1800,
+      "annual_wood": 0,
+      "annual_fiber": 0,
+      "maturity_days": 30,
+      "continuous_days": 90,
+      "priority": 30,
+      "mean_temp": [
+        16,
+        40
+      ],
+      "amplitude": [
+        0,
+        35
+      ],
+      "temperature": [
+        8,
+        45
+      ],
+      "moisture": [
+        0.58,
+        1
+      ],
+      "base_zone_mask": 51
+    },
+    {
+      "id": "nong.ma",
+      "name": "麻",
+      "plant_id": "nong.ma",
+      "farmland_id": "qlcg.dry_field",
+      "role": "fiber",
+      "annual_food": 0,
+      "annual_wood": 0,
+      "annual_fiber": 120,
+      "maturity_days": 30,
+      "continuous_days": 90,
+      "priority": 10,
+      "mean_temp": [
+        4,
+        30
+      ],
+      "amplitude": [
+        0,
+        35
+      ],
+      "temperature": [
+        8,
+        45
+      ],
+      "moisture": [
+        0.15,
+        0.9
+      ],
+      "base_zone_mask": 122432
+    },
+    {
+      "id": "nong.mai",
+      "name": "小麦",
+      "plant_id": "nong.mai",
+      "farmland_id": "qlcg.dry_field",
+      "role": "food",
+      "annual_food": 1800,
+      "annual_wood": 0,
+      "annual_fiber": 0,
+      "maturity_days": 30,
+      "continuous_days": 90,
+      "priority": 20,
+      "mean_temp": [
+        4,
+        24
+      ],
+      "amplitude": [
+        0,
+        35
+      ],
+      "temperature": [
+        8,
+        45
+      ],
+      "moisture": [
+        0.38,
+        0.9
+      ],
+      "base_zone_mask": 20032
+    },
+    {
+      "id": "nong.mianhua",
+      "name": "棉花",
+      "plant_id": "nong.mianhua",
+      "farmland_id": "qlcg.dry_field",
+      "role": "fiber",
+      "annual_food": 0,
+      "annual_wood": 0,
+      "annual_fiber": 120,
+      "maturity_days": 30,
+      "continuous_days": 90,
+      "priority": 20,
+      "mean_temp": [
+        16,
+        35
+      ],
+      "amplitude": [
+        0,
+        35
+      ],
+      "temperature": [
+        8,
+        45
+      ],
+      "moisture": [
+        0.2,
+        0.65
+      ],
+      "base_zone_mask": 4308
+    },
+    {
+      "id": "nong.su",
+      "name": "粟",
+      "plant_id": "nong.su",
+      "farmland_id": "qlcg.dry_field",
+      "role": "food",
+      "annual_food": 1800,
+      "annual_wood": 0,
+      "annual_fiber": 0,
+      "maturity_days": 30,
+      "continuous_days": 90,
+      "priority": 10,
+      "mean_temp": [
+        4,
+        30
+      ],
+      "amplitude": [
+        0,
+        35
+      ],
+      "temperature": [
+        8,
+        45
+      ],
+      "moisture": [
+        0.15,
+        0.9
+      ],
+      "base_zone_mask": 122052
+    },
+    {
+      "id": "nong.zhuma",
+      "name": "苎麻",
+      "plant_id": "nong.zhuma",
+      "farmland_id": "qlcg.dry_field",
+      "role": "fiber",
+      "annual_food": 0,
+      "annual_wood": 0,
+      "annual_fiber": 120,
+      "maturity_days": 30,
+      "continuous_days": 90,
+      "priority": 30,
+      "mean_temp": [
+        16,
+        40
+      ],
+      "amplitude": [
+        0,
+        35
+      ],
+      "temperature": [
+        8,
+        45
+      ],
+      "moisture": [
+        0.58,
+        1
+      ],
+      "base_zone_mask": 51
+    }
+  ]
+}

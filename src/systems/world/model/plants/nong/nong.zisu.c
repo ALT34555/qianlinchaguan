@@ -7,7 +7,7 @@ void qlcg_plant_nong_zisu(LpBuilder *b, const PdDef *def, int season, int form) 
     } shapes[] = {
         {1, 1, 3, 0},
         {1.16, .82, 2, 0},
-        {.86, 1.22, 4, 0},
+        {.83, 1.24, 3, 0},
     };
     unsigned variant = qlcg_pa_shape_variant(def);
     CropProfile profile = {
@@ -15,7 +15,7 @@ void qlcg_plant_nong_zisu(LpBuilder *b, const PdDef *def, int season, int form) 
         .cold = 3, .heat = 2, .bloom_season = PD_SEASON_COUNT, .winter_leaf = .05,
         .stems = shapes[variant].stems, .branches = shapes[variant].branches,
         .height_scale = shapes[variant].height, .spread_scale = shapes[variant].spread,
-        .stem_r = .025, .leaf_len = .24, .leaf_w = .15,
+        .stem_r = .025, .leaf_len = .24, .leaf_w = .182,
         .bloom_size = .041, .fruit_size = .047,
     };
     qlcg_pa_build_crop(b, def, season, form, &profile);

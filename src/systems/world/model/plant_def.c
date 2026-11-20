@@ -103,7 +103,7 @@ static const PdKeyList ARCHETYPE_PALETTE_KEYS[] = {
     APK("reed", APK_REED), APK("waterweed", APK_WATERWEED), APK("floatingPad", APK_FLOATING),
 };
 
-/* 状态派生：archetype / 尺寸倍率 / 参数补丁 */
+/* 状态派生：原型/尺寸倍率/参数补丁 */
 enum { BM_NONE = 0, BM_SPECIES, BM_FORCE };
 typedef struct {
     const char *archetype;
@@ -132,10 +132,11 @@ static const PdStateRule STATE_RULES[PD_STATE_COUNT] = {
     /* flowering */ { NULL, NULL, 1.0, 0, SP_FLOWERING, 1, BM_FORCE, BM_NONE, 0, NULL },
     /* fruiting */  { NULL, NULL, 1.0, 0, SP_FRUITING, 2, BM_NONE, BM_FORCE, 0, NULL },
     /* withered */  { "withered", "withered", 0.82, 1, SP_WITHERED, 1, BM_NONE, BM_NONE, 0, NULL },
+    /* hanging */   { NULL, "hanging", 1.0, 0, NULL, 0, BM_SPECIES, BM_SPECIES, 0, NULL },
 };
 
 static const char *STATE_NAMES[PD_STATE_COUNT] = {
-    "planted", "normal", "seedling", "subadult", "flowering", "fruiting", "withered"
+    "planted", "normal", "seedling", "subadult", "flowering", "fruiting", "withered", "hanging"
 };
 static const char *SEASON_NAMES[PD_SEASON_COUNT] = { "spring", "summer", "autumn", "winter" };
 
@@ -234,11 +235,15 @@ const PdSpecies *qlcg_pd_species_by_id(const char *id) {
     return NULL;
 }
 
-/* ---------- 六类分类 ---------- */
+/* 植物分类 */
 
 static const char *const CATEGORY_KEYS[PLANT_CAT_COUNT] = {
-    "cao", "guan", "hua", "nong", "shu", "shui"
+    "cao", "guan", "hua", "nong", "shu", "shui", "yao", "teng", "jun"
 };
+
+const char *qlcg_pd_category_key(int code) {
+    return code >= 0 && code < PLANT_CAT_COUNT ? CATEGORY_KEYS[code] : NULL;
+}
 
 int qlcg_pd_category_code(const char *key) {
     if (!key) return -1;
@@ -268,7 +273,7 @@ int qlcg_pd_tag_level(const PdSpecies *sp, const char *prefix) {
 }
 
 /* 由 id 前缀取类别码 */
-static int category_from_id(const char *id) {
+int qlcg_pd_category_from_id(const char *id) {
     if (!id) return -1;
     const char *dot = strchr(id, '.');
     if (!dot || dot == id) return -1;
@@ -278,6 +283,10 @@ static int category_from_id(const char *id) {
     memcpy(key, id, n);
     key[n] = '\0';
     return qlcg_pd_category_code(key);
+}
+
+int qlcg_pd_category_can_hang(int category) {
+    return category == PLANT_CAT_TENG || category == PLANT_CAT_JUN;
 }
 
 static void variant_free(PdVariant *v) {
@@ -535,7 +544,7 @@ static void load_categories(const char *dir) {
     for (int i = 0; i < g_species_count; i++) {
         PdSpecies *sp = &g_species[i];
         if (sp->category >= 0) continue;
-        int prefix = category_from_id(sp->base.id);
+        int prefix = qlcg_pd_category_from_id(sp->base.id);
         if (prefix >= 0) sp->category = prefix;
         fprintf(stderr, "[plant] 分类表缺项: %s\n", sp->base.id);
     }
@@ -569,6 +578,11 @@ int qlcg_pd_load(const char *dir) {
         qlcg_js_free(index);
     }
     add_file("additional.json");
+    add_file("yao.json");
+    add_file("teng.json");
+    add_file("jun.json");
+    add_file("yao-additional.json");
+    add_file("aquatic.json");
 
     for (int i = 0; i < g_file_count; i++) {
         snprintf(path, sizeof(path), "%s/%s", dir, g_files[i]);
@@ -605,7 +619,7 @@ void qlcg_pd_unload(void) {
     g_file_count = 0;
 }
 
-/* ---------- 状态派生 ---------- */
+/* 状态派生 */
 
 static int in_list(const char *const *list, int n, const char *v) {
     if (!v) return 0;
@@ -724,11 +738,13 @@ static void resolve_palette(const PdVariant *v, int season, int state, const PdR
     pd_init(out);
     for (int i = 0; i < keys.count; i++) {
         const char *key = keys.items[i];
-        char spot_key[128], whole_key[128];
-        snprintf(spot_key, sizeof(spot_key), "%s.%s", key, SEASON_NAMES[season]);
-        snprintf(whole_key, sizeof(whole_key), "%s", key);
-        const char *spot = pd_str(&v->palette, spot_key, NULL);
-        const char *whole = pd_str(&v->palette, whole_key, NULL);
+        const char *spot = NULL;
+        if (season != PD_SEASON_NONE) {
+            char spot_key[128];
+            snprintf(spot_key, sizeof(spot_key), "%s.%s", key, SEASON_NAMES[season]);
+            spot = pd_str(&v->palette, spot_key, NULL);
+        }
+        const char *whole = pd_str(&v->palette, key, NULL);
         const char *value = NULL;
         if (spot) {
             const PdPaletteEntry *e = pal_find(spot);
@@ -744,7 +760,7 @@ static void resolve_palette(const PdVariant *v, int season, int state, const PdR
     }
 }
 
-/* ---------- 生成定义 ---------- */
+/* 生成定义 */
 
 static void format_seed(double seed, char *buf, size_t cap) {
     if (seed == floor(seed) && fabs(seed) < 1e15) snprintf(buf, cap, "%.0f", seed);
@@ -760,9 +776,10 @@ void qlcg_pd_free_def(PdDef *def) {
     memset(def, 0, sizeof(*def));
 }
 
-/* 物种声明清单是否含该状态；空清单视为六态俱全 */
+/* 空清单沿用该分类的默认状态 */
 static int state_allowed(const PdSpecies *sp, int state) {
     if (state == PD_STATE_NORMAL) return 1;
+    if (state == PD_STATE_HANGING && !qlcg_pd_category_can_hang(sp->category)) return 0;
     if (sp->declared_count == 0) return state < PD_STATE_COUNT;
     for (int i = 0; i < sp->declared_count; i++)
         if (sp->declared[i] && strcmp(sp->declared[i], STATE_NAMES[state]) == 0) return 1;
@@ -773,8 +790,9 @@ int qlcg_pd_build_def(const char *id, int season, PdDef *out) {
     return qlcg_pd_build_def_ex(id, season, 0, out);
 }
 
-int qlcg_pd_build_def_ex(const char *id, int season, int force_normal, PdDef *out) {    memset(out, 0, sizeof(*out));
-    if (!id || season < 0 || season >= PD_SEASON_COUNT) return 0;
+int qlcg_pd_build_def_ex(const char *id, int season, int force_normal, PdDef *out) {
+    memset(out, 0, sizeof(*out));
+    if (!id || season < PD_SEASON_NONE || season >= PD_SEASON_COUNT) return 0;
 
     /* 拆分 @状态 后缀 */
     char base_id[128];
@@ -799,7 +817,8 @@ int qlcg_pd_build_def_ex(const char *id, int season, int force_normal, PdDef *ou
     /* 同 toPlantDef：无花/果时退回普通态 */
     PdResolved res;
     resolve_state(variant, declared, &res);
-    int seeds = sp->category == qlcg_pd_category_code("hua") && pd_num(&res.params, "seedCount", 0) > 0;
+    int seeds = (sp->category == PLANT_CAT_HUA || sp->category == PLANT_CAT_YAO) &&
+                pd_num(&res.params, "seedCount", 0) > 0;
     int effective = declared;
     if (declared == PD_STATE_FLOWERING && !res.bloom) effective = PD_STATE_NORMAL;
     else if (declared == PD_STATE_FRUITING && !res.fruit && !seeds) effective = PD_STATE_NORMAL;
@@ -827,7 +846,8 @@ int qlcg_pd_build_def_ex(const char *id, int season, int force_normal, PdDef *ou
     out->tags = variant->tags;
     out->tag_count = variant->tag_count;
     out->snow = ((season == PD_SEASON_WINTER || season == PD_SEASON_AUTUMN) && effective != PD_STATE_WITHERED);
-    out->bloom = res.bloom && can_bloom(res.archetype);
+    out->bloom = res.bloom && can_bloom(res.archetype) &&
+                 (season != PD_SEASON_NONE || effective == PD_STATE_FLOWERING);
     out->fruit = res.fruit && !seeds;
 
     /* archetype:baseId:seed 哈希 */

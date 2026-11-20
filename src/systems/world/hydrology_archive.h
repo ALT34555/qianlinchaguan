@@ -13,6 +13,8 @@ typedef struct {
 typedef struct { int kind,cell; RiverBuffer buffer; } RiverArchiveUpdate;
 struct RiverArchive *qlcg_river_archive_create(uint32_t terrain_version);
 uint32_t qlcg_river_archive_terrain(const MacroWorld *w);
+void qlcg_river_archive_readonly_begin(const MacroWorld *w);
+bool qlcg_river_archive_readonly_end(void);
 void qlcg_river_io(RiverBuffer *b,void *data,size_t size);
 void qlcg_river_buffer_free(RiverBuffer *b);
 int qlcg_river_archive_get(const MacroWorld *w,int kind,int cell,RiverBuffer *b);

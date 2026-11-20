@@ -1,4 +1,4 @@
-/* 温度/风场/水汽/降水，对齐 climateBase */
+/* 气候：温度/风场/水汽/降水 */
 #ifndef QLCG_GEN_CLIMATE_H
 #define QLCG_GEN_CLIMATE_H
 

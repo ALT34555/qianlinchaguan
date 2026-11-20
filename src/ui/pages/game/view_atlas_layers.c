@@ -1,14 +1,16 @@
 /* 图层面板与输入边界：贴视口右上角（对齐 base） */
 #include "view_atlas_layers.h"
 #include "hud_layout.h"
+#include "hud_civilization.h"
 #include <stdio.h>
 
-static UiRect panel_rect(UiContext *ui) {
+UiRect game_atlas_panel_bounds(UiContext *ui) {
     float z   = ui->met.size;
     float sx  = ui->safe_x_px;
-    float top = game_top_bar_height(ui) + game_atlas_tools_height(ui);
+    float top=ui->safe_y_px+game_top_bar_height(ui)+game_atlas_tools_height(ui);
+    top=fmaxf(top,game_character_chat_top(ui));
     float det = game_atlas_detail_height(ui);
-    /* base：宽 min(260z,42vw)，贴右上 0 */
+    /* 宽 min(260z,42vw)，贴右上 0 */
     float w = qlcg_minf(260.0f * z, (float)ui->win_w * 0.42f);
     float h = (float)ui->win_h - top - ui->safe_edges[3] - det;
     if (h < 80.0f * z) h = 80.0f * z;
@@ -17,45 +19,48 @@ static UiRect panel_rect(UiContext *ui) {
 }
 
 bool game_atlas_over_ui(UiContext *ui) {
-    UiRect r = panel_rect(ui);
+    UiRect r = game_atlas_panel_bounds(ui);
     float  top = game_top_bar_height(ui) + game_atlas_tools_height(ui);
     float  det = game_atlas_detail_height(ui);
-    return game_scene_over_ui(ui) || app_river_craft_over_ui(ui) || ui_toast_over_ui(ui, &g_app.toasts) ||
+    return game_scene_over_ui(ui) || game_civilization_over_ui(ui) || app_river_craft_over_ui(ui) || ui_toast_over_ui(ui, &g_app.toasts) ||
            g_app.atlas.layer_dragging || ui->drag_slider_id >= 0 ||
            (g_app.atlas.layer_panel_open && ui_hit(ui, r.x, r.y, r.w, r.h)) ||
            ui_hit(ui, 0, 0, (float)ui->win_w, top) ||
            ui_hit(ui, 0, (float)ui->win_h - det, (float)ui->win_w, det);
 }
 
-void atlas_layer_panel(UiContext *ui, AtlasRenderer *ar, UiRect r) {
-    float z    = ui->met.size;
-    float sc   = ui->met.scale;
-    float font = 11.0f * sc;
-
-    /* base：面板 pad 10/12，行内 gap 4/6 */
-    float pad_x = 12.0f * z;
-    float pad_y = 10.0f * z;
-    float chk_h = ui_checkbox_height(ui);
-    float line1 = qlcg_maxf(16.0f * z, chk_h);
-    float line2 = 14.0f * z;
-    float row_pad = 10.0f * z;
-
-    /* grid 空区高 0，只有带滑杆的行占第二行 */
-    float row_top[LAYER_ID_COUNT + 1];
-    row_top[0] = 0.0f;
+AtlasPanelLayout atlas_panel_layout(UiContext *ui, const AtlasDisplayState *display, UiRect r) {
+    float z = ui->met.size;
+    AtlasPanelLayout layout = {0};
+    layout.list = (UiRect){r.x + 12*z, r.y + 10*z, r.w - 24*z, r.h - 20*z};
+    layout.check_h = ui_checkbox_height(ui);
+    layout.line_h = qlcg_maxf(16*z, layout.check_h);
+    layout.row_step = 10*z + layout.line_h;
+    layout.handle_x = layout.list.x + 2*z;
+    layout.handle_w = 16*z;
+    layout.check_x = layout.handle_x + layout.handle_w + 6*z;
+    layout.name_w = layout.list.x + layout.list.w - layout.check_x - layout.check_h - 8*z;
     for (int i = 0; i < LAYER_ID_COUNT; i++) {
-        bool hop = qlcg_atlas_layer_has_opacity(ar->display.layers[i].id);
-        row_top[i + 1] = row_top[i] + row_pad + line1 + (hop ? 4.0f * z + line2 : 0.0f);
+        bool slider = qlcg_atlas_layer_has_opacity(display->layers[i].id);
+        layout.row_top[i + 1] = layout.row_top[i] + layout.row_step + (slider ? 18*z : 0);
     }
-    float total_h = row_top[LAYER_ID_COUNT];
+    return layout;
+}
 
-    UiRect list = { r.x + pad_x, r.y + pad_y, r.w - pad_x * 2.0f, r.h - pad_y * 2.0f };
+void atlas_layer_panel(UiContext *ui, AtlasRenderer *ar, UiRect r, bool creator) {
+    float z = ui->met.size;
+    float font = 11.0f * ui->met.scale;
+    AtlasPanelLayout layout = atlas_panel_layout(ui, &ar->display, r);
+    UiRect list = layout.list;
+    const float *row_top = layout.row_top;
+    float line1 = layout.line_h, chk_h = layout.check_h;
+    float total_h = row_top[LAYER_ID_COUNT];
     float max_scroll = qlcg_maxf(0.0f, total_h - list.h);
     bool in_list = ui_hit(ui, list.x, list.y, list.w, list.h);
     if (in_list && ui->wheel_delta && !ar->layer_dragging)
-        ar->layer_scroll -= (float)ui->wheel_delta / 120.0f * (line1 + row_pad) * 2.0f;
+        ar->layer_scroll -= (float)ui->wheel_delta / 120.0f * layout.row_step * 2.0f;
     if (ar->layer_dragging && ui->mouse_down && in_list) {
-        float step = line1 + row_pad;
+        float step = layout.row_step;
         if (ui->mouse_y < list.y + step * 0.5f) ar->layer_scroll -= step * 8.0f * ui->dt;
         if (ui->mouse_y > list.y + list.h - step * 0.5f) ar->layer_scroll += step * 8.0f * ui->dt;
     }
@@ -70,12 +75,13 @@ void atlas_layer_panel(UiContext *ui, AtlasRenderer *ar, UiRect r) {
             ar->layer_drag_to = to;
         }
         if (!ui->mouse_down) {
-            qlcg_atlas_layer_move(&ar->display, ar->layer_drag_from, ar->layer_drag_to);
+            if (qlcg_atlas_layer_move(&ar->display, ar->layer_drag_from, ar->layer_drag_to))
+                layout = atlas_panel_layout(ui, &ar->display, r);
             ar->layer_dragging = false;
         }
     }
 
-    /* 面板：surface 底 + line 边，顶边不描 */
+    /* 面板：surface 底+line 边，顶不描 */
     ui_draw_rect(ui, r.x, r.y, r.w, r.h, tk_of(ui, QL_SURFACE));
     ui_draw_rect(ui, r.x, r.y, 1.0f, r.h, tk_of(ui, QL_LINE));
     ui_draw_rect(ui, r.x + r.w - 1.0f, r.y, 1.0f, r.h, tk_of(ui, QL_LINE));
@@ -91,16 +97,16 @@ void atlas_layer_panel(UiContext *ui, AtlasRenderer *ar, UiRect r) {
         ui->mouse_clicked = clicked && in_list && !ar->layer_dragging && visible;
         ui->mouse_down = down && in_list && !ar->layer_dragging && visible;
 
-        float rx      = list.x + 2.0f * z;
-        float drag_w  = 16.0f * z;
-        float check_x = rx + drag_w + 6.0f * z;
+        float rx      = layout.handle_x;
+        float drag_w  = layout.handle_w;
+        float check_x = layout.check_x;
         float top_y   = y + 5.0f * z;
-        float name_w  = list.x + list.w - 2.0f * z - check_x - chk_h - 6.0f * z;
+        float name_w  = layout.name_w;
 
         if (visible) {
-            /* 行底虚线分隔 */
-            ui_draw_rect(ui, list.x, y + rh - 1.0f, list.w, 1.0f,
-                         with_alpha(tk_of(ui, QL_LINE_FAINT), 0.55f));
+            if (!creator)
+                ui_draw_rect(ui, list.x, y + rh - 1.0f, list.w, 1.0f,
+                             with_alpha(tk_of(ui, QL_LINE_FAINT), 0.55f));
             bool dragging = ar->layer_dragging && ar->layer_drag_from == i;
             if (dragging) ui_draw_rect(ui, list.x, y, list.w, rh,
                                        with_alpha(tk_of(ui, QL_INK), 0.06f));
@@ -123,32 +129,36 @@ void atlas_layer_panel(UiContext *ui, AtlasRenderer *ar, UiRect r) {
                 ar->dragging = false;
                 ui->mouse_clicked = ui->mouse_down = false;
             }
-            /* 关掉的层整行压淡（base .is-off .55） */
+            /* 关闭层整行压淡（.is-off .55） */
             if (!layer->on) ui_draw_rect(ui, list.x, y, list.w, rh - 1.0f,
                                          with_alpha(tk_of(ui, QL_SURFACE), 0.45f));
         }
 
-        /* 勾选 + 名字：第一行第二列 */
-        float check_y = top_y + (line1 - chk_h) * 0.5f;
-        ui_checkbox(ui, check_x, check_y, "", &layer->on);
-        float name_x = check_x + chk_h + 6.0f * z;
-        if (name_w > 4.0f && ui->mouse_clicked && ui_hit(ui, name_x, top_y, name_w, line1))
-            layer->on = !layer->on;
-        ui_clip_push(ui, name_x, top_y, name_w, line1);
-        ui_draw_text_ellipsis(ui, UI_FACE_BODY, font, false, name_x,
-                             top_y + (line1 - font * 1.35f) * 0.5f, name_w, 0,
-                             qlcg_atlas_layer_name(layer->id),
-                             layer->on ? tk_of(ui, QL_INK) : tk_of(ui, QL_INK_3));
-        ui_clip_pop(ui);
+        const char *name = qlcg_atlas_layer_name(layer->id);
+        if (creator) {
+            ui_checkbox_row(ui, check_x, top_y, list.x + list.w - check_x - 2.0f * z,
+                            line1, name, font, &layer->on);
+        } else {
+            float check_y = top_y + (line1 - chk_h) * 0.5f;
+            ui_checkbox(ui, check_x, check_y, "", &layer->on);
+            float name_x = check_x + chk_h + 6.0f * z;
+            if (name_w > 4.0f && ui->mouse_clicked && ui_hit(ui, name_x, top_y, name_w, line1))
+                layer->on = !layer->on;
+            ui_clip_push(ui, name_x, top_y, name_w, line1);
+            ui_draw_text_ellipsis(ui, UI_FACE_BODY, font, false, name_x,
+                                 top_y + (line1 - font * 1.35f) * 0.5f, name_w, 0,
+                                 name, layer->on ? tk_of(ui, QL_INK) : tk_of(ui, QL_INK_3));
+            ui_clip_pop(ui);
+        }
 
         /* 滑杆：第二行，从勾选列起占满，不带数值 */
         if (qlcg_atlas_layer_has_opacity(layer->id)) {
-            float slider_y = top_y + line1 + 4.0f * z;
+            float slider_y = top_y + line1 + 8.0f * z;
             if (ui->drag_slider_id >= 0 && ui->drag_slider_id != ui->slider_seq)
                 ui->mouse_down = false;
             float track_w = name_w;
             if (track_w < 20.0f * z) track_w = 20.0f * z;
-            ui_slider_at(ui, check_x, slider_y + line2 * 0.5f - 3.0f * z,
+            ui_slider_at(ui, check_x, slider_y,
                          track_w, &layer->opacity, 0.0f, 1.0f);
         }
     }
@@ -164,6 +174,6 @@ void atlas_layer_panel(UiContext *ui, AtlasRenderer *ar, UiRect r) {
 
 void game_atlas_layer_panel(UiContext *ui) {
     AtlasRenderer *ar = &g_app.atlas;
-    if (ar->layer_panel_open && !g_app.esc_paused) atlas_layer_panel(ui, ar, panel_rect(ui));
+    if (ar->layer_panel_open && !g_app.esc_paused) atlas_layer_panel(ui, ar, game_atlas_panel_bounds(ui), false);
     else ar->layer_dragging = false;
 }

@@ -1,7 +1,33 @@
+#include "lot_grid_shader.h"
 /* 山川着色器源码 */
 #ifndef QLCG_TERRAIN_SHADERS_H
 #define QLCG_TERRAIN_SHADERS_H
 #include "cloud_shaders.h"
+#include "equipment_shaders.h"
+#define QLCG_ENHANCED_HIGHLIGHTS \
+    "vec3 qlcgHighlight(vec3 color){\n" \
+    "    float peak=max(color.r,max(color.g,color.b));\n" \
+    "    float high=max(peak-0.75,0.0);\n" \
+    "    return color*((0.75+0.25*high/(0.25+high))/max(peak,0.75));\n" \
+    "}\n"
+#define QLCG_ENHANCED_PROP_LIGHTING \
+    QLCG_ENHANCED_HIGHLIGHTS \
+    "uniform int   uEnhanced;\n" \
+    "uniform vec3  uSunColor;\n" \
+    "uniform vec3  uSkyAmb;\n" \
+    "uniform vec3  uGroundAmb;\n" \
+    "uniform float uWet;\n" \
+    "uniform float uSnowAmt;\n" \
+    "const float qlcgSnowStart = 0.55, qlcgSnowEnd = 0.92;\n" \
+    "vec3 qlcgPropLight(vec3 albedo, float normalY, float diff, float vis, float snowCoverage){\n" \
+    "    vec3 ambi = mix(uGroundAmb, uSkyAmb, clamp(normalY * 0.5 + 0.5, 0.0, 1.0));\n" \
+    "    vec3 col = albedo * (ambi * 0.85 + uSunColor * (diff * 1.15 * vis));\n" \
+    "    col *= (1.0 - 0.16 * uWet);\n" \
+    "    col = col * uLightScale * uTint;\n" \
+    "    float snowMask = snowCoverage * uSnowAmt * 0.55;\n" \
+    "    col = mix(col, vec3(0.90, 0.94, 1.00) * (ambi + uSunColor * 0.7 * vis) * uLightScale, snowMask);\n" \
+    "    return qlcgHighlight(col);\n" \
+    "}\n"
 static const char *SKY_VS_SRC =
     "#version 330 core\n"
     "layout(location=0) in vec2 aPos;\n"
@@ -96,23 +122,28 @@ static const char *TERR_VS_SRC =
     "layout(location=0) in vec3 aPos;\n"
     "layout(location=1) in vec3 aNorm;\n"
     "layout(location=2) in vec3 aCol;\n"
+    "layout(location=4) in vec4 aFarm;\n"
     "uniform mat4 uMVP;\n"
     "uniform vec3 uCamPos;\n"
     "out vec3 vPos;\n"
     "out vec3 vNorm;\n"
     "out vec3 vCol;\n"
+    "out float vFarmMask;\n"
     "void main() {\n"
     "    vPos = aPos;\n"
     "    vNorm = aNorm;\n"
     "    vCol = aCol;\n"
+    "    vFarmMask = aFarm.x;\n"
     "    gl_Position = uMVP * vec4(vPos - uCamPos, 1.0);\n"
     "}\n";
 
 static const char *TERR_FS_SRC =
     "#version 330 core\n"
+    QLCG_EQUIPMENT_VISION
     "in vec3 vPos;\n"
     "in vec3 vNorm;\n"
     "in vec3 vCol;\n"
+    "in float vFarmMask;\n"
     "uniform vec3  uSunDir;\n"
     "uniform vec3  uCamPos;\n"
     "uniform vec3  uFogCol;\n"
@@ -135,6 +166,7 @@ static const char *TERR_FS_SRC =
     "uniform vec2  uShadowTexel;\n"
     "uniform int   uDebugShadow;\n"
     "uniform float uGroundDetail;\n"
+    QLCG_LOT_GRID_SHADER
     "uniform int uCliffMaterial;\n"
     "uniform sampler2D uGroundTex0;\n"
     "uniform sampler2D uGroundTex1;\n"
@@ -142,6 +174,7 @@ static const char *TERR_FS_SRC =
     "uniform vec2  uGroundAnchor;\n"
     "uniform float uGroundSpan;\n"
     "out vec4 FragColor;\n"
+    QLCG_ENHANCED_HIGHLIGHTS
     "float qlcgShadow(vec3 wp){\n"
     "    if (uShadowOn == 0) return 1.0;\n"
     "    vec4 sc = uShadowVP * vec4(wp, 1.0);\n"
@@ -213,16 +246,18 @@ static const char *TERR_FS_SRC =
 "            ground *= (amb + diff * 0.72) * dayK * uLightScale * uTint;\n"
 "        }\n"
     "        float fade = 1.0 - smoothstep(150.0, 520.0, dist);\n"
-    "        col = mix(col, ground, 0.72 * fade * uGroundDetail);\n"
+    "        col = mix(col, ground, 0.72 * fade * uGroundDetail * (1.0-clamp(vFarmMask,0.0,1.0)));\n"
     "    }\n"
+    "    if (uEnhanced != 0 && uDebugShadow == 0) col = qlcgHighlight(col);\n"
     "    if (uBrushRad > 0.5) {\n"
     "        float bd = length(vPos.xz - uBrushPos.xz);\n"
     "        if (abs(bd - uBrushRad) < 1.2) col = mix(col, vec3(0.95, 0.78, 0.25), 0.85);\n"
     "    }\n"
-    "    float fog = uUnderwater != 0 ? clamp((dist - 1.0) / 35.0, 0.0, 1.0)\n"
+    "    float fog = uUnderwater != 0 ? qlcgWaterFog(dist)\n"
     "              : clamp((dist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1e-3), 0.0, 1.0);\n"
+    "    col = qlcgEquipmentLight(col, vPos - uCamPos, dist);\n"
     "    col = mix(col, uFogCol, clamp(fog, 0.0, 1.0));\n"
-    "    FragColor = vec4(col, 1.0);\n"
+    "    FragColor = vec4(lotGroundGrid(col,vPos.xz), 1.0);\n"
     "}\n";
 
 /* 水体四态与冰壳（对齐 WaterMaterial） */
@@ -281,6 +316,7 @@ static const char *WATER_VS_SRC =
 
 static const char *WATER_FS_SRC =
     "#version 330 core\n"
+    QLCG_EQUIPMENT_VISION
     "in vec3  vPos;\n"
     "in float vDepth;\n"
     "in vec2  vFlow;\n"
@@ -409,8 +445,9 @@ static const char *WATER_FS_SRC =
     "    alpha = mix(alpha,0.46,sand*0.50);\n"
     "    alpha *= smoothstep(0.02, 0.02 + edgeAA, vDepth) * smoothstep(0.0, 0.10, vDepth);\n"
     "    float dist = length(vPos - uCamPos);\n"
-    "    float fog = uUnderwater != 0 ? clamp((dist - 1.0) / 35.0, 0.0, 1.0)\n"
+    "    float fog = uUnderwater != 0 ? qlcgWaterFog(dist)\n"
     "              : clamp((dist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1e-3), 0.0, 1.0);\n"
+    "    wcol = qlcgEquipmentLight(wcol, vPos - uCamPos, dist);\n"
     "    wcol = mix(wcol, uFogCol, clamp(fog, 0.0, 1.0));\n"
     "    FragColor = vec4(wcol, clamp(alpha, 0.0, 0.97));\n"
     "}\n";
@@ -446,6 +483,7 @@ static const char *PROP_VS_SRC =
 
 static const char *PROP_FS_SRC =
     "#version 330 core\n"
+    QLCG_EQUIPMENT_VISION
     "in vec3 vPos;\n"
     "in vec3 vNorm;\n"
     "in vec3 vCol;\n"
@@ -464,8 +502,9 @@ static const char *PROP_FS_SRC =
     "    vec3 col = vCol * (0.48 + diff * 0.68) * dayK * uLightScale * uTint;\n"
     "    col += vCol * 0.035;\n"
     "    float dist = length(vPos - uCamPos);\n"
-    "    float fog = uUnderwater != 0 ? clamp((dist - 1.0) / 35.0, 0.0, 1.0)\n"
+    "    float fog = uUnderwater != 0 ? qlcgWaterFog(dist)\n"
     "              : clamp((dist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1e-3), 0.0, 1.0);\n"
+    "    col = qlcgEquipmentLight(col, vPos - uCamPos, dist);\n"
     "    col = mix(col, uFogCol, clamp(fog, 0.0, 1.0));\n"
     "    FragColor = vec4(col, 1.0);\n"
     "}\n";
@@ -557,12 +596,13 @@ static const char *PLANT_VS_SRC =
     "    vec3 rn = vec3(aNorm.x * c - aNorm.z * s, aNorm.y, aNorm.x * s + aNorm.z * c);\n"
     "    vPos = rp;\n"
     "    vNorm = rn;\n"
-    "    vCol = aCol;\n"
+    "    vCol = level < 0.0 ? mix(aCol,vec3(.31,.175,.075),.68) : aCol;\n"
     "    gl_Position = uMVP * vec4(rotated + (iPos - uCamPos), 1.0);\n"
     "}\n";
 
 static const char *PLANT_FS_SRC =
     "#version 330 core\n"
+    QLCG_EQUIPMENT_VISION
     "in vec3 vPos;\n"
     "in vec3 vNorm;\n"
     "in vec3 vCol;\n"
@@ -573,18 +613,13 @@ static const char *PLANT_FS_SRC =
     "uniform int uUnderwater;\n"
     "uniform float uLightScale;\n"
     "uniform vec3  uTint;\n"
-    "uniform int   uEnhanced;\n"
-    "uniform vec3  uSunColor;\n"
-    "uniform vec3  uSkyAmb;\n"
-    "uniform vec3  uGroundAmb;\n"
-    "uniform float uWet;\n"
-    "uniform float uSnowAmt;\n"
     "uniform float uHaze;\n"
     "uniform mat4  uShadowVP;\n"
     "uniform highp sampler2DShadow uShadowTex;\n"
     "uniform int   uShadowOn;\n"
     "uniform vec2  uShadowTexel;\n"
     "out vec4 FragColor;\n"
+    QLCG_ENHANCED_PROP_LIGHTING
     "float qlcgShadow(vec3 wp){\n"
     "    if (uShadowOn == 0) return 1.0;\n"
     "    vec4 sc = uShadowVP * vec4(wp, 1.0);\n"
@@ -602,20 +637,16 @@ static const char *PLANT_FS_SRC =
     "    float dayK = clamp(uSunDir.y * 1.4 + 0.45, 0.20, 1.05);\n"
     "    vec3 col;\n"
     "    if (uEnhanced != 0) {\n"
-    "        float vis = qlcgShadow(vPos);\n"
-    "        vec3 ambi = mix(uGroundAmb, uSkyAmb, clamp(N.y * 0.5 + 0.5, 0.0, 1.0));\n"
-    "        vec3 c2 = vCol * (ambi * 0.85 + uSunColor * (diff * 1.15 * vis));\n"
-    "        c2 *= (1.0 - 0.16 * uWet);\n"
-    "        col = c2 * uLightScale * uTint;\n"
-    "        float snowMask = smoothstep(0.55, 0.92, N.y) * uSnowAmt * 0.55;\n"
-    "        col = mix(col, vec3(0.90, 0.94, 1.00) * (ambi + uSunColor * 0.7 * vis) * uLightScale, snowMask);\n"
+    "        float snowCoverage = smoothstep(qlcgSnowStart, qlcgSnowEnd, N.y);\n"
+    "        col = qlcgPropLight(vCol, N.y, diff, qlcgShadow(vPos), snowCoverage);\n"
     "    } else {\n"
     "        col = vCol * (0.58 + diff * 0.62) * dayK * uLightScale * uTint;\n"
     "        col += vCol * 0.035;\n"
     "    }\n"
     "    float dist = length(vPos - uCamPos);\n"
-    "    float fog = uUnderwater != 0 ? clamp((dist - 1.0) / 35.0, 0.0, 1.0)\n"
+    "    float fog = uUnderwater != 0 ? qlcgWaterFog(dist)\n"
     "              : clamp((dist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1e-3), 0.0, 1.0);\n"
+    "    col = qlcgEquipmentLight(col, vPos - uCamPos, dist);\n"
     "    col = mix(col, uFogCol, clamp(fog, 0.0, 1.0));\n"
     "    FragColor = vec4(col, 1.0);\n"
     "}\n";
@@ -738,6 +769,7 @@ static const char *ICE_VS_SRC =
 
 static const char *ICE_FS_SRC =
     "#version 330 core\n"
+    QLCG_EQUIPMENT_VISION
     "in vec3  vPos;\n"
     "in vec3  vNorm;\n"
     "in float vH;\n"
@@ -805,8 +837,9 @@ static const char *ICE_FS_SRC =
     "    }\n"
     "    lit = min(lit, vec3(0.88));\n"
     "    float dist = length(vPos - uCamPos);\n"
-    "    float fog = uUnderwater != 0 ? clamp((dist - 1.0) / 35.0, 0.0, 1.0)\n"
+    "    float fog = uUnderwater != 0 ? qlcgWaterFog(dist)\n"
     "              : clamp((dist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1e-3), 0.0, 1.0);\n"
+    "    lit = qlcgEquipmentLight(lit, vPos - uCamPos, dist);\n"
     "    lit = mix(lit, uFogCol, clamp(fog, 0.0, 1.0));\n"
     "    FragColor = vec4(lit, 1.0);\n"
     "}\n";
@@ -854,6 +887,7 @@ static const char *ICEP_VS_SRC =
 
 static const char *ICEP_FS_SRC =
     "#version 330 core\n"
+    QLCG_EQUIPMENT_VISION
     "in vec3  vPos;\n"
     "in vec3  vNorm;\n"
     "in float vTop;\n"
@@ -887,8 +921,9 @@ static const char *ICEP_FS_SRC =
     "    float dayK = clamp(uSunDir.y * 1.4 + 0.45, 0.18, 1.05);\n"
     "    vec3 lit = col * (0.58 + diff * 0.62) * dayK * uLightScale * uTint;\n"
     "    float dist = length(vPos - uCamPos);\n"
-    "    float fog = uUnderwater != 0 ? clamp((dist - 1.0) / 35.0, 0.0, 1.0)\n"
+    "    float fog = uUnderwater != 0 ? qlcgWaterFog(dist)\n"
     "              : clamp((dist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1e-3), 0.0, 1.0);\n"
+    "    lit = qlcgEquipmentLight(lit, vPos - uCamPos, dist);\n"
     "    lit = mix(lit, uFogCol, clamp(fog, 0.0, 1.0));\n"
     "    FragColor = vec4(lit, vAlpha);\n"
     "}\n";
@@ -909,6 +944,7 @@ static const char *CRACK_VS_SRC =
 
 static const char *CRACK_FS_SRC =
     "#version 330 core\n"
+    QLCG_EQUIPMENT_VISION
     "in float vAlpha;\n"
     "in vec3  vPos;\n"
     "uniform vec3  uCamPos;\n"
@@ -919,9 +955,10 @@ static const char *CRACK_FS_SRC =
     "out vec4 FragColor;\n"
     "void main() {\n"
     "    float dist = length(vPos - uCamPos);\n"
-    "    float fog = uUnderwater != 0 ? clamp((dist - 1.0) / 35.0, 0.0, 1.0)\n"
+    "    float fog = uUnderwater != 0 ? qlcgWaterFog(dist)\n"
     "              : clamp((dist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1e-3), 0.0, 1.0);\n"
     "    vec3 col = vec3(0.90, 0.95, 1.0) * uLightScale;\n"
+    "    col = qlcgEquipmentLight(col, vPos - uCamPos, dist);\n"
     "    col = mix(col, uFogCol, clamp(fog, 0.0, 1.0));\n"
     "    FragColor = vec4(col, vAlpha);\n"
     "}\n";
@@ -963,6 +1000,7 @@ static const char *FAR_VS_SRC =
 
 static const char *FAR_FS_SRC =
     "#version 330 core\n"
+    QLCG_EQUIPMENT_VISION
     "in vec2  vUV;\n"
     "in float vShade;\n"
     "in float vDist;\n"
@@ -976,6 +1014,7 @@ static const char *FAR_FS_SRC =
     "uniform int   uUnderwater;\n"
     "uniform int   uMsaa;\n"
     "out vec4 FragColor;\n"
+    QLCG_ENHANCED_PROP_LIGHTING
     "float far_ign(vec2 p) {\n"
     "    return fract(52.9829189 * fract(0.06711056 * p.x + 0.00583715 * p.y));\n"
     "}\n"
@@ -985,10 +1024,19 @@ static const char *FAR_FS_SRC =
     "    vec3 rgb = t.rgb / max(t.a, 0.25);\n"
     "    float cut = uMsaa != 0 ? 0.02 : far_ign(gl_FragCoord.xy);\n"
     "    if (a <= cut) discard;\n"
-    "    float day = clamp(uSunDir.y * 1.4 + 0.45, 0.20, 1.05);\n"
-    "    vec3 col = rgb * (0.72 + 0.45 * max(uSunDir.y, 0.0)) * day\n"
-    "             * uLightScale * uTint * vShade;\n"
-    "    float fog = uUnderwater != 0 ? clamp((vDist - 1.0) / 35.0, 0.0, 1.0)\n"
+    "    vec3 col;\n"
+    "    if (uEnhanced != 0) {\n"
+    /* 取上半球法线的平均受光 */
+    "        float diff = (1.0 + uSunDir.y) * 0.25;\n"
+    "        float snowCoverage = 1.0 - (qlcgSnowStart + qlcgSnowEnd) * 0.5;\n"
+    "        col = qlcgPropLight(rgb * vShade, 0.5, diff, 1.0, snowCoverage);\n"
+    "    } else {\n"
+    "        float day = clamp(uSunDir.y * 1.4 + 0.45, 0.20, 1.05);\n"
+    "        col = rgb * (0.72 + 0.45 * max(uSunDir.y, 0.0)) * day\n"
+    "            * uLightScale * uTint * vShade;\n"
+    "    }\n"
+    "    col = qlcgNightVision(col);\n"
+    "    float fog = uUnderwater != 0 ? qlcgWaterFog(vDist)\n"
     "              : clamp((vDist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1e-3), 0.0, 1.0);\n"
     "    col = mix(col, uFogCol, clamp(fog, 0.0, 1.0));\n"
     "    FragColor = vec4(col, 1.0);\n"

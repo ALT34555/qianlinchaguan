@@ -26,14 +26,15 @@ bool qlcg_atlas_gpu_restore(AtlasRenderer *ar) {
     const int slots[]={0,1,2,3,4,5,6,8};
     for(int i=0;i<8;i++)glUniform1i(qlcg_gl_uniform(ar->prog,samplers[i]),slots[i]);
     {
-        float zc[QLCG_ZONE_COUNT * 3];
-        for (int z = 0; z < QLCG_ZONE_COUNT; z++) {
-            const QlcgClimateZoneInfo *info = qlcg_climate_zone_info(z);
-            zc[z * 3 + 0] = info ? (float)info->rgb[0] : 0.0f;
-            zc[z * 3 + 1] = info ? (float)info->rgb[1] : 0.0f;
-            zc[z * 3 + 2] = info ? (float)info->rgb[2] : 0.0f;
+        float zc[QLCG_CLIMATE_TYPES * 3];
+        for (int z = 0; z < QLCG_CLIMATE_TYPES; z++) {
+            const QlcgClimateType *info = qlcg_climate_type_at(z);
+            uint32_t rgb=info?info->color_rgb:0x808080;
+            zc[z * 3 + 0] = (float)((rgb>>16)&255);
+            zc[z * 3 + 1] = (float)((rgb>>8)&255);
+            zc[z * 3 + 2] = (float)(rgb&255);
         }
-        glUniform3fv(qlcg_gl_uniform(ar->prog, "uZoneColors"), QLCG_ZONE_COUNT, zc);
+        glUniform3fv(qlcg_gl_uniform(ar->prog, "uZoneColors"), QLCG_CLIMATE_TYPES, zc);
     }
 
     glGenVertexArrays(1, &ar->vao);
@@ -75,7 +76,7 @@ void qlcg_atlas_inspect_hover(AtlasRenderer *ar,const MacroWorld *w,int cx,int c
     }
     if(ar->hover_world==w && ar->hover_cx==cx && ar->hover_cz==cz &&
        ar->hover_delta==w->delta_version && ar->hover_surface==w->surface_revision &&
-       ar->hover_territory==w->territory_revision && ar->hover_cached_info.type_def) {
+       ar->hover_territory==w->territory_revision && ar->hover_artificial==w->opt.artificial_enabled && ar->hover_cached_info.type_def) {
         ar->hover_info=ar->hover_cached_info;return;
     }
     qlcg_world_inspect_chunk(w,cx,cz,&ar->hover_info);
@@ -83,6 +84,7 @@ void qlcg_atlas_inspect_hover(AtlasRenderer *ar,const MacroWorld *w,int cx,int c
     ar->hover_world=w;ar->hover_cx=cx;ar->hover_cz=cz;
     ar->hover_delta=w->delta_version;ar->hover_surface=w->surface_revision;
     ar->hover_territory=w->territory_revision;
+    ar->hover_artificial=w->opt.artificial_enabled;
 }
 
 void qlcg_atlas_release_world(AtlasRenderer *ar) {
@@ -98,7 +100,7 @@ void qlcg_atlas_release_world(AtlasRenderer *ar) {
     ar->data_tex0 = ar->data_tex1 = ar->sat_tex = ar->rain_tex = ar->zone_tex = 0;
     ar->tex_w = ar->tex_h = ar->rain_tex_w = ar->rain_tex_h = 0;
     ar->world_upload_pending = false;
-    ar->synced_delta_ver = ar->synced_terr_rev = 0;
+    ar->synced_atlas_rev = ar->synced_terr_rev = 0;
     ar->rain_key_day = ar->rain_key_ver = ar->rain_key_stamp = 0;
     ar->rain_last_ms = ar->last_render_ms = 0.0;
     ar->synced_plane_count=0;
@@ -121,52 +123,49 @@ static const MacroWorld *atlas_plane(const MacroWorld *w,double x,double z) {
     return qlcg_infinite_find(w,(int32_t)x,(int32_t)z);
 }
 
-/* 上传宏观舆图纹理 */
-void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
-    if (!w) return;
-    if(ar->detail_world!=w) {
-        qlcg_atlas_rivers_release(ar);
-        qlcg_atlas_vegetation_release(ar);
-        qlcg_atlas_tiles_destroy(ar->tiles);ar->tiles=NULL;
-        ar->detail_world=w;ar->eclipse_ready=false;
-    }
-    ar->world_upload_pending = true;
-    bool flat=qlcg_world_flat(w);
-    int pitch=w->columns+1;
-    int tw=w->columns,th=w->rows;
-    double origin_x=0,origin_z=0,span_x=tw,span_z=th;
-    if(flat) {
+typedef struct {
+    int width,height,pitch;
+    double origin_x,origin_z,span_x,span_z;
+} AtlasGrid;
+
+static AtlasGrid atlas_grid(const MacroWorld *w) {
+    AtlasGrid g={.width=w->columns,.height=w->rows,.pitch=w->columns+1,
+                 .span_x=w->columns,.span_z=w->rows};
+    if(qlcg_world_flat(w)) {
         const InfiniteWorld *p=w->planes;
-        origin_x=(p?(double)p->min_x-w->opt.plane_x:0)*pitch-1;
-        origin_z=(p?(double)p->min_z-w->opt.plane_z:0)*pitch-1;
-        span_x=(p?(double)p->max_x-p->min_x+1:1)*pitch+1;
-        span_z=(p?(double)p->max_z-p->min_z+1:1)*pitch+1;
-        tw=(int)fmin(1024,span_x);th=(int)fmin(1024,span_z);
-        ar->flat_rect[0]=(float)origin_x;ar->flat_rect[1]=(float)origin_z;
-        ar->flat_rect[2]=(float)span_x;ar->flat_rect[3]=(float)span_z;
+        g.origin_x=(p?(double)p->min_x-w->opt.plane_x:0)*g.pitch-1;
+        g.origin_z=(p?(double)p->min_z-w->opt.plane_z:0)*g.pitch-1;
+        g.span_x=(p?(double)p->max_x-p->min_x+1:1)*g.pitch+1;
+        g.span_z=(p?(double)p->max_z-p->min_z+1:1)*g.pitch+1;
+        g.width=(int)fmin(1024,g.span_x);g.height=(int)fmin(1024,g.span_z);
     }
-    bool same_size = ar->tex_w == tw && ar->tex_h == th;
+    return g;
+}
 
-    float *buf0 = (float *)malloc((size_t)tw * (size_t)th * 4 * sizeof(float));
-    uint8_t *buf1 = (uint8_t *)malloc((size_t)tw * (size_t)th * 4);
-    uint8_t *bufs = (uint8_t *)malloc((size_t)tw * (size_t)th * 4);
-    uint8_t *bufz = (uint8_t *)malloc((size_t)tw * (size_t)th);
+static int first_texel(int cell,double origin,double span,int pixels) {
+    double texel=ceil(((double)cell-origin)*pixels/span-.5);
+    return (int)fmax(0,fmin(pixels,texel));
+}
 
-    if (!buf0 || !buf1 || !bufs || !bufz) {
-        free(buf0);
-        free(buf1);
-        free(bufs);
-        free(bufz);
-        return;
-    }
-
+static bool upload_rect(const GLuint textures[4],const MacroWorld *w,const AtlasGrid *grid,
+                        MacroCellRect rect,bool allocate) {
+    int width=rect.x1-rect.x0,height=rect.z1-rect.z0;
+    size_t count=(size_t)width*height;
+    bool flat=qlcg_world_flat(w);
+    int tw=grid->width,th=grid->height,pitch=grid->pitch;
+    double origin_x=grid->origin_x,origin_z=grid->origin_z,span_x=grid->span_x,span_z=grid->span_z;
+    float *buf0=malloc(count*4*sizeof(float));
+    uint8_t *buf1=malloc(count*4),*bufs=malloc(count*4),*bufz=malloc(count);
+    bool ok=buf0&&buf1&&bufs&&bufz;
+    if(!ok) goto done;
     double cached_x=INFINITY,cached_z=INFINITY;
     const MacroWorld *cached=NULL;
-    for (int i = 0; i < tw*th; i++) {
+    for (int i=0;i<width*height;i++) {
+        int u=rect.x0+i%width,v=rect.z0+i/width;
         bufz[i] = QLCG_ZONE_UNKNOWN;
-        const MacroWorld *source=w;int cell=i;
+        const MacroWorld *source=w;int cell=v*tw+u;
         if(flat) {
-            double x=floor(origin_x+(i%tw+.5)*span_x/tw),y=floor(origin_z+(i/tw+.5)*span_z/th);
+            double x=floor(origin_x+(u+.5)*span_x/tw),y=floor(origin_z+(v+.5)*span_z/th);
             double px=floor(x/pitch),py=floor(y/pitch);
             int lx=(int)(x-px*pitch),ly=(int)(y-py*pitch);
             if(px!=cached_x || py!=cached_z) {
@@ -198,16 +197,15 @@ void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
         /* 编码筛查位掩码 */
         uint8_t mask = 0;
         int ctype = source->chunk_type[cell];
-        if (source->claim_type[cell] == 2) mask |= (1u << 0);
-        if (source->claim_type[cell] >= 1) mask |= (1u << 1);
+        if (!source->chunk_claims&&source->claim_type[cell] == 2) mask |= (1u << 0);
+        if (!source->chunk_claims&&source->claim_type[cell] >= 1) mask |= (1u << 1);
         if (ctype >= 0   && ctype < 100)  mask |= (1u << 2);   /* 水体与湿地 */
         if (ctype >= 100 && ctype < 200)  mask |= (1u << 3);   /* 常年冰封 */
         if (ctype >= 200 && ctype < 300)  mask |= (1u << 4);   /* 寒带 */
         if (ctype >= 300 && ctype < 400)  mask |= (1u << 5);   /* 温带 */
         if (ctype >= 400)                 mask |= (1u << 6);   /* 亚热带与热带 */
         buf1[i * 4 + 3] = mask;
-        bufz[i] = (source->climate_zone && cell >= 0 && cell < source->cell_count)
-                ? source->climate_zone[cell] : QLCG_ZONE_UNKNOWN;
+        bufz[i] = (uint8_t)qlcg_climate_type_index_cell(source,cell);
 
         bufs[i * 4 + 0] = (uint8_t)qlcg_clampi((int)((float)source->sat_rgb[cell * 3 + 0] * sh), 0, 255);
         bufs[i * 4 + 1] = (uint8_t)qlcg_clampi((int)((float)source->sat_rgb[cell * 3 + 1] * sh), 0, 255);
@@ -215,22 +213,28 @@ void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
         bufs[i * 4 + 3] = 255;
     }
 
-    if (!ar->data_tex0) glGenTextures(1, &ar->data_tex0);
-    if (!ar->data_tex1) glGenTextures(1, &ar->data_tex1);
-    if (!ar->sat_tex) glGenTextures(1, &ar->sat_tex);
-    GLuint texs[3] = {ar->data_tex0, ar->data_tex1, ar->sat_tex};
-    const void *ptrs[3] = {buf0, buf1, bufs};
-    for (int t = 0; t < 3; t++) {
-        glBindTexture(GL_TEXTURE_2D, texs[t]);
-        GLenum type = t == 0 ? GL_FLOAT : GL_UNSIGNED_BYTE;
-        if (same_size)
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tw, th, GL_RGBA, type, ptrs[t]);
-        else
-            glTexImage2D(GL_TEXTURE_2D, 0, t == 0 ? GL_RGBA32F : GL_RGBA8, tw, th, 0,
-                         GL_RGBA, type, ptrs[t]);
-        /* 球面极区压缩，必须有 mip 链压混叠 */
+    const void *pixels[]={buf0,buf1,bufs,bufz};
+    for(int i=0;i<4;i++) {
+        GLenum type=i==0?GL_FLOAT:GL_UNSIGNED_BYTE;
+        GLenum format=i==3?GL_RED:GL_RGBA;
+        GLint storage=i==0?GL_RGBA32F:(i==3?GL_R8:GL_RGBA8);
+        glBindTexture(GL_TEXTURE_2D,textures[i]);
+        if(i==3) glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+        if(allocate) glTexImage2D(GL_TEXTURE_2D,0,storage,width,height,0,format,type,pixels[i]);
+        else glTexSubImage2D(GL_TEXTURE_2D,0,rect.x0,rect.z0,width,height,format,type,pixels[i]);
+    }
+    glPixelStorei(GL_UNPACK_ALIGNMENT,4);
+done:
+    free(buf0);free(buf1);free(bufs);free(bufz);
+    return ok;
+}
+
+static void finish_textures(const GLuint textures[4],bool flat,bool setup) {
+    for(int t=0;t<3;t++) {
+        glBindTexture(GL_TEXTURE_2D,textures[t]);
         bool float_base=t==0 && (qlcg_gl_caps.es || !qlcg_gl_caps.float_linear);
         if(!float_base) glGenerateMipmap(GL_TEXTURE_2D);
+        if (!setup) continue;
         if(float_base) {
             glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,qlcg_gl_caps.float_linear?GL_LINEAR:GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,qlcg_gl_caps.float_linear?GL_LINEAR:GL_NEAREST);
@@ -245,30 +249,77 @@ void qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
 
-    /* 气候区索引图，邻格不插值 */
-    if (!ar->zone_tex) glGenTextures(1, &ar->zone_tex);
-    glBindTexture(GL_TEXTURE_2D, ar->zone_tex);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, flat ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, tw, th, 0, GL_RED, GL_UNSIGNED_BYTE, bufz);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    if(setup) {
+        glBindTexture(GL_TEXTURE_2D,textures[3]);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,flat?GL_CLAMP_TO_EDGE:GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+    }
+}
 
-    free(buf0);
-    free(buf1);
-    free(bufs);
-    free(bufz);
-    ar->tex_w = tw;
-    ar->tex_h = th;
-    ar->synced_delta_ver = w->delta_version;
-    ar->synced_terr_rev = w->territory_revision;
-    ar->world_upload_pending = false;
-    ar->synced_plane_count=w->planes?w->planes->count:0;
-    ar->rain_key_day = 0xFFFFFFFFu;
-    /* 宏观数据已更新，细节瓦片内容同步作废 */
-    qlcg_atlas_tiles_invalidate(ar->tiles);
+static void update_world(AtlasRenderer *ar,const MacroWorld *w,bool force_full) {
+    if(!w)return;
+    bool changed_world=ar->detail_world!=w;
+    if(changed_world) {
+        qlcg_atlas_rivers_release(ar);
+        qlcg_atlas_vegetation_release(ar);
+        qlcg_atlas_tiles_destroy(ar->tiles);ar->tiles=NULL;
+        ar->detail_world=w;ar->eclipse_ready=false;
+    }
+    bool flat=qlcg_world_flat(w);
+    AtlasGrid grid=atlas_grid(w);
+    size_t planes=w->planes?w->planes->count:0;
+    bool allocate=ar->tex_w!=grid.width||ar->tex_h!=grid.height||!ar->zone_tex;
+    bool full=force_full||changed_world||allocate||ar->world_upload_pending||planes!=ar->synced_plane_count||
+              (!w->chunk_claims&&ar->synced_terr_rev!=w->territory_revision);
+    MacroCellRect rects[4*QLCG_ATLAS_CHANGE_HISTORY];
+    int count=full?-1:qlcg_world_atlas_changes(w,ar->synced_atlas_rev,rects,4*QLCG_ATLAS_CHANGE_HISTORY);
+    if(count<0) {
+        rects[0]=(MacroCellRect){0,0,grid.width,grid.height};
+        count=1;full=true;
+    }
+    ar->world_upload_pending=true;
+    if(!ar->data_tex0) glGenTextures(1,&ar->data_tex0);
+    if(!ar->data_tex1) glGenTextures(1,&ar->data_tex1);
+    if(!ar->sat_tex) glGenTextures(1,&ar->sat_tex);
+    if(!ar->zone_tex) glGenTextures(1,&ar->zone_tex);
+    GLuint textures[]={ar->data_tex0,ar->data_tex1,ar->sat_tex,ar->zone_tex};
+    bool uploaded=false;
+    for(int i=0;i<count;i++) {
+        MacroCellRect r=rects[i];
+        if(flat&&!full) {
+            r.x0=first_texel(r.x0,grid.origin_x,grid.span_x,grid.width);
+            r.x1=first_texel(r.x1,grid.origin_x,grid.span_x,grid.width);
+            r.z0=first_texel(r.z0,grid.origin_z,grid.span_z,grid.height);
+            r.z1=first_texel(r.z1,grid.origin_z,grid.span_z,grid.height);
+        }
+        if(r.x0>=r.x1||r.z0>=r.z1) continue;
+        if(!upload_rect(textures,w,&grid,r,allocate))return;
+        uploaded=true;
+    }
+    if(uploaded)finish_textures(textures,flat,full);
+    ar->flat_rect[0]=(float)grid.origin_x;ar->flat_rect[1]=(float)grid.origin_z;
+    ar->flat_rect[2]=(float)grid.span_x;ar->flat_rect[3]=(float)grid.span_z;
+    ar->tex_w=grid.width;ar->tex_h=grid.height;
+    ar->synced_atlas_rev=w->atlas_revision;
+    ar->synced_terr_rev=w->territory_revision;
+    ar->synced_plane_count=planes;
+    ar->world_upload_pending=false;
+    ar->rain_key_day=UINT32_MAX;
+    if(full)qlcg_atlas_tiles_invalidate(ar->tiles);
+}
+
+void qlcg_atlas_upload_world(AtlasRenderer *ar,const MacroWorld *w) {
+    update_world(ar,w,true);
+}
+
+void qlcg_atlas_sync_world(AtlasRenderer *ar,const MacroWorld *w) {
+    if(ar->detail_world!=w||ar->world_upload_pending||ar->synced_atlas_rev!=w->atlas_revision||
+       (!w->chunk_claims&&ar->synced_terr_rev!=w->territory_revision)||
+       (!qlcg_world_flat(w)&&(ar->tex_w!=w->columns||ar->tex_h!=w->rows))||
+       ar->synced_plane_count!=(w->planes?w->planes->count:0)||!ar->tex_w||!ar->tex_h)
+        update_world(ar,w,false);
 }
 
 /* 重置视图（全览或聚焦出生点） */

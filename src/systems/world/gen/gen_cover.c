@@ -1,4 +1,4 @@
-/* 地表材质：七色混合 + 气候带色表 + 四季调色 + 分带斑驳 */
+/* 地表材质：七色+气候带+四季+斑驳 */
 #include "gen_cover.h"
 #include "gen_noise.h"
 #include "../../../core/math_util.h"
@@ -18,7 +18,7 @@ static const float SEASON_AMT[4] = { 0.36f, 0.30f, 0.62f, 0.72f };
 /* 低纬干湿季：正为偏干 */
 static const float SEASON_DRY[4] = { 0.15f, -0.30f, -0.05f, 0.30f };
 
-/* —— 五带基色：草 / 林土 / 土 / 沙 / 砾 —— */
+/* 五带基色：草/林土/土/沙/砾 */
 static const float TONE_GRASS[5][3] = {
     { 138, 146, 126 }, { 130, 144, 118 }, { 122, 138, 92 }, { 122, 140, 86 }, { 140, 152, 88 }
 };
@@ -65,7 +65,7 @@ void qlcg_cover_weights(float temperature, float aridity, float uplift, float sl
     out->grass = soil * (1.0f - forest) * (1.0f - qlcg_clampf(bare, 0.0f, 1.0f));
 }
 
-/* 温度→带位 0..4，中心断点 -8/8/18/24 */
+/* 温度→带位 0..4，断点-8/8/18/24 */
 static float band_pos(float t) {
     float k = smooth_step(-11.0f, -5.0f, t)
             + smooth_step(5.0f, 11.0f, t)
@@ -275,7 +275,7 @@ void qlcg_cover_color(const MacroWorld *w, float px, float py, float pz,
     out[1] = (uint8_t)qlcg_clampi((int)lroundf(g), 0, 255);
     out[2] = (uint8_t)qlcg_clampi((int)lroundf(b), 0, 255);
     if (out_material) {
-        /* 映射回编码材质：0 承托 1 岩 2 土 3 盐碱 4 沙 5 砾 */
+        /* 映射材质：0承托 1岩 2土 3盐 4沙 5砾 */
         static const int MAP[7] = { 1, 1, 4, 5, 2, 2, 2 };
         *out_material = MAP[best_i];
     }

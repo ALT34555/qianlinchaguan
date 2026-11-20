@@ -1,0 +1,72 @@
+{
+  "schema": 2,
+  "default_dialogues": [
+    {"trigger": "watch_field", "radius": 16, "speaker": "守夜人", "lines": ["田里种着庄稼，请沿田边走。"]}
+  ],
+  "actions": [
+    {"id": "village_work", "phases": [
+      {"from": "home", "to": "square", "duration": 0.05555555555555556, "state": "walk"},
+      {"from": "square", "to": "via", "duration": 0.05555555555555556, "state": "walk"},
+      {"from": "via", "to": "work", "duration": 0.05555555555555556, "state": "walk"},
+      {"from": "work", "to": "work", "duration": 0.6666666666666666, "state": "work"},
+      {"from": "work", "to": "via", "duration": 0.05555555555555556, "state": "walk"},
+      {"from": "via", "to": "square", "duration": 0.05555555555555556, "state": "walk"},
+      {"from": "square", "to": "home", "duration": 0.05555555555555556, "state": "walk"}
+    ]},
+    {"id": "village_campfire", "phases": [
+      {"from": "home", "to": "home", "duration": 1, "state": "campfire"}
+    ]},
+    {"id": "village_sleep", "phases": [
+      {"from": "home", "to": "home", "duration": 1, "state": "sleep"}
+    ]},
+    {"id": "village_square", "phases": [
+      {"from": "home", "to": "meeting", "duration": 0.03, "state": "walk"},
+      {"from": "meeting", "to": "meeting", "duration": 0.94, "state": "campfire"},
+      {"from": "meeting", "to": "home", "duration": 0.03, "state": "walk"}
+    ]},
+    {"id": "village_watch", "phases": [
+      {"from": "home", "to": "home", "duration": 1, "state": "watch"}
+    ]}
+  ],
+  "schedules": [{
+    "id": "village_calendar",
+    "normal": [
+      {"start": 6, "end": 18, "cycle_hours": 2, "when": "work_available", "action": "village_work"},
+      {"start": 18, "end": 21, "action": "village_campfire"},
+      {"start": 0, "end": 24, "action": "village_sleep"}
+    ],
+    "rest": [
+      {"start": 8, "end": 18, "cycle_hours": 10, "action": "village_square"},
+      {"start": 18, "end": 21, "action": "village_campfire"},
+      {"start": 0, "end": 24, "action": "village_sleep"}
+    ],
+    "festival": [
+      {"start": 10, "end": 20, "cycle_hours": 10, "action": "village_square"},
+      {"start": 0, "end": 24, "action": "village_sleep"}
+    ]
+  }, {
+    "id": "village_watch_calendar",
+    "normal": [
+      {"start": 21, "end": 6, "action": "village_watch"},
+      {"start": 6, "end": 18, "cycle_hours": 2, "when": "work_available", "action": "village_work"},
+      {"start": 18, "end": 21, "action": "village_campfire"},
+      {"start": 0, "end": 24, "action": "village_sleep"}
+    ],
+    "rest": [
+      {"start": 21, "end": 6, "action": "village_watch"},
+      {"start": 8, "end": 18, "cycle_hours": 10, "action": "village_square"},
+      {"start": 18, "end": 21, "action": "village_campfire"},
+      {"start": 0, "end": 24, "action": "village_sleep"}
+    ],
+    "festival": [
+      {"start": 21, "end": 6, "action": "village_watch"},
+      {"start": 10, "end": 20, "cycle_hours": 10, "action": "village_square"},
+      {"start": 0, "end": 24, "action": "village_sleep"}
+    ]
+  }],
+  "doll_types": [
+    {"id": "farmer_type", "name": "农耕村民", "role": 0, "home": [0.8, -1], "work": [26.4, 0.8], "via": [8, 0.8], "facing": [-1, 0], "meeting": [0.7, -0.4], "schedule": "village_calendar"},
+    {"id": "artisan_type", "name": "加工村民", "role": 1, "home": [1.8, 0.8], "work": [0.8, 3.3], "via": [0.8, 2.05], "facing": [-1, 0], "meeting": [2.4, 0], "schedule": "village_calendar"},
+    {"id": "scout_type", "name": "巡领村民", "role": 2, "home": [0.8, 1.8], "work": [0.8, -6], "via": [0.8, -2.6], "facing": [0, -1], "meeting": [0.3, 2.6], "schedule": "village_watch_calendar"}
+  ]
+}

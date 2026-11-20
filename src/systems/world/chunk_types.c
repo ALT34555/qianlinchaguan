@@ -172,6 +172,18 @@ static const ChunkTypeDef CHUNK_DEFS[] = {
     {  555, "555", "land_5_5_5", "热带砾雕刻", 0xA49D8BFFu, false, false, false, false, false, "陆地"},
     { 9000, "9000", "owned_land", "有主之地", 0x8B6D47FFu, false, false, false, false, true,  "属于某个阵营的土地"},
     { 9001, "9001", "flag_land",  "置旗地",   0x8B614DFFu, false, false, false, false, true,  "新阵营的置旗之地"},
+    { 9002, "9002", "custom_lot", "自定义用地", 0x668C71FFu, false, false, false, false, true, "自由建造的领地区块"},
+    { 9003, "9003", "preset_camp", "预设营地", 0xB18C60FFu, false, false, false, false, true, "已规划的合院营地"},
+    { 9010, "9010", "dry_field", "旱田", 0x705135FFu, false, false, false, false, true, "人工开垦的旱作耕地"},
+    { 9011, "9011", "paddy_field", "水田", 0x514A35FFu, false, false, false, false, true, "人工管理的水稻耕地"},
+    { 9012, "9012", "terrace_field", "梯田", 0x81613FFFu, false, false, false, false, true, "依坡整治的梯状耕地"},
+    { 9013, "9013", "garden_field", "园圃", 0x667144FFu, false, false, false, false, true, "人工管理的园艺耕地"},
+    { 9014, "9014", "mod_field_4", "扩展耕地9014", 0x705135FFu, false, false, false, false, true, "由模组定义的耕地类型"},
+    { 9015, "9015", "mod_field_5", "扩展耕地9015", 0x705135FFu, false, false, false, false, true, "由模组定义的耕地类型"},
+    { 9016, "9016", "mod_field_6", "扩展耕地9016", 0x705135FFu, false, false, false, false, true, "由模组定义的耕地类型"},
+    { 9017, "9017", "mod_field_7", "扩展耕地9017", 0x705135FFu, false, false, false, false, true, "由模组定义的耕地类型"},
+    { 9018, "9018", "mod_field_8", "扩展耕地9018", 0x705135FFu, false, false, false, false, true, "由模组定义的耕地类型"},
+    { 9019, "9019", "mod_field_9", "扩展耕地9019", 0x705135FFu, false, false, false, false, true, "由模组定义的耕地类型"},
 };
 
 static const int CHUNK_DEF_COUNT = (int)(sizeof(CHUNK_DEFS) / sizeof(CHUNK_DEFS[0]));
@@ -221,7 +233,7 @@ static const char *chunk_localized_text(const ChunkTypeDef *def,
     char key[80];
     snprintf(key, sizeof(key), "chunk.%s.%s", def->key, suffix);
     const char *text = tr(key);
-    return strcmp(text, key) == 0 ? fallback : text;
+    return strcmp(text, key) == 0 ? qlcg_i18n_content_text(fallback) : text;
 }
 
 const char *qlcg_chunk_type_name(const ChunkTypeDef *def) {
@@ -240,7 +252,7 @@ static float smooth_step(float a, float b, float v) {
     return t * t * (3.0f - 2.0f * t);
 }
 
-/* 取最大权重得材质：1 岩 2 土 3 盐碱 4 沙 5 砾 */
+/* 取最大权重：1岩 2土 3盐碱 4沙 5砾 */
 static int land_material(float temp, float aridity, float relief, float slope, float relative) {
     float exposure = 0.28f + slope * 0.7f
                    + qlcg_clampf((relief - 3.0f) / 20.0f, 0.0f, 1.0f) * 0.18f
@@ -265,14 +277,14 @@ static int land_material(float temp, float aridity, float relief, float slope, f
         soil   *= 0.30f;
         saline *= 0.50f;
     }
-    /* 顺序 1 岩 / 2 土 / 3 盐碱 / 4 沙 / 5 砾 */
+    /* 顺序 1岩/2土/3盐碱/4沙/5砾 */
     float w[6] = {0.0f, rock, soil, saline, sand, gravel};
     int best = 1;
     for (int i = 2; i <= 5; i++) if (w[i] > w[best]) best = i;
     return best;
 }
 
-/* 分类：base 用 温度带*100 + 材质*10 + 地形 */
+/* 分类：温度带*100 + 材质*10 + 地形 */
 int qlcg_classify_chunk(bool is_water, bool is_river, bool is_fall, bool is_wetland,
                         bool is_saline, float elev, float temp, float aridity,
                         float relief, float slope, float relative, int claim_type) {
@@ -507,7 +519,7 @@ bool qlcg_weather_command(WeatherSystem *ws, const char *cmd, char *reply, size_
         if (WEATHER_PROFILES[i].id == id) {
             ws->forced_id = id;
             ws->current_id = id;
-            snprintf(reply, cap, tr("weather.forced"), WEATHER_PROFILES[i].code, WEATHER_PROFILES[i].name);
+            snprintf(reply, cap, tr("weather.forced"), WEATHER_PROFILES[i].code, qlcg_i18n_content_text(WEATHER_PROFILES[i].name));
             return true;
         }
     }

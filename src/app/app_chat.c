@@ -97,7 +97,7 @@ static void world_param_command(const char *cmd) {
 }
 
 
-/* 历法设置：模式 / 起始日期 / 流速，改动后重建时钟 */
+/* 历法设置：模式/起始日/流速，改动重建时钟 */
 static void calendar_command(const char *cmd) {
     char reply[160];
     const char *arg = cmd + 10;   /* 跳过 "/calendar." */
@@ -143,14 +143,12 @@ static void calendar_command(const char *cmd) {
                        g_app.creator_opt.start_year, g_app.creator_opt.start_month,
                        g_app.creator_opt.start_day, g_app.creator_opt.creation_time_speed);
     qlcg_calendar_snapshot(&g_app.clock, 0, &g_app.snap);
+    qlcg_world_jump_artificial_date(g_app.world,g_app.clock.unix_ms,g_app.player_cx,g_app.player_cz);
     if (g_app.region && g_app.world) {
         int season = g_app.world->plant_season_forced ? g_app.snap.season_index
                    : qlcg_climate_season_index(g_app.world, g_app.region->site_cell, &g_app.snap);
         g_app.region->climate_season = season;
-        qlcg_region_recolor(g_app.region, g_app.world, season);
-        qlcg_region_scatter_props(g_app.region, g_app.world, season, &g_app.settings);
         qlcg_terrain_set_season(&g_app.terrain, season);
-        qlcg_terrain_upload_region(&g_app.terrain, g_app.region, &g_app.settings);
     }
     snprintf(reply, sizeof(reply), tr("chat.calendar.switched"),
              qlcg_calendar_mode_name(g_app.creator_opt.calendar_mode),
@@ -175,7 +173,7 @@ bool app_chat_send(void) {
 /* 斜杠指令分发，对齐 base ChatPanel */
 void app_exec_chat_command(const char *cmd) {
     if (!cmd || !cmd[0]) return;
-    /* 自己的发言先入日志，同 base player 格式 */
+    /* 发言先入日志，同 base player 格式 */
     {
         char who[QLCG_CHAT_LINE_BYTES];
         snprintf(who, sizeof(who), tr("chat.playerFmt"), g_app.settings.ren_ming, cmd);
@@ -217,14 +215,16 @@ void app_exec_chat_command(const char *cmd) {
         snprintf(reply, sizeof(reply), tr("chat.speed.set"), g_app.clock.time_speed);
         app_push_chat(reply);
     } else if (strncmp(cmd, "/event", 6) == 0) {
+        if (!g_app.world) return;
         int et = qlcg_clampi(atoi(cmd + 6), 1, NAT_EVENT_COUNT - 1);
         if (g_app.view_mode == VIEW_MODE_TERRAIN && g_app.region) {
             int season = g_app.region->climate_season;
-            qlcg_apply_region_event(g_app.region, g_app.world, (NaturalEventType)et,
-                                    g_app.terrain.x, g_app.terrain.z, season, &g_app.settings);
-            qlcg_terrain_set_season(&g_app.terrain, season);
-            qlcg_terrain_upload_region(&g_app.terrain, g_app.region, &g_app.settings);
-        } else if (g_app.world) {
+            if (qlcg_apply_region_event(g_app.region, g_app.world, (NaturalEventType)et,
+                                        g_app.terrain.x, g_app.terrain.z, season, &g_app.settings)) {
+                qlcg_terrain_set_season(&g_app.terrain, season);
+                qlcg_terrain_upload_region(&g_app.terrain, g_app.region, &g_app.settings);
+            }
+        } else {
             qlcg_trigger_macro_event(g_app.world, (NaturalEventType)et, g_app.atlas.cam_wx, g_app.atlas.cam_wz);
         }
         app_push_chat(g_app.world->last_event_msg);

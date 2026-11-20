@@ -4,10 +4,11 @@
 #include "systems/world/world_infinite.h"
 #include "hud_layout.h"
 #include "view_atlas_layers.h"
+#include "hud_civilization.h"
 
 /* base 全局行高 */
 #define ATLAS_LINE 1.62f
-/* base 工具条按钮 12px × text-scale */
+/* 工具条按钮 12px × text-scale */
 #define ATLAS_FONT_SCALE 1.3f
 
 static float atlas_btn_font(UiContext *ui) {
@@ -59,7 +60,7 @@ bool game_view_atlas(UiContext *ui) {
     float sx = ui->safe_x_px;
     float sy = ui->safe_y_px;
 
-    /* base 三段纵向切分：顶栏 → 工具条 → 视口 → 详情栏 */
+    /* 纵向切分：顶栏→工具条→视口→详情 */
     float bar_h   = game_top_bar_height(ui);
     float tools_h = game_atlas_tools_height(ui);
     float det_h   = game_atlas_detail_height(ui);
@@ -136,14 +137,20 @@ bool game_view_atlas(UiContext *ui) {
                         g_app.atlas.river_Release_pending = true;
                         app_push_toast_k(UI_TOAST_WARNING, NULL, tr("atlas.river.src"));
                     } else {
-                        qlcg_eng_macro_river(g_app.world, g_app.atlas.river_x0,
+                        EngResult result=qlcg_eng_macro_river(g_app.world, g_app.atlas.river_x0,
                                              g_app.atlas.river_z0, mwx, mwz, 180.0f);
-                        g_app.atlas.river_Release_pending = false;
-                        app_push_toast(tr("atlas.river.done"));
+                        if (result==ENG_APPLIED) {
+                            g_app.atlas.river_Release_pending = false;
+                            app_push_toast(tr("atlas.river.done"));
+                        } else {
+                            app_push_toast_k(UI_TOAST_WARNING,NULL,tr(result==ENG_CAPACITY?
+                                             "engineering.capacity":"engineering.river.noChange"));
+                        }
                     }
                 } else if(hover==g_app.world) {
-                    qlcg_eng_macro_brush(g_app.world, g_app.atlas.eng_tool, mwx, mwz,
-                                         g_app.atlas.brush_radius);
+                    if (qlcg_eng_macro_brush(g_app.world,g_app.atlas.eng_tool,mwx,mwz,
+                                             g_app.atlas.brush_radius)==ENG_CAPACITY)
+                        app_push_toast_k(UI_TOAST_WARNING,NULL,tr("engineering.capacity"));
                 }
             }
         }
@@ -190,13 +197,14 @@ bool game_view_atlas(UiContext *ui) {
         total += gap + bw[i];
     }
     float bx = (float)ui->win_w - sx - 20.0f * z - total;
+    if (bar_h == 0.0f) bx -= 40.0f * z + gap;
 
     /* 视图下拉 */
     if (projection) {
         const char *items[3] = { tr("atlas.view.globe"), tr("atlas.view.equir"), tr("atlas.view.mercator") };
         int cur = (int)g_app.atlas.planet_view;
         if (cur < 0 || cur > 2) cur = 0;
-        /* 下拉 12px × text-scale，异于表单字号 */
+        /* 下拉 12px × text-scale 异于表单 */
         ui_select_sized(ui, 9101, bx, btn_y, sel_w, btn_h, items, 3, cur, bf);
         bx += sel_w + gap;
     }
@@ -277,6 +285,7 @@ bool game_view_atlas(UiContext *ui) {
         atlas_tip_block(ui, sx + 12.0f * z, bottom, box_w, l1, l2);
     }
 
+    game_civilization_draw(ui);
     game_atlas_layer_panel(ui);
     app_river_craft_draw(ui,vp_x,vp_y,vp_w,vp_h);
     return false;

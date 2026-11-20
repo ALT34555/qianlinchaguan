@@ -2,6 +2,7 @@
 #include "app/app_state.h"
 #include "terrain3d/terrain_metrics.h"
 #include "systems/world/faction_naming.h"
+#include "systems/dolls/doll_life.h"
 #include "systems/world/climate_zone.h"
 #include <math.h>
 #include <stdio.h>
@@ -77,7 +78,7 @@ static UiRect debug_panel_rect(UiContext *ui, float *map_size) {
              + gap * 0.8f + pill_h * 2.0f + gap * 0.6f
              + pad;
 
-    if(g_app.view_mode==VIEW_MODE_TERRAIN)ph+=small_h*3.9f;
+    if(g_app.view_mode==VIEW_MODE_TERRAIN)ph+=small_h*4.55f;
     /* 高倍率优先压缩小地图 */
     {
         float avail = (float)ui->win_h - 16.0f * z;
@@ -163,6 +164,10 @@ void render_debug_overlay_f12(UiContext *ui) {
         snprintf(buf,sizeof(buf),"S %.2f · M %.2f · P %.2f ms",
             g_app.terrain.stream_ms,g_app.terrain.mesh_cpu_ms,g_app.terrain.props_cpu_ms);
         ui_draw_text(ui,FONT_MONO,px+pad,y,buf,ui->pal.text_sub);y+=perf_h;
+        QlcgDollLifeStats life=qlcg_doll_life_stats(g_app.world);
+        snprintf(buf,sizeof(buf),"居民 %.2fms · 近%d 中%d 眠%d · 延%d",life.update_ms,
+                 life.camps[DOLL_LIFE_NEAR],life.camps[DOLL_LIFE_MID],life.camps[DOLL_LIFE_DORMANT],life.deferred);
+        ui_draw_text(ui,FONT_MONO,px+pad,y,buf,ui->pal.text_sub);y+=perf_h;
     }
     /* ---- 5×5 区块小地图 */
     {
@@ -227,11 +232,12 @@ void render_debug_overlay_f12(UiContext *ui) {
             float lw = pw - pad * 2.0f;
             for (int k = 0; k < nlegend; k++) {
                 const ChunkTypeDef *d = legend[k];
-                float w = 14.0f * z + ui_text_width(ui, FONT_SMALL, d->name) + 16.0f * z;
+                const char *name = qlcg_i18n_content_text(d->name);
+                float w = 14.0f * z + ui_text_width(ui, FONT_SMALL, name) + 16.0f * z;
                 if (lx + w > px + pad + lw) break;
                 ui_draw_rect(ui, lx, y + 2.0f * z, 9.0f * z, 9.0f * z,
                              ui_rgba_hex(qlcg_chunk_display_color(d), 255));
-                snprintf(buf, sizeof(buf), "%s %s", d->code ? d->code : "", d->name);
+                snprintf(buf, sizeof(buf), "%s %s", d->code ? d->code : "", name);
                 ui_draw_text(ui, FONT_SMALL, lx + 12.0f * z, y + 1.0f * z, buf,
                              ui->pal.text_sub);
                 lx += w;
@@ -259,14 +265,16 @@ void render_debug_overlay_f12(UiContext *ui) {
         ui_draw_text(ui, FONT_SMALL, px + pad, y, buf, ui->pal.text_sub);
         y += small_h;
 
+        const QlcgClimateType *climate_type=qlcg_climate_type_world(g_app.world,
+            (float)g_app.player_cx*CHUNK_SIZE,(float)g_app.player_cz*CHUNK_SIZE);
         snprintf(buf, sizeof(buf), "%s: %s", tr("debug.climateZone"),
-                 tr(qlcg_climate_zone_key(cur.climate_zone)));
+                 qlcg_i18n_content_text(tr(climate_type?climate_type->name:qlcg_climate_zone_key(cur.climate_zone))));
         ui_draw_text(ui, FONT_SMALL, px + pad, y, buf, ui->pal.text_sub);
         y += small_h;
 
         const WeatherProfile *wp = g_app.terrain.cur_weather
                                  ? g_app.terrain.cur_weather : qlcg_get_weather_profile(0);
-        snprintf(buf, sizeof(buf), "%s: %s %s", tr("debug.weather"), wp->code, wp->name);
+        snprintf(buf, sizeof(buf), "%s: %s %s", tr("debug.weather"), wp->code, qlcg_i18n_content_text(wp->name));
         ui_draw_text(ui, FONT_SMALL, px + pad, y, buf, ui->pal.text_sub);
         y += small_h;
 

@@ -104,7 +104,7 @@ void qlcg_reflection_render(TerrainRenderer *tr,const WaterReflection choices[2]
     GLint framebuffer,viewport[4];glGetIntegerv(GL_FRAMEBUFFER_BINDING,&framebuffer);glGetIntegerv(GL_VIEWPORT,viewport);
     float scale=fminf(.5f,1024.0f/fmaxf(width,height));
     int rw=(int)fmaxf(1,floorf(width*scale)),rh=(int)fmaxf(1,floorf(height*scale));
-    float y=tr->y,pitch=tr->pitch,shake=tr->cam_shake;tr->cam_shake=0;
+    float shake=tr->cam_shake;tr->cam_shake=0;
     bool msaa=tr->msaa_active;tr->msaa_active=false;
     for(int k=0;k<2;k++) {
         WaterReflection *p=tr->reflection_targets+k;p->valid=0;
@@ -115,10 +115,10 @@ void qlcg_reflection_render(TerrainRenderer *tr,const WaterReflection choices[2]
         p->seed=choices[k].seed;p->kind=choices[k].kind;
         glBindFramebuffer(GL_FRAMEBUFFER,p->framebuffer);glViewport(0,0,rw,rh);
         glDepthMask(GL_TRUE);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-        tr->y=2*p->y-y;tr->pitch=-pitch;tr->reflection_plane=p->y;tr->reflection_pass=k+1;
+        tr->reflection_plane=p->y;tr->reflection_pass=k+1;
         qlcg_terrain_render(tr,reg,w,clock,utc,s,rw,rh);p->valid=1;
     }
-    tr->reflection_pass=0;tr->y=y;tr->pitch=pitch;tr->cam_shake=shake;tr->msaa_active=msaa;
+    tr->reflection_pass=0;tr->cam_shake=shake;tr->msaa_active=msaa;
     glBindFramebuffer(GL_FRAMEBUFFER,framebuffer);glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 }
 void qlcg_reflection_uniforms(TerrainRenderer *tr) {

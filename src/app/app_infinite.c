@@ -28,6 +28,7 @@ void app_infinite_step(void) {
     }
     qlcg_ice_visual_reset(&g_app.terrain);
     qlcg_terrain_clear_chunks(&g_app.terrain);
+    next->inventory=old->inventory;
     qlcg_region_free(g_app.region); g_app.region=region; g_app.world=next;
     g_app.player_cx=cx; g_app.player_cz=cz;
     g_app.terrain.x=wx-region->center_x; g_app.terrain.z=wz-region->center_z;

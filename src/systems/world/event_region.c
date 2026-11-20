@@ -10,9 +10,9 @@
 #include <math.h>
 #include <float.h>
 
-void qlcg_apply_region_event(RegionData *reg, MacroWorld *w, NaturalEventType type,
+bool qlcg_apply_region_event(RegionData *reg, MacroWorld *w, NaturalEventType type,
                              float lx, float lz, int season_idx, const GameSettings *s) {
-    if (!reg) return;
+    if (!reg || !w) return false;
     if (reg->stream) {
         float wx0 = reg->center_x + lx, wz0 = reg->center_z + lz;
         float h_old = 0.0f;
@@ -25,7 +25,7 @@ void qlcg_apply_region_event(RegionData *reg, MacroWorld *w, NaturalEventType ty
             qlcg_ice_evaluate(&i0, &w->ice_time, &o0);
             h_old = o0.thickness;
         }
-        qlcg_trigger_macro_event(w,type,wx0,wz0);
+        if (!qlcg_trigger_macro_event(w,type,wx0,wz0)) return false;
         if (cold) {
             /* 新旧基线差作为稀疏过渡起点，不当帧造厚冰 */
             SurfaceWater s1;
@@ -36,14 +36,14 @@ void qlcg_apply_region_event(RegionData *reg, MacroWorld *w, NaturalEventType ty
             qlcg_ice_thermal_begin(w, wx0, wz0, w->ice_time.climate_day,
                                    h_old - o1.thickness, 0.0f, 2.0f);
         }
-        qlcg_region_stream_refresh(reg,-FLT_MAX,-FLT_MAX,FLT_MAX,FLT_MAX,season_idx,s);
-        if (cold) qlcg_ice_refresh_all(reg);
-        return;
+        qlcg_region_stream_sync_changed(reg,season_idx,s);
+        if(cold) qlcg_ice_refresh_thermal(reg,wx0,wz0);
+        return true;
     }
-    qlcg_eng_push_undo(reg, w);
     float wx = reg->center_x + lx;
     float wz = reg->center_z + lz;
-    qlcg_trigger_macro_event(w, type, wx, wz);
+    if (!qlcg_trigger_macro_event(w, type, wx, wz)) return false;
+    qlcg_eng_push_undo(reg, w);
 
     float span = (float)(reg->width - 1) * reg->step;
     float half = span * 0.5f;
@@ -95,6 +95,7 @@ void qlcg_apply_region_event(RegionData *reg, MacroWorld *w, NaturalEventType ty
     }
     qlcg_region_recolor(reg, w, season_idx);
     qlcg_region_scatter_props(reg, w, season_idx, s);
+    return true;
 }
 
 /* 推进自然灾害事件生命周期与震动/狂风/暴 */
@@ -116,6 +117,11 @@ bool qlcg_tick_natural_events(MacroWorld *w, RegionData *reg, float dt,
         float life = 1.0f - ev->age / ev->duration;
         ev->wx += ev->vx * dt;
         ev->wz += ev->vz * dt;
+        if (ev->automatic && reg) {
+            float dx=ev->wx-reg->center_x;
+            if (!qlcg_world_flat(w)) dx=remainderf(dx,w->circumference);
+            if (hypotf(dx,ev->wz-reg->center_z)>ev->radius) continue;
+        }
         if (ev->type == NAT_EVENT_EARTHQUAKE) shake = qlcg_maxf(shake, life * 1.25f);
         if (ev->type == NAT_EVENT_TYPHOON) {
             wind = qlcg_maxf(wind, 2.4f * life);

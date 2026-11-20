@@ -5,6 +5,9 @@
 #include "ui/ui_layout.h"
 #include "ui/ui_touch.h"
 #include "ui/ui_sprite.h"
+#ifdef _WIN32
+#include "platform/win32/display_settings.h"
+#endif
 
 /* 虚拟按键布局编辑器：按住即拖，松手释放 */
 static int   s_layout_drag = -1;
@@ -21,6 +24,8 @@ static float s_layout_off_x = 0.0f, s_layout_off_y = 0.0f;
 #define SEL_ID_HIDPI    0x5E1ECFu
 #define SEL_ID_TOUCH_STYLE 0x5E1ED0u
 #define SEL_ID_SCROLL_PALETTE 0x5E1ED1u
+#define SEL_ID_DEVICE   0x5E1ED2u
+#define SEL_ID_WINDOW   0x5E1ED3u
 
 static const char *const k_res_ids[7] = {
     "auto", "320x240", "640x480", "960x540",
@@ -35,10 +40,12 @@ static const GraphicsPreset k_preset_vals[6] = {
     PRESET_SMOOTH,  PRESET_LOW,  PRESET_MINIMAL
 };
 
-/* 12 秒设置确认弹窗状态 */
+typedef enum { CONFIRM_NONE, CONFIRM_LAYOUT, CONFIRM_GRAPHICS, CONFIRM_RESET } ConfirmKind;
+
 typedef struct {
-    bool  active;
-    float timer;
+    ConfirmKind kind;
+    double deadline;
+    bool layout_preview;
     float prev_safe_x;
     float prev_safe_y;
     float prev_text_scale;
@@ -46,112 +53,275 @@ typedef struct {
 } SettingsConfirmModal;
 
 static SettingsConfirmModal s_confirm;
+static GameSettings s_candidate;
+static GameSettings s_before_graphics_preview;
+static GameSettings s_graphics_draft;
+static bool s_graphics_edited;
+static struct {
+    bool edited;
+    float safe_x, safe_y, text_scale, ui_scale;
+} s_axes;
+
+static void confirm_open(ConfirmKind kind) {
+    s_confirm.kind = kind;
+    s_confirm.deadline = qlcg_time_ms() + 12000.0;
+    s_confirm.layout_preview = false;
+}
 
 void settings_confirm_begin(float safe_x, float safe_y, float text_scale, float ui_scale) {
     s_confirm.prev_safe_x = safe_x;
     s_confirm.prev_safe_y = safe_y;
     s_confirm.prev_text_scale = text_scale;
     s_confirm.prev_ui_scale = ui_scale;
-    s_confirm.active = true;
-    s_confirm.timer = 12.0f;
+    confirm_open(CONFIRM_LAYOUT);
+    s_confirm.layout_preview = true;
 }
 
 bool settings_confirm_active(void) {
-    return s_confirm.active;
+    return s_confirm.kind != CONFIRM_NONE;
+}
+
+static void sync_settings_layout(void) {
+    app_sync_layout_axes();
+    ql_metrics_build(&g_app.ui.met, g_app.win_w, g_app.win_h,
+                     g_app.ui.user_scale, g_app.ui.user_size, g_app.ui.hidpi_mul);
 }
 
 void settings_confirm_cancel(void) {
     GameSettings *s = &g_app.settings;
-    if (s_confirm.active) {
+    bool graphics_preview = s_confirm.kind == CONFIRM_GRAPHICS;
+    if (graphics_preview) {
+#ifdef _WIN32
+        win32_set_window_mode(s_before_graphics_preview.window_mode);
+#endif
+        *s = s_before_graphics_preview;
+        s_graphics_edited = false;
+    }
+    if (s_confirm.layout_preview) {
         s->safe_x     = s_confirm.prev_safe_x;
         s->safe_y     = s_confirm.prev_safe_y;
         s->text_scale = s_confirm.prev_text_scale;
         s->ui_scale   = s_confirm.prev_ui_scale;
-        s_confirm.active = false;
-        app_sync_layout_axes();
-        ql_metrics_build(&g_app.ui.met, g_app.win_w, g_app.win_h,
-                         g_app.ui.user_scale, g_app.ui.user_size, g_app.ui.hidpi_mul);
+    }
+    if (graphics_preview || s_confirm.layout_preview) sync_settings_layout();
+    if (settings_confirm_active())
         app_push_toast_k(UI_TOAST_WARNING, NULL, tr("settings.confirm.reverted"));
+    s_confirm.kind = CONFIRM_NONE;
+    s_confirm.layout_preview = false;
+}
+
+void settings_confirm_expire(void) {
+    if (settings_confirm_active() && qlcg_time_ms() >= s_confirm.deadline)
+        settings_confirm_cancel();
+}
+
+void settings_leave(void) {
+    settings_confirm_cancel();
+    s_axes.edited = false;
+    s_graphics_edited = false;
+}
+
+static bool stage_graphics(bool device_editable) {
+    if (!s_graphics_edited) return false;
+    const GameSettings *live = &g_app.settings;
+    const GameSettings *draft = &s_graphics_draft;
+    GameSettings *next = &s_candidate;
+    memcpy(next, live, sizeof(*next));
+
+    next->graphics_preset = draft->graphics_preset;
+    next->fov = draft->fov;
+    next->render_distance = draft->render_distance;
+    next->vegetation_distance = draft->vegetation_distance;
+    next->vegetation_form = draft->vegetation_form;
+    next->dense_vegetation = draft->dense_vegetation;
+    next->frame_rate = draft->frame_rate;
+    next->antialias = draft->antialias;
+    next->water_reflections = draft->water_reflections;
+    next->water_waves = draft->water_waves;
+    next->particles = draft->particles;
+    next->weather_atmosphere = draft->weather_atmosphere;
+    next->decorative_clouds = draft->decorative_clouds;
+    next->natural_physics = draft->natural_physics;
+    next->status_feedback = draft->status_feedback;
+    next->mirror_reflections = draft->mirror_reflections;
+    snprintf(next->resolution, sizeof(next->resolution), "%s", draft->resolution);
+    next->hidpi_scale = draft->hidpi_scale;
+    next->water_mist = draft->water_mist;
+    next->scroll_palette = draft->scroll_palette;
+    next->scroll_pigment = draft->scroll_pigment;
+    next->scroll_ink = draft->scroll_ink;
+    next->scroll_line_width = draft->scroll_line_width;
+    next->enhanced_lighting = draft->enhanced_lighting;
+    next->scroll_style = draft->scroll_style;
+    next->window_mode = draft->window_mode;
+    if (device_editable) next->render_device = draft->render_device;
+
+    s_graphics_edited = memcmp(next, live, sizeof(*next)) != 0;
+    return s_graphics_edited;
+}
+
+static void apply_settings(UiContext *ui, bool device_editable) {
+    GameSettings *live = &g_app.settings;
+    app_apply_font();
+    qlcg_i18n_set_locale(live->locale);
+    if (s_axes.edited) {
+        settings_confirm_begin(live->safe_x, live->safe_y, live->text_scale, live->ui_scale);
+        live->safe_x = s_axes.safe_x;
+        live->safe_y = s_axes.safe_y;
+        live->text_scale = s_axes.text_scale;
+        live->ui_scale = s_axes.ui_scale;
+        s_axes.edited = false;
+    }
+    if (stage_graphics(device_editable)) {
+#ifdef _WIN32
+        if (s_candidate.window_mode != live->window_mode) {
+            ui_flush(ui);
+            if (!win32_set_window_mode(s_candidate.window_mode)) {
+                settings_confirm_cancel();
+                s_graphics_edited = false;
+                app_push_toast_k(UI_TOAST_ERROR, NULL, tr("settings.applyFailed"));
+                return;
+            }
+        }
+#else
+        (void)ui;
+#endif
+        s_before_graphics_preview = *live;
+        *live = s_candidate;
+        live->render_device = s_before_graphics_preview.render_device;
+        if (s_confirm.layout_preview) s_confirm.kind = CONFIRM_GRAPHICS;
+        else confirm_open(CONFIRM_GRAPHICS);
+    }
+    if (settings_confirm_active()) {
+        sync_settings_layout();
+        s_confirm.deadline = qlcg_time_ms() + 12000.0;
     } else {
-        /* user_scale 含hidpi，须除回再写回 */
-        float hd = g_app.ui.hidpi_mul > 0.0f ? g_app.ui.hidpi_mul : 1.0f;
-        s->safe_x     = g_app.ui.safe_x_pct;
-        s->safe_y     = g_app.ui.safe_y_pct;
-        s->text_scale = (g_app.ui.user_scale > 0.0f ? g_app.ui.user_scale : 1.0f) / hd;
-        s->ui_scale   = (g_app.ui.user_size  > 0.0f ? g_app.ui.user_size  : 1.0f) / hd;
+        app_sync_layout_axes();
+        qlcg_save_settings_disk(live);
+        app_push_toast_k(UI_TOAST_SUCCESS, NULL, tr("settings.status.applied"));
     }
 }
 
-/* 独立于缩放 (zoom:1) 的顶层确认弹窗绘制 */
-static void draw_settings_confirm_modal(UiContext *ui) {
-    if (!s_confirm.active) return;
+static bool keep_settings(void) {
+    GameSettings *current = &g_app.settings;
+    if (s_confirm.kind == CONFIRM_LAYOUT) return qlcg_save_settings_disk(current);
+    bool reset = s_confirm.kind == CONFIRM_RESET;
+#ifdef _WIN32
+    bool device_changed = s_candidate.render_device != current->render_device;
+    if (reset && !win32_set_window_mode(s_candidate.window_mode)) return false;
+    if (device_changed && !win32_set_render_device(s_candidate.render_device)) {
+        if (reset) win32_set_window_mode(current->window_mode);
+        return false;
+    }
+#endif
+    if (!qlcg_save_settings_disk(reset ? &s_candidate : current)) {
+#ifdef _WIN32
+        if (device_changed) win32_set_render_device(current->render_device);
+        if (reset) win32_set_window_mode(current->window_mode);
+#endif
+        return false;
+    }
+    s_graphics_edited = false;
+    current->render_device = s_candidate.render_device;
+    if (reset) {
+        *current = s_candidate;
+        app_sync_layout_axes();
+        s_axes.edited = false;
+        ui_apply_theme(&g_app.ui, current->theme);
+        app_apply_font();
+        app_apply_ui_palette();
+    }
+    return true;
+}
 
-    s_confirm.timer -= ui->dt;
-    if (s_confirm.timer <= 0.0f) {
+static void draw_settings_confirm_modal(UiContext *ui) {
+    double remaining = s_confirm.deadline - qlcg_time_ms();
+    if (remaining <= 0.0) {
         settings_confirm_cancel();
         return;
     }
 
-    float saved_size  = ui->met.size;
-    float saved_scale = ui->met.scale;
-    ui->met.size  = 1.0f;
-    ui->met.scale = 1.0f;
-
     ui_draw_rect(ui, 0.0f, 0.0f, (float)ui->win_w, (float)ui->win_h, ui_rgba(32, 25, 16, 166));
 
-    float dw  = qlcg_minf(420.0f, (float)ui->win_w - 24.0f);
-    float pad = 24.0f;
-    float iw  = qlcg_maxf(60.0f, dw - pad * 2.0f);
-
-    int secs = (int)ceilf(s_confirm.timer);
-    if (secs < 1) secs = 1;
+    int secs = (int)ceil(remaining / 1000.0);
     char msg[192];
-    snprintf(msg, sizeof(msg), tr("settings.confirm.countdown"), secs);
+    const bool device_changed = s_confirm.kind != CONFIRM_LAYOUT &&
+                                s_candidate.render_device != g_app.settings.render_device;
+    snprintf(msg, sizeof(msg), tr(device_changed ? "settings.confirm.restart" :
+                                  "settings.confirm.countdown"), secs);
 
-    float title_px = 20.0f;
-    float body_px  = 14.0f;
-    float btn_px   = 14.0f;
-    float title_lh = ui_line_height(UI_FACE_DISPLAY, title_px);
-    float body_lh  = ui_line_height(UI_FACE_BODY, body_px);
-    int   lines    = ui_measure_text_wrapped(ui, UI_FACE_BODY, body_px, false, iw, msg);
-    if (lines < 1) lines = 1;
-    float btn_h    = 40.0f;
+    const char *title = tr("settings.confirm.title");
+    const char *yes = tr("settings.confirm.yes");
+    const char *no = tr("settings.confirm.no");
+    float safe_w = qlcg_maxf(1.0f, ui->win_w - ui->system_edges[0] - ui->system_edges[2]);
+    float safe_h = qlcg_maxf(1.0f, ui->win_h - ui->system_edges[1] - ui->system_edges[3]);
+    float max_w = safe_w * 0.94f;
+    float max_h = safe_h * 0.94f;
+    float size = qlcg_minf(ui->met.size, qlcg_minf(max_w / 240.0f, max_h / 160.0f));
+    float scale = qlcg_minf(ui->met.scale, qlcg_minf(max_w / 220.0f, max_h / 160.0f));
+    float dw = qlcg_minf(max_w, qlcg_maxf(420.0f * size, 360.0f * scale));
+    float pad, iw, title_px, body_px, title_lh, body_lh, title_h, body_h;
+    float btn_h, w_no, w_yes, dh;
+    bool stacked;
 
-    float dh = pad * 2.0f + title_lh + 12.0f + (float)lines * body_lh + 20.0f + btn_h;
-    float dx = ((float)ui->win_w - dw) * 0.5f;
-    float dy = ((float)ui->win_h - dh) * 0.5f;
+    for (int pass = 0;; ++pass) {
+        pad = 24.0f * size;
+        iw = dw - pad * 2.0f;
+        title_px = 20.0f * scale;
+        body_px = 14.0f * scale;
+        title_lh = ui_line_height(UI_FACE_DISPLAY, title_px);
+        body_lh = ui_line_height(UI_FACE_BODY, body_px);
+        title_h = title_lh * ui_measure_text_wrapped(ui, UI_FACE_DISPLAY, title_px, true, iw, title);
+        body_h = body_lh * ui_measure_text_wrapped(ui, UI_FACE_BODY, body_px, false, iw, msg);
+        btn_h = ui_ctl_height(40.0f * size, body_px);
+        w_yes = qlcg_maxf(72.0f * size, ui_text_width_px(ui, UI_FACE_BODY, body_px, false, yes) + 36.0f * size);
+        w_no = ui_text_width_px(ui, UI_FACE_BODY, body_px, false, no) + 32.0f * size;
+        stacked = w_no + w_yes + 12.0f * size > iw;
+        dh = pad * 2.0f + title_h + body_h + 32.0f * size + btn_h;
+        if (stacked) dh += btn_h + 8.0f * size;
+        if (dh <= max_h || pass == 1) break;
+        float fit = max_h / dh;
+        size *= fit;
+        scale *= fit;
+    }
 
-    ui_panel(ui, dx, dy, dw, dh, 12.0f, tk_of(ui, QL_SURFACE_HI),
+    float dx = ui->system_edges[0] + (safe_w - dw) * 0.5f;
+    float dy = ui->system_edges[1] + (safe_h - dh) * 0.5f;
+    ui_panel(ui, dx, dy, dw, dh, 12.0f * size, tk_of(ui, QL_SURFACE_HI),
              tk_of(ui, QL_LINE), tk_of(ui, QL_SHADOW_LG));
 
     float cy = dy + pad;
-    ui_draw_text_ellipsis(ui, UI_FACE_DISPLAY, title_px, true, dx + pad, cy, iw, 0,
-                          tr("settings.confirm.title"), tk_of(ui, QL_INK));
-    cy += title_lh + 12.0f;
+    ui_draw_text_wrapped(ui, UI_FACE_DISPLAY, title_px, true, dx + pad, cy, iw, title_lh,
+                         title, tk_of(ui, QL_INK));
+    cy += title_h + 12.0f * size;
 
     ui_draw_text_wrapped(ui, UI_FACE_BODY, body_px, false, dx + pad, cy, iw, body_lh,
                          msg, tk_of(ui, QL_INK_2));
-    cy += (float)lines * body_lh + 20.0f;
+    cy += body_h + 20.0f * size;
 
-    const char *s_yes = tr("settings.confirm.yes");
-    const char *s_no  = tr("settings.confirm.no");
-    float w_yes = qlcg_maxf(72.0f, (float)ui_text_width_px(ui, UI_FACE_BODY, btn_px, false, s_yes) + 36.0f);
-    float w_no  = (float)ui_text_width_px(ui, UI_FACE_BODY, btn_px, false, s_no) + 32.0f;
+    if (stacked) w_no = w_yes = iw;
     float bx_yes = dx + dw - pad - w_yes;
-    float bx_no  = bx_yes - 12.0f - w_no;
-
-    bool click_no  = ui_btn(ui, bx_no,  cy, w_no,  btn_h, s_no,  BTN_GHOST,   false, btn_px, false);
-    bool click_yes = ui_btn(ui, bx_yes, cy, w_yes, btn_h, s_yes, BTN_PRIMARY, false, btn_px, false);
-
-    ui->met.size  = saved_size;
-    ui->met.scale = saved_scale;
+    float bx_no = stacked ? bx_yes : bx_yes - 12.0f * size - w_no;
+    float yes_y = stacked ? cy + btn_h + 8.0f * size : cy;
+    float saved_size = ui->met.size;
+    ui->met.size = size;
+    bool click_no = ui_btn(ui, bx_no, cy, w_no, btn_h, no, BTN_GHOST, false, body_px, false);
+    bool click_yes = ui_btn(ui, bx_yes, yes_y, w_yes, btn_h, yes, BTN_PRIMARY, false, body_px, false);
+    ui->met.size = saved_size;
 
     if (click_no) {
         settings_confirm_cancel();
     } else if (click_yes) {
-        s_confirm.active = false;
-        qlcg_save_settings_disk(&g_app.settings);
-        app_push_toast_k(UI_TOAST_SUCCESS, NULL, tr("settings.status.applied"));
+        bool reset = s_confirm.kind == CONFIRM_RESET;
+        if (!keep_settings()) {
+            settings_confirm_cancel();
+            app_push_toast_k(UI_TOAST_ERROR, NULL, tr("settings.applyFailed"));
+        } else {
+            s_confirm.kind = CONFIRM_NONE;
+            s_confirm.layout_preview = false;
+            app_push_toast_k(UI_TOAST_SUCCESS, NULL, tr(device_changed ? "settings.device.restart" :
+                             reset ? "settings.status.resetDone" : "settings.status.applied"));
+        }
     }
 }
 
@@ -173,20 +343,22 @@ static float s_layout_backup[UI_TOUCH_ITEM_COUNT][3];
 
 void settings_layout_cancel(void) {
     if (!g_app.touch_layout_edit) return;
-    memcpy(g_app.settings.touch_layout, s_layout_backup, sizeof(s_layout_backup));
+    for (int i=0;i<UI_TOUCH_ITEM_COUNT;i++)
+        memcpy(QLCG_TOUCH_LAYOUT(&g_app.settings,i),s_layout_backup[i],sizeof(s_layout_backup[i]));
     g_app.touch_layout_edit = false;
     s_layout_drag = -1;
     g_app.ui.drag_slider_id = -1;
 }
 
-/* 四项控件的当前框，换算与 ui_touch.c 同源 */
+/* 四项当前框换算同 ui_touch.c */
 static void touch_edit_boxes(UiContext *ui, const GameSettings *s,
                              float ox, float oy, float sw, float sh,
                              float *bx, float *by, float *bw) {
     for (int i = 0; i < UI_TOUCH_ITEM_COUNT; i++) {
-        float box = ui_touch_item_base(ui, i) * s->touch_layout[i][2];
-        bx[i] = ox + s->touch_layout[i][0] * (sw - box);
-        by[i] = oy + s->touch_layout[i][1] * (sh - box);
+        const float *layout = QLCG_TOUCH_LAYOUT(s,i);
+        float box = ui_touch_item_base(ui, i) * layout[2];
+        bx[i] = ox + layout[0] * (sw - box);
+        by[i] = oy + layout[1] * (sh - box);
         bw[i] = box;
     }
 }
@@ -229,8 +401,9 @@ static void draw_touch_layout_editor(UiContext *ui) {
         int i = s_layout_drag;
         float nx = (float)ui->mouse_x - s_layout_off_x - ox;
         float ny = (float)ui->mouse_y - s_layout_off_y - oy;
-        s->touch_layout[i][0] = qlcg_clampf(nx / qlcg_maxf(sw - bw[i], 1.0f), 0.0f, 1.0f);
-        s->touch_layout[i][1] = qlcg_clampf(ny / qlcg_maxf(sh - bw[i], 1.0f), 0.0f, 1.0f);
+        float *layout=QLCG_TOUCH_LAYOUT(s,i);
+        layout[0] = qlcg_clampf(nx / qlcg_maxf(sw - bw[i], 1.0f), 0.0f, 1.0f);
+        layout[1] = qlcg_clampf(ny / qlcg_maxf(sh - bw[i], 1.0f), 0.0f, 1.0f);
     }
 
     for (int i = 0; i < UI_TOUCH_ITEM_COUNT; i++) {
@@ -246,16 +419,8 @@ static void draw_touch_layout_editor(UiContext *ui) {
                 ui_sprite_icon4(ui, sk, bx[i] + (bw[i] - knob) * 0.5f,
                                 by[i] + (bw[i] - knob) * 0.5f, knob, c0, c1, c2);
         } else {
-            const SpriteDef *sp = ui_sprite_by_name("action-plate");
-            if (sp) ui_sprite_icon4(ui, sp, bx[i], by[i], bw[i], c0, c1, c2);
-            static const char *BTN_ICON[UI_TOUCH_BTN_COUNT] = {
-                "btn-sprint", "btn-jump", "btn-crouch"
-            };
-            float icon = bw[i] * 0.64f;
-            const SpriteDef *si = ui_sprite_by_name(BTN_ICON[i - 1]);
-            if (si)
-                ui_sprite_icon4(ui, si, bx[i] + (bw[i] - icon) * 0.5f,
-                                by[i] + (bw[i] - icon) * 0.5f, icon, c0, c1, c2);
+            ui_touch_draw_button(ui,(UiTouchItem)i,s->joystick_style,
+                                 bx[i]+bw[i]*.5f,by[i]+bw[i]*.5f,bw[i]);
         }
         if (s_layout_drag == i)
             ui_draw_border(ui, bx[i] - 2.0f * z, by[i] - 2.0f * z,
@@ -263,7 +428,7 @@ static void draw_touch_layout_editor(UiContext *ui) {
                            tk_of(ui, QL_PRIMARY_UI));
     }
 
-    /* 中央对话框：四条尺寸滑条 + 三个按钮 */
+    /* 中央尺寸设置 */
     ui_draw_rect(ui, dx, dy, dw, dh, tk_of(ui, QL_SURFACE));
     ui_draw_border(ui, dx, dy, dw, dh, 1.0f, tk_of(ui, QL_LINE));
 
@@ -276,20 +441,23 @@ static void draw_touch_layout_editor(UiContext *ui) {
 
     static const char *SIZE_KEY[UI_TOUCH_ITEM_COUNT] = {
         "settings.touchLayout.moveSize", "settings.touchLayout.sprintSize",
-        "settings.touchLayout.jumpSize", "settings.touchLayout.crouchSize"
+        "settings.touchLayout.jumpSize", "settings.touchLayout.crouchSize",
+        "settings.touchMainHandSize", "settings.touchOffHandSize", "settings.touchInventorySize"
     };
-    float sy = dy + pad + 26.0f * z;
+    const int rows=(UI_TOUCH_ITEM_COUNT+1)/2;
+    float gap=12.0f*z, col_w=(dw-2.0f*pad-gap)*.5f;
     for (int i = 0; i < UI_TOUCH_ITEM_COUNT; i++) {
+        float sx=dx+pad+(float)(i/rows)*(col_w+gap);
+        float sy=dy+pad+26.0f*z+(float)(i%rows)*(lh+20.0f*z);
+        float *layout=QLCG_TOUCH_LAYOUT(s,i);
         char vb[16];
-        snprintf(vb, sizeof(vb), "%.0f%%", s->touch_layout[i][2] * 100.0f);
+        snprintf(vb, sizeof(vb), "%.0f%%", layout[2] * 100.0f);
         float vw = (float)ui_text_width_px(ui, UI_FACE_MONO, 11.0f * sc, false, vb) + 8.0f * z;
         ui_draw_text_px(ui, UI_FACE_MONO, 11.0f * sc, false,
-                        dx + dw - pad - vw, sy, vb, tk_of(ui, QL_INK));
-        ui_draw_text_px(ui, UI_FACE_BODY, lpx, false, dx + pad, sy,
-                        tr(SIZE_KEY[i]), tk_of(ui, QL_INK_2));
-        ui_slider_at(ui, dx + pad, sy + lh + 4.0f * z, dw - pad * 2.0f,
-                     &s->touch_layout[i][2], 0.5f, 2.0f);
-        sy += lh + 4.0f * z + 16.0f * z;
+                        sx + col_w - vw, sy, vb, tk_of(ui, QL_INK));
+        ui_draw_text_ellipsis(ui,UI_FACE_BODY,lpx,false,sx,sy,qlcg_maxf(0,col_w-vw),
+                              1,tr(SIZE_KEY[i]),tk_of(ui,QL_INK_2));
+        ui_slider_at(ui,sx,sy+lh+4.0f*z,col_w,&layout[2],0.5f,2.0f);
     }
 
     float by2 = dy + dh - pad - 32.0f * z;
@@ -319,7 +487,7 @@ static void draw_touch_layout_editor(UiContext *ui) {
             } else if (i == 1) {
                 settings_layout_cancel();
             } else {
-                qlcg_touch_layout_default(s->touch_layout);
+                qlcg_touch_layout_default(s);
             }
         }
     }
@@ -330,6 +498,8 @@ static void draw_touch_layout_editor(UiContext *ui) {
 }
 
 void render_screen_settings(UiContext *ui) {
+    bool saved_ripple = ui->suppress_button_ripple;
+    ui->suppress_button_ripple = true;
     float z  = ui->met.size;
     float sc = ui->met.scale;
 
@@ -340,7 +510,7 @@ void render_screen_settings(UiContext *ui) {
     bool orig_pressed = ui->mouse_pressed;
     int  orig_wheel = ui->wheel_delta;
     bool orig_blocked = ui->input_blocked;
-    bool had_confirm = s_confirm.active;
+    bool had_confirm = settings_confirm_active();
     bool had_editor = g_app.touch_layout_edit;
     if (had_confirm || had_editor) {
         ui->input_blocked = true;
@@ -372,6 +542,7 @@ void render_screen_settings(UiContext *ui) {
 
     /* 三套上下文：主页/悠游/生存 */
     bool world_active = app_world_active();
+    bool device_editable = !world_active && g_app.screen == SCREEN_SETTINGS;
     bool cheats_on    = app_cheats_allowed();
     bool mystery_on   = world_active && cheats_on;   /* 玄学页签：世界激活且允许作弊 */
 
@@ -508,7 +679,7 @@ void render_screen_settings(UiContext *ui) {
             break;
         }
         case SET_TAB_UI: {
-            /* 度量衡：下拉选择（明制 / 公制 / 英制，默认公制） */
+            /* 度量衡：下拉选明制/公制/英制 */
             const char *meas[3] = {
                 tr("settings.measurementSystem.ming"),
                 tr("settings.measurementSystem.metric"),
@@ -517,7 +688,7 @@ void render_screen_settings(UiContext *ui) {
             int mcur = qlcg_clampi((int)s->measurement_system, 0, 2);
             ui_layout_select(&L, SEL_ID_MEAS, tr("settings.measurementSystem"), meas, 3, mcur);
 
-            /* 界面语言：内置中英 + l10n 外置包 */
+            /* 界面语言与外置包重扫 */
             {
                 const char *lnames[QLCG_MAX_LOCALES];
                 int nloc = qlcg_i18n_count();
@@ -564,12 +735,20 @@ void render_screen_settings(UiContext *ui) {
                 changed = true;
             }
 
-            if (ui_layout_checkbox(&L, tr("settings.showTopBar"), &s->show_top_bar)) changed = true;
             if (ui_layout_checkbox(&L, tr("settings.reduceMotion"), &s->reduce_motion)) {
                 ui->reduce_motion = s->reduce_motion;
                 changed = true;
             }
 
+            if (ui_layout_checkbox(&L, tr("settings.showTopBar"), &s->show_top_bar)) {
+                if (!qlcg_save_settings_disk(s)) {
+                    s->show_top_bar = !s->show_top_bar;
+                    app_push_toast_k(UI_TOAST_ERROR, NULL, tr("settings.applyFailed"));
+                }
+            }
+            const char *status_modes[]={tr("character.detailed"),tr("character.compact"),tr("character.hidden")};
+            int status=ui_layout_labeled_segments(&L,tr("character.display"),status_modes,3,s->character_status);
+            if (status>=0) { s->character_status=(CharacterStatusMode)status; changed=true; }
             int cp = ui_layout_crosshair(&L, tr("settings.crosshair"), (int)s->crosshair);
             if (cp >= 0) {
                 s->crosshair = (CrosshairStyle)cp;
@@ -614,30 +793,20 @@ void render_screen_settings(UiContext *ui) {
                 ui_layout_note(&L, buf, true);
             }
 
-            /* 三项尺寸/安全区仅改草稿，点应用后弹窗确认 */
-            float sfx = s->safe_x;
-            snprintf(buf, sizeof(buf), "%.0f%%", sfx);
-            if (ui_layout_slider(&L, tr("settings.safeX"), &sfx, 0.0f, 35.0f, buf)) {
-                s->safe_x = sfx;
+            if (!s_axes.edited) {
+                s_axes.safe_x = s->safe_x;
+                s_axes.safe_y = s->safe_y;
+                s_axes.text_scale = s->text_scale;
+                s_axes.ui_scale = s->ui_scale;
             }
-
-            float sfy = s->safe_y;
-            snprintf(buf, sizeof(buf), "%.0f%%", sfy);
-            if (ui_layout_slider(&L, tr("settings.safeY"), &sfy, 0.0f, 35.0f, buf)) {
-                s->safe_y = sfy;
-            }
-
-            float ts = s->text_scale;
-            snprintf(buf, sizeof(buf), tr("settings.scale.multiplier"), ts);
-            if (ui_layout_slider(&L, tr("settings.textScale"), &ts, 0.6f, 4.0f, buf)) {
-                s->text_scale = ts;
-            }
-
-            float us = s->ui_scale;
-            snprintf(buf, sizeof(buf), tr("settings.scale.multiplier"), us);
-            if (ui_layout_slider(&L, tr("settings.uiScale"), &us, 0.25f, 4.0f, buf)) {
-                s->ui_scale = us;
-            }
+            snprintf(buf, sizeof(buf), "%.0f%%", s_axes.safe_x);
+            if (ui_layout_slider(&L, tr("settings.safeX"), &s_axes.safe_x, 0, 35, buf)) s_axes.edited = true;
+            snprintf(buf, sizeof(buf), "%.0f%%", s_axes.safe_y);
+            if (ui_layout_slider(&L, tr("settings.safeY"), &s_axes.safe_y, 0, 35, buf)) s_axes.edited = true;
+            snprintf(buf, sizeof(buf), tr("settings.scale.multiplier"), s_axes.text_scale);
+            if (ui_layout_slider(&L, tr("settings.textScale"), &s_axes.text_scale, 0.6f, 4, buf)) s_axes.edited = true;
+            snprintf(buf, sizeof(buf), tr("settings.scale.multiplier"), s_axes.ui_scale);
+            if (ui_layout_slider(&L, tr("settings.uiScale"), &s_axes.ui_scale, 0.25f, 4, buf)) s_axes.edited = true;
             ui_layout_note(&L, tr("settings.scaleConfirmHint"), true);
 
             ui_layout_divider(&L);
@@ -655,6 +824,26 @@ void render_screen_settings(UiContext *ui) {
             break;
         }
         case SET_TAB_GRAPHICS: {
+            if (!s_graphics_edited) s_graphics_draft = g_app.settings;
+            s = s_confirm.kind == CONFIRM_RESET ? &s_candidate : &s_graphics_draft;
+#ifdef _WIN32
+            const char *devices[] = { tr("settings.device.default"), tr("settings.device.discrete"),
+                                      tr("settings.device.integrated") };
+            bool locked = !device_editable;
+            bool blocked = ui->input_blocked;
+            float alpha = ui->global_alpha;
+            if (locked) {
+                ui->input_blocked = true;
+                ui->global_alpha *= 0.55f;
+            }
+            ui_layout_select(&L, SEL_ID_DEVICE, tr("settings.device"), devices, 3, s->render_device);
+            ui->input_blocked = blocked;
+            ui->global_alpha = alpha;
+            ui_layout_note(&L, tr(locked ? "settings.device.homeOnly" : "settings.device.restart"), true);
+            const char *modes[] = { tr("settings.window.decorated"), tr("settings.window.borderless"),
+                                    tr("settings.window.fullscreen") };
+            ui_layout_select(&L, SEL_ID_WINDOW, tr("settings.window"), modes, 3, s->window_mode);
+#endif
             const char *preset_names[6] = {
                 tr("settings.graphicsPreset.extreme"),
                 tr("settings.graphicsPreset.high"),
@@ -667,7 +856,6 @@ void render_screen_settings(UiContext *ui) {
             for (int i = 0; i < 6; i++) {
                 if (s->graphics_preset == k_preset_vals[i]) { preset_cur = i; break; }
             }
-            /* 高分辨率显示设备：base 没有，放在画面页首行 */
             {
                 const char *hidpi_names[7]={"0.5x","0.75x","1x","1.5x","2x","3x","4x"};
                 int hidpi_cur = 0;
@@ -678,13 +866,11 @@ void render_screen_settings(UiContext *ui) {
                 }
                 ui_layout_select(&L, SEL_ID_HIDPI, tr("settings.hidpi"),
                                  hidpi_names, 7, hidpi_cur);
-                ui_layout_note(&L, tr("settings.hidpi.hint"), true);
             }
 
             ui_layout_select(&L, SEL_ID_PRESET, tr("settings.graphicsPreset"), preset_names, 6, preset_cur);
-            ui_layout_note(&L, tr("settings.graphicsPreset.hint"), true);
 
-            if (ui_layout_row_checkbox(&L, tr("settings.antialias"), tr("common.enable"), &s->antialias)) changed = true;
+            if (ui_layout_checkbox(&L, tr("settings.antialias"), &s->antialias)) changed = true;
 
             {
                 char b[24];
@@ -741,8 +927,6 @@ void render_screen_settings(UiContext *ui) {
                 ui_layout_note(&L, b, true);
             }
 
-            if (ui_layout_row_checkbox(&L, tr("settings.topBarLabel"), tr("common.show"), &s->show_top_bar)) changed = true;
-
             ui_layout_divider(&L);
 
             bool open = g_app.set_fold_visual;
@@ -761,7 +945,7 @@ void render_screen_settings(UiContext *ui) {
                     { "settings.statusFeedback",     &s->status_feedback },
                 };
                 for (int i = 0; i < (int)(sizeof(flags) / sizeof(flags[0])); i++) {
-                    if (ui_layout_row_checkbox(&L, tr(flags[i].key), tr("common.enable"), flags[i].v)) changed = true;
+                    if (ui_layout_checkbox(&L, tr(flags[i].key), flags[i].v)) changed = true;
                 }
 
                 const char *veg_names[3] = {
@@ -790,9 +974,7 @@ void render_screen_settings(UiContext *ui) {
             }
             g_app.set_fold_visual = open;
 
-            ui_layout_divider(&L);
-
-            if (ui_layout_row_checkbox(&L, tr("settings.scrollStyle"), tr("common.enable"), &s->scroll_style)) changed = true;
+            if (ui_layout_checkbox(&L, tr("settings.scrollStyle"), &s->scroll_style)) changed = true;
             if (s->scroll_style) {
                 ui_layout_indent_push(&L);
                 const char *palettes[3] = {
@@ -859,6 +1041,25 @@ void render_screen_settings(UiContext *ui) {
             break;
         }
         case SET_TAB_CONTROLS: {
+            const char *views[]={tr("camera.first"),tr("camera.shoulder"),tr("camera.third")};
+            int view=ui_layout_labeled_segments(&L,tr("camera.view"),views,3,s->camera_view);
+            if (view>=0) { s->camera_view=(CameraView)view; changed=true; }
+            ui_layout_note(&L, tr("settings.handControls"), false);
+            const char *const action_keys[] = {"inv.use.main", "inv.use.off", "controls.openInventory","doll.inspect"};
+            const char *const input_keys[] = {"settings.mouse.primary", "settings.mouse.secondary", "settings.backpack.input","settings.interactKey"};
+            const char *const icons[] = {"btn-main-hand", "btn-off-hand", "btn-inventory","btn-interact"};
+            for (int i=0; i<4; ++i) {
+                float top=L.cursor, icon=23*z;
+                const SpriteDef *sp=ui_sprite_by_name(icons[i]);
+                if (sp) ui_sprite_icon4(ui,sp,L.x+L.indent,top,icon,
+                                        tk_of(ui,QL_SURFACE),tk_of(ui,QL_PRIMARY_UI),tk_of(ui,QL_ACCENT_UI));
+                L.indent+=icon+8*z;
+                ui_layout_kv(&L,tr(action_keys[i]),tr(input_keys[i]));
+                L.indent-=icon+8*z;
+                L.cursor=qlcg_maxf(L.cursor,top+icon+4*z);
+            }
+            ui_layout_note(&L, tr("settings.handUse.hint"), true);
+            ui_layout_divider(&L);
             /* 视角反转：鼠标、触屏与手柄共用 */
             if (ui_layout_checkbox(&L, tr("settings.invertLookX"), &s->invert_look_x)) changed = true;
             if (ui_layout_checkbox(&L, tr("settings.invertLookY"), &s->invert_look_y)) changed = true;
@@ -910,7 +1111,8 @@ void render_screen_settings(UiContext *ui) {
                         ui->input_id = 0;
                         ui_pointer_consume(ui);
                         s_layout_drag = -1;
-                        memcpy(s_layout_backup, s->touch_layout, sizeof(s_layout_backup));
+                        for(int i=0;i<UI_TOUCH_ITEM_COUNT;i++)
+                            memcpy(s_layout_backup[i],QLCG_TOUCH_LAYOUT(s,i),sizeof(s_layout_backup[i]));
                     }
                     L.cursor += row_h + 8.0f * z;
                 }
@@ -925,7 +1127,7 @@ void render_screen_settings(UiContext *ui) {
                                     tr("settings.touchLayoutReset"),
                                     hov ? tk_of(ui, QL_PRIMARY_TEXT) : tk_of(ui, QL_INK_2));
                     if (hov && ui->mouse_clicked) {
-                        qlcg_touch_layout_default(s->touch_layout);
+                        qlcg_touch_layout_default(s);
                         changed = true;
                     }
                     L.cursor += row_h + 8.0f * z;
@@ -1050,48 +1252,17 @@ void render_screen_settings(UiContext *ui) {
 
     /* 底栏 */
     float fy = page.y + page.h - fbtn_h - 4.0f * z;
-    ui_draw_rect(ui, page.x, fy - 8.0f * z, page.w, 1.0f, tk_of(ui, QL_LINE_SOFT));
     const char *s_apply = tr("settings.apply");
     const char *s_reset = tr("settings.reset");
     float aw  = (float)ui_text_width_px(ui, UI_FACE_BODY, fbtn_px, false, s_apply) + 32.0f * z;
     float rw2 = (float)ui_text_width_px(ui, UI_FACE_BODY, fbtn_px, false, s_reset) + 32.0f * z;
-    /* 返回游戏按钮也要占位，否则说明文字会被它压住 */
     float back_w = 0.0f;
     if (g_app.settings_back_to_game) {
         back_w = (float)ui_text_width_px(ui, UI_FACE_BODY, fbtn_px, false,
                                          tr("game.pause.backToGame")) + 36.0f * z + 8.0f * z;
     }
-    float note_px = 10.5f * sc;
-    float note_lh = ui_line_height(UI_FACE_BODY, note_px);
-    float note_avail = page.w - aw - rw2 - back_w - 20.0f * z;
-    if (note_avail > 60.0f) {
-        ui_draw_text_ellipsis(ui, UI_FACE_BODY, note_px, false, page.x,
-                              fy + (fbtn_h - note_lh) * 0.5f, note_avail, 0,
-                              tr(world_active ? "settings.intro.world" : "settings.intro"), tk_of(ui, QL_INK_3));
-    }
-    if (ui_btn(ui, page.x + page.w - aw, fy, aw, fbtn_h, s_apply,
-               BTN_PRIMARY, false, fbtn_px, false)) {
-        float hd = ui->hidpi_mul > 0.0f ? ui->hidpi_mul : 1.0f;
-        float cur_sx = ui->safe_x_pct;
-        float cur_sy = ui->safe_y_pct;
-        float cur_ts = (ui->user_scale > 0.0f ? ui->user_scale : 1.0f) / hd;
-        float cur_us = (ui->user_size  > 0.0f ? ui->user_size  : 1.0f) / hd;
-        bool need_confirm = (fabsf(s->safe_x - cur_sx) > 1e-3f)
-                         || (fabsf(s->safe_y - cur_sy) > 1e-3f)
-                         || (fabsf(s->text_scale - cur_ts) > 1e-3f)
-                         || (fabsf(s->ui_scale - cur_us) > 1e-3f);
-        app_apply_font();
-        qlcg_i18n_set_locale(s->locale);
-        if (need_confirm) {
-            settings_confirm_begin(cur_sx, cur_sy, cur_ts, cur_us);
-            app_sync_layout_axes();
-            ql_metrics_build(&ui->met, ui->win_w, ui->win_h, ui->user_scale, ui->user_size, ui->hidpi_mul);
-        } else {
-            app_sync_layout_axes();
-            qlcg_save_settings_disk(s);
-            app_push_toast_k(UI_TOAST_SUCCESS, NULL, tr("settings.status.applied"));
-        }
-    }
+    bool apply_clicked = ui_btn(ui, page.x + page.w - aw, fy, aw, fbtn_h, s_apply,
+                                BTN_PRIMARY, false, fbtn_px, false);
     /* 从游戏抽屉进来的：与恢复默认并排，否则会困在设置页 */
     float reset_x = page.x + page.w - aw - rw2 - 8.0f * z;
     if (g_app.settings_back_to_game && back_w > 0.0f) {
@@ -1109,15 +1280,9 @@ void render_screen_settings(UiContext *ui) {
 
     if (ui_btn(ui, reset_x, fy, rw2, fbtn_h, s_reset,
                BTN_GHOST, false, fbtn_px, false)) {
-        s_confirm.active = false;
-        /* 语言属于使用习惯，恢复默认不重置 */
-        qlcg_reset_settings_keep_locale(&g_app.settings);
-        ui_apply_theme(ui, g_app.settings.theme);
-        app_sync_layout_axes();
-        app_apply_font();
-        settings_apply_palette(ui);
-        qlcg_save_settings_disk(&g_app.settings);
-        app_push_toast_k(UI_TOAST_SUCCESS, NULL, tr("settings.status.resetDone"));
+        qlcg_reset_settings_keep_locale(&s_candidate);
+        if (!device_editable) s_candidate.render_device = g_app.settings.render_device;
+        confirm_open(CONFIRM_RESET);
     }
 
     /* 下拉浮层分发 */
@@ -1133,6 +1298,12 @@ void render_screen_settings(UiContext *ui) {
                 }
                 app_apply_font();
                 changed = true;
+            } else if (ui->select_result_id == SEL_ID_DEVICE && picked < 3 && device_editable) {
+                s->render_device = (RenderDevice)picked;
+                changed = true;
+            } else if (ui->select_result_id == SEL_ID_WINDOW && picked < 3) {
+                s->window_mode = (WindowMode)picked;
+                changed = true;
             } else if (ui->select_result_id == SEL_ID_RES) {
                 if (picked < 7) {
                     strncpy(s->resolution, k_res_ids[picked], sizeof(s->resolution) - 1);
@@ -1146,7 +1317,6 @@ void render_screen_settings(UiContext *ui) {
             } else if (ui->select_result_id == SEL_ID_HIDPI) {
                 if (picked < 7) {
                     s->hidpi_scale = k_hidpi_vals[picked];
-                    app_apply_hidpi_scale();
                     changed = true;
                 }
             } else if (ui->select_result_id == SEL_ID_VEG_FORM) {
@@ -1180,13 +1350,12 @@ void render_screen_settings(UiContext *ui) {
         }
     }
 
-
-    if (changed) {
-        settings_apply_palette(ui);
-    }
+    if (s == &s_graphics_draft && changed) s_graphics_edited = true;
+    if (s == &g_app.settings && changed) settings_apply_palette(ui);
+    if (apply_clicked) apply_settings(ui, device_editable);
 
     ui->input_blocked = orig_blocked;
-    if (s_confirm.active) {
+    if (settings_confirm_active()) {
         ui->select_id = 0;
         ui->drag_slider_id = -1;
         ui->mouse_clicked = had_confirm && orig_click;
@@ -1194,7 +1363,8 @@ void render_screen_settings(UiContext *ui) {
         ui->mouse_pressed = had_confirm && orig_pressed;
         ui->wheel_delta   = had_confirm ? orig_wheel : 0;
         ui->input_blocked = false;
-        draw_settings_confirm_modal(ui);
+        if (ui->win_w == g_app.win_w && ui->win_h == g_app.win_h)
+            draw_settings_confirm_modal(ui);
         ui_pointer_consume(ui);
         ui->input_blocked = orig_blocked;
     }
@@ -1211,4 +1381,5 @@ void render_screen_settings(UiContext *ui) {
         ui_pointer_consume(ui);
         ui->input_blocked = orig_blocked;
     }
+    ui->suppress_button_ripple = saved_ripple;
 }

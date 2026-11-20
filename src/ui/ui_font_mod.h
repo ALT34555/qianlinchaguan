@@ -7,7 +7,7 @@
 
 typedef struct {
     char    id[96];       /* 稳定标识，存进设置；如 mod:xxx.ttf */
-    wchar_t family[64];   /* 传给 CreateFontW 的真实族名（非清单别名） */
+    wchar_t family[64];   /* CreateFontW 真实族名（非别名） */
     wchar_t label[48];    /* 设置页显示名 */
     wchar_t file[260];    /* 字体文件路径 */
 } UiModFont;

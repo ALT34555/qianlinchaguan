@@ -11,7 +11,7 @@
 
 /* 冲刺沿用 base 的 dodge 字形 */
 static const char *BTN_ICON[UI_TOUCH_BTN_COUNT] = {
-    "dodge", "jump", "crouch"
+    "dodge", "jump", "crouch", "main-hand", "off-hand", "inventory"
 };
 
 /* 8 样式对齐 base；6/7 走 dpad 分支 */
@@ -72,7 +72,7 @@ float ui_touch_item_base(const UiContext *ui, int item) {
 
 /* 同 base：(可用宽高-控件边) 百分比定左上 */
 void ui_touch_begin(UiTouch *t, UiContext *ui, bool enabled, float opacity,
-                    const float lay[4][3]) {
+                    const GameSettings *settings) {
     if (!t) return;
     if (!enabled) {
         ui_touch_reset(t);
@@ -84,29 +84,33 @@ void ui_touch_begin(UiTouch *t, UiContext *ui, bool enabled, float opacity,
     t->style = style;
     t->opacity = qlcg_clampf(opacity, 0.1f, 1.0f);
 
-    float def[4][3];
-    if (!lay) { qlcg_touch_layout_default(def); lay = def; }
+    GameSettings defaults;
+    if (!settings) {
+        qlcg_touch_layout_default(&defaults);
+        settings = &defaults;
+    }
 
     float sw = ui->win_w - ui->safe_edges[0] - ui->safe_edges[2];
     float sh = ui->win_h - ui->safe_edges[1] - ui->safe_edges[3];
     float ox = ui->safe_edges[0];
     float oy = ui->safe_edges[1];
 
-    /* 触屏控件跟 UI 缩放，但设上限：过大时反而互相压住 */
-    float stick_box = ui_touch_item_base(ui, UI_TOUCH_ITEM_MOVE) * lay[UI_TOUCH_ITEM_MOVE][2];
+    /* 触屏控件跟随缩放，设上限防压住 */
+    const float *stick_layout = QLCG_TOUCH_LAYOUT(settings, UI_TOUCH_ITEM_MOVE);
+    float stick_box = ui_touch_item_base(ui, UI_TOUCH_ITEM_MOVE) * stick_layout[2];
     t->stick_r  = stick_box * 0.5f;
-    t->stick_cx = ox + lay[UI_TOUCH_ITEM_MOVE][0] * (sw - stick_box) + t->stick_r;
-    t->stick_cy = oy + lay[UI_TOUCH_ITEM_MOVE][1] * (sh - stick_box) + t->stick_r;
+    t->stick_cx = ox + stick_layout[0] * (sw - stick_box) + t->stick_r;
+    t->stick_cy = oy + stick_layout[1] * (sh - stick_box) + t->stick_r;
 
     float btn_box0 = ui_touch_item_base(ui, UI_TOUCH_ITEM_SPRINT);
     for (int i = 0; i < UI_TOUCH_BTN_COUNT; i++) {
         int item = UI_TOUCH_ITEM_SPRINT + i;
-        float btn_box = btn_box0 * lay[item][2];
-        t->btn_r = btn_box * 0.5f;
-        t->btn_cx[i] = ox + lay[item][0] * (sw - btn_box) + t->btn_r;
-        t->btn_cy[i] = oy + lay[item][1] * (sh - btn_box) + t->btn_r;
+        const float *layout = QLCG_TOUCH_LAYOUT(settings, item);
+        float btn_box = btn_box0 * layout[2];
+        t->btn_r[i] = btn_box * 0.5f;
+        t->btn_cx[i] = ox + layout[0] * (sw - btn_box) + t->btn_r[i];
+        t->btn_cy[i] = oy + layout[1] * (sh - btn_box) + t->btn_r[i];
     }
-    t->btn_r = btn_box0 * 0.5f;   /* 命中半径取基准，避免逐键跳动 */
 
     if (style >= 6 && t->stick_pointer != -1 && t->axis_x == 0 && t->axis_y < 0) {
         t->forward_hold += ui->dt;
@@ -175,8 +179,8 @@ bool ui_touch_down(UiTouch *t, UiContext *ui, int pointer, float x, float y) {
     }
 
     /* 动作键 */
-    float hit_r = t->btn_r * 1.15f;
-    for (int i = 0; i < UI_TOUCH_BTN_COUNT; i++) {
+    for (int i = UI_TOUCH_BTN_COUNT - 1; i >= 0; i--) {
+        float hit_r = t->btn_r[i] * 1.15f;
         float bx = x - t->btn_cx[i];
         float by = y - t->btn_cy[i];
         if (bx * bx + by * by <= hit_r * hit_r) {
@@ -187,6 +191,8 @@ bool ui_touch_down(UiTouch *t, UiContext *ui, int pointer, float x, float y) {
             }
             t->btn_pointer[i] = pointer;
             t->btn_down[i]    = true;
+            if (i >= UI_TOUCH_ITEM_MAIN_HAND - 1)
+                t->pressed_actions |= 1u << i;
             return true;
         }
     }
@@ -232,14 +238,37 @@ void ui_touch_up(UiTouch *t, UiContext *ui, int pointer) {
     }
 }
 
+bool ui_touch_take_press(UiTouch *t, UiTouchItem item) {
+    if (item < UI_TOUCH_ITEM_MAIN_HAND || item > UI_TOUCH_ITEM_INVENTORY) return false;
+    unsigned bit = 1u << (item - 1);
+    bool pressed = t->enabled && (t->pressed_actions & bit) != 0;
+    t->pressed_actions &= ~bit;
+    return pressed;
+}
+
 /* 单层 sprite：按原色还原四层 */
-static void touch_sprite(UiContext *ui, const char *name, float x, float y, float size) {
+static bool touch_sprite(UiContext *ui, const char *name, float x, float y, float size) {
     const SpriteDef *sp = ui_sprite_by_name(name);
-    if (!sp) return;
+    if (!sp) return false;
     ui_sprite4(ui, sp, x, y, size, size,
                tk_of(ui, QL_SURFACE),
                tk_of(ui, QL_PRIMARY),
                tk_of(ui, QL_ACCENT));
+    return true;
+}
+
+void ui_touch_draw_button(UiContext *ui, UiTouchItem item, int style, float cx, float cy, float size) {
+    if (item <= UI_TOUCH_ITEM_MOVE || item >= UI_TOUCH_ITEM_COUNT) return;
+    int st = style >= 0 && style < 8 ? style : 0;
+    char name[64];
+    snprintf(name, sizeof(name), "action-plate-%s", STYLE_ID[st]);
+    touch_sprite(ui, name, cx - size * .5f, cy - size * .5f, size);
+    float icon = size * .64f;
+    float x = cx - icon * .5f, y = cy - icon * .5f;
+    snprintf(name, sizeof(name), "btn-%s-%s", BTN_ICON[item - 1], STYLE_ID[st]);
+    if (touch_sprite(ui, name, x, y, icon)) return;
+    snprintf(name, sizeof(name), "btn-%s", BTN_ICON[item - 1]);
+    touch_sprite(ui, name, x, y, icon);
 }
 
 /* 按下方向时缩到九成，与 base 一致 */
@@ -283,7 +312,7 @@ static void touch_dpad_arrows(UiTouch *t, UiContext *ui, const char *edge,
     }
 }
 
-/* 十字向：底板 88% 居中，四正四斜按 base 比例 */
+/* 十字向：底板 88% 居中，对齐比例 */
 static void touch_dpad_cross(UiTouch *t, UiContext *ui, float x, float y, float box) {
     touch_sprite(ui, "dpad-cross-whole", x + box * 0.06f, y + box * 0.06f, box * 0.88f);
     touch_dpad_arrows(t, ui, "dpad-up", x + box * 0.0238f, y + box * 0.0238f,
@@ -340,18 +369,10 @@ void ui_touch_draw(UiTouch *t, UiContext *ui) {
     }
 
     /* 动作键 */
-    float btn_box = t->btn_r * 2.0f;
     for (int i = 0; i < UI_TOUCH_BTN_COUNT; i++) {
         float scale = t->btn_down[i] ? 0.90f : 1.0f;
-        float s = btn_box * scale;
-        float cx = t->btn_cx[i];
-        float cy = t->btn_cy[i];
-        char ap[64], bi[64];
-        snprintf(ap, sizeof(ap), "action-plate-%s", STYLE_ID[st]);
-        snprintf(bi, sizeof(bi), "btn-%s-%s", BTN_ICON[i], STYLE_ID[st]);
-        touch_sprite(ui, ap, cx - s * 0.5f, cy - s * 0.5f, s);
-        float icon = s * 0.64f;
-        touch_sprite(ui, bi, cx - icon * 0.5f, cy - icon * 0.5f, icon);
+        ui_touch_draw_button(ui, UI_TOUCH_ITEM_SPRINT + i, st,
+                             t->btn_cx[i], t->btn_cy[i], 2.0f * t->btn_r[i] * scale);
     }
 
     ui->global_alpha = save;

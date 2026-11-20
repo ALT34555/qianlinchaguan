@@ -15,7 +15,7 @@ static const char *BD_VS_SRC =
     "    gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);\n"
     "}\n";
 
-/* 9-tap 高斯：权重和 1，步长由 uStep 决定方向 */
+/* 9-tap 高斯：权重和 1，步长定方向 */
 static const char *BD_FS_SRC =
     "#version 330 core\n"
     "in vec2 vUV;\n"
@@ -71,7 +71,7 @@ void ui_backdrop_init(UiContext *ui) {
 #endif
     ui->bd_prog = qlcg_gl_compile_program(BD_VS_SRC, BD_FS_SRC);
     if (!ui->bd_prog) return;
-    /* core profile 须绑 VAO 才可 draw */
+    /* core profile 绑 VAO 绘制 */
     glGenVertexArrays(1, &ui->bd_vao);
 }
 
@@ -145,7 +145,7 @@ void ui_backdrop_blur_overlay(UiContext *ui, float radius_px) {
     if (!ui->bd_prog || !ui->bd_tex[0] || ui->bd_w <= 0) return;
     if (radius_px <= 0.01f) return;
     bd_capture(ui);
-    /* 9-tap 在 1/4 尺寸下等效 σ≈6.55px */
+    /* 9-tap 在 1/4 尺寸下等效 σ≈6.5px */
     bd_blur_passes(ui, radius_px / 6.55f);
     ui_use_sprite_tex(ui, ui->bd_tex[1]);
     ui_draw_sprite_rect(ui, 0, 0, (float)ui->win_w, (float)ui->win_h,

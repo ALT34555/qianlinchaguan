@@ -10,6 +10,7 @@ typedef struct { float a[3], b[3], color[3], size; double phase, period; } Astra
 typedef struct {
     uint32_t seed, version;
     int star_count, line_count, constellation_count, nebula_count;
+    int constellation_star_start, constellation_line_count;
     AstraVertex stars[ASTRA_STARS], lines[ASTRA_LINES];
     AstraOrbit bodies[ASTRA_BODIES];
     float nebula[31][8];

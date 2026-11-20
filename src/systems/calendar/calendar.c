@@ -163,11 +163,11 @@ void qlcg_calendar_snapshot(const CalendarClock *clk, int utc_offset_min, Calend
     static const char *KE_NAMES[4] = {"初刻","一刻","二刻","三刻"};
     out->shichen.index = sc_idx;
     out->shichen.ke = ke;
-    snprintf(out->shichen.name, sizeof(out->shichen.name), "%s时", BRANCHES[sc_idx]);
+    snprintf(out->shichen.name, sizeof(out->shichen.name), qlcg_i18n_content_text("%s时"), BRANCHES[sc_idx]);
     snprintf(out->shichen.label, sizeof(out->shichen.label), "%s%s%s",
              BRANCHES[sc_idx], half, KE_NAMES[qlcg_clampi(ke, 0, 3)]);
 
-    /* 3. 农历：真定朔编岁 + 时宪历置闰（日界固定东八区） */
+    /* 3. 农历：真定朔编岁+时宪历置闰 */
     {
         /* 当地日时间还原 UTC 儒略日，再取东八区日界 */
         int chinese_jdn = qlcg_civil_jdn_of_jd(
@@ -187,8 +187,8 @@ void qlcg_calendar_snapshot(const CalendarClock *clk, int utc_offset_min, Calend
                              out->chinese.year_ganzhi, sizeof(out->chinese.year_ganzhi));
             localized_ganzhi(qlcg_day_gan_zhi_index(out->jdn),
                              out->chinese.day_ganzhi, sizeof(out->chinese.day_ganzhi));
-            out->chinese.solar_term_today = cd.solar_term[0] ? qlcg_solar_term_name_at(cd.solar_term) : NULL;
-            out->chinese.next_solar_term = qlcg_solar_term_name_at(cd.next_term_name);
+            out->chinese.solar_term_today = cd.solar_term[0] ? qlcg_i18n_content_text(qlcg_solar_term_name_at(cd.solar_term)) : NULL;
+            out->chinese.next_solar_term = qlcg_i18n_content_text(qlcg_solar_term_name_at(cd.next_term_name));
             out->chinese.days_to_next_term = cd.next_term_days;
         }
     }

@@ -209,6 +209,14 @@ static void site_from_cache(const MacroWorld *w, const IceChunkData *c, const Re
     site->bed = bed;
 }
 
+static const float thermal_radius=160.0f;
+
+static bool thermal_overlaps(const RegionData *reg,float wx,float wz) {
+    float dx=fmaxf(0,fabsf(reg->center_x-wx)-(reg->width-1)*reg->step*.5f);
+    float dz=fmaxf(0,fabsf(reg->center_z-wz)-(reg->height-1)*reg->step*.5f);
+    return dx*dx+dz*dz<=thermal_radius*thermal_radius;
+}
+
 static void apply_transition(const MacroWorld *w, float wx, float wz, double day,
                              float *dh, float *dq) {
     *dh = 0.0f;
@@ -219,8 +227,8 @@ static void apply_transition(const MacroWorld *w, float wx, float wz, double day
         const IceThermalTransition *t = &st->trans[i];
         if (!t->used || t->tau <= 0.0f) continue;
         float d = hypotf(wx - t->wx, wz - t->wz);
-        if (d > 160.0f) continue;
-        float k = 1.0f - d / 160.0f;
+        if (d > thermal_radius) continue;
+        float k = 1.0f - d / thermal_radius;
         double el = day - t->start_day;
         if (el < 0.0) el = 0.0;
         float decay = (float)exp(-el / (double)t->tau);
@@ -516,6 +524,13 @@ void qlcg_ice_chunk_attach(const MacroWorld *w, RegionData *reg) {
     reg->ice->revision = 1;
     reg->ice->refreshed_day = w->ice_time_valid ? w->ice_time.climate_day : -1e30;
     reg->ice_revision = reg->ice->revision;
+    if(w->ice_time_valid&&w->ice_state) for(int i=0;i<ICE_TRANS_CAP;i++) {
+        const IceThermalTransition *t=&w->ice_state->trans[i];
+        if(t->used&&t->tau>0&&thermal_overlaps(reg,t->wx,t->wz)) {
+            qlcg_ice_chunk_invalidate(reg);
+            break;
+        }
+    }
 }
 
 bool qlcg_ice_chunk_refresh(MacroWorld *w, RegionData *reg) {
@@ -628,7 +643,17 @@ void qlcg_ice_refresh_all(RegionData *reg) {
     }
 }
 
-/* 每帧冰刷新调度：脚下 3×3 不限预算，其余按预算推进 */
+void qlcg_ice_refresh_thermal(RegionData *reg,float wx,float wz) {
+    if(!reg||!reg->stream) return;
+    RegionStream *st=reg->stream;
+    for(int i=0;i<st->count;i++) {
+        RegionChunkSlot *slot=&st->slots[st->active[i]];
+        if(!slot->refresh_surface&&slot->data->ice&&thermal_overlaps(slot->data,wx,wz))
+            qlcg_ice_chunk_refresh((MacroWorld *)st->world,slot->data);
+    }
+}
+
+/* 冰刷新：脚下 3×3 不限预算，余按预算 */
 void qlcg_ice_tick(RegionData *reg, float player_lx, float player_lz, int budget) {
     if (!reg || !reg->stream) return;
     RegionStream *st = reg->stream;

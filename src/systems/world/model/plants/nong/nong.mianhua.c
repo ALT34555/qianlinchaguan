@@ -6,7 +6,7 @@ void qlcg_plant_nong_mianhua(LpBuilder *b, const PdDef *def, int season, int for
         .habit = CROP_BOLL_SHRUB, .fiber = 1, .cold = 3, .heat = 2,
         .bloom_season = PD_SEASON_SUMMER, .winter_leaf = 0.05,
         .stems = 1, .branches = 6, .stem_r = 0.035,
-        .leaf_len = 0.22, .leaf_w = 0.20,
+        .leaf_len = 0.28, .leaf_w = 0.23,
         .bloom_size = 0.09, .fruit_size = 0.10,
     };
     switch (qlcg_pa_crop_shape(def)) {
@@ -18,7 +18,7 @@ void qlcg_plant_nong_mianhua(LpBuilder *b, const PdDef *def, int season, int for
     case 2:
         profile.height_scale = 0.88;
         profile.spread_scale = 1.25;
-        profile.branches = 8;
+        profile.branches = 6;
         break;
     }
     qlcg_pa_build_crop(b, def, season, form, &profile);

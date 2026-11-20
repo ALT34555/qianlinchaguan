@@ -244,6 +244,9 @@ int qlcg_rock_load(const char *dir) {
         snprintf(path, sizeof(path), "%s/%s", dir, SIZE_FILES[i]);
         load_rock_file(path, i);
     }
+    /* 追加公会专属物，保持已有石珊瑚 ID */
+    snprintf(path, sizeof(path), "%s/rock.deadwood.json", dir);
+    load_rock_file(path, ROCK_SIZE_LEGACY);
     g_loaded = 1;
     return g_defs_count;
 }

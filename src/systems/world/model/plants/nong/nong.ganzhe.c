@@ -17,7 +17,7 @@ void qlcg_plant_nong_ganzhe(LpBuilder *b, const PdDef *def, int season, int form
     case 2:
         profile.height_scale = 0.88;
         profile.spread_scale = 1.25;
-        profile.stems = 6;
+        profile.stems = 4;
         break;
     }
     qlcg_pa_build_crop(b, def, season, form, &profile);

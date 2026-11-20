@@ -29,7 +29,7 @@ typedef struct {
     double             rain_last_ms;
     int                tex_w, tex_h;
     bool               world_upload_pending;
-    uint32_t           synced_delta_ver;
+    uint32_t           synced_atlas_rev;
     uint32_t           synced_terr_rev;
     /* 分级细节瓦片缓存（见 atlas_tiles.h） */
     struct AtlasTileCache *tiles;
@@ -71,6 +71,7 @@ typedef struct {
     ChunkInspectInfo   sel_info;
     const MacroWorld   *hover_world;
     uint32_t           hover_delta, hover_surface, hover_territory;
+    bool               hover_artificial;
     int                hover_cx, hover_cz;
     ChunkInspectInfo   hover_info,hover_cached_info;
 
@@ -92,6 +93,7 @@ bool        qlcg_atlas_init(AtlasRenderer *ar);
 void        qlcg_atlas_shutdown(AtlasRenderer *ar);
 void        qlcg_atlas_release_world(AtlasRenderer *ar);
 void        qlcg_atlas_upload_world(AtlasRenderer *ar, const MacroWorld *w);
+void        qlcg_atlas_sync_world(AtlasRenderer *ar, const MacroWorld *w);
 void        qlcg_atlas_reset_view(AtlasRenderer *ar, const MacroWorld *w, bool focus_spawn);
 void        qlcg_atlas_zoom_step(AtlasRenderer *ar, const MacroWorld *w, float delta_zoom,
                                  float pivot_sx, float pivot_sy,
@@ -139,7 +141,7 @@ void        qlcg_atlas_center_on(AtlasRenderer *ar, const MacroWorld *w,
 /* 球体正射半径，渲染与拾取共用同一值 */
 float       qlcg_atlas_globe_radius(const AtlasRenderer *ar, float vp_w, float vp_h);
 
-/* 河流 LOD 层级：绕行一圈像素 / 128 的二进制阶 */
+/* 河流 LOD：绕行像素/128 二进制阶 */
 void qlcg_atlas_rivers_release(AtlasRenderer *ar);
 void        qlcg_atlas_draw_rivers(AtlasRenderer *ar, const MacroWorld *w, UiContext *ui,
                                   float vp_x, float vp_y, float vp_w, float vp_h);

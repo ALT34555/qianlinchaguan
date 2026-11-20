@@ -12,6 +12,7 @@
 #include "../systems/world/model/plant_def.h"
 #include "../systems/world/model/plant_forms.h"
 #include "../systems/world/model/rock_def.h"
+#include "../systems/world/model/shore_models.h"
 
 /* 准星射线检视结果 */
 typedef enum {
@@ -20,21 +21,41 @@ typedef enum {
     AIM_HIT_WATER,
     AIM_HIT_PLANT,
     AIM_HIT_ROCK,
-    AIM_HIT_FLAG
+    AIM_HIT_FLAG,
+    AIM_HIT_DOLL
 } AimHitKind;
+
+typedef struct {
+    uint32_t id;
+    int32_t plane_x,plane_z;
+    char camp_uid[17];
+} TerrainDollRef;
 
 typedef struct {
     AimHitKind kind;
     float      lx, ly, lz;
     float      wx, wz;
     float      dist_m;
+    TerrainDollRef doll;
     char       title[64];
     char       detail1[96];
     char       detail2[96];
 } AimProbeResult;
 
+typedef struct {
+    AimHitKind kind;
+    float wx, wz;
+    float distance;
+    int prop_kind, category, state;
+    TerrainDollRef doll;
+} TerrainToolHit;
+
+struct TerrainRenderer;
+bool qlcg_terrain_tool_target(const struct TerrainRenderer *tr, const RegionData *reg,
+                              const MacroWorld *w, float reach, TerrainToolHit *hit);
+
 /* 单个物种的植物批次：一份网格 + 一组实例 */
-#define QLCG_PLANT_FORM_SLOTS (VEG_FORM_RICH + PLANT_VARIANT_COUNT)
+#define QLCG_PLANT_FORM_SLOTS (PLANT_HANGING_FORM * 2)
 #define QLCG_MAX_PLANT_BATCH (255 * PD_SEASON_COUNT * QLCG_PLANT_FORM_SLOTS)
 
 /* 批次键按真实形态区分，简模与普通模型不合并 */
@@ -59,7 +80,7 @@ typedef struct {
     int    species;
     int    form;
     int    season;
-    int    category;   /* 六类，决定灌木/草类风摆 */
+    int    category;   /* 分类，决定灌木与草类风摆 */
     GLuint vao, vbo, ebo, inst_vbo;
     int    idx_count;
     int    inst_count;
@@ -79,7 +100,7 @@ typedef struct {
     float level;
 } PlantInstGPU;
 
-/* 远景贴图实例：脚底位置/世界尺寸/图集 UV/朝向/首次出现时间 */
+/* 远景贴图实例：位置/尺寸/UV/朝向/时间 */
 typedef struct {
     float x, y, z;
     float w, h;
@@ -89,7 +110,7 @@ typedef struct {
     float birth;
 } FarPropInst;
 
-/* 远景实例首次出现时间表（key → 毫秒），gen 用于清理 */
+/* 远景实例出现时间表（key→ms），用于清理 */
 typedef struct {
     unsigned long long key;
     double t0;
@@ -97,7 +118,7 @@ typedef struct {
 } PropFadeEnt;
 
 bool qlcg_plant_batch_setup(PlantBatch *b, int species, int form, int season);
-#define QLCG_MAX_ROCK_BATCH ROCK_CATALOG_CAPACITY
+#define QLCG_MAX_ROCK_BATCH (ROCK_CATALOG_CAPACITY + CORAL_MODEL_COUNT * SHORE_FORM_COUNT * CORAL_PALETTE_COUNT)
 bool qlcg_rock_batch_setup(PlantBatch *b, int index, int form, int season, int chunk);
 struct TerrainRenderer;
 void qlcg_rock_batches_clear(struct TerrainRenderer *tr);
@@ -195,7 +216,25 @@ typedef struct {
 } PlayerMotionDebug;
 
 struct TerrainRenderer {
+    TerrainDollRef controlled_doll;
+    float controlled_doll_height;
+    int lot_light_count;
+    float lot_lights[4][4];
+    float frame_camera[3], camera_reticle[2], equipment_origin_delta[3];
+    bool camera_reticle_visible, external_camera, build_camera;
+    float build_ortho;
+    int lot_grid_cx,lot_grid_cz,lot_grid_detail;
+    GLuint tool_program, tool_vao, tool_vbo;
+    unsigned tool_sprite_mask;
+    double tool_swing_ms[2];
+    InventoryItem tool_swing_item[2];
     struct TerrainVisual *visual;
+    struct TerrainGrass *grass;
+    bool hide_guild_grass;
+    struct TerrainSettlementCache *settlements;
+    struct TerrainDolls *dolls;
+    bool dolls_paused;
+    struct TerrainFarms *farms;
     double prepare_deadline, stream_ms, props_cpu_ms;
     double mesh_cpu_ms, upload_cpu_ms, budget_overrun_ms;
     bool preparing;
@@ -221,7 +260,7 @@ struct TerrainRenderer {
     bool  mouse_captured;
     char  status_text[96];
 
-    /* 地形网格：共享大 VBO，逐块 baseVertex */
+    /* 地形网格：共享大 VBO，逐块偏移 */
     GLuint terrain_prog;
     GLuint terrain_vao, terrain_ebo;
     GLuint terrain_vbo;
@@ -255,6 +294,7 @@ struct TerrainRenderer {
     int        rock_inst_total;
     int        plant_inst_total;
     int        plant_season;
+    bool sprite_atlas_requested;
     PropSprites sprites;      /* 远景四季贴图图集 */
 
     /* 远景贴图两批：交叉面片与 billboard */
@@ -295,6 +335,7 @@ struct TerrainRenderer {
     SkyClimate frame_sky;
     bool frame_has_astronomy;
     int reflection_pass;
+    float equipment_beam[4], equipment_night_vision, equipment_aquatic_vision;
     float reflection_plane;
     GLuint weather_vao, weather_vbo;
 
@@ -312,7 +353,7 @@ struct TerrainRenderer {
         const RegionData *region;
         const MacroWorld *world;
         float pose[5];
-        uint64_t stream,mesh,props;
+        uint64_t stream,mesh,props,dolls;
         uint32_t delta,surface,territory,region_revision;
         int measurement,locale;
         bool valid,inspecting;
@@ -386,6 +427,8 @@ void qlcg_terrain_place_player_at_spawn(TerrainRenderer *tr, const RegionData *r
 void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const MacroWorld *w,
                                 const GameSettings *s, const CalendarClock *clk,
                                 const PlayerInput *in, float dt);
+bool qlcg_terrain_view_camera(const TerrainRenderer *tr,const RegionData *reg,
+                               const GameSettings *settings,float position[3]);
 bool qlcg_terrain_raycast(const TerrainRenderer *tr, const RegionData *reg,
                           float ray_ox, float ray_oy, float ray_oz,
                           float ray_dx, float ray_dy, float ray_dz,

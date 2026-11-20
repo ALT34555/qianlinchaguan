@@ -29,6 +29,7 @@ typedef struct {
 bool qlcg_prop_sprites_init(PropSprites *ps, const char *root);
 void qlcg_prop_sprites_free(PropSprites *ps);
 /* 缺图返回 false */
+bool qlcg_prop_sprites_plant_form_uv(const PropSprites *ps, int species, int season, bool hanging, PropUvRect *out);
 bool qlcg_prop_sprites_plant_uv(const PropSprites *ps, int species, int season, PropUvRect *out);
 bool qlcg_prop_sprites_rock_uv(const PropSprites *ps, int archetype, int season, PropUvRect *out);
 bool qlcg_prop_sprites_can_far(const PropSprites *ps);   /* 至少一张可用 */

@@ -1,8 +1,11 @@
 /* 冻结阵营名称、文化与领地 */
 #include "world_faction_save.h"
+#include "world_claims.h"
+#include "faction_naming.h"
 #include <string.h>
 #include <math.h>
 #include <limits.h>
+#include <stddef.h>
 
 typedef struct {
     uint32_t magic;
@@ -27,7 +30,7 @@ static bool faction_tail_extent(FILE *file, long start, long limit,
     FactionSaveHeader header;
     if (fread(&header, sizeof(header), 1, file) != 1) return false;
     if (header.magic != 0x46414354u || header.version != 1u ||
-        header.faction_count > MAX_FACTIONS || header.faction_size != sizeof(TerritoryFaction) ||
+        header.faction_count > MAX_FACTIONS || header.faction_size != offsetof(TerritoryFaction,leader_name) ||
         header.cell_count == 0 || header.cell_count > 1024u * 512u) return false;
     uint64_t required = sizeof(header) + (uint64_t)header.faction_count * header.faction_size +
                         (uint64_t)header.cell_count * (sizeof(int16_t) + sizeof(uint8_t));
@@ -64,25 +67,30 @@ bool qlcg_factions_read_lim(FILE *file, MacroWorld *world, long limit) {
     if (fread(&header, sizeof(header), 1, file) != 1 ||
         header.magic != 0x46414354u || header.version != 1u ||
         header.cell_count != (uint32_t)world->cell_count ||
-        header.faction_count > MAX_FACTIONS || header.faction_size != sizeof(TerritoryFaction)) return false;
+        header.faction_count > MAX_FACTIONS || header.faction_size != offsetof(TerritoryFaction,leader_name)) return false;
     size_t factions = header.faction_count, cells = header.cell_count;
-    uint64_t need = sizeof(header) + (uint64_t)factions * sizeof(TerritoryFaction) +
+    uint64_t need = sizeof(header) + (uint64_t)factions * header.faction_size +
                     (uint64_t)cells * (sizeof(int16_t) + sizeof(uint8_t));
     long end = tail_limit(file, limit);
     if (end < start || (uint64_t)(end - start) < need) return false;
     if (fseek(file, start + (long)sizeof(header), SEEK_SET) != 0) return false;
-    if (fread(world->factions, sizeof(TerritoryFaction), factions, file) != factions ||
-        fread(world->claim_faction, sizeof(int16_t), cells, file) != cells ||
+    for (size_t i=0;i<factions;i++) {
+        world->factions[i]=(TerritoryFaction){0};
+        if (fread(world->factions+i,header.faction_size,1,file)!=1) return false;
+    }
+    if (fread(world->claim_faction, sizeof(int16_t), cells, file) != cells ||
         fread(world->claim_type, sizeof(uint8_t), cells, file) != cells) return false;
     for (size_t i = 0; i < factions; ++i) {
-        const TerritoryFaction *f = &world->factions[i];
+        TerritoryFaction *f = &world->factions[i];
         if (f->id != (int)i || f->flag_cell < 0 || f->flag_cell >= world->cell_count ||
             !isfinite(f->wx) || !isfinite(f->wz) ||
             !memchr(f->uid, 0, sizeof(f->uid)) || !memchr(f->name, 0, sizeof(f->name)) ||
             !memchr(f->auto_name, 0, sizeof(f->auto_name)) || !memchr(f->culture, 0, sizeof(f->culture))) return false;
+        qlcg_faction_migrate_colors(f);
+        qlcg_faction_name_leader(f);
     }
     world->faction_count = (int)factions;
     world->last_civ_day = header.last_civ_day;
     ++world->territory_revision;
-    return true;
+    return qlcg_claims_migrate(world);
 }

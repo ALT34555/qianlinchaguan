@@ -1,4 +1,6 @@
 {
+  "leader.format": "{place}の主",
+  "leader.strip": "の地",
   "format": "{climate}{terrain}の地",
   "climate.1": "氷封の",
   "climate.2": "寒冷な",

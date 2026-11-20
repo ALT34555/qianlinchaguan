@@ -27,6 +27,17 @@ struct RiverArchive {
     uint64_t craft_sequence;
     uint32_t terrain_version;
 };
+static _Thread_local const MacroWorld *readonly_world;
+static _Thread_local bool readonly_write;
+
+void qlcg_river_archive_readonly_begin(const MacroWorld *w) {
+    readonly_world=w;readonly_write=false;
+}
+
+bool qlcg_river_archive_readonly_end(void) {
+    readonly_world=NULL;
+    return !readonly_write;
+}
 struct RiverArchive *qlcg_river_archive_create(uint32_t terrain_version) {
     if(terrain_version>QLCG_TERRAIN_VERSION||terrain_version==6||terrain_version==7) return NULL;
     struct RiverArchive *a=calloc(1,sizeof(*a));
@@ -144,6 +155,8 @@ int qlcg_river_archive_put(MacroWorld *w,int kind,int cell,const RiverBuffer *b)
 }
 int qlcg_river_archive_commit(MacroWorld *w,const RiverArchiveUpdate *updates,int count) {
     if(!w||!updates||count<1) return 0;
+    /* 冷档案写入交主线程 */
+    if(w==readonly_world) { readonly_write=true;return 0; }
     RiverRecord *pending=NULL;
     for(int i=count-1;i>=0;i--) {
         const RiverBuffer *b=&updates[i].buffer;

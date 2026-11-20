@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "../calendar/calendar.h"
 
-/* 水体种类：与 SurfaceWaterKind 同值 */
+/* 水体种类：与水体 Kind 同值 */
 enum {
     ICE_KIND_DRY = 0, ICE_KIND_SEA = 1, ICE_KIND_LAKE = 2,
     ICE_KIND_RIVER = 3, ICE_KIND_FALL = 4, ICE_KIND_STATIC = 5
@@ -67,7 +67,7 @@ typedef struct {
 void        qlcg_ice_params(const IceSite *site, IceParams *out);
 IceTime     qlcg_ice_time(const CalendarClock *clk, const CalendarSnapshot *snap,
                           int forced_season);
-/* 由派生参数直接求样：避免每帧重算 sqrt/atan */
+/* 派生参数直接求样，免每帧重算 */
 void        qlcg_ice_sample_params(const IceParams *p, const IceSite *site,
                                    double climate_day, IceSample *out);
 void        qlcg_ice_evaluate(const IceSite *site, const IceTime *time, IceSample *out);

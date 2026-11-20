@@ -1,0 +1,98 @@
+{
+  "plants": [
+    {
+      "id": "jun.pinggu",
+      "name": "平菇",
+      "latin": "Pleurotus ostreatus",
+      "archetype": "mushroom",
+      "climate": "temperate",
+      "seed": 981,
+      "params": {
+        "height": 0.22,
+        "spread": 0.14
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered",
+        "hanging"
+      ]
+    },
+    {
+      "id": "jun.koumo",
+      "name": "口蘑",
+      "latin": "Leucocalocybe mongolica",
+      "archetype": "mushroom",
+      "climate": "temperate",
+      "seed": 982,
+      "params": {
+        "height": 0.15,
+        "spread": 0.14
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered",
+        "hanging"
+      ]
+    },
+    {
+      "id": "jun.chashugu",
+      "name": "茶树菇",
+      "latin": "Cyclocybe aegerita",
+      "archetype": "mushroom",
+      "climate": "subtropical",
+      "seed": 983,
+      "params": {
+        "height": 0.27,
+        "spread": 0.13
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered",
+        "hanging"
+      ]
+    },
+    {
+      "id": "jun.jinhuangegao",
+      "name": "金黄鹅膏菌",
+      "latin": "Amanita flavipes",
+      "archetype": "mushroom",
+      "climate": "temperate",
+      "seed": 984,
+      "params": {
+        "height": 0.25,
+        "spread": 0.155
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered",
+        "hanging"
+      ]
+    },
+    {
+      "id": "jun.dumogu",
+      "name": "毒蘑菇",
+      "archetype": "mushroom",
+      "climate": "temperate",
+      "seed": 985,
+      "params": {
+        "height": 0.29,
+        "spread": 0.18
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "withered",
+        "hanging"
+      ]
+    }
+  ]
+}

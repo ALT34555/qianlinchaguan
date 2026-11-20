@@ -1,5 +1,10 @@
 /* 山川资源：上下文、实例布局与上传入口 */
 #include "terrain_view.h"
+#include "ambient_grass.h"
+#include "terrain_settlement.h"
+#include "terrain_dolls.h"
+#include "terrain_tools.h"
+#include "terrain_farms.h"
 #include "terrain_visual.h"
 #include "water_reflection.h"
 #include "terrain_types.h"
@@ -91,7 +96,7 @@ void qlcg_far_vao(GLuint vao,GLuint mesh,GLuint indices,GLuint instance) {
     }
 }
 
-/* 远景贴图 VAO：aCorner(0) + aDir(6) + 实例 1..5 */
+/* 远景贴图 VAO：Corner+Dir+实例 */
 static void setup_far_vao(GLuint *vao, GLuint *vbo, GLuint *ebo, GLuint *inst,
                           const float *verts, int vcount, const uint16_t *indices, int icount) {
     glGenVertexArrays(1, vao);
@@ -437,7 +442,6 @@ bool qlcg_terrain_gpu_restore(TerrainRenderer *tr) {
     tr->water_idx_count = lod_off;
     tr->terrain_origin_x = tr->terrain_origin_z = 1e30f;
     qlcg_ground_tex_init(tr);
-    qlcg_prop_sprites_init(&tr->sprites, qlcg_dev_sprite_dir("src/systems/world/model"));
 
     /* 双层树冠锥体网格 */
     PropMeshVert tree_v[10] = {
@@ -523,10 +527,15 @@ bool qlcg_terrain_init(TerrainRenderer *tr) {
 
 /* 回收山川场景缓存 */
 void qlcg_terrain_release_scene(TerrainRenderer *tr) {
+    memset(tr->tool_swing_ms, 0, sizeof(tr->tool_swing_ms));
+    qlcg_terrain_grass_free(tr);
     qlcg_visual_reset(tr);
     tr->weather_visual.ready = false;
     qlcg_astra_release(&tr->astronomy);
     qlcg_terrain_clear_chunks(tr);
+    qlcg_terrain_settlement_free(tr);
+    qlcg_terrain_dolls_free(tr);
+    qlcg_terrain_farms_free(tr);
     qlcg_plant_batches_clear(tr);
     qlcg_rock_batches_clear(tr);
     const GLuint buffers[] = {tr->terrain_vbo, tr->tree_inst_vbo, tr->rock_inst_vbo, tr->flag_inst_vbo};
@@ -541,6 +550,11 @@ void qlcg_terrain_release_scene(TerrainRenderer *tr) {
 }
 
 void qlcg_terrain_shutdown(TerrainRenderer *tr) {
+    qlcg_terrain_tools_free(tr);
+    qlcg_terrain_grass_free(tr);
+    qlcg_terrain_settlement_free(tr);
+    qlcg_terrain_dolls_free(tr);
+    qlcg_terrain_farms_free(tr);
     qlcg_visual_free(tr);
     qlcg_astra_release(&tr->astronomy);
     qlcg_ice_visual_shutdown(tr);

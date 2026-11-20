@@ -14,7 +14,7 @@
 _Static_assert(ICE_SAVE_EDIT_LIMIT == ICE_EDIT_CAP_MAX / 2u, "limit is half cap");
 _Static_assert(ICE_TRANS_CAP <= 64, "transition slice fits");
 
-/* ---------- 小端读写 ---------- */
+/* 小端读写 */
 
 static void put_u32(uint8_t *p, uint32_t v) {
     p[0] = (uint8_t)(v & 0xFFu);
@@ -89,7 +89,7 @@ static long ice_limit_end(FILE *file, long limit) {
     return ftell(file);
 }
 
-/* 返回 1 有 ICE1，0 无（到界或紧接 RAIN1），-1 损坏 */
+/* 返回 1有 ICE1，0无，-1损坏 */
 static int read_header_lim(FILE *file, IceSaveHeader *h, long limit) {
     long start = ftell(file);
     long end = ice_limit_end(file, limit);

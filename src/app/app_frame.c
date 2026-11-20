@@ -34,10 +34,12 @@ void app_render_frame(float dt) {
     qlcg_profile_begin(QL_GPU_UI);
     /* 屏幕切换时重放入场淡入 */
     static int last_screen = -1;
+    static bool was_in_settings;
+    bool in_settings = g_app.screen == SCREEN_SETTINGS ||
+                       (g_app.screen == SCREEN_IN_GAME && g_app.settings_in_drawer);
+    if (was_in_settings && !in_settings) settings_leave();
+    was_in_settings = in_settings;
     if ((int)g_app.screen != last_screen) {
-        if (last_screen == SCREEN_SETTINGS && g_app.screen != SCREEN_SETTINGS) {
-            settings_confirm_cancel();
-        }
         if ((last_screen == SCREEN_IN_GAME && g_app.screen == SCREEN_START_HOME) ||
             (last_screen == SCREEN_WORLD_CREATOR && g_app.screen != SCREEN_IN_GAME))
             app_release_world();
@@ -46,6 +48,7 @@ void app_render_frame(float dt) {
     }
 
     if (g_app.win_w <= 0 || g_app.win_h <= 0) {
+        settings_confirm_expire();
         app_lowres_release();
         return;
     }
@@ -102,10 +105,23 @@ void app_render_frame(float dt) {
     {
         bool touch_on = g_app.screen == SCREEN_IN_GAME && g_app.view_mode == VIEW_MODE_TERRAIN
                         && !g_app.esc_paused && !g_app.settings_in_drawer && !g_app.chat_open
+                        && !g_app.inventory_ui.open && !game_doll_panel_open() && !game_build_open() && !g_app.touch_layout_edit
                         && g_app.settings.touch_controls;
         ui_touch_begin(&g_app.touch, &g_app.ui, touch_on, g_app.settings.touch_opacity,
-                       (const float (*)[3])g_app.settings.touch_layout);
+                       &g_app.settings);
         touch_sync_actions();
+        bool main_hand = ui_touch_take_press(&g_app.touch, UI_TOUCH_ITEM_MAIN_HAND);
+        bool off_hand = ui_touch_take_press(&g_app.touch, UI_TOUCH_ITEM_OFF_HAND);
+        if (ui_touch_take_press(&g_app.touch, UI_TOUCH_ITEM_INVENTORY)) {
+            game_inventory_toggle();
+            if (g_app.inventory_ui.open) {
+                ui_touch_reset(&g_app.touch);
+                touch_sync_actions();
+            }
+        } else {
+            if (main_hand) game_terrain_use_hand(false);
+            if (off_hand) game_terrain_use_hand(true);
+        }
     }
     switch (g_app.screen) {
         case SCREEN_START_HOME:       render_screen_home(&g_app.ui, dt);       break;

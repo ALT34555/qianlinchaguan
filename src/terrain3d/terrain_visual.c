@@ -461,6 +461,19 @@ void qlcg_visual_program_init(GLuint program) {
 
 void qlcg_visual_bind(TerrainRenderer *tr,GLuint program) {
     glUseProgram(program);
+    const float *beam = tr->equipment_beam;
+    float visible = tr->reflection_pass ? 0.0f : 1.0f;
+    static const char *light_uniforms[]={"uLotLights[0]","uLotLights[1]","uLotLights[2]","uLotLights[3]"};
+    int lights=tr->reflection_pass?0:tr->lot_light_count;
+    glUniform1i(qlcg_gl_uniform(program,"uLotLightCount"),lights);
+    for(int i=0;i<lights;i++) {
+        const float *p=tr->lot_lights[i];
+        glUniform4f(qlcg_gl_uniform(program,light_uniforms[i]),p[0],p[1],p[2],p[3]);
+    }
+    glUniform4f(qlcg_gl_uniform(program,"uEquipmentBeam"),beam[0],beam[1],beam[2],beam[3]*visible);
+    glUniform3fv(qlcg_gl_uniform(program,"uEquipmentOriginDelta"),1,tr->equipment_origin_delta);
+    glUniform1f(qlcg_gl_uniform(program,"uEquipmentNightVision"),tr->equipment_night_vision*visible);
+    glUniform1f(qlcg_gl_uniform(program,"uEquipmentAquaticVision"),tr->equipment_aquatic_vision*visible);
     if(!tr->visual)return;
     const TerrainVisualFrame *f=&tr->visual->frame;
     const GameSettings *s=f->settings;
@@ -507,11 +520,11 @@ void qlcg_visual_bind(TerrainRenderer *tr,GLuint program) {
     if(!f->enhanced) return;
     const SkyClimate *sky=&f->sky;
     float elevation=qlcg_clampf(sky->sun_dir[1],0,1),warm=powf(1-elevation,1.4f);
-    float daylight=qlcg_clampf(sky->daylight,0,1),scale=qlcg_clampf(sky->light_scale,0.05f,1.6f);
-    float intensity=qlcg_clampf(0.70f+0.85f*elevation,0.22f,1.55f)*1.55f*
+    float daylight=qlcg_clampf(sky->daylight,0,1);
+    float intensity=(0.55f+0.20f*elevation)*
         qlcg_smoothf(0,0.06f,elevation);
-    glUniform3f(qlcg_gl_uniform(program,"uSunColor"),(1.06f+0.42f*warm)*scale*intensity,
-        (0.97f-0.03f*warm)*scale*intensity,(0.84f-0.38f*warm)*scale*intensity);
+    glUniform3f(qlcg_gl_uniform(program,"uSunColor"),(1.06f+0.42f*warm)*intensity,
+        (0.97f-0.03f*warm)*intensity,(0.84f-0.38f*warm)*intensity);
     glUniform3f(qlcg_gl_uniform(program,"uSkyAmb"),0.24f+0.06f*(1-daylight),0.28f+0.05f*(1-daylight),0.36f+0.03f*(1-daylight));
     glUniform3f(qlcg_gl_uniform(program,"uGroundAmb"),0.14f,0.12f,0.09f);
     glUniform1f(qlcg_gl_uniform(program,"uWet"),qlcg_clampf(fmaxf(f->weather.rain,tr->rain_override),0,1));

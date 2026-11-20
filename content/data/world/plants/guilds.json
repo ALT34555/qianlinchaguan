@@ -5052,5 +5052,435 @@
    ],
    "weight": 0.4
   }
- ]
+ ],
+ "ambient": [
+  {"id": "ambient_tropical_tree_1", "name": "槟榔草荫", "tier": "tree", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 154, "scale": 0.88}, "members": [
+    {"sp": "shu.binglang", "n": [1, 1], "ring": "core", "clump": false}
+  ]},
+  {"id": "ambient_tropical_tree_2", "name": "芭蕉草影", "tier": "tree", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 140, "scale": 0.79}, "members": [
+    {"sp": "shu.bajiao", "n": [1, 1], "ring": "core", "clump": false}
+  ]},
+  {"id": "ambient_tropical_tree_3", "name": "凤凰木草坡", "tier": "tree", "zones": [1, 2], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 119, "scale": 0.67}, "members": [
+    {"sp": "shu.fenghuang", "n": [1, 1], "ring": "core", "clump": false}
+  ]},
+  {"id": "ambient_tropical_tree_4", "name": "金合欢草畔", "tier": "tree", "zones": [2, 3], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 84, "scale": 0.51}, "members": [
+    {"sp": "shu.jinheguan", "n": [1, 1], "ring": "core", "clump": false}
+  ]},
+  {"id": "ambient_tropical_tree_herb_1", "name": "木棉芭茅丛", "tier": "tree", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 154, "scale": 0.88}, "members": [
+    {"sp": "shu.mumian", "n": [1, 1], "ring": "core", "clump": false},
+    {"sp": "cao.bamao", "n": [3, 5], "ring": "outer", "clump": true}
+  ]},
+  {"id": "ambient_tropical_tree_herb_2", "name": "芒果蕨丛", "tier": "tree", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 140, "scale": 0.79}, "members": [
+    {"sp": "shu.mangguo", "n": [1, 1], "ring": "core", "clump": false},
+    {"sp": "cao.jue", "n": [3, 6], "ring": "outer", "clump": true}
+  ]},
+  {"id": "ambient_tropical_tree_herb_3", "name": "猴面包树狗牙根丛", "tier": "tree", "zones": [1, 2], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 119, "scale": 0.67}, "members": [
+    {"sp": "shu.houmianbao", "n": [1, 1], "ring": "core", "clump": false},
+    {"sp": "cao.gouyagen", "n": [3, 5], "ring": "outer", "clump": true}
+  ]},
+  {"id": "ambient_tropical_tree_herb_4", "name": "海枣芦荟丛", "tier": "tree", "zones": [2, 3], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 84, "scale": 0.51}, "members": [
+    {"sp": "shu.haizao", "n": [1, 1], "ring": "core", "clump": false},
+    {"sp": "cao.luhui", "n": [3, 6], "ring": "outer", "clump": true}
+  ]},
+  {"id": "ambient_tropical_shrubs_1", "name": "红扶桑灌丛", "tier": "shrub", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 112, "scale": 0.88}, "members": [
+    {"sp": "guan.fusang", "n": [2, 3], "ring": "inner", "clump": false},
+    {"sp": "guan.zhizi", "n": [2, 3], "ring": "outer", "clump": false}
+  ]},
+  {"id": "ambient_tropical_shrubs_2", "name": "扶桑茉莉灌丛", "tier": "shrub", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 98, "scale": 0.79}, "members": [
+    {"sp": "guan.fusang", "n": [2, 4], "ring": "inner", "clump": false},
+    {"sp": "guan.moli", "n": [2, 4], "ring": "outer", "clump": false}
+  ]},
+  {"id": "ambient_tropical_shrubs_3", "name": "剑麻灌丛", "tier": "shrub", "zones": [1, 2], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 91, "scale": 0.67}, "members": [
+    {"sp": "guan.jianma", "n": [2, 3], "ring": "inner", "clump": false},
+    {"sp": "guan.guanggun", "n": [2, 3], "ring": "outer", "clump": false}
+  ]},
+  {"id": "ambient_tropical_shrubs_4", "name": "荒地花刺灌丛", "tier": "shrub", "zones": [2, 3], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 70, "scale": 0.51}, "members": [
+    {"sp": "guan.shamomeigui", "n": [2, 4], "ring": "inner", "clump": false},
+    {"sp": "guan.xianrenzhu", "n": [2, 4], "ring": "outer", "clump": false}
+  ]},
+  {"id": "ambient_tropical_shrub_herb_1", "name": "扶桑蕨丛", "tier": "shrub", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 112, "scale": 0.88}, "members": [
+    {"sp": "guan.fusang", "n": [2, 3], "ring": "inner", "clump": false},
+    {"sp": "cao.jue", "n": [3, 5], "ring": "outer", "clump": true}
+  ]},
+  {"id": "ambient_tropical_shrub_herb_2", "name": "栀子芭茅丛", "tier": "shrub", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 98, "scale": 0.79}, "members": [
+    {"sp": "guan.zhizi", "n": [2, 4], "ring": "inner", "clump": false},
+    {"sp": "cao.bamao", "n": [3, 6], "ring": "outer", "clump": true}
+  ]},
+  {"id": "ambient_tropical_shrub_herb_3", "name": "剑麻虎尾兰丛", "tier": "shrub", "zones": [1, 2], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 91, "scale": 0.67}, "members": [
+    {"sp": "guan.jianma", "n": [2, 3], "ring": "inner", "clump": false},
+    {"sp": "cao.huweilan", "n": [3, 5], "ring": "outer", "clump": true}
+  ]},
+  {"id": "ambient_tropical_shrub_herb_4", "name": "沙漠玫瑰芦荟丛", "tier": "shrub", "zones": [2, 3], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 70, "scale": 0.51}, "members": [
+    {"sp": "guan.shamomeigui", "n": [2, 4], "ring": "inner", "clump": false},
+    {"sp": "cao.luhui", "n": [3, 6], "ring": "outer", "clump": true}
+  ]},
+  {"id": "ambient_tropical_herbs_1", "name": "芭茅草岛", "tier": "ground", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 91, "scale": 0.88}, "members": [
+    {"sp": "cao.bamao", "n": [3, 5], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_tropical_herbs_2", "name": "雨林蕨草岛", "tier": "ground", "zones": [0, 1], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 84, "scale": 0.79}, "members": [
+    {"sp": "cao.jue", "n": [3, 6], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_tropical_herbs_3", "name": "狗牙根草岛", "tier": "ground", "zones": [1, 2], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 77, "scale": 0.67}, "members": [
+    {"sp": "cao.gouyagen", "n": [3, 5], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_tropical_herbs_4", "name": "旱地多肉草岛", "tier": "ground", "zones": [2, 3], "weight": 0.7, "scale": [0.8, 1.06], "grass": {"tufts": 63, "scale": 0.51}, "members": [
+    {"sp": "cao.shamo", "n": [3, 6], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_subtropical_tree_1", "name": "香樟草荫", "tier": "tree", "zones": [4, 5], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 154, "scale": 0.75}, "members": [
+    {"sp": "shu.xiangzhang", "n": [1, 1], "ring": "core", "clump": false}
+  ]},
+  {"id": "ambient_subtropical_tree_2", "name": "白兰草畔", "tier": "tree", "zones": [5, 6], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 140, "scale": 0.69}, "members": [
+    {"sp": "shu.bailan", "n": [1, 1], "ring": "core", "clump": false}
+  ]},
+  {"id": "ambient_subtropical_tree_3", "name": "檫木草坡", "tier": "tree", "zones": [6, 7], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 119, "scale": 0.58}, "members": [
+    {"sp": "shu.chamu", "n": [1, 1], "ring": "core", "clump": false}
+  ]},
+  {"id": "ambient_subtropical_tree_4", "name": "木麻黄草坡", "tier": "tree", "zones": [7, 8], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 84, "scale": 0.47}, "members": [
+    {"sp": "shu.mumahuang", "n": [1, 1], "ring": "core", "clump": false}
+  ]},
+  {"id": "ambient_subtropical_shrub_1", "name": "杜鹃草簇", "tier": "shrub", "zones": [4, 5], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 112, "scale": 0.75}, "members": [
+    {"sp": "guan.dujuan", "n": [1, 1], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_subtropical_shrub_2", "name": "栀子草簇", "tier": "shrub", "zones": [5, 6], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 98, "scale": 0.69}, "members": [
+    {"sp": "guan.zhizi", "n": [1, 1], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_subtropical_shrub_3", "name": "茉莉草簇", "tier": "shrub", "zones": [6, 7], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 91, "scale": 0.58}, "members": [
+    {"sp": "guan.moli", "n": [1, 1], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_subtropical_shrub_4", "name": "柽柳草簇", "tier": "shrub", "zones": [7, 8], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 70, "scale": 0.47}, "members": [
+    {"sp": "guan.chengliu", "n": [1, 1], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_subtropical_herbs_1", "name": "毛竹草岛", "tier": "ground", "zones": [4, 5], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 91, "scale": 0.75}, "members": [
+    {"sp": "cao.maozhu", "n": [1, 2], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_subtropical_herbs_2", "name": "湿林蕨草岛", "tier": "ground", "zones": [5, 6], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 84, "scale": 0.69}, "members": [
+    {"sp": "cao.jue", "n": [3, 6], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_subtropical_herbs_3", "name": "旱棘草坡", "tier": "ground", "zones": [6, 7], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 77, "scale": 0.58}, "members": [
+    {"sp": "cao.hanji", "n": [3, 5], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_subtropical_herbs_4", "name": "罗布麻草坡", "tier": "ground", "zones": [7, 8], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 63, "scale": 0.47}, "members": [
+    {"sp": "cao.luobuma", "n": [3, 6], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_temperate_shrub_1", "name": "榛丛草缘", "tier": "shrub", "zones": [9, 10, 14], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 112, "scale": 0.67}, "members": [
+    {"sp": "guan.zhen", "n": [2, 3], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_temperate_shrub_2", "name": "连翘草缘", "tier": "shrub", "zones": [10, 11], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 98, "scale": 0.61}, "members": [
+    {"sp": "guan.lianqiao", "n": [2, 4], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_temperate_shrub_3", "name": "黄栌草坡", "tier": "shrub", "zones": [11, 12], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 91, "scale": 0.52}, "members": [
+    {"sp": "guan.huanglu", "n": [2, 3], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_temperate_shrub_4", "name": "白刺草坡", "tier": "shrub", "zones": [12, 13], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 70, "scale": 0.43}, "members": [
+    {"sp": "guan.baici", "n": [2, 4], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_temperate_herbs_1", "name": "林下蕨草岛", "tier": "ground", "zones": [9, 10, 14], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 91, "scale": 0.67}, "members": [
+    {"sp": "cao.jue", "n": [3, 5], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_temperate_herbs_2", "name": "羊茅草岛", "tier": "ground", "zones": [10, 11], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 84, "scale": 0.61}, "members": [
+    {"sp": "cao.yangmao", "n": [3, 6], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_temperate_herbs_3", "name": "芨芨草坡", "tier": "ground", "zones": [11, 12], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 77, "scale": 0.52}, "members": [
+    {"sp": "cao.jiji", "n": [3, 5], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_temperate_herbs_4", "name": "碱蓬草坡", "tier": "ground", "zones": [12, 13], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 63, "scale": 0.43}, "members": [
+    {"sp": "cao.jianpeng", "n": [3, 6], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_boreal_shrub_1", "name": "越橘寒地草丛", "tier": "shrub", "zones": [15], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 112, "scale": 0.51}, "members": [
+    {"sp": "guan.yueju", "n": [2, 3], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_boreal_shrub_2", "name": "矮桦寒地草丛", "tier": "shrub", "zones": [15, 16], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 98, "scale": 0.47}, "members": [
+    {"sp": "guan.aili", "n": [2, 4], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_boreal_shrub_3", "name": "苔原矮桦草丛", "tier": "shrub", "zones": [16, 17], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 91, "scale": 0.39}, "members": [
+    {"sp": "guan.aili", "n": [2, 3], "ring": "inner", "clump": false},
+    {"sp": "guan.yueju", "n": [2, 3], "ring": "outer", "clump": false}
+  ]},
+  {"id": "ambient_boreal_shrub_4", "name": "黑果枸杞草丛", "tier": "shrub", "zones": [17, 18], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 70, "scale": 0.32}, "members": [
+    {"sp": "guan.heiguo", "n": [2, 4], "ring": "inner", "clump": false}
+  ]},
+  {"id": "ambient_boreal_herbs_1", "name": "林缘羊茅草丛", "tier": "ground", "zones": [15], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 91, "scale": 0.51}, "members": [
+    {"sp": "cao.yangmao", "n": [3, 5], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_boreal_herbs_2", "name": "寒地芨芨草丛", "tier": "ground", "zones": [15, 16], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 84, "scale": 0.47}, "members": [
+    {"sp": "cao.jiji", "n": [3, 6], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_boreal_herbs_3", "name": "雪线地衣草丛", "tier": "ground", "zones": [16, 17], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 77, "scale": 0.39}, "members": [
+    {"sp": "cao.dixue", "n": [3, 5], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_boreal_herbs_4", "name": "寒地盐角草丛", "tier": "ground", "zones": [17, 18], "weight": 0.8, "scale": [0.8, 1.06], "grass": {"tufts": 63, "scale": 0.32}, "members": [
+    {"sp": "cao.yanjiao", "n": [3, 6], "ring": "inner", "clump": true}
+  ]},
+  {"id": "ambient_rock_1", "name": "玄武石凳草丛", "tier": "shrub", "zones": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "weight": 0.23, "rock": "rock.medium.basalt-stool", "grass": {"tufts": 49, "scale": 0.54}},
+  {"id": "ambient_rock_2", "name": "圆顶花岗石草丛", "tier": "shrub", "zones": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "weight": 0.23, "rock": "rock.medium.granite-dome", "grass": {"tufts": 77, "scale": 0.62}},
+  {"id": "ambient_rock_3", "name": "河磨石草丛", "tier": "shrub", "zones": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "weight": 0.23, "rock": "rock.medium.river-perch", "grass": {"tufts": 63, "scale": 0.52}},
+  {"id": "ambient_rock_4", "name": "冰碛石草丛", "tier": "shrub", "zones": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "weight": 0.23, "rock": "rock.medium.glacial-step", "grass": {"tufts": 70, "scale": 0.45}}
+ ],
+ "habitats": [
+  {
+    "id": "habitat_bougainvillea_grass",
+    "name": "簕杜鹃草丛",
+    "tier": "shrub",
+    "zones": [
+      0,
+      1,
+      2,
+      4,
+      5,
+      6
+    ],
+    "weight": 1.6,
+    "members": [
+      {
+        "sp": "teng.ledujuan",
+        "n": [
+          1,
+          1
+        ],
+        "ring": "core"
+      }
+    ],
+    "grass": {
+      "tufts": 63,
+      "scale": 0.45
+    }
+  },
+  {
+    "id": "habitat_wisteria_locust",
+    "name": "槐荫紫藤丛",
+    "tier": "tree",
+    "zones": [
+      4,
+      5,
+      6,
+      9,
+      10,
+      11
+    ],
+    "weight": 1.6,
+    "members": [
+      {
+        "sp": "shu.huai",
+        "n": [
+          1,
+          2
+        ],
+        "ring": "core"
+      },
+      {
+        "sp": "teng.ziteng",
+        "n": [
+          1,
+          3
+        ],
+        "ring": "core",
+        "on": "plant"
+      },
+      {
+        "sp": "jun.koumo",
+        "n": [
+          2,
+          4
+        ],
+        "ring": "outer"
+      }
+    ]
+  },
+  {
+    "id": "habitat_morning_glory",
+    "name": "牵牛攀灌丛",
+    "tier": "shrub",
+    "zones": [
+      4,
+      5,
+      6,
+      9,
+      10,
+      11
+    ],
+    "weight": 1.6,
+    "members": [
+      {
+        "sp": "guan.xuangouzi",
+        "n": [
+          2,
+          3
+        ],
+        "ring": "core"
+      },
+      {
+        "sp": "teng.qianniuhua",
+        "n": [
+          1,
+          3
+        ],
+        "ring": "core",
+        "on": "plant"
+      }
+    ]
+  },
+  {
+    "id": "habitat_bougainvillea_edge",
+    "name": "榕缘簕杜鹃丛",
+    "tier": "tree",
+    "zones": [
+      0,
+      1,
+      2,
+      4,
+      5,
+      6
+    ],
+    "weight": 1.6,
+    "members": [
+      {
+        "sp": "shu.rongshu",
+        "n": [
+          1,
+          1
+        ],
+        "ring": "core"
+      },
+      {
+        "sp": "teng.ledujuan",
+        "n": [
+          1,
+          2
+        ],
+        "ring": "core",
+        "on": "plant"
+      }
+    ]
+  },
+  {
+    "id": "habitat_forest_floor",
+    "name": "松下鹅膏菌丛",
+    "tier": "tree",
+    "zones": [
+      9,
+      10,
+      11,
+      14,
+      15
+    ],
+    "weight": 1.6,
+    "members": [
+      {
+        "sp": "shu.hongsong",
+        "n": [
+          1,
+          2
+        ],
+        "ring": "core"
+      },
+      {
+        "sp": "jun.jinhuangegao",
+        "n": [
+          2,
+          4
+        ],
+        "ring": "inner"
+      },
+      {
+        "sp": "jun.dumogu",
+        "n": [
+          1,
+          3
+        ],
+        "ring": "outer"
+      }
+    ]
+  },
+  {
+    "id": "habitat_hollow_oyster",
+    "name": "空心朽木平菇丛",
+    "tier": "shrub",
+    "zones": [
+      9,
+      10,
+      11,
+      14,
+      15
+    ],
+    "weight": 1.6,
+    "members": [
+      {
+        "sp": "jun.pinggu",
+        "n": [
+          2,
+          4
+        ],
+        "ring": "core",
+        "on": "wood"
+      }
+    ],
+    "rock": "rock.deadwood.hollow"
+  },
+  {
+    "id": "habitat_moss_tea",
+    "name": "覆苔倒木茶树菇丛",
+    "tier": "shrub",
+    "zones": [
+      4,
+      5,
+      6,
+      9,
+      10,
+      11
+    ],
+    "weight": 1.6,
+    "members": [
+      {
+        "sp": "jun.chashugu",
+        "n": [
+          2,
+          4
+        ],
+        "ring": "core",
+        "on": "wood"
+      }
+    ],
+    "grass": {
+      "tufts": 35,
+      "scale": 0.45
+    },
+    "rock": "rock.deadwood.moss"
+  },
+  {
+    "id": "habitat_fork_fungi",
+    "name": "折杈腐木菌丛",
+    "tier": "shrub",
+    "zones": [
+      4,
+      5,
+      6,
+      9,
+      10,
+      11,
+      14
+    ],
+    "weight": 1.6,
+    "members": [
+      {
+        "sp": "jun.pinggu",
+        "n": [
+          1,
+          2
+        ],
+        "ring": "core",
+        "on": "wood"
+      },
+      {
+        "sp": "jun.chashugu",
+        "n": [
+          1,
+          2
+        ],
+        "ring": "core",
+        "on": "wood"
+      }
+    ],
+    "rock": "rock.deadwood.fork"
+  }
+]
 }

@@ -60,6 +60,7 @@ void qlcg_astra_generate(AstraCatalog *c,uint32_t seed,uint32_t version) {
         }
     }
     s=qlcg_hash_u32(seed ^ version ^ 0xa83472u);
+    c->constellation_star_start=c->star_count;
     c->constellation_count=16+(int)(rnd(&s)*7);
     for(int j=0;j<c->constellation_count;j++) {
         float n[3],a[3],b[3],first[3],prev[3],x=0,y=0;
@@ -75,6 +76,7 @@ void qlcg_astra_generate(AstraCatalog *c,uint32_t seed,uint32_t version) {
         }
         if(count>=5 && rnd(&s)<.45f) line(c,prev,first,.15f,.28f,.4f);
     }
+    c->constellation_line_count=c->line_count;
     s=qlcg_hash_u32(seed ^ version ^ 0x817ab2u);
     for(int i=0;i<ASTRA_BODIES;i++) {
         AstraOrbit *o=&c->bodies[i]; float n[3]; direction(&s,n); basis(n,o->a,o->b);

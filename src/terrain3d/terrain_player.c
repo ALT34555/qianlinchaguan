@@ -1,5 +1,6 @@
 
 #include "terrain_view.h"
+#include "../systems/world/world_settlement.h"
 #include "core/dev_tools.h"
 #include "terrain_types.h"
 #include "../core/math_util.h"
@@ -35,7 +36,8 @@
 #define ICE_LOAD_RUN      1.35f
 #define ICE_LOAD_JUMP     2.20f
 
-static float body_height_of(const GameSettings *s) {
+static float body_height_of(const TerrainRenderer *tr, const GameSettings *s) {
+    if (tr->controlled_doll_height > 0.1f) return tr->controlled_doll_height;
     float h = (float)(s ? s->profile.height_cm : 170) / 100.0f;
     return h > 0.1f ? h : 1.7f;
 }
@@ -65,7 +67,7 @@ void qlcg_terrain_place_player_at_spawn(TerrainRenderer *tr, const RegionData *r
     tr->last_jump_tap_ms = -1.0e30;
     float gh  = qlcg_region_height_at(reg, 0.0f, 0.0f);
     float wl  = qlcg_region_water_at(reg, 0.0f, 0.0f);
-    float eye = body_height_of(s) * EYE_RATIO;
+    float eye = body_height_of(tr,s) * EYE_RATIO;
     tr->y  = qlcg_maxf(gh, wl) + eye + GROUND_EPS;
     /* 落地时略向下看，先收进脚下的地形 */
     tr->pitch = -0.34f;
@@ -114,19 +116,27 @@ static void block_horizontal(TerrainRenderer *tr, const PlayerInput *in, float d
         tr->blocked_forward=true;
 }
 
-static void move_horizontal(TerrainRenderer *tr, const RegionData *reg, const PlayerInput *in,
+static void move_horizontal(TerrainRenderer *tr, RegionData *reg, const PlayerInput *in,
                             float *feet, float dx, float dz, float body_h, float step_h,
                             bool was_grounded, bool ice_off) {
     if (dx==0 && dz==0) return;
     float nx=tr->x+dx, nz=tr->z+dz;
+    if(qlcg_region_chunk_at(reg,nx,nz,NULL,NULL)!=qlcg_region_chunk_at(reg,tr->x,tr->z,NULL,NULL))
+        qlcg_terrain_require_ground(reg,nx,nz);
     float terrain=qlcg_region_height_at(reg,nx,nz);
     float ground=ice_off ? ground_under_no_ice(reg,nx,nz,*feet) : ground_under(reg,nx,nz,*feet);
     bool supported=(was_grounded || tr->on_ground) && !ice_off;
     bool stepping=supported && !tr->flying && tr->vy<=0;
-    if (stepping) ground=fmaxf(ground,qlcg_region_step_surface(reg,nx,nz,*feet,step_h,HALF_WIDTH));
+    if (stepping) {
+        ground=fmaxf(ground,qlcg_region_step_surface(reg,nx,nz,*feet,step_h,HALF_WIDTH));
+        float top=qlcg_settlement_landing(reg,nx,nz,*feet+fminf(step_h,.30f),*feet-step_h,HALF_WIDTH);
+        ground=fmaxf(ground,top);
+    }
     bool blocked=!isfinite(terrain);
     blocked=blocked || (qlcg_region_blocked(reg,nx,fmaxf(*feet,ground),nz,body_h,HALF_WIDTH)
         && !qlcg_region_blocked(reg,tr->x,*feet,tr->z,body_h,HALF_WIDTH));
+    blocked=blocked || (qlcg_settlement_blocked(reg,nx,fmaxf(*feet,ground),nz,body_h,HALF_WIDTH)
+        && !qlcg_settlement_blocked(reg,tr->x,*feet,tr->z,body_h,HALF_WIDTH));
     float old_terrain=qlcg_region_height_at(reg,tr->x,tr->z);
     if (!tr->flying && terrain>*feet-GROUND_EPS && terrain>old_terrain+1e-6f) {
         float limit=qlcg_movement_rules()->max_slope_degrees;
@@ -168,8 +178,12 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
         qlcg_ice_set_occupant(w, reg->center_x + tr->x, reg->center_z + tr->z, HALF_WIDTH);
     }
 
-    const float body_h    = body_height_of(s);
-    const float speed_sc  = speed_scale_of(s);
+    const float body_h    = body_height_of(tr,s);
+    const float speed_sc  = tr->controlled_doll_height > 0.1f ? body_h / 1.7f : speed_scale_of(s);
+    const bool vest = w && inventory_has_equipped(&w->inventory, INV_ITEM_LIFE_VEST);
+    const bool springs = w && inventory_has_equipped(&w->inventory, INV_ITEM_SPRING_SHOES);
+    const bool wings = w && inventory_has_equipped(&w->inventory, INV_ITEM_WINGS);
+    const bool fast_pants = w && inventory_has_equipped(&w->inventory, INV_ITEM_SPEED_PANTS);
     const float eye_off0  = eye_offset_of(tr, body_h);
     float feet = tr->y - eye_off0;          /* 对外仍是眼高，内部按脚底算 */
     QLCG_DEV_ONLY(bool ice_broke_frame = false;)           /* 本帧是否发生过破冰 */
@@ -201,6 +215,12 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
     float wl0 = qlcg_region_water_at(reg, tr->x, tr->z);
     float probe_y = feet + 0.4f;
     tr->in_water = (probe_y < wl0) && (gh0 <= probe_y);
+    bool gliding = wings && !tr->on_ground && !tr->in_water &&
+                   !tr->flying && tr->vy <= 0.0f && in->jump && !crouching;
+    if (gliding && len <= 0.01f) {
+        wish_x = fwd_x;
+        wish_z = fwd_z;
+    }
 
     /* ---- 目标速度 */
     float speed;
@@ -214,6 +234,8 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
         speed = WALK_SPEED;
     }
     if (crouching && !tr->flying && !tr->in_water) speed = WALK_SPEED * 0.5f;
+    if (fast_pants && !tr->flying && !tr->in_water) speed *= 1.6f;
+    if (gliding) speed = fmaxf(speed, SPRINT_SPEED);
     speed *= speed_sc;
     float brush = tr->flying ? 1.0f
                              : qlcg_region_brush_speed(reg,tr->x,feet,tr->z,body_h,HALF_WIDTH);
@@ -231,13 +253,19 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
         float target = dir * FLY_VERTICAL_SPEED * (in->sprint ? 2.0f : 1.0f) * speed_sc;
         tr->vy += (target - tr->vy) * qlcg_minf(1.0f, 12.0f * dt);
     } else if (tr->in_water) {
-        tr->vy -= GRAVITY * 0.25f * dt;
-        tr->vy *= qlcg_maxf(0.0f, 1.0f - 3.0f * dt);
+        if (vest) {
+            float target = qlcg_clampf((wl0 - body_h * 0.65f - feet) * 5.0f, -2.0f, 4.0f);
+            tr->vy += (target - tr->vy) * qlcg_minf(1.0f, 12.0f * dt);
+        } else {
+            tr->vy -= GRAVITY * 0.25f * dt;
+            tr->vy *= qlcg_maxf(0.0f, 1.0f - 3.0f * dt);
+            if (tr->vy < -4.0f) tr->vy = -4.0f;
+        }
         if (in->jump) tr->vy = qlcg_minf(4.0f, tr->vy + 24.0f * dt);
-        if (tr->vy < -4.0f) tr->vy = -4.0f;
     } else {
-        tr->vy -= GRAVITY * dt;
-        if (tr->vy < -TERMINAL_VELOCITY) tr->vy = -TERMINAL_VELOCITY;
+        float gravity = gliding ? GRAVITY * 0.2f : GRAVITY;
+        float terminal = gliding ? 2.4f : TERMINAL_VELOCITY;
+        tr->vy = fmaxf(tr->vy - gravity * dt, -terminal);
         if (in->jump && tr->on_ground) {
             float ice_top = 0.0f;
             bool launched = true;
@@ -252,7 +280,7 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
                                                     reg->center_z + tr->z, 5);
                 }
             }
-            if (launched) tr->vy = JUMP_VELOCITY;
+            if (launched) tr->vy = JUMP_VELOCITY * (springs ? 1.45f : 1.0f);
         }
     }
 
@@ -283,11 +311,16 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
         /* 竖直 */
         float ny = feet + sy;
         float ceiling=qlcg_region_ice_ceiling(reg,tr->x,tr->z,HALF_WIDTH,feet+body_h);
-        if (sy>0 && ny+body_h>ceiling) { ny=ceiling-body_h; tr->vy=0; }
+        if (sy>0) {
+            ceiling=fminf(ceiling,qlcg_settlement_ceiling(reg,tr->x,tr->z,feet+body_h,ny+body_h,HALF_WIDTH));
+            if(ny+body_h>=ceiling) { ny=ceiling-body_h; tr->vy=0; }
+        }
         float ground = ice_off ? ground_under_no_ice(reg,tr->x,tr->z,feet)
                                : ground_under(reg,tr->x,tr->z,feet);
         if (sy<=0 && !ice_off)
             ground=fmaxf(ground,qlcg_region_landing(reg,tr->x,tr->z,feet,ny,HALF_WIDTH));
+        if (sy<=0)
+            ground=fmaxf(ground,qlcg_settlement_landing(reg,tr->x,tr->z,feet,ny,HALF_WIDTH));
         /* 向下跨过冰顶：先用归零前速度施加落地载荷 */
         if (sy < 0.0f && w && tr->vy < -3.0f) {
             float ice_top = 0.0f;
@@ -315,12 +348,13 @@ void qlcg_terrain_update_player(TerrainRenderer *tr, RegionData *reg, const Macr
             && !qlcg_region_blocked(reg,tr->x,feet,tr->z,body_h,HALF_WIDTH)) {
             tr->vy=0;
         } else if (sy <= 0.0f && ny < ground) {
-            float rise = ground - feet;
+            bool rebound = springs && !was_grounded && !tr->in_water && !ice_off &&
+                           !tr->flying && !crouching && tr->vy < -JUMP_VELOCITY * 0.6f;
             feet = ground;
-            tr->vy = 0.0f;
-            tr->on_ground = true;
+            tr->vy = rebound ? fminf(-tr->vy * 0.58f, JUMP_VELOCITY * 1.45f) : 0.0f;
+            tr->on_ground = !rebound;
+            if (rebound) sy = 0.0f;
             if (tr->flying) tr->flying = false;   /* 落地自动退出飞行 */
-            (void)rise;
         } else {
             feet = ny;
         }

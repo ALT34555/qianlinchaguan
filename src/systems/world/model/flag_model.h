@@ -1,4 +1,4 @@
-/* 领地旗帜网格：对齐 base DefaultFlag */
+/* 领地旗帜网格：对齐 DefaultFlag */
 #ifndef QLCG_FLAG_MODEL_H
 #define QLCG_FLAG_MODEL_H
 

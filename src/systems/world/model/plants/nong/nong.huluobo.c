@@ -5,9 +5,9 @@ void qlcg_plant_nong_huluobo(LpBuilder *b, const PdDef *def, int season, int for
         double height, spread;
         int stems, branches;
     } shapes[] = {
-        {1, 1, 9, 0},
-        {1.16, .82, 8, 0},
-        {.86, 1.22, 11, 0},
+        {1, 1, 7, 0},
+        {1.16, .82, 6, 0},
+        {.90, 1.22, 8, 0},
     };
     unsigned variant = qlcg_pa_shape_variant(def);
     CropProfile profile = {

@@ -78,11 +78,11 @@ void           qlcg_ice_world_free(IceWorldState *st);
 IceChunkData  *qlcg_ice_chunk_create(void);
 void           qlcg_ice_chunk_free(IceChunkData *c);
 
-/* 时刻：正常游戏每帧设置；回拨/切历法递增 epoch */
+/* 时刻：每帧设置；切历法递增 epoch */
 void qlcg_ice_set_time(MacroWorld *w, const IceTime *t);
 uint32_t qlcg_ice_epoch(const MacroWorld *w);
 
-/* 采样期写入静态量，随后由 refresh 求 H/Q */
+/* 采样期写静态量，由 refresh 求 H/Q */
 void qlcg_ice_cache_site(IceChunkData *c, int vertex, const IceSite *site);
 /* 重采样后重建块缓存并合并世界稀疏编辑 */
 void qlcg_ice_chunk_attach(const MacroWorld *w, RegionData *reg);
@@ -105,6 +105,7 @@ float qlcg_ice_cell_damage_at(const MacroWorld *w, const RegionData *reg, float 
 /* 每帧推进块冰刷新：3×3 优先，余按预算 */
 void qlcg_ice_tick(RegionData *reg, float player_lx, float player_lz, int budget);
 void qlcg_ice_refresh_all(RegionData *reg);
+void qlcg_ice_refresh_thermal(RegionData *reg,float wx,float wz);
 /* 未封口单元的再冻厚度：渲染补片与接触共用 */
 float qlcg_ice_cell_regrow(const MacroWorld *w, const IceChunkData *c,
                            const RegionData *reg, int ix, int iz, float *out_quality);

@@ -4,7 +4,7 @@
 
 #include "lp_builder.h"
 
-enum { ROCK_SOCKET_CAPACITY = 4 };
+enum { ROCK_SNOW_SITES = 4, ROCK_FUNGUS_SITES = 4, ROCK_SOCKET_CAPACITY = ROCK_SNOW_SITES + ROCK_FUNGUS_SITES };
 
 typedef struct {
     double        *pos;
@@ -20,6 +20,8 @@ typedef struct {
     int       cap;
     LpRng    *rand;
     int       current_mat;
+    LpSocket fungus[ROCK_FUNGUS_SITES];
+    int fungus_count;
     double    min_y, max_y, max_r;
 } RockBuilder;
 

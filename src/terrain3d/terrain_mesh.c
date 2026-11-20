@@ -1,6 +1,12 @@
+#include "systems/world/world_lot.h"
 #include "core/dev_tools.h"
 /* 32m 网格与共享物种实例缓冲 */
 #include "terrain_view.h"
+#include "terrain_settlement.h"
+#include "terrain_farms.h"
+#include "systems/world/world_delta.h"
+#include "../systems/world/world_civ_economy.h"
+#include "../systems/world/world_farm_surface.h"
 #include "terrain_types.h"
 #include "paint_surface.h"
 #include "terrain_visibility.h"
@@ -291,6 +297,7 @@ struct TerrainMeshJob {
     int slot,row,phase;
     int material_cursor;
     uint8_t materials[9];
+    QlcgFarmSurface farm;
     uint64_t serial;
     uint32_t revision,ice_revision;
     double ox,oz,anchor_x,anchor_z;
@@ -304,6 +311,7 @@ static bool mesh_job_step(TerrainRenderer *tr,const RegionData *reg) {
     TerrainVert *tv=job->tv;TerrainCliffSite *cliff_sites=job->sites;
     TerrainCliffMesh cliffs=job->cliffs;ChunkWaterMesh *mesh=&job->water;
     enum { N=CHUNK_CELLS+1 };double ox=job->ox,oz=job->oz;
+    if(job->material_cursor==0)qlcg_farm_surface_at(&job->farm,tr->bound_stream->world,reg->center_cx,reg->center_cz);
     if(job->material_cursor<9) {
         int i=job->material_cursor++;
         job->materials[i]=(uint8_t)qlcg_paint_surface_material(tr->paint_surface_cache,tr->bound_stream->world,
@@ -339,7 +347,20 @@ static bool mesh_job_step(TerrainRenderer *tr,const RegionData *reg) {
         float h = reg->heights[src];
         tv[dst] = (TerrainVert){(float)(ox+lx), h, (float)(oz+lz), nx,ny,nz,
             reg->colors[src*3]/255.0f,reg->colors[src*3+1]/255.0f,reg->colors[src*3+2]/255.0f};
+        int substrate=qlcg_chd_material(tr->bound_stream->world,reg->center_x+lx,reg->center_z+lz);
         qlcg_paint_surface_blend(tv+dst,reg,src,tr->plant_season,job->materials);
+        if(substrate) {
+            memset(tv[dst].paint,0,sizeof(tv[dst].paint));
+            if(substrate==1 || substrate==5) tv[dst].paint[2]=255;
+            else if(substrate==3) tv[dst].paint[3]=255;
+            else if(substrate==4) tv[dst].paint[1]=255;
+        }
+        qlcg_farm_surface_sample(&job->farm,lx,lz,h,reg->water_form==WATER_FORM_CUTOFF?-1e9f:reg->water_levels[src],tv[dst].farm);
+        if(substrate==6 && !tv[dst].farm[0]) {
+            unsigned shade=(unsigned)(8+6*cosf(lx*3.14f));
+            tv[dst].farm[0]=255;tv[dst].farm[1]=(uint8_t)(107-shade);
+            tv[dst].farm[2]=(uint8_t)(78-shade);tv[dst].farm[3]=(uint8_t)(50-shade);
+        }
     }
 
         if(++job->row==N)job->phase=1;
@@ -424,14 +445,17 @@ static bool upload_chunk(TerrainRenderer *tr,TerrainChunkGPU *gpu,const RegionDa
     return false;
 }
 
-/* 近景全模型（乔灌 12 区块，其余 330m），更远回退简模 */
+/* 近景全模型：乔灌12块/余330m，远退简模 */
 static int plant_form_at(const PropInstance *p, int setting, float px, float pz,
                          float full_r2, float near_r2) {
     float dx = p->x - px, dz = p->z - pz;
     float d2 = dx * dx + dz * dz;
     bool wide = p->category == PLANT_CAT_SHU || p->category == PLANT_CAT_GUAN;
-    if (d2 > (wide ? full_r2 : near_r2)) return VEG_FORM_SIMPLE;
-    return qlcg_plant_model_form(setting, p->shape_variant);
+    if (d2 > (wide ? full_r2 : near_r2)) return qlcg_plant_placed_form(VEG_FORM_SIMPLE,p->hanging);
+    if (p->category == PLANT_CAT_SHUI && d2 > 96.0f*96.0f &&
+        qlcg_shore_plant_index(qlcg_plant_species_id(p->species)) >= 0)
+        return qlcg_plant_placed_form(VEG_FORM_SIMPLE,p->hanging);
+    return qlcg_plant_placed_form(qlcg_plant_model_form(setting, p->shape_variant),p->hanging);
 }
 
 static void upload_plants(TerrainRenderer *tr, const RegionData *reg, int setting,
@@ -489,7 +513,9 @@ static void upload_plants(TerrainRenderer *tr, const RegionData *reg, int settin
         if (!batches[key]) continue;
         instances[offsets[key]++] = (PlantInstGPU){
             p->x, p->y, p->z, p->rot_y,
-            qlcg_plant_instance_scale(p->scale_y, heights[key]), (float)p->wind_level
+            qlcg_plant_instance_scale(p->scale_y, heights[key]),
+            p->model_state == PLANT_STATE_WITHERED || p->model_state == PLANT_STATE_PLANTED_WITHERED
+                ? -1.0f : (float)p->wind_level
         };
     }
     for (int key = 0; key < QLCG_MAX_PLANT_BATCH; key++) {
@@ -500,54 +526,76 @@ static void upload_plants(TerrainRenderer *tr, const RegionData *reg, int settin
     free(instances);
 }
 
-static void upload_rocks(TerrainRenderer *tr, const RegionData *reg) {
+static int rock_batch_key(int archetype, int form, int season) {
+    int coral = qlcg_coral_index(archetype);
+    if (coral < 0) return archetype;
+    return ROCK_CATALOG_CAPACITY + (coral*SHORE_FORM_COUNT+form)*CORAL_PALETTE_COUNT+season;
+}
+
+static int rock_prop_key(const PropInstance *p, int rock_count, int setting, float px, float pz) {
+    if (p->archetype < rock_count) return p->archetype;
+    if (qlcg_coral_index(p->archetype) < 0 || p->visual_season >= CORAL_PALETTE_COUNT) return -1;
+    float dx = p->x-px, dz = p->z-pz;
+    int form = setting == VEG_FORM_SIMPLE || dx*dx+dz*dz > 96.0f*96.0f
+        ? SHORE_SIMPLE : qlcg_shore_model_form(qlcg_plant_model_form(setting, p->shape_variant));
+    return rock_batch_key(p->archetype, form, p->visual_season);
+}
+
+static void upload_rocks(TerrainRenderer *tr, const RegionData *reg, int setting, float px, float pz) {
     PlantBatch *batches[QLCG_MAX_ROCK_BATCH] = {0};
     int counts[QLCG_MAX_ROCK_BATCH] = {0};
     int offsets[QLCG_MAX_ROCK_BATCH];
-    double radii[QLCG_MAX_ROCK_BATCH];
     for (int i = 0; i < tr->rock_batch_count; i++) {
         PlantBatch *b = &tr->rocks[i];
         b->inst_count = 0;
-        batches[b->species] = b;
+        batches[rock_batch_key(b->species, b->form, b->season)] = b;
     }
     tr->rock_inst_total = 0;
     if (!reg->rock_count) return;
     int rock_count = qlcg_rock_material_init();
-    if (!rock_count) return;
     PlantInstGPU *instances = malloc((size_t)reg->rock_count * sizeof(*instances));
     if (!instances) return;
 
     for (int i = 0; i < reg->rock_count; i++) {
-        int index = reg->rocks[i].archetype;
-        if (index < rock_count) counts[index]++;
+        int key = rock_prop_key(&reg->rocks[i], rock_count, setting, px, pz);
+        if (key >= 0) counts[key]++;
     }
     int next = 0;
-    for (int index = 0; index < rock_count; index++) {
-        if (!counts[index]) continue;
-        PlantBatch *b = batches[index];
+    for (int key = 0; key < QLCG_MAX_ROCK_BATCH; key++) {
+        if (!counts[key]) continue;
+        int index = key, form = ROCK_FORM_OUTCROP, season = tr->plant_season;
+        if (key >= ROCK_CATALOG_CAPACITY) {
+            int coral = key - ROCK_CATALOG_CAPACITY;
+            index = CORAL_ARCH_BASE + coral/(SHORE_FORM_COUNT*CORAL_PALETTE_COUNT);
+            form = coral/CORAL_PALETTE_COUNT % SHORE_FORM_COUNT;
+            season = coral % CORAL_PALETTE_COUNT;
+        }
+        PlantBatch *b = batches[key];
         bool fresh = b == NULL;
-        if (fresh) b = &tr->rocks[tr->rock_batch_count];
-        if (!qlcg_rock_batch_setup(b, index, ROCK_FORM_OUTCROP, tr->plant_season, 1)) {
-            counts[index] = 0;
+        if (fresh && tr->rock_batch_count < QLCG_MAX_ROCK_BATCH)
+            b = &tr->rocks[tr->rock_batch_count];
+        if (!b || !qlcg_rock_batch_setup(b, index, form, season, 1)) {
+            counts[key] = 0;
             continue;
         }
         if (fresh) tr->rock_batch_count++;
-        batches[index] = b;
-        radii[index] = qlcg_rock_geometry(index, ROCK_FORM_OUTCROP, tr->plant_season, 1)->radius;
-        offsets[index] = next;
-        next += counts[index];
+        batches[key] = b;
+        offsets[key] = next;
+        next += counts[key];
     }
     for (int i = 0; i < reg->rock_count; i++) {
         const PropInstance *p = &reg->rocks[i];
-        int index = p->archetype;
-        if (index >= rock_count || !counts[index]) continue;
-        instances[offsets[index]++] = (PlantInstGPU){p->x, p->y, p->z, p->rot_y,
-            qlcg_rock_instance_scale(p->scale_x, radii[index]), 0.0f};
+        int key = rock_prop_key(p, rock_count, setting, px, pz);
+        if (key < 0 || !counts[key]) continue;
+        PlantBatch *b = batches[key];
+        float scale = key < ROCK_CATALOG_CAPACITY ? qlcg_rock_instance_scale(p->scale_x, b->radius)
+            : qlcg_plant_instance_scale(p->scale_y, b->height);
+        instances[offsets[key]++] = (PlantInstGPU){p->x, p->y, p->z, p->rot_y, scale, 0.0f};
     }
-    for (int index = 0; index < rock_count; index++) {
-        int n = counts[index];
+    for (int key = 0; key < QLCG_MAX_ROCK_BATCH; key++) {
+        int n = counts[key];
         if (!n) continue;
-        qlcg_plant_batch_instances(batches[index], instances + offsets[index] - n, n);
+        qlcg_plant_batch_instances(batches[key], instances + offsets[key] - n, n);
         tr->rock_inst_total += n;
     }
     free(instances);
@@ -575,7 +623,7 @@ static void upload_props(TerrainRenderer *tr, const RegionData *reg, const GameS
     float scale = s->vegetation_form == VEG_FORM_SIMPLE ? 0.85f : 1.0f;
     tr->tree_inst_count = tr->plant_inst_total ? 0
         : upload_prop_fallback(tr->tree_inst_vbo, reg->trees, reg->tree_count, scale);
-    upload_rocks(tr, reg);
+    upload_rocks(tr, reg, s->vegetation_form, px, pz);
     tr->rock_inst_count = tr->rock_inst_total ? 0
         : upload_prop_fallback(tr->rock_inst_vbo, reg->rocks, reg->rock_count, 1.0f);
 
@@ -622,7 +670,7 @@ static bool far_keep(const RegionData *c, int j, int step) {
     return h % (uint32_t)step == 0;
 }
 
-/* 分带结果：3D 与交叉面片在 11–12 区块重叠淡入 */
+/* 分带：3D与面片在11–12块重叠淡入 */
 typedef struct { bool near3d, cross, bill; } PropBands;
 typedef struct {
     uint64_t serial;
@@ -631,7 +679,7 @@ typedef struct {
     int plant_cap,rock_cap,nt,nr,nc,nb;
     float x,z,extent;
     int vd,season;
-    bool far_all;
+    bool far_all, simple;
 } PropChunkCache;
 struct TerrainPropCache {
     PropChunkCache chunks[QLCG_STREAM_CAP];
@@ -653,16 +701,17 @@ static bool work_reserve(void **data,int *capacity,int count,size_t stride) {
 
 static PropBands plant_bands(const TerrainRenderer *tr, const RegionData *c, int j,
                              float px, float pz, float full_r2, float cross_start_r2,
-                             float cross_r2, float wide_r2) {
+                             float cross_r2, float wide_r2, bool simple) {
     PropBands b = { false, false, false };
     const PropInstance *p = &c->trees[j];
     bool wide = p->category == PLANT_CAT_SHU || p->category == PLANT_CAT_GUAN;
     float dx = c->center_x + p->x - px, dz = c->center_z + p->z - pz;
     float d2 = dx * dx + dz * dz;
     b.near3d = d2 <= (wide ? full_r2 : QLCG_PROP_NEAR_M * QLCG_PROP_NEAR_M);
-    if (!wide) return b;
+    if (simple || !qlcg_plant_uses_sprite(p->category)) return b;
+    if (!wide) cross_start_r2=fminf(cross_start_r2,QLCG_PROP_NEAR_M*QLCG_PROP_NEAR_M);
     PropUvRect uv;
-    if (!qlcg_prop_sprites_plant_uv(&tr->sprites, p->species, p->visual_season, &uv))
+    if (!qlcg_prop_sprites_plant_form_uv(&tr->sprites, p->species, p->visual_season, p->hanging, &uv))
         return b;
     if (d2 > cross_start_r2 && d2 <= cross_r2) b.cross = true;
     else if (d2 > cross_r2 && far_keep(c, j, d2 <= wide_r2 ? 1 : 2)) b.bill = true;
@@ -671,12 +720,13 @@ static PropBands plant_bands(const TerrainRenderer *tr, const RegionData *c, int
 
 static PropBands rock_bands(const TerrainRenderer *tr, const RegionData *c, int j,
                             float px, float pz, float full_r2, float cross_start_r2,
-                            float cross_r2, float wide_r2) {
+                            float cross_r2, float wide_r2, bool simple) {
     PropBands b = { false, false, false };
     const PropInstance *p = &c->rocks[j];
     float dx = c->center_x + p->x - px, dz = c->center_z + p->z - pz;
     float d2 = dx * dx + dz * dz;
     b.near3d = d2 <= full_r2;
+    if (simple) return b;
     PropUvRect uv;
     if (!qlcg_prop_sprites_rock_uv(&tr->sprites, p->archetype, tr->plant_season, &uv))
         return b;
@@ -706,7 +756,7 @@ static void upload_far_props(TerrainRenderer *tr, const FarPropInst *cross, int 
 
 }
 
-/* 远景实例 key：区块坐标 + 序号 + 类型，跨分带保持稳定 */
+/* 远景实例 key：区块+序号+类型，稳定跨分带 */
 static unsigned long long far_fade_key(int32_t cx, int32_t cz, int j, int kind) {
     unsigned long long h = 1469598103934665603ull;
     uint32_t v[4] = { (uint32_t)cx, (uint32_t)cz, (uint32_t)j, (uint32_t)kind };
@@ -779,7 +829,7 @@ static void far_fade_prune(TerrainRenderer *tr) {
     }
 }
 
-/* 填一条远景实例：尺寸按内容包围盒比例还原，避免被拉宽 */
+/* 填远景实例：包围盒比例还原，避免拉宽 */
 static void far_fill(FarPropInst *out, const PropInstance *p,
                      float ox, float oz, const PropUvRect *uv, uint32_t hsh, float span) {
     out->x = ox + p->x;
@@ -822,17 +872,19 @@ static void collect_props(TerrainRenderer *tr, const RegionData *reg, const Game
     float cross_start_r2 = (float)(QLCG_PROP_CROSS_START_CHUNKS * CHUNK_SIZE) *
                            (float)(QLCG_PROP_CROSS_START_CHUNKS * CHUNK_SIZE);
     float wide_r2 = (24.0f * CHUNK_SIZE) * (24.0f * CHUNK_SIZE);
-    bool far_all = qlcg_dev_far_all();
+    bool simple=s->vegetation_form==VEG_FORM_SIMPLE;
+    bool far_all = !simple && qlcg_dev_far_all();
     if (far_all) { full_r2 = 0.0f; cross_start_r2 = 0.0f; }
     if(!tr->prop_cache)tr->prop_cache=calloc(1,sizeof(*tr->prop_cache));
     struct TerrainPropCache *cache=tr->prop_cache;if(!cache)return;
     RegionData merged={0};int nt=0,nr=0,nc=0,nb=0;
+    qlcg_terrain_settlement_begin(tr);
     for(int i=0;i<st->count;i++) {
         int slot=st->active[i];RegionData *c=st->slots[slot].data;
         if(!tr->chunks[slot].terrain_ready||tr->chunks[slot].revision!=c->mesh_revision||!in_radius(st,c,st->radius)||!in_radius(st,c,vd))continue;
         PropChunkCache *pc=cache->chunks+slot;
         bool base_match=pc->serial==st->slots[slot].serial&&pc->revision==c->mesh_revision&&
-                        pc->vd==vd&&pc->season==tr->plant_season&&pc->far_all==far_all;
+                        pc->vd==vd&&pc->season==tr->plant_season&&pc->far_all==far_all && pc->simple==simple;
         bool dirty=!base_match;
         if(base_match&&(pc->x!=px||pc->z!=pz)&&(c->tree_count>0||c->rock_count>0)) {
             int zone=chunk_prop_band_zone(c,pc->extent,px,pz,near_r2,full_r2,cross_start_r2,cross_r2,wide_r2);
@@ -848,17 +900,17 @@ static void collect_props(TerrainRenderer *tr, const RegionData *reg, const Game
             for(int j=0;j<c->tree_count;j++) {
                 const PropInstance *p=&c->trees[j];
                 extent=fmaxf(extent,fmaxf(fabsf(p->x),fabsf(p->z)));
-                PropBands b=plant_bands(tr,c,j,px,pz,full_r2,cross_start_r2,cross_r2,wide_r2);pc->plants[j]=b;
+                PropBands b=plant_bands(tr,c,j,px,pz,full_r2,cross_start_r2,cross_r2,wide_r2,simple);pc->plants[j]=b;
                 pc->nt+=b.near3d;pc->nc+=b.cross;pc->nb+=b.bill;
             }
             for(int j=0;j<c->rock_count;j++) {
                 const PropInstance *p=&c->rocks[j];
                 extent=fmaxf(extent,fmaxf(fabsf(p->x),fabsf(p->z)));
-                PropBands b=rock_bands(tr,c,j,px,pz,full_r2,cross_start_r2,cross_r2,wide_r2);pc->rocks[j]=b;
+                PropBands b=rock_bands(tr,c,j,px,pz,full_r2,cross_start_r2,cross_r2,wide_r2,simple);pc->rocks[j]=b;
                 pc->nr+=b.near3d;pc->nc+=b.cross;pc->nb+=b.bill;
             }
             pc->serial=st->slots[slot].serial;pc->revision=c->mesh_revision;
-            pc->x=px;pc->z=pz;pc->extent=extent;pc->vd=vd;pc->season=tr->plant_season;pc->far_all=far_all;
+            pc->x=px;pc->z=pz;pc->extent=extent;pc->vd=vd;pc->season=tr->plant_season;pc->far_all=far_all;pc->simple=simple;
         }
         nt+=pc->nt;nr+=pc->nr;nc+=pc->nc;nb+=pc->nb;
     }
@@ -894,19 +946,24 @@ static void collect_props(TerrainRenderer *tr, const RegionData *reg, const Game
                 }
                 if (!b.cross && !b.bill) continue;
                 PropUvRect uv;
-                if (!qlcg_prop_sprites_plant_uv(&tr->sprites, p->species, p->visual_season, &uv))
+                if (!qlcg_prop_sprites_plant_form_uv(&tr->sprites, p->species, p->visual_season, p->hanging, &uv))
                     continue;
                 uint32_t hsh = qlcg_hash_u32((uint32_t)c->center_cx * 73856093u ^
                                              (uint32_t)c->center_cz * 19349663u ^
                                              (uint32_t)j * 2654435761u);
                 float birth = far_fade_birth(tr, far_fade_key(c->center_cx, c->center_cz, j, 0), now_ms);
                 float span = 1.05f * fmaxf(p->scale_x, p->scale_y);
+                PropInstance sprite=*p;
+                if(p->hanging) {
+                    const LpGeometry *g=qlcg_plant_geometry(p->species,qlcg_plant_placed_form(VEG_FORM_NORMAL,1),p->visual_season);
+                    if(g) sprite.y+=(float)g->min_y*qlcg_plant_instance_scale(p->scale_y,g->height);
+                }
                 if (b.cross) {
-                    far_fill(&cross[ci], p, ox, oz, &uv, hsh, span);
+                    far_fill(&cross[ci], &sprite, ox, oz, &uv, hsh, span);
                     cross[ci++].birth = birth;
                 }
                 if (b.bill) {
-                    far_fill(&bill[bi], p, ox, oz, &uv, hsh, span);
+                    far_fill(&bill[bi], &sprite, ox, oz, &uv, hsh, span);
                     bill[bi].rot = 0.0f;
                     bill[bi].birth = birth;
                     bi++;
@@ -956,6 +1013,8 @@ static void collect_props(TerrainRenderer *tr, const RegionData *reg, const Game
                 if (b.bill) { fi.rot = 0.0f; bill[bi++] = fi; }
             }
         }
+        if(c->flag_count>0 || qlcg_lot_at(st->world,c->center_cx,c->center_cz) || qlcg_chd_workbench_count(st->world,c->center_cx,c->center_cz))
+            qlcg_terrain_settlement_add(tr,reg,st->world,st->active[i]);
         if (c->flag_count > 0 && !lv_ok) { lv = chunk_wind_level(tr, c); lv_ok = true; }
         for (int j = 0; j < c->flag_count && merged.flag_count < 32; j++) {
             PropInstance v = c->flags[j]; v.x += ox; v.z += oz; v.wind_level = (uint8_t)lv;
@@ -981,6 +1040,7 @@ static void refresh_props(TerrainRenderer *tr,const RegionData *reg,const GameSe
     RegionStream *st=reg->stream;int vd=qlcg_clampi(s->vegetation_distance,0,st->radius);
     uint32_t stamp=(uint32_t)(tr->weather_unix_ms/60000.0)*8u+(uint32_t)(tr->weather_sys.forced_id+1);
     bool settings_match=tr->props_distance==vd&&tr->props_form==s->vegetation_form&&tr->props_weather_stamp==stamp;
+    settings_match=settings_match&&!qlcg_terrain_settlement_needs_refresh(tr,reg,st->world);
     if(settings_match&&tr->props_revision==st->revision&&tr->props_mesh_version==tr->mesh_version&&
        fabsf(tr->props_x-tr->x)<1&&fabsf(tr->props_z-tr->z)<1)return;
     double now=qlcg_time_ms();
@@ -993,6 +1053,12 @@ static void refresh_props(TerrainRenderer *tr,const RegionData *reg,const GameSe
 }
 void qlcg_terrain_upload_region(TerrainRenderer *tr, const RegionData *reg, const GameSettings *s) {
     if (!reg || !reg->stream || !tr->chunks) return;
+    bool use_sprites=s->vegetation_form!=VEG_FORM_SIMPLE;
+    if (use_sprites!=tr->sprite_atlas_requested) {
+        if (use_sprites) qlcg_prop_sprites_init(&tr->sprites,qlcg_dev_sprite_dir("src/systems/world/model"));
+        else qlcg_prop_sprites_free(&tr->sprites);
+        tr->sprite_atlas_requested=use_sprites;
+    }
     double t0 = qlcg_time_ms();
     bool preparing=tr->preparing;
     RegionStream *st = reg->stream;
@@ -1001,9 +1067,12 @@ void qlcg_terrain_upload_region(TerrainRenderer *tr, const RegionData *reg, cons
         tr->bound_stream = st;
     }
     if(qlcg_paint_surface_sync(&tr->paint_surface_cache,st->world)) {
-        mesh_job_free(tr);
-        for(int i=0;i<QLCG_STREAM_CAP;i++)if(st->slots[i].data)
-            tr->chunks[i].revision=~st->slots[i].data->mesh_revision;
+        for(int i=0;i<st->count;i++) {
+            int slot=st->active[i];
+            if(!qlcg_paint_mesh_dirty(tr->paint_surface_cache,slot))continue;
+            if(tr->mesh_job&&tr->mesh_job->slot==slot)mesh_job_free(tr);
+            tr->chunks[slot].revision=~st->slots[slot].data->mesh_revision;
+        }
     }
     if (st->world) {
         qlcg_weather_set_seed(&tr->weather_sys, st->world->opt.seed);
@@ -1045,8 +1114,9 @@ void qlcg_terrain_upload_region(TerrainRenderer *tr, const RegionData *reg, cons
         RegionChunkSlot *c = &st->slots[slot];
         TerrainChunkGPU *g = &tr->chunks[slot];
         const RegionData *d = c->data;
+        bool center=d->center_cx==st->center_cx&&d->center_cz==st->center_cz;
         if(tr->preparing&&qlcg_time_ms()>=tr->prepare_deadline&&
-           (abs(d->center_cx-st->center_cx)>1||abs(d->center_cz-st->center_cz)>1))continue;
+           !center)continue;
         if (!g->serial) {
             if (tr->terrain_free_count) {
                 g->terrain_slot = tr->terrain_free_slots[--tr->terrain_free_count];
@@ -1060,9 +1130,9 @@ void qlcg_terrain_upload_region(TerrainRenderer *tr, const RegionData *reg, cons
             double ox = (double)d->center_x - tr->anchor_x;
             double oz = (double)d->center_z - tr->anchor_z;
             if(tr->preparing&&qlcg_time_ms()>=tr->prepare_deadline&&
-               (abs(d->center_cx-st->center_cx)>1||abs(d->center_cz-st->center_cz)>1))continue;
+               !center)continue;
             bool background=tr->preparing;
-            if(abs(d->center_cx-st->center_cx)<=1&&abs(d->center_cz-st->center_cz)<=1) {
+            if(center) {
                 tr->preparing=false;
                 if(tr->mesh_job&&tr->mesh_job->slot!=slot)mesh_job_free(tr);
             }
@@ -1076,6 +1146,7 @@ void qlcg_terrain_upload_region(TerrainRenderer *tr, const RegionData *reg, cons
             ice_uploads++;
         }
     }
+    qlcg_terrain_farms_prepare(tr,reg,st->world,s->vegetation_form);
     if(!tr->preparing)refresh_props(tr,reg,s);
     tr->upload_ms = qlcg_time_ms()-t0;
     tr->preparing=preparing;

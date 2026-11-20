@@ -283,8 +283,10 @@ void render_screen_memories(UiContext *ui) {
     int open = -1;
     for (int i = 0; i < g_app.save_count; i++) {
         const SaveFileInfo *f = &g_app.saves[i];
-        if (!f->valid) continue;
-        if (g_app.save_filter_mode != -1 && (int)f->play_mode != g_app.save_filter_mode) continue;
+        if (!f->valid || (g_app.save_filter_mode != -1 && (int)f->play_mode != g_app.save_filter_mode)) {
+            g_app.save_card_motion[i] = (UiMotion){0};
+            continue;
+        }
         idx[total] = i;
         if (g_app.save_expanded_id[0] && strcmp(g_app.save_expanded_id, f->id) == 0)
             open = total;
@@ -316,13 +318,12 @@ void render_screen_memories(UiContext *ui) {
     float used = qlcg_maxf(0.0f, (float)(last - first - 1)) * 10.0f * z;
     float bodies = 0.0f;
     for (int k = 0; k < total; k++) {
-        const SaveFileInfo *f = &g_app.saves[idx[k]];
-        uint32_t id = (qlcg_hash_str(f->id) ^ 0x5A7E1300u) | 0x80000000u;
-        UiMotion *m = ui_motion_step(ui, id, open >= 0 && k != open, false, k == open);
+        UiMotion *m = &g_app.save_card_motion[idx[k]];
         if (k < first || k >= last) {
-            m->hover = m->toggle = 0.0f;
+            *m = (UiMotion){0};
             continue;
         }
+        ui_motion_update(ui, m, open >= 0 && k != open, false, k == open);
         if (m->hover < 0.001f) m->hover = 0.0f;
         if (m->hover > 0.999f) m->hover = 1.0f;
         if (m->toggle < 0.001f) m->toggle = 0.0f;

@@ -7,7 +7,7 @@ void qlcg_plant_nong_da(LpBuilder *b, const PdDef *def, int season, int form) {
     } shapes[] = {
         {1, 1, 3, 0},
         {1.16, .82, 2, 0},
-        {.86, 1.22, 4, 0},
+        {.83, 1.28, 3, 0},
     };
     unsigned variant = qlcg_pa_shape_variant(def);
     CropProfile profile = {

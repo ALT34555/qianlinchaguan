@@ -1,13 +1,22 @@
 #include "paint_surface.h"
 #include "core/math_util.h"
 #include "systems/world/gen/gen_noise.h"
+#include "systems/world/world_civ_economy.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+typedef struct {
+    int cx,cz,natural;
+    uint8_t material;
+    bool valid;
+} PaintMaterial;
+
 struct PaintSurfaceCache {
     const MacroWorld *world;
     uint32_t seed,delta,surface,territory;
-    struct {int cx,cz;uint8_t material;bool valid;} entries[QLCG_STREAM_CAP];
+    bool artificial,all_dirty;
+    bool mesh_dirty[QLCG_STREAM_CAP];
+    PaintMaterial entries[QLCG_STREAM_CAP];
 };
 static void bleed_axis(float axis[3],float local,float warp,float width) {
     float west=qlcg_smoothf(-width,width,local+CHUNK_SIZE*.5f+warp);
@@ -26,12 +35,41 @@ bool qlcg_paint_surface_sync(PaintSurfaceCache **cache,const MacroWorld *w) {
     if(!w)return false;
     if(!*cache)*cache=calloc(1,sizeof(**cache));
     PaintSurfaceCache *c=*cache;if(!c)return false;
+    bool territory=c->artificial!=w->opt.artificial_enabled||c->territory!=w->territory_revision;
     if(c->world==w&&c->seed==w->opt.seed&&c->delta==w->delta_version&&
-       c->surface==w->surface_revision&&c->territory==w->territory_revision)return false;
+       c->surface==w->surface_revision&&!territory)return false;
     bool changed=c->world!=NULL;
-    memset(c,0,sizeof(*c));c->world=w;c->seed=w->opt.seed;
-    c->delta=w->delta_version;c->surface=w->surface_revision;c->territory=w->territory_revision;
+    QlcgSurfaceBounds changes[QLCG_SURFACE_DIRTY_CAP];
+    int count=(c->world==w&&c->seed==w->opt.seed)?qlcg_world_surface_changes(w,c->delta,c->surface,changes):-1;
+    c->all_dirty=count<0;
+    memset(c->mesh_dirty,0,sizeof(c->mesh_dirty));
+    if(c->all_dirty) memset(c->entries,0,sizeof(c->entries));
+    else {
+        for(int j=0;j<count;j++) territory|=changes[j].appearance_only;
+        for(int i=0;i<QLCG_STREAM_CAP;i++) {
+            PaintMaterial *entry=c->entries+i;
+            if(!entry->valid)continue;
+            double x=(double)entry->cx*CHUNK_SIZE,z=(double)entry->cz*CHUNK_SIZE;
+            for(int j=0;j<count&&entry->valid;j++)
+                if(qlcg_surface_bounds_overlap(w,changes+j,x,z,x+CHUNK_SIZE,z+CHUNK_SIZE))
+                    entry->valid=false;
+            if(entry->valid) {
+                if(!territory)continue;
+                int type=qlcg_civ_chunk_type(w,entry->cx,entry->cz,entry->natural,0);
+                int material=qlcg_chunk_material(type);
+                if(material==entry->material)continue;
+                entry->material=(uint8_t)material;
+            }
+            for(int dz=-1;dz<=1;dz++) for(int dx=-1;dx<=1;dx++)
+                c->mesh_dirty[qlcg_stream_slot(entry->cx+dx,entry->cz+dz)]=true;
+        }
+    }
+    c->world=w;c->seed=w->opt.seed;c->delta=w->delta_version;
+    c->surface=w->surface_revision;c->territory=w->territory_revision;c->artificial=w->opt.artificial_enabled;
     return changed;
+}
+bool qlcg_paint_mesh_dirty(const PaintSurfaceCache *cache,int slot) {
+    return cache->all_dirty||cache->mesh_dirty[slot];
 }
 int qlcg_paint_surface_material(PaintSurfaceCache *c,const MacroWorld *w,int cx,int cz) {
     int slot=qlcg_stream_slot(cx,cz);
@@ -39,7 +77,7 @@ int qlcg_paint_surface_material(PaintSurfaceCache *c,const MacroWorld *w,int cx,
         return c->entries[slot].material;
     ChunkInspectInfo info;qlcg_world_inspect_chunk(w,cx,cz,&info);
     int material=qlcg_chunk_material(info.type_id);
-    if(c){c->entries[slot].cx=cx;c->entries[slot].cz=cz;c->entries[slot].material=(uint8_t)material;c->entries[slot].valid=true;}
+    if(c) c->entries[slot]=(PaintMaterial){cx,cz,info.natural_type_id,(uint8_t)material,true};
     return material;
 }
 void qlcg_paint_surface_blend(TerrainVert *v,const RegionData *r,int i,int season,const uint8_t materials[9]) {
@@ -86,4 +124,6 @@ void qlcg_terrain_vertex_layout(size_t base) {
     }
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(3,4,GL_UNSIGNED_BYTE,GL_TRUE,sizeof(TerrainVert),(void *)(base+offsetof(TerrainVert,paint)));
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4,4,GL_UNSIGNED_BYTE,GL_TRUE,sizeof(TerrainVert),(void *)(base+offsetof(TerrainVert,farm)));
 }

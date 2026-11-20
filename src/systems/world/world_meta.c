@@ -74,7 +74,7 @@ void qlcg_sync_creator_dimensions(WorldCreatorOptions *opt) {
 /* 五大星球预设，对齐 WorldPresets.ts */
 void qlcg_apply_world_preset(WorldCreatorOptions *opt, WorldPresetId preset) {
     opt->preset = preset;
-    /* base 预设只改星球参数与陆比/降水，不动地形配方 */
+    /* 预设只改参数与陆比降水，不动配方 */
     switch (preset) {
         case WORLD_PRESET_PRIMORDIAL:
             opt->land_ratio        = 0.8f;
@@ -162,7 +162,7 @@ WorldCreatorOptions qlcg_default_creator_options(PlayMode mode, const GameSettin
 
     opt.artificial_enabled = true;
     opt.spawn_as_flag      = true;
-    strncpy(opt.faction_name, "缀红", sizeof(opt.faction_name) - 1);
+    strncpy(opt.faction_name, qlcg_i18n_content_text("缀红"), sizeof(opt.faction_name) - 1);
     opt.faction_main_color = settings ? settings->profile.main_color : 0xC2333FFFu;
     opt.faction_trim_color = settings ? settings->profile.trim_color : 0xE0B04AFFu;
     opt.initial_civ_limit  = 24;

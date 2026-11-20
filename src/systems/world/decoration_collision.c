@@ -4,6 +4,7 @@
 #include "model/plant_material.h"
 #include "model/rock_material.h"
 #include "model/rock_def.h"
+#include "model/shore_models.h"
 #include "../../core/math_util.h"
 #include <float.h>
 #include <math.h>
@@ -105,13 +106,17 @@ void qlcg_region_build_colliders(RegionData *reg, int season, int form) {
     for (int i=0;i<reg->tree_count;i++) {
         PropInstance *p=&reg->trees[i];
         int visual=qlcg_clampi(p->visual_season,0,3);
-        int model_form=qlcg_plant_model_form(form,p->shape_variant);
+        int model_form=qlcg_plant_placed_form(qlcg_plant_model_form(form,p->shape_variant),p->hanging);
         const LpGeometry *g=qlcg_plant_geometry(p->species,model_form,visual);
         place_shape(p,qlcg_plant_collision_shape(p->species,model_form,visual),
                     qlcg_plant_instance_scale(p->scale_y,g?g->height:1));
     }
     for (int i=0;i<reg->rock_count;i++) {
         PropInstance *p=&reg->rocks[i];
+        if (qlcg_coral_index(p->archetype) >= 0) {
+            p->collider.kind = COLLISION_NONE;
+            continue;
+        }
         const RockGeometry *g=qlcg_rock_geometry(p->archetype,0,season,1);
         place_shape(p,qlcg_rock_collision_shape(p->archetype,0,season,1),
                     qlcg_rock_instance_scale(p->scale_x,g?g->radius:1));

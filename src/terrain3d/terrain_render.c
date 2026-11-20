@@ -1,12 +1,19 @@
 #include "paint_surface.h"
 /* 山川单帧渲染：天空、地形、水面与天气 */
 #include "terrain_view.h"
+#include "ambient_grass.h"
+#include "terrain_settlement.h"
+#include "terrain_dolls.h"
+#include "terrain_tools.h"
+#include "terrain_farms.h"
 #include "terrain_visual.h"
 #include "core/dev_tools.h"
 #include "sky_climate.h"
 #include "../systems/world/gen/gen_cover.h"
 #include "../systems/world/model/plant_material.h"
 #include "../systems/world/model/rock_material.h"
+#include "../systems/world/world_settlement.h"
+#include "../systems/world/decoration_collision.h"
 #include "terrain_types.h"
 #include "terrain_visibility.h"
 #include "terrain_metrics.h"
@@ -52,6 +59,71 @@ static int collect_springs(const RegionData *c,float ox,float oz,const float cam
     return count;
 }
 
+static bool camera_blocked(const RegionData *reg,float x,float y,float z,float radius) {
+    float floor=qlcg_region_height_at(reg,x,z);
+    return !isfinite(floor) || y-floor<radius ||
+           qlcg_region_blocked(reg,x,y-radius,z,2*radius,radius) ||
+           qlcg_settlement_blocked(reg,x,y-radius,z,2*radius,radius);
+}
+
+bool qlcg_terrain_view_camera(const TerrainRenderer *tr,const RegionData *reg,
+                               const GameSettings *s,float position[3]) {
+    position[0]=tr->x; position[1]=tr->y; position[2]=tr->z;
+    if (s->camera_view==CAMERA_FIRST_PERSON || !reg) return false;
+    bool shoulder=s->camera_view==CAMERA_SHOULDER;
+    float back=shoulder ? 2.15f : 4.5f, side=shoulder ? .73f : 0;
+    float sy=sinf(tr->yaw),cy=cosf(tr->yaw),cp=cosf(tr->pitch);
+    const float arm[]={side*cy-back*sy*cp, (shoulder?.35f:.88f)-back*sinf(tr->pitch),
+                       side*sy+back*cy*cp};
+    float length=sqrtf(qlcg_dot3(arm,arm));
+    int steps=(int)ceilf(length/.19f), clear=0;
+    for (int i=1;i<=steps;i++) {
+        float t=(float)i/steps;
+        if (camera_blocked(reg,tr->x+arm[0]*t,tr->y+arm[1]*t,tr->z+arm[2]*t,.17f)) break;
+        clear=i;
+    }
+    float scale=(float)clear/steps;
+    if (length*scale<.60f) return false;
+    for (int i=0;i<3;i++) position[i]+=arm[i]*scale;
+    return true;
+}
+
+static void camera_reticle(TerrainRenderer *tr,const RegionData *reg,const MacroWorld *w,
+                           const float fwd[3],const float right[3],const float up[3],
+                           const float proj[16],float shake_x,float shake_y) {
+    tr->camera_reticle[0]=tr->camera_reticle[1]=.5f;
+    tr->camera_reticle_visible=true;
+    if (!tr->external_camera) return;
+    TerrainToolHit hit;
+    bool near=tr->eng_tool==ENG_TOOL_NONE && qlcg_terrain_tool_target(tr,reg,w,6.0f,&hit);
+    float distance=near ? hit.distance : tr->aim.kind!=AIM_HIT_NONE ? tr->aim.dist_m : 24;
+    float target[]={tr->x+fwd[0]*distance,tr->y+fwd[1]*distance,tr->z+fwd[2]*distance};
+    if (tr->eng_tool!=ENG_TOOL_NONE && tr->has_hover) {
+        target[0]=tr->hover_lx;target[1]=tr->hover_ly;target[2]=tr->hover_lz;
+    }
+    float camera[]={tr->frame_camera[0]+shake_x,tr->frame_camera[1]+shake_y,tr->frame_camera[2]};
+    float delta[3];
+    for (int i=0;i<3;i++) delta[i]=target[i]-camera[i];
+    float depth=qlcg_dot3(delta,fwd);
+    if (depth<=.15f) { tr->camera_reticle_visible=false; return; }
+    tr->camera_reticle[0]=.5f+.5f*proj[0]*qlcg_dot3(delta,right)/depth;
+    tr->camera_reticle[1]=.5f-.5f*proj[5]*qlcg_dot3(delta,up)/depth;
+    if (tr->camera_reticle[0]<0 || tr->camera_reticle[0]>1 ||
+        tr->camera_reticle[1]<0 || tr->camera_reticle[1]>1) {
+        tr->camera_reticle_visible=false;
+        return;
+    }
+    float length=sqrtf(qlcg_dot3(delta,delta));
+    for (float t=.3f;t<fminf(length-.25f,8);t+=.25f) {
+        float scale=t/length;
+        if (camera_blocked(reg,camera[0]+delta[0]*scale,camera[1]+delta[1]*scale,
+                          camera[2]+delta[2]*scale,.035f)) {
+            tr->camera_reticle_visible=false;
+            break;
+        }
+    }
+}
+
 void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const MacroWorld *w,
                          const CalendarClock *clk, int utc_offset_min,
                          const GameSettings *s, int win_w, int win_h) {
@@ -74,8 +146,16 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
     precip_eff = tr->weather_visual.precipitation;
 
     AstraFrame astro = {0};
+    bool stargazing = !tr->reflection_pass &&
+        inventory_has_equipped(&w->inventory, INV_ITEM_STARGAZING_GLASSES);
     bool astronomy = !tr->reflection_pass && w->opt.astronomy_enabled && qlcg_astra_upload(&tr->astronomy, &w->opt);
-    if (astronomy) {
+    if (stargazing && !astronomy) {
+        WorldCreatorOptions catalog_options = w->opt;
+        catalog_options.astronomy_enabled = true;
+        if (catalog_options.astronomy_version == 0) catalog_options.astronomy_version = ASTRA_VERSION;
+        stargazing = qlcg_astra_upload(&tr->astronomy, &catalog_options);
+    }
+    if (astronomy || stargazing) {
         double lon = ((double)reg->center_x + tr->x) / w->circumference * 6.283185307179586;
         double lat = -((double)reg->center_z + tr->z) / qlcg_world_depth(w) * 3.141592653589793;
         lat = fmax(-1.570796326794897, fmin(1.570796326794897, lat));
@@ -94,9 +174,12 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
     float sky_bot[3] = { sky.horizon[0], sky.horizon[1], sky.horizon[2] };
 
     /* base 水下雾与天空遮蔽 */
-    float water_level=qlcg_region_water_at(reg,tr->x,tr->z);
-    float bed_level=qlcg_region_height_at(reg,tr->x,tr->z);
-    bool underwater=!tr->reflection_pass&&tr->y<water_level && tr->y>bed_level;
+    if (!tr->reflection_pass) tr->external_camera=qlcg_terrain_view_camera(tr,reg,s,tr->frame_camera);
+    float camera_y=tr->reflection_pass ? 2*tr->reflection_plane-tr->frame_camera[1] : tr->frame_camera[1];
+    float camera_pitch=tr->reflection_pass ? -tr->pitch : tr->pitch;
+    float water_level=qlcg_region_water_at(reg,tr->frame_camera[0],tr->frame_camera[2]);
+    float bed_level=qlcg_region_height_at(reg,tr->frame_camera[0],tr->frame_camera[2]);
+    bool underwater=!tr->reflection_pass&&camera_y<water_level && camera_y>bed_level;
     if (underwater) {
         const float night[3]={8/255.0f,21/255.0f,35/255.0f};
         const float day[3]={22/255.0f,75/255.0f,96/255.0f};
@@ -106,21 +189,37 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
     float shake_x = (tr->cam_shake > 0.01f) ? sinf(w->sim_time * 42.0f) * tr->cam_shake * 0.35f : 0.0f;
     float shake_y = (tr->cam_shake > 0.01f) ? cosf(w->sim_time * 37.0f) * tr->cam_shake * 0.35f : 0.0f;
 
-    float cp = cosf(tr->pitch), sp = sinf(tr->pitch);
+    float cp = cosf(camera_pitch), sp = sinf(camera_pitch);
     float cy = cosf(tr->yaw),   syaw = sinf(tr->yaw);
     float fwd[3] = { syaw * cp, sp, -cy * cp };
     float rgt[3] = { cy, 0.0f, syaw };
     float up[3]  = { -syaw * sp, cp, cy * sp };
+    if (!tr->reflection_pass) {
+        float night = 1.0f - qlcg_smoothf(0.0f, 0.20f, sky.daylight);
+        qlcg_terrain_settlement_lights(tr,reg,w,night);
+        memcpy(tr->equipment_beam, fwd, sizeof(fwd));
+        tr->equipment_origin_delta[0]=tr->x-tr->frame_camera[0]-shake_x;
+        tr->equipment_origin_delta[1]=tr->y-tr->frame_camera[1]-shake_y;
+        tr->equipment_origin_delta[2]=tr->z-tr->frame_camera[2];
+        tr->equipment_beam[3] = inventory_has_equipped(&w->inventory, INV_ITEM_HEADLAMP) ? night : 0.0f;
+        tr->equipment_night_vision = inventory_has_equipped(&w->inventory, INV_ITEM_NIGHT_VISION_GLASSES) ? night : 0.0f;
+        tr->equipment_aquatic_vision = underwater && inventory_has_equipped(&w->inventory, INV_ITEM_AQUATIC_RING);
+    }
 
     /* 相机坐标改用宏观格锚点基准，与地形顶点一致 */
     float cam_pos[3] = {
-        (float)((double)tr->x + (double)reg->center_x - tr->anchor_x) + shake_x,
-        tr->y + shake_y,
-        (float)((double)tr->z + (double)reg->center_z - tr->anchor_z)
+        (float)((double)tr->frame_camera[0] + (double)reg->center_x - tr->anchor_x) + shake_x,
+        camera_y + shake_y,
+        (float)((double)tr->frame_camera[2] + (double)reg->center_z - tr->anchor_z)
     };
     float proj[16], view[16], mvp[16];
     qlcg_mat4_perspective(proj, fov_rad, aspect, 0.15f, (st->radius+2)*CHUNK_SIZE*1.5f);
-    qlcg_mat4_look_dir(view, cam_pos, tr->yaw, tr->pitch);
+    if(tr->build_ortho>0) {
+        float half=tr->build_ortho*tanf(fov_rad*.5f),far=(st->radius+2)*CHUNK_SIZE*1.5f;
+        memset(proj,0,sizeof(proj));proj[0]=1/(half*aspect);proj[5]=1/half;
+        proj[10]=-2/(far-.15f);proj[14]=-(far+.15f)/(far-.15f);proj[15]=1;
+    }
+    qlcg_mat4_look_dir(view, cam_pos, tr->yaw, camera_pitch);
     if(tr->reflection_pass) qlcg_reflection_clip(proj,view,cam_pos[1],tr->reflection_plane);
     qlcg_mat4_mul(proj, view, mvp);
     if(tr->reflection_pass) memcpy(tr->reflection_targets[tr->reflection_pass-1].matrix,mvp,sizeof(mvp));
@@ -183,9 +282,10 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
             glBindVertexArray(tr->sky_vao);
             glDrawArrays(GL_TRIANGLES,0,6);
         }
-        if (astronomy && !underwater) qlcg_astra_draw(&tr->astronomy, &astro, &sky, fwd, rgt, up,
+        if ((astronomy || (stargazing && sky.star > .01f)) && !underwater)
+            qlcg_astra_draw(&tr->astronomy, &astro, &sky, fwd, rgt, up,
             aspect, tanf(fov_rad * .5f), w->sim_time, s->decorative_clouds ? sky.cloud_cov : 0,
-            s->weather_atmosphere ? sky.rain_alpha : 0);
+            s->weather_atmosphere ? sky.rain_alpha : 0, astronomy, stargazing);
         if(astronomy && !underwater) qlcg_astra_draw_events(&tr->astronomy,w->astra_events,clk,&astro);
     }
 
@@ -194,6 +294,9 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
     qlcg_visual_bind(tr,terrain_prog);
+    glUniform4f(qlcg_gl_uniform(terrain_prog,"uLotGrid"),
+        (float)(tr->lot_grid_cx*32.0-tr->anchor_x),(float)(tr->lot_grid_cz*32.0-tr->anchor_z),
+        tr->build_camera && tr->lot_grid_detail && !tr->reflection_pass,tr->lot_grid_detail==2);
     glUniform1i(qlcg_gl_uniform(terrain_prog,"uUnderwater"),underwater?1:0);
     glUniformMatrix4fv(qlcg_gl_uniform(terrain_prog, "uMVP"), 1, GL_FALSE, relative_mvp);
     glUniform3f(qlcg_gl_uniform(terrain_prog, "uSunDir"), sx, sy, sz);
@@ -202,15 +305,15 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
     glUniform2f(qlcg_gl_uniform(terrain_prog, "uFogRange"), fog_near, fog_far);
     if(!visual.paint) glUniform1f(qlcg_gl_uniform(terrain_prog, "uLightScale"), sky.light_scale);
     if(!visual.paint) glUniform3f(qlcg_gl_uniform(terrain_prog, "uTint"), sky.tint[0], sky.tint[1], sky.tint[2]);
+    float ground_band = 2.0f;
     if(!visual.paint) {
     glUniform1f(qlcg_gl_uniform(terrain_prog, "uGroundDetail"), 1.0f);
     /* 按就地温度选相邻两个气候带纹理，带内连续插值 */
-    float bp = 2.0f;
     if (reg->temperatures && reg->width > 0 && reg->height > 0) {
         int tmid = (reg->height / 2) * reg->width + reg->width / 2;
-        bp = qlcg_cover_band_of_temp(reg->temperatures[tmid]);
+        ground_band = qlcg_cover_band_of_temp(reg->temperatures[tmid]);
     }
-    int b0 = qlcg_clampi((int)bp, 0, QLCG_GROUND_BAND_N - 1);
+    int b0 = qlcg_clampi((int)ground_band, 0, QLCG_GROUND_BAND_N - 1);
     int b1 = qlcg_clampi(b0 + 1, 0, QLCG_GROUND_BAND_N - 1);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tr->ground_tex[b0]);
@@ -218,7 +321,7 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
     glBindTexture(GL_TEXTURE_2D, tr->ground_tex[b1]);
     glActiveTexture(GL_TEXTURE0);
     glUniform1f(qlcg_gl_uniform(terrain_prog, "uGroundMix"),
-                qlcg_clampf(bp - (float)b0, 0.0f, 1.0f));
+                qlcg_clampf(ground_band - (float)b0, 0.0f, 1.0f));
     glUniform2f(qlcg_gl_uniform(terrain_prog, "uGroundAnchor"),
                 (float)fmod(tr->anchor_x, (double)QLCG_GROUND_TEX_SPAN),
                 (float)fmod(tr->anchor_z, (double)QLCG_GROUND_TEX_SPAN));
@@ -276,6 +379,7 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
     if(!tr->reflection_pass){qlcg_profile_end(QL_GPU_TERRAIN);qlcg_profile_begin(QL_GPU_PROPS);}
     /* 3. 绘制硬件实例化植被、岩石与领地旗帜 */
     if (qlcg_dev_skip_draw(QLCG_DEV_SKIP_PROP)) goto skip_props;
+    qlcg_terrain_grass_draw(tr,reg,w,&visual,relative_mvp,ground_band,sky_bot);
     qlcg_visual_bind(tr,prop_prog);
     glUniform1i(qlcg_gl_uniform(prop_prog,"uUnderwater"),underwater?1:0);
     glUniformMatrix4fv(qlcg_gl_uniform(prop_prog, "uMVP"), 1, GL_FALSE, mvp);
@@ -296,6 +400,9 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
         glBindVertexArray(tr->rock_vao);
         glDrawElementsInstanced(GL_TRIANGLES, tr->rock_mesh_indices, GL_UNSIGNED_SHORT, 0, tr->rock_inst_count);
     }
+    qlcg_terrain_settlement_draw(tr,reg,w,prop_prog);
+    qlcg_terrain_farms_draw(tr,reg,w);
+    glUniform1f(qlcg_gl_uniform(prop_prog, "uWind"), qlcg_maxf(tr->wind_strength, wp->wind));
     if (tr->flag_inst_count > 0) {
         qlcg_visual_bind(tr,flag_prog);
         glUniform1i(qlcg_gl_uniform(flag_prog,"uUnderwater"),underwater?1:0);
@@ -311,6 +418,8 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
         glBindVertexArray(tr->flag_vao);
         glDrawElementsInstanced(GL_TRIANGLES, tr->flag_mesh_indices, GL_UNSIGNED_SHORT, 0, tr->flag_inst_count);
     }
+
+    qlcg_terrain_dolls_draw(tr,reg,w,&visual);
 
     /* 植物：真实网格按物种分批 */
     bool plant_bound = false;
@@ -361,17 +470,20 @@ void qlcg_terrain_render(TerrainRenderer *tr, const RegionData *reg, const Macro
         glUniform1f(qlcg_gl_uniform(plant_prog, "uShrub"), 0.0f);
         glUniform1f(qlcg_gl_uniform(plant_prog, "uGrass"), 0.0f);
         glUniform1f(qlcg_gl_uniform(plant_prog, "uHeight"), 1.0f);
-        glUniform1i(qlcg_gl_uniform(plant_prog,"uIsRock"),1);
+        GLint rock_material = qlcg_gl_uniform(plant_prog,"uIsRock");
         glUniform1i(qlcg_gl_uniform(plant_prog,"uIsCao"),0);
         for (int bi = 0; bi < tr->rock_batch_count; bi++) {
             PlantBatch *rb = &tr->rocks[bi];
             if (rb->inst_count <= 0 || !rb->vao) continue;
             int visible=qlcg_batch_visible(rb,mvp,&frustum,tr->reflection_pass);
-            if(visible)glDrawElementsInstanced(GL_TRIANGLES, rb->idx_count, GL_UNSIGNED_INT, 0, visible);
+            if (visible) {
+                glUniform1i(rock_material, qlcg_coral_index(rb->species) < 0);
+                glDrawElementsInstanced(GL_TRIANGLES, rb->idx_count, GL_UNSIGNED_INT, 0, visible);
+            }
         }
     }
     /* 远景贴图：12–18 交叉面片，18 外朝向玩家 */
-    if (far_prog && qlcg_prop_sprites_can_far(&tr->sprites) &&
+    if (s->vegetation_form!=VEG_FORM_SIMPLE && far_prog && qlcg_prop_sprites_can_far(&tr->sprites) &&
         (tr->far_cross_count > 0 || tr->far_bill_count > 0)) {
         float cr_x = cosf(tr->yaw), cr_z = sinf(tr->yaw);
         qlcg_visual_bind(tr,far_prog);
@@ -416,7 +528,7 @@ skip_props:
 
     /* 4. 绘制动态水体与冰壳 */
     if (!qlcg_dev_skip_draw(QLCG_DEV_SKIP_WATER)) {
-    /* 4a. 冰顶：不透明，先画在开水之前，避免半透明叠色 */
+    /* 4a. 冰顶：先于开水画，避免叠色 */
     if (!qlcg_dev_skip_draw(QLCG_DEV_SKIP_ICE) && tr->ice_vis.ice_top_prog) {
         GLuint ip=qlcg_visual_program(tr,tr->ice_vis.ice_top_prog,QL_VIS_ICE);
         QLCG_DEV_ONLY(int dbg_draw = 0;)
@@ -640,6 +752,8 @@ skip_props:
             glDrawArrays(GL_POINTS, 0, cnt);
         }
     }
+    if (!tr->build_camera && !tr->external_camera) qlcg_terrain_tools_draw(tr, w, proj, sky.light_scale);
+    camera_reticle(tr,reg,w,fwd,rgt,up,proj,shake_x,shake_y);
     qlcg_profile_end(QL_GPU_WATER);
     qlcg_visual_end(tr);
     qlcg_profile_begin(QL_GPU_UI);

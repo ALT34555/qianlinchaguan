@@ -1,6 +1,7 @@
-/* 游戏内顶栏：玻璃条 + 右上菜单钮（对齐 base） */
+/* 顶栏：玻璃条 + 右上菜单钮 */
 #include "app/app_state.h"
 #include "hud_layout.h"
+#include "app/app_doll_control.h"
 #include "hud_glass.h"
 #include "ui/ui_sprite.h"
 
@@ -52,14 +53,12 @@ static void bar_draw_text(UiContext *ui, UiFaceKind face, float px, bool bold,
     }
 }
 
-/* 顶栏可见：舆图常显，山川看设置 */
+/* 菜单展开或启用常驻时显示 */
 static bool top_bar_visible(void) {
-    if (!g_app.world) return false;
-    if (g_app.view_mode == VIEW_MODE_ATLAS) return true;
-    return g_app.settings.show_top_bar || g_app.esc_paused;
+    return g_app.world && (g_app.settings.show_top_bar || g_app.esc_paused);
 }
 
-/* base：min-height 52 与 40+18 取大 */
+/* min-height 52 与 40+18 取大 */
 float game_top_bar_height(UiContext *ui) {
     if (!top_bar_visible()) return 0.0f;
     float z = ui->met.size;
@@ -86,8 +85,14 @@ static void menu_btn_rect(UiContext *ui, float *bx, float *by, float *bs) {
     *bx = (float)ui->win_w - ui->safe_edges[2] - right - s;
     *bs = s;
     /* 舆图居中，山川距上 10 */
-    *by = atlas ? ui->safe_y_px + (game_top_bar_height(ui) - s) * 0.5f
+    *by = atlas && top_bar_visible() ? ui->safe_y_px + (game_top_bar_height(ui) - s) * 0.5f
                 : ui->safe_y_px + 10.0f * z;
+}
+
+UiRect game_menu_bounds(UiContext *ui) {
+    float x,y,size;
+    menu_btn_rect(ui,&x,&y,&size);
+    return (UiRect){x,y,size,size};
 }
 
 void game_top_bar(UiContext *ui) {
@@ -127,7 +132,8 @@ void game_top_bar(UiContext *ui) {
         snprintf(plane_title,sizeof(plane_title),"%s [%d, %d]",title,g_app.world->opt.plane_x,g_app.world->opt.plane_z);
         title=plane_title;
     }
-    const char *who   = g_app.world->opt.ren_ming;
+    const char *who=app_doll_controlled_name();
+    if (!who) who=g_app.world->opt.ren_ming;
     float gap = 14.0f * z;
 
     float trk_name = name_px * BAR_TRACK_NAME;
@@ -249,7 +255,10 @@ void game_menu_button(UiContext *ui) {
         bool quick_save = first_click && ui->mouse_dblclicked;
         first_click = !ui->mouse_dblclicked;
         g_app.esc_paused = !g_app.esc_paused;
-        if (!g_app.esc_paused) g_app.settings_in_drawer = false;
+        if (!g_app.esc_paused) {
+            g_app.settings_in_drawer = false;
+            g_app.settings_back_to_game = false;
+        }
         if (quick_save) app_quick_save();
     }
 }

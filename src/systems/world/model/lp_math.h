@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-/* 颜色随带风摆槽位，等价 base 的 WeakMap 标记 */
+/* 颜色随风摆槽位，等价 WeakMap 标记 */
 typedef struct {
     double r, g, b;
     int    wind;

@@ -88,7 +88,7 @@ static void sp_content_range(int blk0, int blk1, const SpriteSeg *seg, int nseg,
     *c1 = len;
 }
 
-/* 用 WIC 解码 PNG 为 32bpp BGRA 缓冲区 */
+/* WIC 解码 PNG 为 32bpp 缓冲 */
 static uint8_t *sp_decode_bgra(const char *path, int *out_w, int *out_h) {
     wchar_t wide[2048];
     uint8_t *pixels = NULL;

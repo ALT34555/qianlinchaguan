@@ -78,7 +78,7 @@ static float mr_distance(const MacroWorld *g, int a, int b) {
     return sqrtf(dx * dx + dy * dy);
 }
 
-/* ---------- 动态数组 ---------- */
+/* 动态数组 */
 
 static void iv_push(IntVec *v, int x) {
     if (v->count >= v->cap) {
@@ -137,7 +137,7 @@ static void spatial_add_point(MrSpatial *sp, int cell_index, int value) {
     iv_push(&sp->buckets[row * sp->cols + col], value);
 }
 
-/* ---------- 平滑与软顶 ---------- */
+/* 平滑与软顶 */
 
 static void smooth_heights(const MacroWorld *g, float *heights, float weight) {
     int n = g->cell_count;
@@ -159,7 +159,7 @@ static void soft_cap(float *heights, int n, float start, float span) {
     }
 }
 
-/* ---------- 节点与链 ---------- */
+/* 节点与链 */
 
 static int belt_nodes(const MacroWorld *g, const float *heights, const float *uplift,
                       const uint8_t *boundary, int gap, int *nodes, int cap) {

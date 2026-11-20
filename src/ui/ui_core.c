@@ -207,6 +207,9 @@ bool ui_init(UiContext *ui, int w, int h) {
 /* 释放 UI 资源 */
 void ui_gpu_release(UiContext *ui) {
     if (ui->atlas_tex) qlcg_gl_delete_textures(1, &ui->atlas_tex);
+    if (ui->inventory_tex) qlcg_gl_delete_textures(1, &ui->inventory_tex);
+    ui->inventory_tex = 0;
+    ui->inventory_tex_tried = false;
     ui_sprite_release();
     ui_backdrop_release(ui);
     if (ui->vbo) qlcg_gl_delete_buffers(1, &ui->vbo);
@@ -323,7 +326,7 @@ void ui_flush(UiContext *ui) {
     ui->vert_count = 0;
 }
 
-/* 切换 sprite 纹理：与当前不同则先提交已攒批次 */
+/* 换 sprite 纹理：不同则先提交批次 */
 void ui_use_sprite_tex(UiContext *ui, GLuint tex) {
     if (!tex || ui->cur_sprite_tex == tex) return;
     ui_flush(ui);
@@ -695,7 +698,7 @@ void ui_draw_atlas_rect(UiContext *ui, float x, float y, float w, float h,
     push_quad(ui, x, y, x + w, y + h, u0, v0, u1, v1, tint, tint, 2.0f);
 }
 
-/* sprite 矩形：mode 3.0 与字形图集区分 */
+/* sprite 矩形：mode 3.0 区分字形 */
 void ui_draw_sprite_rect(UiContext *ui, float x, float y, float w, float h,
                          float u0, float v0, float u1, float v1, uint32_t tint) {
     push_quad(ui, x, y, x + w, y + h, u0, v0, u1, v1, tint, tint, 3.0f);
@@ -841,7 +844,7 @@ float ui_ease(float t) {
     return t * t * (3.0f - 2.0f * t) * 0.35f + t * 0.65f;
 }
 
-/* 回弹 bezier(.34,1.42,.52,1)≈ */
+/* 回弹 bezier(.34,1.42,.52,1) */
 float ui_ease_spring(float t) {
     t = qlcg_clampf(t, 0.0f, 1.0f);
     float u = 1.0f - t;
@@ -870,17 +873,21 @@ static float approach(float v, float target, float dt, float speed) {
 }
 
 /* 悬停/按下过渡值 */
-UiMotion *ui_motion_step(UiContext *ui, uint32_t id, bool hovered, bool pressed, bool toggled) {
-    UiMotion *m = ui_motion(ui, id);
+void ui_motion_update(UiContext *ui, UiMotion *m, bool hovered, bool pressed, bool toggled) {
     if (ui->reduce_motion) {                 /* 直接跳到目标，不做过渡 */
         m->hover  = hovered ? 1.0f : 0.0f;
         m->press  = pressed ? 1.0f : 0.0f;
         m->toggle = toggled ? 1.0f : 0.0f;
-        return m;
+        return;
     }
     m->hover = approach(m->hover, hovered ? 1.0f : 0.0f, ui->dt, 18.0f);
     m->press = approach(m->press, pressed ? 1.0f : 0.0f, ui->dt, 30.0f);
     m->toggle = approach(m->toggle, toggled ? 1.0f : 0.0f, ui->dt, 16.0f);
+}
+
+UiMotion *ui_motion_step(UiContext *ui, uint32_t id, bool hovered, bool pressed, bool toggled) {
+    UiMotion *m = ui_motion(ui, id);
+    ui_motion_update(ui, m, hovered, pressed, toggled);
     return m;
 }
 

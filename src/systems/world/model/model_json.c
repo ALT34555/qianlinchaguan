@@ -305,6 +305,16 @@ int qlcg_js_count(const JsVal *v) {
     return v ? v->count : 0;
 }
 
+int qlcg_js_unique_keys(const JsVal *v) {
+    if (!v) return 0;
+    for (int i=0; i<v->count; i++) {
+        if (v->type==JS_OBJ)
+            for (int j=0; j<i; j++) if (!strcmp(v->keys[i],v->keys[j])) return 0;
+        if (!qlcg_js_unique_keys(v->items[i])) return 0;
+    }
+    return 1;
+}
+
 double qlcg_js_num(const JsVal *v, double dflt) {
     if (!v) return dflt;
     if (v->type == JS_NUM) return v->num;

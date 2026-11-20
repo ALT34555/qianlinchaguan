@@ -1,0 +1,52 @@
+{
+  "rocks": [
+    {
+      "id": "rock.deadwood.hollow",
+      "name": "中空朽木",
+      "archetype": "deadwood",
+      "family": "wood",
+      "seed": 852,
+      "heightMeters": 0.72,
+      "params": {
+        "length": 3.0,
+        "radius": 0.38,
+        "hollow": 0.67,
+        "bend": 0.06,
+        "moss": 0,
+        "fork": 0
+      }
+    },
+    {
+      "id": "rock.deadwood.moss",
+      "name": "覆苔倒木",
+      "archetype": "deadwood",
+      "family": "wood",
+      "seed": 853,
+      "heightMeters": 0.58,
+      "params": {
+        "length": 2.1,
+        "radius": 0.34,
+        "hollow": 0.38,
+        "bend": 0.24,
+        "moss": 1,
+        "fork": 0
+      }
+    },
+    {
+      "id": "rock.deadwood.fork",
+      "name": "折杈腐木",
+      "archetype": "deadwood",
+      "family": "wood",
+      "seed": 854,
+      "heightMeters": 1.12,
+      "params": {
+        "length": 2.65,
+        "radius": 0.36,
+        "hollow": 0.44,
+        "bend": 0.17,
+        "moss": 0,
+        "fork": 1
+      }
+    }
+  ]
+}

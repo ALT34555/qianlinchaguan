@@ -1,5 +1,6 @@
 /* 仿 CSS 流式/弹性盒布局器实现 */
 #include "ui_layout.h"
+#include "ui_sprite.h"
 #include "ui_widgets.h"
 #include "../core/math_util.h"
 #include "../core/i18n.h"
@@ -40,9 +41,21 @@ void ui_layout_indent_pop(UiLayout *L) {
 void ui_layout_divider(UiLayout *L) {
     UiContext *ui = L->ui;
     float z = ui->met.size;
-    L->cursor += 6.0f * z;
-    ui_draw_rect(ui, L->x, L->cursor, L->w, 1.0f, tk_of(ui, QL_LINE_FAINT));
-    L->cursor += 6.0f * z + L->row_gap * 0.5f;
+    float pad = 4.0f * z;
+    float h = 24.0f * z;
+    float y = L->cursor + pad;
+    const SpriteDef *sp = ui_sprite_by_name("ui-divider");
+    if (sp) {
+        float scale = qlcg_minf(L->w / sp->w, h / sp->h);
+        float w = sp->w * scale;
+        float x = L->x + (L->w - w) * 0.5f;
+        h = sp->h * scale;
+        ui_sprite_layer(ui, sp, 1, x, y, w, h, tk_of(ui, QL_LINE_PRIMARY));
+        ui_sprite_layer(ui, sp, 2, x, y, w, h, tk_of(ui, QL_ACCENT_UI));
+    } else {
+        ui_draw_rect(ui, L->x, y + h * 0.5f - 0.5f, L->w, 1.0f, tk_of(ui, QL_LINE_FAINT));
+    }
+    L->cursor += h + pad * 2.0f;
 }
 
 /* 顶部提示横幅：随折行行数自动撑高 */
@@ -370,22 +383,21 @@ int ui_layout_labeled_segments(UiLayout *L, const char *label, const char *const
 bool ui_layout_checkbox(UiLayout *L, const char *label, bool *val) {
     UiContext *ui = L->ui;
     float h = ui_checkbox_height(ui);
-    bool chg = ui_checkbox(ui, L->x + L->indent, L->cursor, label, val);
+    bool changed = ui_checkbox_row(ui, L->x + L->indent, L->cursor, L->w - L->indent,
+                                   h, label, 13.0f * ui->met.scale, val);
     L->cursor += h + L->row_gap;
-    return chg;
+    return changed;
 }
 
 bool ui_layout_row_checkbox(UiLayout *L, const char *row_label, const char *box_label, bool *val) {
     UiContext *ui = L->ui;
-    float z  = ui->met.size;
-    float sc = ui->met.scale;
+    float z = ui->met.size;
+    const char *label = box_label ? box_label : "";
     float box_h = ui_checkbox_height(ui);
-    float min_w = 22.0f * z + 10.0f * z
-                + (float)ui_text_width_px(ui, UI_FACE_BODY, 13.0f * sc, false, box_label ? box_label : "");
+    float min_w = 32.0f * z + (float)ui_text_width_px(ui, UI_FACE_BODY, 13.0f * ui->met.scale, false, label);
     UiRow r = ui_row_auto(L, row_label, false, min_w, box_h);
-    /* 复选框贴右，与下拉框、输入框同一右边缘 */
     float bx = qlcg_maxf(r.ctl_x, r.ctl_x + r.ctl_w - min_w);
-    return ui_checkbox(ui, bx, r.y + (r.h - box_h) * 0.5f, box_label ? box_label : "", val);
+    return ui_checkbox(ui, bx, r.y + (r.h - box_h) * 0.5f, label, val);
 }
 
 /* 控件贴右：宽度不超过控件区时靠右边缘，避免右侧留白 */
@@ -532,7 +544,6 @@ void ui_layout_kv(UiLayout *L, const char *label, const char *value) {
         ui_draw_text_ellipsis(ui, UI_FACE_BODY, px, false, x, L->cursor, w, 2, value, tk_of(ui, QL_INK));
         L->cursor += lh + 4.0f * z;
     }
-    ui_draw_rect(ui, x, L->cursor - 2.0f * z, w, 1.0f, with_alpha(tk_of(ui, QL_LINE_SOFT), 0.55f));
     L->cursor += 4.0f * z;
 }
 
@@ -610,8 +621,6 @@ bool ui_layout_fold(UiLayout *L, uint32_t id, const char *title, bool *expanded)
     if (hov) {
         ui_draw_rect(ui, x, L->cursor, w, h, tk_of(ui, QL_SURFACE_HI));
     }
-    ui_draw_rect(ui, x, L->cursor + h - 1.0f, w, 1.0f, tk_of(ui, QL_LINE_FAINT));
-
     char buf[160];
     snprintf(buf, sizeof(buf), "%s  %s", *expanded ? "\xE2\x96\xBE" : "\xE2\x96\xB8", title);
     ui_draw_text_ellipsis(ui, UI_FACE_BODY, px, true, x + 6.0f * z,

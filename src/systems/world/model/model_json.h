@@ -1,4 +1,4 @@
-/* 精简 JSON DOM：供 content 数据装载使用 */
+/* 精简 JSON DOM：供数据装载使用 */
 #ifndef QLCG_JS_H
 #define QLCG_JS_H
 
@@ -29,5 +29,6 @@ double      qlcg_js_num(const JsVal *v, double dflt);
 const char *qlcg_js_str(const JsVal *v, const char *dflt);
 int         qlcg_js_bool(const JsVal *v, int dflt);
 int         qlcg_js_has(const JsVal *obj, const char *key);
+int         qlcg_js_unique_keys(const JsVal *v);
 
 #endif

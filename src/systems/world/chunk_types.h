@@ -2,6 +2,7 @@
 #define QLCG_CHUNK_TYPES_H
 
 #include "../../core/config.h"
+enum { QLCG_CHUNK_FARM_FIRST=9010, QLCG_CHUNK_FARM_LAST=9019 };
 
 /* 区块类型定义（对齐 ChunkTypes */
 typedef struct {

@@ -28,6 +28,7 @@ ShuSeason qlcg_pa_shu_season(const PdDef *def, int season, double winter_leaf, i
     double heat_stress = tolerance(def, "naire", heat) / 4.0;
     double cold_stress = tolerance(def, "naihan", cold) / 4.0;
     switch (season) {
+        case PD_SEASON_NONE: return (ShuSeason){ 1, 1, 0 };
         case PD_SEASON_SPRING:
             return (ShuSeason){ .70 + .20 * winter_leaf, .75 + .10 * winter_leaf, -.09 };
         case PD_SEASON_SUMMER:

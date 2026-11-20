@@ -8,7 +8,7 @@
 #define QLCG_GROUND_TEX_SPAN  256.0f
 #define QLCG_GROUND_BAND_N    5
 
-/* 生成可平铺材质；rgb 需 px*px*3，span 米 */
+/* 生成可平铺材质：需 px*px*3 字节 */
 void qlcg_ground_tex_build(uint8_t *rgb, int px, float span, int band, uint32_t seed);
 
 /* 单点材质色（舆图瓦片按世界坐标采样） */

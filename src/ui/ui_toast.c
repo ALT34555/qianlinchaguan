@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/* 尺寸按 met.size，字号按 met.scale */
+/* 尺寸按 size，字号按 scale */
 #define TS_PANEL_W   300.0f
 #define TS_MARGIN_R   20.0f
 #define TS_MARGIN_T   76.0f
@@ -271,7 +271,7 @@ void ui_toast_render(UiContext *ui, UiToastQueue *q) {
         /* 左侧语义竖条 */
         ui_draw_rect(ui, x, y, TS_BAR * z, h, ts_fade(tone, fade));
 
-        /* 图标：L0 淡底 / L1 语义色 / L2 空 / L3 原色不染 */
+        /* 图标：L0淡底/L1语义/L2空/L3原色 */
         const SpriteDef *sp = ui_sprite_by_name(ts_icon_name(t->kind));
         if (sp) {
             float ix = x + pad_x;

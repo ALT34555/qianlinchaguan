@@ -1,0 +1,106 @@
+{
+  "plants": [
+    {
+      "id": "teng.qianniuhua",
+      "name": "牵牛花",
+      "latin": "Ipomoea nil",
+      "archetype": "bramble",
+      "climate": "subtropical",
+      "seed": 961,
+      "tags": [
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.24,
+        "spread": 1.14,
+        "bloomCount": 5,
+        "fruitCount": 4
+      },
+      "palette": {
+        "foliage": "foliage",
+        "foliageDark": "foliageDeep",
+        "barkLight": "cropTeaShade",
+        "bloom": "morningGloryBlue",
+        "fruit": "cropAlliumSeed"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered",
+        "hanging"
+      ]
+    },
+    {
+      "id": "teng.ziteng",
+      "name": "紫藤",
+      "latin": "Wisteria sinensis",
+      "archetype": "bramble",
+      "climate": "temperate",
+      "seed": 962,
+      "tags": [
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 0.96,
+        "spread": 1.43,
+        "bloomCount": 5,
+        "fruitCount": 4
+      },
+      "palette": {
+        "foliage": "canopy",
+        "foliageDark": "foliageDeep",
+        "barkLight": "barkLight",
+        "bloom": "wisteriaLilac",
+        "fruit": "barkLight"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered",
+        "hanging"
+      ]
+    },
+    {
+      "id": "teng.ledujuan",
+      "name": "簕杜鹃",
+      "latin": "Bougainvillea spectabilis",
+      "archetype": "bramble",
+      "climate": "subtropical",
+      "seed": 963,
+      "tags": [
+        "kaihua",
+        "jieguo"
+      ],
+      "params": {
+        "height": 1.16,
+        "spread": 1.02,
+        "bloomCount": 5,
+        "fruitCount": 4
+      },
+      "palette": {
+        "foliage": "cropTeaLeaf",
+        "foliageDark": "cropTeaShade",
+        "barkLight": "barkLight",
+        "bloom": "bougainvilleaRose",
+        "fruit": "cropAlliumSeed"
+      },
+      "states": [
+        "normal",
+        "seedling",
+        "subadult",
+        "flowering",
+        "fruiting",
+        "withered",
+        "hanging"
+      ]
+    }
+  ]
+}

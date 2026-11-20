@@ -86,19 +86,24 @@ static void lotus_pod(LpBuilder *b, const double at[3], double r, double h, LpRg
         double a = TAU * i / 6;
         double reach = i == 0 ? 0 : r * .61;
         double x = at[0] + cos(a) * reach, z = at[2] + sin(a) * reach;
-        double floor[3] = {x, at[1] + h + r * .020, z};
+        double floor_y = at[1] + h + r * .020;
+        double floor_ring[6][3];
         for (int k = 0; k < 6; k++) {
             double l = TAU * k / 6, m = TAU * (k + 1) / 6;
-            double p[3] = {x + cos(l) * r * .14, floor[1], z + sin(l) * r * .14};
-            double q[3] = {x + cos(m) * r * .14, floor[1], z + sin(m) * r * .14};
-            double rim[3] = {x + cos(l) * r * .205, floor[1] + r * .025, z + sin(l) * r * .205};
+            double *p = floor_ring[k];
+            p[0] = x + cos(l) * r * .14;
+            p[1] = floor_y;
+            p[2] = z + sin(l) * r * .14;
+            double q[3] = {x + cos(m) * r * .14, floor_y, z + sin(m) * r * .14};
+            double rim[3] = {x + cos(l) * r * .205, floor_y + r * .025, z + sin(l) * r * .205};
             double next[3] = {x + cos(m) * r * .205, rim[1], z + sin(m) * r * .205};
             double ob[3] = {x + cos(l) * r * .215, at[1] + h - r * .005, z + sin(l) * r * .215};
             double on[3] = {x + cos(m) * r * .215, ob[1], z + sin(m) * r * .215};
-            qlcg_lp_triangle(b, floor, q, p, well, LP_MAT_FRUIT);
             qlcg_lp_quad(b, p, q, next, rim, qlcg_lp_lighten(color, .14), LP_MAT_FRUIT);
             qlcg_lp_quad(b, rim, next, on, ob, color, LP_MAT_FRUIT);
         }
+        for (int k = 1; k < 5; k++)
+            qlcg_lp_triangle(b, floor_ring[0], floor_ring[k + 1], floor_ring[k], well, LP_MAT_FRUIT);
     }
 }
 
@@ -424,7 +429,8 @@ void qlcg_pa_build_ornamental(LpBuilder *b, const PdDef *def, int season, int fo
         (def->state == PD_STATE_FLOWERING || (def->state == PD_STATE_NORMAL && season == p->bloom_season));
     c.seed_count = qlcg_pa_hua_seed_count(def, season);
     c.seed_visible = def->state == PD_STATE_FRUITING;
-    c.foliage = dead ? .06 : c.winter ? p->winter_leaf : density[season];
+    c.foliage = dead ? .06 : c.winter ? p->winter_leaf :
+                season == PD_SEASON_NONE ? 1.0 : density[season];
     if (c.bloom && p->habit == HUA_TREE) c.foliage *= .24;
     if ((p->habit == HUA_HERB || p->habit == HUA_LOTUS) && c.foliage < .12) {
         c.height *= .39;

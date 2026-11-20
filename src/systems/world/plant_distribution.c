@@ -3,6 +3,7 @@
 #include "planet_macro.h"
 #include "model/plant_def.h"
 #include "model/plant_material.h"
+#include "model/shore_models.h"
 #include "gen/gen_noise.h"
 #include "../../core/math_util.h"
 
@@ -18,6 +19,7 @@ typedef struct {
     float temp_sigma;
     float cold, heat, salt, dry, wetlog;
     float anch, canopy, floating, submerged;
+    int marine, fresh;
     float wet_pref, wet_sigma;
     float slope_sigma;
     float substrate[5];
@@ -26,6 +28,7 @@ typedef struct {
 static PlantProfile *g_profile = NULL;
 static int           g_profile_count = 0;
 static const PdSpecies *g_profile_first = NULL;
+static int g_shore_species[SHORE_PLANT_COUNT], g_shore_count;
 
 /* 四档气候带中心与基础宽度 */
 static const float ZONE_CENTER[4] = { 1.0f, 11.0f, 20.0f, 27.0f };
@@ -86,6 +89,8 @@ static void build_profile(const PdSpecies *sp, PlantProfile *p) {
     p->canopy  = has_tag(sp, "shuguan");
     p->floating = has_tag(sp, "fushui");
     p->submerged = has_tag(sp, "chenshui");
+    p->marine = has_tag(sp, "haiyang");
+    p->fresh = has_tag(sp, "danshui");
 
     p->wet_pref  = BASE_WET[p->zone] - .26f * p->dry + .12f * p->wetlog;
     p->wet_sigma = .20f + .16f * p->dry + .14f * p->wetlog;
@@ -116,16 +121,24 @@ int qlcg_plant_habitat_prepare(void) {
     g_profile = NULL;
     g_profile_count = 0;
     g_profile_first = NULL;
+    g_shore_count = 0;
     if (n <= 0) return 0;
     g_profile = (PlantProfile *)calloc((size_t)n, sizeof(PlantProfile));
     if (!g_profile) return 0;
     for (int i = 0; i < n; i++) {
         const PdSpecies *sp = qlcg_pd_species(i);
-        if (sp) build_profile(sp, &g_profile[i]);
+        if (!sp) continue;
+        build_profile(sp, &g_profile[i]);
+        if (qlcg_shore_plant_index(sp->base.id) >= 0 && g_shore_count < SHORE_PLANT_COUNT)
+            g_shore_species[g_shore_count++] = i;
     }
     g_profile_count = n;
     g_profile_first = first;
     return n;
+}
+
+int qlcg_plant_pick_shore(const PlantSite *site, uint32_t roll) {
+    return qlcg_plant_pick_from(site, roll, g_shore_species, g_shore_count);
 }
 
 float qlcg_plant_suitability(int species, const PlantSite *site) {
@@ -147,6 +160,8 @@ float qlcg_plant_suitability(int species, const PlantSite *site) {
 
     if (site->water_depth > .15f) {
         if (p->category != PLANT_CAT_SHUI) return 0.0f;
+        if (p->marine && site->water_kind != WATER_KIND_SEA) return 0.0f;
+        if (p->fresh && (site->water_kind == WATER_KIND_SEA || salt_site >= .5f)) return 0.0f;
         float depth_fit;
         if (p->floating) {
             if (site->water_kind == WATER_KIND_RIVER ||
@@ -154,8 +169,9 @@ float qlcg_plant_suitability(int species, const PlantSite *site) {
             depth_fit = smooth01(.15f, .25f, site->water_depth)
                       * (1.0f - smooth01(1.5f, 2.0f, site->water_depth));
         } else if (p->submerged) {
-            depth_fit = smooth01(.25f, .35f, site->water_depth)
-                      * (1.0f - smooth01(1.8f, 2.2f, site->water_depth));
+            depth_fit = p->marine
+                ? smooth01(.35f, .75f, site->water_depth) * (1.0f - smooth01(5.8f, 8.0f, site->water_depth))
+                : smooth01(.25f, .35f, site->water_depth) * (1.0f - smooth01(1.8f, 2.2f, site->water_depth));
             if (site->flow > 1.2f && !p->anch) return 0.0f;
             if (site->water_kind == WATER_KIND_FALL && !p->anch) return 0.0f;
         } else {
@@ -216,6 +232,7 @@ int qlcg_plant_pick_from(const PlantSite *site, uint32_t roll,
     float total = 0.0f;
     for (int i = 0; i < pool_count; i++) {
         int sp = pool ? pool[i] : i;
+        if (sp < 0 || sp >= g_profile_count || qlcg_pd_category_can_hang(g_profile[sp].category)) continue;
         float s = qlcg_plant_suitability(sp, site);
         if (s < .01f) continue;
         cand[n] = sp;
@@ -238,7 +255,8 @@ int qlcg_plant_pick(const PlantSite *site, uint32_t roll) {
     int n = 0;
     for (int i = 0; i < g_profile_count && n < PD_PICK_MAX; i++) {
         if (g_profile[i].category == PLANT_CAT_HUA ||
-            g_profile[i].category == PLANT_CAT_NONG) continue;
+            g_profile[i].category == PLANT_CAT_NONG ||
+            g_profile[i].category == PLANT_CAT_YAO) continue;
         pool[n++] = i;
     }
     return qlcg_plant_pick_from(site, roll, pool, n);

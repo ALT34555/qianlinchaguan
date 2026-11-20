@@ -51,7 +51,7 @@ static BambooSeason bamboo_season(const PdDef *def, int season) {
         s.height = 1.00; s.density = 1.00; s.leaf = 1.00; s.dry = 0.02;
     } else if (season == PD_SEASON_AUTUMN) {
         s.height = 0.98; s.density = 0.82; s.leaf = 0.94; s.dry = 0.30;
-    } else {
+    } else if (season == PD_SEASON_WINTER) {
         double keep = 0.55 * (1.0 - 0.35 * win);
         const char *c = def->climate ? def->climate : "subtropical";
         s.height = 0.95; s.density = keep; s.leaf = 0.72; s.dry = 0.55 + 0.25 * win;
